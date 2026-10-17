@@ -45,3 +45,5 @@
 - Denied additional credential and private-configuration paths such as `.npmrc`, `.ssh`, and `.aws`.
 - Installed ignore-file change watchers to clear the cached rules.
 - Added VS Code F5 launch and build tasks with documented development host instructions.
+
+- Added unit coverage for ignore-group negation precedence to guard against privacy regressions.

@@ -8,10 +8,7 @@ const cache = new Map<string, CachedIgnore>();
 function userPatterns(patterns: readonly string[]): string[] {
   return patterns.filter((item) => typeof item === "string" && item.trim() && !item.includes("\0"));
 }
-/** Independent policy groups prevent negations from overriding other exclusions. */
-export function ignoredByAny(relativePath: string, filters: readonly Ignore[]): boolean {
-  return filters.some((filter) => filter.ignores(relativePath));
-}
+import { ignoredByAny } from "./matching";
 async function loadIgnore(folder: vscode.WorkspaceFolder, patterns: readonly string[]): Promise<Ignore[]> {
   const key = folder.uri.toString() + ":" + JSON.stringify(patterns);
   const existing = cache.get(key);
