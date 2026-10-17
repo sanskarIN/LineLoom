@@ -2,6 +2,10 @@
 
 **v0.1.0 (pre-release):** five-language local completion preview with installation and early feedback.
 
+**v0.1.1 (pre-release):** privacy hardening, stale-suggestion prevention, and bounded model discovery.
+
+**v0.2.0 (future pre-release):** incremental editor experience and regression coverage improvements, after community feedback.
+
 **v1.0.0 (future stable):** five language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
 
 **v1.1.0:** add C++, Java and Go; improve request timing and cached context.

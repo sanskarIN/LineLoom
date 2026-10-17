@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.1.1] — 2026-10-17 — Pre-release maintenance update
+
+- Resolve workspace symlinks before reading source context; disallow symlinks that point outside the trusted workspace or to an excluded canonical target.
+- Block completions when ignore files exist but cannot be read, rather than inadvertently treating them as missing.
+- Discard completions when the editor, active cursor, workspace ignore rules or document version changes while Ollama is generating.
+- Bound Ollama model listing and compatibility probes to approximately eight seconds by default.
+- Avoid reading and including potentially sensitive or unbounded Ollama HTTP error bodies in diagnostics.
+- Add automated tests for workspace traversal, symlinks, malformed model listings and endpoint errors.
+- Retain the original five language families and local-first inference model; no new permissions or cloud services.
+
+**Remaining preview limitations:** quality and latency with a real local model, offline smoke testing, installation/acceptance in real editors across all supported operating systems and nested ignore-file coverage are not yet fully verified.
+
 ## [0.1.0] — 2026-10-17 — Pre-release
 
 **First public preview (not stable).**
