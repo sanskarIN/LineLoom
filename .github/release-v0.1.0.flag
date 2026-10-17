@@ -1,0 +1,3 @@
+LineLoom v0.1.0 pre-release publishing marker.
+This marker triggers .github/workflows/release.yml once, on push to main.
+Gate: release job must pass npm ci, typecheck, lint, unit and integration tests, audit and VSIX integrity before publishing.
