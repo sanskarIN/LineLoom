@@ -17,3 +17,6 @@ LineLoom runs as an extension inside the VS Code extension host. It does not req
 **Generated code:** developers remain responsible for reviewing correctness, safety, licensing and privacy implications of completions.
 
 Questions and security reports: use GitHub issues for non-sensitive concerns, and GitHub private vulnerability reporting when enabled as described in [SECURITY.md](SECURITY.md).
+
+
+**v0.1.1 update:** LineLoom verifies canonical document paths before sending context, rejecting symlinks that resolve outside the workspace or to an excluded target. Unreadable root-level ignore files fail closed instead of being interpreted as absent; missing ignore files are allowed. These checks mitigate common accidental leaks but do not provide complete secret detection.
