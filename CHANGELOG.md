@@ -1,13 +1,18 @@
 # Changelog
 
-Changes follow Semantic Versioning.
+All notable changes follow Semantic Versioning.
 
-## [Unreleased] — v1.0.0 candidate
+## [0.1.0] — 2026-10-17 — Pre-release
 
-- Initialized TypeScript VS Code extension and native inline-completion provider.
-- Added a five-language registry (Python, JavaScript, TypeScript, Rust and Kotlin).
-- Added Ollama model listing, selection, streaming generation, request cancellation and bounded local context.
-- Added conservative exclusion rules, explicit HTTPS remote endpoint approval, status-bar controls and diagnostics.
-- Added unit tests, build tooling, documentation and GitHub workflow definitions.
+**First public preview (not stable).**
 
-**Not yet verified as a stable release.** No benchmark, hardware test, manual VSIX installation, cross-platform validation or published GitHub release is claimed.
+- Native VS Code inline completions, with automatic and manual triggers.
+- Initial language families: Python, JavaScript/JSX, TypeScript/TSX, Rust, and Kotlin.
+- Local Ollama model selection, streamed code generation, bounded context, cancellation, and generation timeouts.
+- Native status indicator, setup commands, optional performance diagnostics, and configurable limits.
+- Sensitive path exclusion with root-level `.gitignore`/`.lineloomignore`, workspace-trust gate, and opt-in remote HTTPS confirmation.
+- Automated TypeScript, lint, unit, mocked VS Code extension-host, security, and reproducible packaging checks.
+- Original extension icon, documentation, tests, and sample code.
+- Restored compatibility with the supported TypeScript-ESLint toolchain after an incompatible TypeScript 7 update.
+
+**Known limitations:** real Ollama-powered completion quality, offline usage after setup, acceptance behavior across all five languages on actual editors, CPU/GPU timings, and manual Windows/macOS/Linux installation are not yet fully verified. No Marketplace or Open VSX publication is claimed.

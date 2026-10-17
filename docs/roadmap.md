@@ -1,6 +1,8 @@
 # Roadmap (not commitments)
 
-**v1.0.0:** five language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Release is gated on independent verification.**
+**v0.1.0 (pre-release):** five-language local completion preview with installation and early feedback.
+
+**v1.0.0 (future stable):** five language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
 
 **v1.1.0:** add C++, Java and Go; improve request timing and cached context.
 

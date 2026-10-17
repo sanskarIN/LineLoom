@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "publisher": "sanskarIN",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "Apache-2.0",
@@ -165,7 +165,7 @@
         "lineloom.crossFileContext": {
           "type": "boolean",
           "default": false,
-          "description": "Reserved for a future release; no cross-file reads occur in v1.0.0."
+          "description": "Reserved for a future version; cross-file reads are not implemented in this preview."
         },
         "lineloom.performanceDiagnostics": {
           "type": "boolean",
@@ -202,7 +202,7 @@
     "esbuild": "^0.28.0",
     "eslint": "^10.12.0",
     "prettier": "^3.5.0",
-    "typescript": "^7.0.2",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.0.0",
     "vitest": "^5.0.5"
   },

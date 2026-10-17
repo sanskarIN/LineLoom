@@ -1,29 +1,49 @@
-name: Prepare release draft
+name: Publish LineLoom v0.1.0 pre-release
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
+    paths:
+      - .github/release-v0.1.0.flag
 permissions:
-  contents: write
+  contents: read
+concurrency:
+  group: lineloom-prerelease-v0.1.0
+  cancel-in-progress: false
 jobs:
-  draft:
+  publish:
+    name: Verify, package and publish preview
+    if: github.repository == 'sanskarIN/LineLoom'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-
-      - run: npm ci
-      - run: npm run check
-      - name: Build candidate
-        run: npx vsce package --no-dependencies -o LineLoom-${{ github.ref_name }}.vsix
-      - run: sha256sum LineLoom-${{ github.ref_name }}.vsix > LineLoom-${{ github.ref_name }}.sha256
-      - name: Create draft GitHub release with artifacts
+      - name: Validate version
+        run: test "$(node -p "require('./package.json').version")" = "0.1.0"
+      - name: Install exactly locked dependencies
+        run: npm ci
+      - name: Typecheck, lint, unit tests, bundle
+        run: npm run check
+      - name: VS Code extension-host integration with mocked Ollama
+        run: xvfb-run -a npm run test:integration
+      - name: Dependency audit
+        run: npm audit --audit-level=high
+      - name: Package VSIX
+        run: npx vsce package --no-dependencies -o LineLoom-0.1.0.vsix
+      - name: Verify archive and generate checksum
+        run: |
+          unzip -t LineLoom-0.1.0.vsix
+          sha256sum LineLoom-0.1.0.vsix > LineLoom-0.1.0.sha256
+          cat LineLoom-0.1.0.sha256
+      - name: Publish GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            "LineLoom-${{ github.ref_name }}.vsix" "LineLoom-${{ github.ref_name }}.sha256" \
-            --draft --title "LineLoom ${{ github.ref_name }} — Privacy-First AI Code Autocomplete" \
-            --notes-file docs/releases/v1.0.0.md
+          gh release create "v0.1.0" \
+            "LineLoom-0.1.0.vsix" "LineLoom-0.1.0.sha256" \
+            --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "LineLoom v0.1.0 — Initial Preview" \
+            --notes-file "docs/releases/v0.1.0.md"

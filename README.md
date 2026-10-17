@@ -4,7 +4,7 @@
 
 LineLoom is a free Apache-2.0-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Development status:** v1.0.0 candidate code. Not a published stable release. See [what_changed.md](what_changed.md) for outstanding verification and packaging requirements. Results vary by model and hardware.
+> **Preview status:** LineLoom v0.1.0 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.1.0 release notes](docs/releases/v0.1.0.md) for verified tests and known limitations.
 
 ## Features
 
@@ -31,7 +31,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens. Cross-file context is **not implemented** in v1.0.0 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens. Cross-file context is **not implemented** in v0.1.0 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -41,7 +41,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v0.1.0 preview release notes](docs/releases/v0.1.0.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
 
 ## Development
 
@@ -51,7 +51,7 @@ npm run check
 npm run package
 ```
 
-The release process additionally requires real VS Code integration testing, hardware/model checks and a verified Marketplace publisher identity. Do **not** publish from an unverified build. [Roadmap](docs/roadmap.md).
+The GitHub pre-release ships an installable VSIX for community testing. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 
