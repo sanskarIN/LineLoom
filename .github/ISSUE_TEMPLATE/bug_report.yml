@@ -1,0 +1,19 @@
+name: Bug report
+description: Report a reproducible LineLoom defect (no private source or tokens).
+title: "[Bug]: "
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: Include actual and expected behavior, with redacted reproduction steps.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: VS Code, OS, LineLoom and Ollama versions
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimal public reproduction
