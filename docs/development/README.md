@@ -17,3 +17,7 @@ Unit tests cover interrupted NDJSON streams (including stalled readers), split m
 ## v0.3.0 integration fixtures
 
 The extension-host runner creates nested `src/.gitignore` and `src/.lineloomignore` fixtures alongside allowed/blocked example TypeScript files. It asserts that nested exclusions deny completion while a sibling source file remains eligible. Unit tests cover independent scopes, negation precedence, automatic trigger thresholds and bounded editor context reads. These tests use a synthetic workspace and mocked local Ollama server and do **not** verify real model quality.
+
+## v0.4.0 new-language regression tests
+
+The unit suite validates all nine language identifiers, JSX/TSX aliases, per-language enablement, and generic model language-specific prompts. The VS Code extension-host integration suite opens synthetic `.go`, `.java`, `.c` and `.cpp` files, checks their detected editor language modes, verifies completion provider responses from a mocked Ollama server, and ensures disabling Go excludes it. Four corresponding sample programs are located under `examples/`. These tests establish wiring, **not** useful suggestions from real model weights or quality assurance for the new compilers.

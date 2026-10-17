@@ -1,6 +1,6 @@
 # Architecture and lifecycle
 
-1. VS Code calls `CompletionEngine.provideInlineCompletionItems` for five registered language IDs.
+1. VS Code calls `CompletionEngine.provideInlineCompletionItems` for nine registered language IDs (five initial plus four experimental v0.4.0 additions).
 2. The engine checks preferences, workspace trust and sensitive-file exclusion. Only the current document is considered.
 3. A debounce delays repeated requests. New requests cancel the previous generation; later editor-version checks discard stale results.
 4. `extractContextWindow` uses limited text ranges around the cursor (not a whole-file copy) and computes indentation.
@@ -19,3 +19,7 @@ Identical in-flight request parameters and current-document context are digested
 ## v0.3.0 nested ignore rules and auto-trigger threshold
 
 Before context is read or any inference occurs, the provider evaluates the current workspace path and its canonical target. Every applicable root/nested `.gitignore` and `.lineloomignore` is loaded conservatively and evaluated relative to its own directory, with separate sources unable to override each other. Automatically triggered requests require `lineloom.minAutoTriggerChars` meaningful characters on the active line (default 2); explicitly triggered requests bypass that count. Two small windowed reads cover the surrounding context instead of allocating a full copy of large documents.
+
+## v0.4.0 language registration and preferences
+
+The language registry maps nine VS Code language identifiers to language-specific guidance. JavaScript React and TypeScript React share their respective JavaScript/TypeScript preferences. The `lineloom.enabledLanguages` setting is normalized to known IDs only: unknown identifiers cannot inadvertently enable inference, and an intentionally empty list prevents all provider requests. The VS Code **Manage Autocomplete Languages** command updates that same setting, and preference changes invalidate in-progress suggestions and cached results. New Go, Java, C and C++ language support is experimental until live-model quality testing is completed.

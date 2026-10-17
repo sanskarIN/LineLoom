@@ -1,2 +1,0 @@
-LineLoom v0.3.0 GitHub pre-release trigger.
-The release job must complete reproducible install, typechecking, ESLint, Vitest unit checks, mocked VS Code extension-host integration, dependency audit, VSIX packaging, archive inspection and checksum generation before publication.

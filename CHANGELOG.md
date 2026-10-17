@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.4.0] — 2026-10-17 — Language Expansion Preview
+
+- Added experimental native VS Code inline completion support for **Go, Java, C and C++**, increasing the recognized language IDs from five to nine.
+- Added language-specific guidance for generic Ollama model prompts, editor registrations and runnable example files for the four new languages.
+- Introduced `lineloom.enabledLanguages` with validation, unknown-value filtering and explicit support for an empty list that disables autocomplete in all languages.
+- Added **LineLoom: Manage Autocomplete Languages** to choose enabled language modes from VS Code's Command Palette.
+- Covered all nine registered modes in unit tests; added mocked Ollama provider integration checks for Go, Java, C and C++, as well as disabled-language denial.
+- Maintained local-only Ollama defaults, trust and sensitive-file exclusions, cancellation, telemetry-free design and existing five-language behavior.
+
+**Preview limitations:** Go, Java, C and C++ support means model-driven inline completion *registration* and simulated integration tests, not verified suggestion correctness with real inference. Real models, offline installation, CPU/GPU performance and end-user cross-platform VSIX testing remain necessary for stable v1.0.0.
+
 ## [0.3.0] — 2026-10-17 — Privacy & Smart Completion Preview
 
 - Added nested `.gitignore` and `.lineloomignore` exclusion checks along the document path, including canonical symlink targets in the same workspace.
