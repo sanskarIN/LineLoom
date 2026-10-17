@@ -89,10 +89,10 @@ export async function run(): Promise<void> {
           ["editor-test.go", "go"], ["editor-test.java", "java"],
           ["editor-test.c", "c"], ["editor-test.cpp", "cpp"]
         ] as const) {
-          const previewDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, filename));
+          const previewDoc: vscode.TextDocument = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, filename));
           assert.equal(previewDoc.languageId, languageId, "Incorrect VS Code language mode: " + filename);
-          const previewEditor = await vscode.window.showTextDocument(previewDoc);
-          const previewPos = previewDoc.positionAt(previewDoc.getText().length);
+          const previewEditor: vscode.TextEditor = await vscode.window.showTextDocument(previewDoc);
+          const previewPos: vscode.Position = previewDoc.positionAt(previewDoc.getText().length);
           previewEditor.selection = new vscode.Selection(previewPos, previewPos);
           const suggested = await engine.provideInlineCompletionItems(previewDoc, previewPos, trigger, cancellation.token);
           assert.ok(suggested?.length, "Expected mocked provider suggestion in " + languageId);
