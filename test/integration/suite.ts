@@ -12,7 +12,7 @@ export async function run(): Promise<void> {
   await extension.activate();
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
-    "lineloom.selectModel", "lineloom.checkConnection", "lineloom.openSettings",
+    "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.setup", "lineloom.performance"
   ];
   const commands = await vscode.commands.getCommands(true);
@@ -57,13 +57,15 @@ export async function run(): Promise<void> {
     const oldValues = {
       endpoint: configuration.get<string>("endpoint"),
       model: configuration.get<string>("model"),
-      debounceMs: configuration.get<number>("debounceMs")
+      debounceMs: configuration.get<number>("debounceMs"),
+      enabledLanguages: configuration.get<string[]>("enabledLanguages")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+      await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
       const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
       const document = await vscode.workspace.openTextDocument(file);
       const editor = await vscode.window.showTextDocument(document);
@@ -82,6 +84,29 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+        // Exercise preview language providers with actual VS Code file modes.
+        for (const [filename, languageId] of [
+          ["editor-test.go", "go"], ["editor-test.java", "java"],
+          ["editor-test.c", "c"], ["editor-test.cpp", "cpp"]
+        ] as const) {
+          const previewDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, filename));
+          assert.equal(previewDoc.languageId, languageId, "Incorrect VS Code language mode: " + filename);
+          const previewEditor = await vscode.window.showTextDocument(previewDoc);
+          const previewPos = previewDoc.positionAt(previewDoc.getText().length);
+          previewEditor.selection = new vscode.Selection(previewPos, previewPos);
+          const suggested = await engine.provideInlineCompletionItems(previewDoc, previewPos, trigger, cancellation.token);
+          assert.ok(suggested?.length, "Expected mocked provider suggestion in " + languageId);
+        }
+        const goDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "editor-test.go"));
+        const goEditor = await vscode.window.showTextDocument(goDoc);
+        const goPosition = goDoc.positionAt(goDoc.getText().length);
+        goEditor.selection = new vscode.Selection(goPosition, goPosition);
+        await configuration.update("enabledLanguages", ["typescript"], vscode.ConfigurationTarget.Global);
+        const goDenied = await engine.provideInlineCompletionItems(goDoc, goPosition, trigger, cancellation.token);
+        assert.equal(goDenied, undefined, "Disabled Go language must not request inference");
+        await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
+        await vscode.window.showTextDocument(document);
+        editor.selection = new vscode.Selection(position, position);
         // Repeated same-cursor notifications must not cancel or discard matching completions.
         engine.cancelIfEditorChanged(editor);
         assert.equal(engine.getStats().cacheHits, 1);
@@ -106,6 +131,7 @@ export async function run(): Promise<void> {
       await configuration.update("endpoint", oldValues.endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
+      await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);

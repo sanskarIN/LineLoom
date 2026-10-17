@@ -20,6 +20,10 @@ try {
   await writeFile(path.join(fixture, "src", "blocked.ts"), "const hidden = 1;\n", "utf8");
   await writeFile(path.join(fixture, "src", "blocked-by-git.ts"), "const hidden = 2;\n", "utf8");
   await writeFile(path.join(fixture, "src", "allowed.ts"), "const visible = 3;\n", "utf8");
+  await writeFile(path.join(fixture, "editor-test.go"), "package main\nfunc answer() int { return ", "utf8");
+  await writeFile(path.join(fixture, "editor-test.java"), "class Example { int answer() { return ", "utf8");
+  await writeFile(path.join(fixture, "editor-test.c"), "int answer(void) { return ", "utf8");
+  await writeFile(path.join(fixture, "editor-test.cpp"), "int answer() { return ", "utf8");
   await runTests({
     extensionDevelopmentPath: root,
     extensionTestsPath: path.join(root, "dist/integration.js"),
