@@ -194,7 +194,7 @@
     "ignore": "^7.0.5"
   },
   "devDependencies": {
-    "@eslint/js": "^9.0.0",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.5",
     "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^2.5.0",
