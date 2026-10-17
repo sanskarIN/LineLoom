@@ -54,8 +54,14 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!language || token.isCancellationRequested) return;
     const requestId = ++this.generation;
     this.controller?.abort();
-    if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation) return;
-    if (!await mayComplete(document, config.excludedPaths) || token.isCancellationRequested || requestId !== this.generation) return;
+    if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation) {
+      if (requestId === this.generation) this.onState("ready");
+      return;
+    }
+    if (!await mayComplete(document, config.excludedPaths) || token.isCancellationRequested || requestId !== this.generation) {
+      if (requestId === this.generation) this.onState("ready");
+      return;
+    }
     try {
       const url = validateEndpoint(config.endpoint);
       if (url.remote && (!config.allowRemoteEndpoints || !this.remoteApproved(url.origin))) {
@@ -82,9 +88,17 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           numPredict: config.maxOutputTokens, contextSize: config.contextSize,
           temperature: config.temperature, keepAlive: config.keepAlive
         }, controller.signal);
+        // Privacy and cursor state may have changed while the model was responding.
+        const currentEditor = vscode.window.activeTextEditor;
+        const currentTarget = Boolean(
+          currentEditor && currentEditor.document === document &&
+          currentEditor.selection.active.isEqual(position)
+        );
+        const stillAllowed = currentTarget && await mayComplete(document, readConfig().excludedPaths);
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
-            document.version !== version || !position.isEqual(document.positionAt(offset))) {
+            document.version !== version || !currentTarget || !stillAllowed) {
           this.metrics.cancelled++;
+          if (requestId === this.generation) this.onState("ready");
           return;
         }
         const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine);

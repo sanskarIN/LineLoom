@@ -13,3 +13,5 @@
 **Excluded file:** inspect `.lineloomignore`, root `.gitignore`, `lineloom.excludedPaths` and sensitive filename exclusions.
 
 **Diagnostics:** Command Palette > *LineLoom: Open Diagnostics*. It reports only settings and aggregated counts, never source code.
+
+**v0.1.1:** a model-connection check is capped to approximately eight seconds. Suggestions are discarded if you change editors, move the cursor, close a file, or alter exclusions while the local model is working. Inaccessible ignore rules or documents are conservatively excluded.

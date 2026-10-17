@@ -7,19 +7,20 @@ export interface GenerateInput {
 function endpointUrl(origin: string, endpoint: string): string {
   return validateEndpoint(origin).origin + endpoint;
 }
+function requestSignal(signal?: AbortSignal): AbortSignal {
+  const timeout = AbortSignal.timeout(8_000);
+  return signal ? AbortSignal.any([signal, timeout]) : timeout;
+}
 async function readableResponse(response: Response): Promise<Response> {
   if (!response.ok) {
-    let error = "Ollama returned HTTP " + response.status + ".";
-    try {
-      const body = await response.text();
-      if (body.length < 500) error += " " + body;
-    } catch { /* do not log raw prompts */ }
-    throw new Error(error);
+    // Do not consume or log an untrusted server's potentially unbounded error body.
+    await response.body?.cancel().catch(() => undefined);
+    throw new Error("Ollama returned HTTP " + response.status + ".");
   }
   return response;
 }
 export async function listModels(origin: string, signal?: AbortSignal): Promise<OllamaModel[]> {
-  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal }));
+  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal) }));
   const body: unknown = await response.json();
   if (!body || typeof body !== "object" || !("models" in body) || !Array.isArray(body.models)) throw new Error("Unexpected /api/tags response.");
   return body.models.filter((m: unknown): m is OllamaModel => Boolean(m && typeof m === "object" && "name" in m && typeof m.name === "string"));
@@ -27,10 +28,11 @@ export async function listModels(origin: string, signal?: AbortSignal): Promise<
 export async function showModel(origin: string, model: string, signal?: AbortSignal): Promise<boolean> {
   const response = await fetch(endpointUrl(origin, "/api/show"), {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model }), signal
+    body: JSON.stringify({ model }), signal: requestSignal(signal)
   });
   if (response.status === 404) return false;
   await readableResponse(response);
+  await response.body?.cancel().catch(() => undefined);
   return true;
 }
 /** Parse arbitrary NDJSON chunk boundaries; reject malformed streams and excessive output. */
