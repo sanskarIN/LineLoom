@@ -20,8 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Bootstrap dependency lock if needed
-        run: npm install --package-lock-only --ignore-scripts
+
       - name: Install dependencies
         run: npm ci
       - name: Verify TypeScript, lint, unit tests and build
@@ -34,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --package-lock-only --ignore-scripts
+
       - run: npm ci
       - run: npm run build
       - name: Run VS Code extension-host integration
@@ -48,7 +47,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: npm install --package-lock-only --ignore-scripts
+
       - run: npm ci
       - run: npm run check
       - name: Build VSIX package
