@@ -1,0 +1,2 @@
+LineLoom v0.2.1 GitHub pre-release trigger.
+Publication requires reproducible npm ci, TypeScript, ESLint, unit tests, VS Code extension-host integration with mocked Ollama, dependency audit, VSIX archive integrity and a checksum.
