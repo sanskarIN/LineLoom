@@ -8,6 +8,8 @@
 
 **v0.2.1 (pre-release):** hardened model discovery/streaming and event-driven stale-request cancellation.
 
+**v0.3.0 (pre-release):** nested privacy ignores, bounded active-document range reads, smart automatic-trigger threshold and integration coverage.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** five language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**

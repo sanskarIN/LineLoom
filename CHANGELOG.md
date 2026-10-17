@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.3.0] — 2026-10-17 — Privacy & Smart Completion Preview
+
+- Added nested `.gitignore` and `.lineloomignore` exclusion checks along the document path, including canonical symlink targets in the same workspace.
+- Applied each ignore source conservatively, so a nested negation cannot override an exclusion established by another source.
+- Capped ignore traversal to 24 directory scopes per relative file path, with fail-closed errors; cached rules for 20 seconds with file watcher invalidation.
+- Reduced memory usage with bounded VS Code text-range reads instead of copying the entire active file for autocomplete context.
+- Added configurable `lineloom.minAutoTriggerChars` (default 2, 0–32), delaying automatic local inference until the current line has enough meaningful text; explicit/manual triggers are unaffected.
+- Expanded unit tests for nested ignore precedence, root and sibling scopes, windowed context reads and automatic-trigger settings.
+- Added VS Code extension-host integration checks against nested ignore rules using synthetic fixtures.
+
+**Pre-release limitations:** real-model output quality and latency, offline operation, full manual cross-platform VSIX acceptance and content-based secret detection still need user/hardware validation. Stable v1.0.0 remains blocked.
+
 ## [0.2.1] — 2026-10-17 — Pre-release maintenance
 
 - Added abort-signal cancellation for stalled NDJSON Ollama response streams, even when no further bytes arrive.

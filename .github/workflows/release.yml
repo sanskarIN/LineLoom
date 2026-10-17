@@ -1,13 +1,13 @@
-name: Publish LineLoom v0.2.1 pre-release
+name: Publish LineLoom v0.3.0 pre-release
 on:
   push:
     branches: [main]
     paths:
-      - .github/release-v0.2.1.flag
+      - .github/release-v0.3.0.flag
 permissions:
   contents: read
 concurrency:
-  group: lineloom-prerelease-v0.2.1
+  group: lineloom-prerelease-v0.3.0
   cancel-in-progress: false
 jobs:
   publish:
@@ -22,7 +22,7 @@ jobs:
         with:
           node-version: '22'
       - name: Validate version
-        run: test "$(node -p "require('./package.json').version")" = "0.2.1"
+        run: test "$(node -p "require('./package.json').version")" = "0.3.0"
       - name: Install exactly locked dependencies
         run: npm ci
       - name: Typecheck, lint, unit tests, bundle
@@ -32,26 +32,26 @@ jobs:
       - name: Dependency audit
         run: npm audit --audit-level=high
       - name: Package VSIX
-        run: npx vsce package --no-dependencies -o LineLoom-0.2.1.vsix
+        run: npx vsce package --no-dependencies -o LineLoom-0.3.0.vsix
       - name: Verify archive and generate checksum
         run: |
-          unzip -t LineLoom-0.2.1.vsix
-          sha256sum LineLoom-0.2.1.vsix > LineLoom-0.2.1.sha256
-          cat LineLoom-0.2.1.sha256
+          unzip -t LineLoom-0.3.0.vsix
+          sha256sum LineLoom-0.3.0.vsix > LineLoom-0.3.0.sha256
+          cat LineLoom-0.3.0.sha256
       - name: Reject duplicate release tag
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if gh release view "v0.2.1" >/dev/null 2>&1; then
-            echo "Release v0.2.1 already exists; refusing to overwrite it."
+          if gh release view "v0.3.0" >/dev/null 2>&1; then
+            echo "Release v0.3.0 already exists; refusing to overwrite it."
             exit 1
           fi
       - name: Publish GitHub pre-release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "v0.2.1" \
-            "LineLoom-0.2.1.vsix" "LineLoom-0.2.1.sha256" \
+          gh release create "v0.3.0" \
+            "LineLoom-0.3.0.vsix" "LineLoom-0.3.0.sha256" \
             --target "${GITHUB_SHA}" --prerelease --latest=false \
-            --title "LineLoom v0.2.1 — Streaming & Cancellation Preview" \
-            --notes-file "docs/releases/v0.2.1.md"
+            --title "LineLoom v0.3.0 — Privacy & Smart Completion Preview" \
+            --notes-file "docs/releases/v0.3.0.md"

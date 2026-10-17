@@ -1,4 +1,4 @@
-# LineLoom privacy policy (candidate v1.0.0)
+# LineLoom privacy policy (v0.3.0 preview)
 
 LineLoom runs as an extension inside the VS Code extension host. It does not require an account. It does not include telemetry, advertising, analytics, or automated uploads to a LineLoom-operated server.
 
@@ -6,9 +6,9 @@ LineLoom runs as an extension inside the VS Code extension host. It does not req
 
 **Local by default:** `http://127.0.0.1:11434`. Remote servers may receive snippets and retain data according to their operators' policies. A non-loopback endpoint must use HTTPS and requires both an explicit setting and interactive per-origin approval. A proxy or nonstandard local installation may have additional network behavior beyond LineLoom's control.
 
-**Exclusions:** untrusted workspaces, virtual/non-file editors, files outside opened workspace folders, high-risk filenames, and configured ignore patterns are ineligible. Root-level `.gitignore` and `.lineloomignore` files are read, but nested `.gitignore` handling and comprehensive content-level secret detection are **not** implemented; never place sensitive source code in an allowed file without checking your settings.
+**Exclusions:** untrusted workspaces, virtual/non-file editors, files outside opened workspace folders, high-risk filenames, and configured ignore patterns are ineligible. Both root and nested `.gitignore` and `.lineloomignore` files on the document's directory path are checked (up to 24 scopes); unreadable policy files or excessively deep paths are denied. Negation rules cannot override exclusions from other sources. Canonical symlink targets within a workspace are checked independently. Comprehensive content-level secret detection is **not** implemented; never place sensitive source code in an allowed file without checking your settings.
 
-**Storage:** the remote origin approval is stored in VS Code global state. User settings and the chosen model are stored by VS Code. Metrics are optional aggregate counters/timing values held in memory, not persisted. The extension does not intentionally persist editor context or completion text.
+**Storage:** the remote origin approval is stored in VS Code global state. User settings and the chosen model are stored by VS Code. Metrics are optional aggregate counters/timing values held in memory, not persisted. The extension keeps a bounded, short-lived in-process cache of completion text (up to eight entries for roughly 15 seconds) and hashed cache keys, but does not intentionally write editor context or suggestions to disk.
 
 **Logs:** diagnostics show model name, loopback/remote status and aggregate counters, not source snippets, prompt bodies, inference responses or credentials.
 
@@ -19,4 +19,4 @@ LineLoom runs as an extension inside the VS Code extension host. It does not req
 Questions and security reports: use GitHub issues for non-sensitive concerns, and GitHub private vulnerability reporting when enabled as described in [SECURITY.md](SECURITY.md).
 
 
-**v0.1.1 update:** LineLoom verifies canonical document paths before sending context, rejecting symlinks that resolve outside the workspace or to an excluded target. Unreadable root-level ignore files fail closed instead of being interpreted as absent; missing ignore files are allowed. These checks mitigate common accidental leaks but do not provide complete secret detection.
+**v0.3.0 update:** LineLoom verifies canonical document paths, checks nested policy files in addition to root policy files, and copies at most the configured context window via editor ranges. These safeguards reduce accidental disclosure risk but are not a guarantee against secrets typed in ordinary source files.
