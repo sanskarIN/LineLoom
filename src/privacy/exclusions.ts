@@ -1,36 +1,51 @@
 import * as vscode from "vscode";
 import { safeWorkspaceRelativePaths } from "./paths";
-import ignore, { type Ignore } from "ignore";
+import ignore from "ignore";
 import { isSensitivePath } from "./rules";
-import { ignoredByAny } from "./matching";
+import { ignoreScopes, ignoredByScopedRules, type ScopedIgnoreRule } from "./scoped";
 export { isSensitivePath } from "./rules";
-interface CachedIgnore { filters: Ignore[]; expires: number }
+
+interface CachedIgnore { rules: ScopedIgnoreRule[]; expires: number }
 const cache = new Map<string, CachedIgnore>();
+const MAX_DEPTH = 24;
+const MAX_CACHED_RULE_SETS = 128;
+
 function userPatterns(patterns: readonly string[]): string[] {
   return patterns.filter((item) => typeof item === "string" && item.trim() && !item.includes("\0"));
 }
-async function loadIgnore(folder: vscode.WorkspaceFolder, patterns: readonly string[]): Promise<Ignore[]> {
-  const key = folder.uri.toString() + ":" + JSON.stringify(patterns);
+
+async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patterns: readonly string[]): Promise<ScopedIgnoreRule[]> {
+  const scopes = ignoreScopes(relative);
+  // Refuse unexpectedly deep traversal rather than silently bypassing ignore rules.
+  if (scopes.length < 1 || scopes.length > MAX_DEPTH) throw new Error("Workspace nesting exceeds safe ignore limit.");
+  const key = folder.uri.toString() + ":" + JSON.stringify(patterns) + ":" + relative;
   const existing = cache.get(key);
-  if (existing && existing.expires > Date.now()) return existing.filters;
-  const filters: Ignore[] = [];
-  for (const file of [".gitignore", ".lineloomignore"]) {
-    let bytes: Uint8Array;
-    try { bytes = await vscode.workspace.fs.readFile(vscode.Uri.joinPath(folder.uri, file)); }
-    catch (error) {
-      // Treat absent ignore files normally; other read errors must not bypass privacy policy.
-      if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") continue;
-      throw error;
+  if (existing && existing.expires > Date.now()) return existing.rules;
+
+  const rules: ScopedIgnoreRule[] = [];
+  for (const scope of scopes) {
+    for (const file of [".gitignore", ".lineloomignore"] as const) {
+      const uri = scope.directory
+        ? vscode.Uri.joinPath(folder.uri, scope.directory, file)
+        : vscode.Uri.joinPath(folder.uri, file);
+      let bytes: Uint8Array;
+      try { bytes = await vscode.workspace.fs.readFile(uri); }
+      catch (error) {
+        // Missing files are optional; unreadable files must not weaken exclusions.
+        if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") continue;
+        throw error;
+      }
+      if (bytes.byteLength >= 128_000) throw new Error("Ignore file too large; refusing completion.");
+      rules.push({ directory: scope.directory, source: file, matcher: ignore().add(Buffer.from(bytes).toString("utf8")) });
     }
-    if (bytes.byteLength >= 128_000) throw new Error("Ignore file too large; refusing completion.");
-    filters.push(ignore().add(Buffer.from(bytes).toString("utf8")));
   }
   const custom = userPatterns(patterns);
-  if (custom.length) filters.push(ignore().add(custom));
-  cache.set(key, { filters, expires: Date.now() + 30_000 });
-  if (cache.size > 30) cache.clear();
-  return filters;
+  if (custom.length) rules.push({ directory: "", source: "user", matcher: ignore().add(custom) });
+  cache.set(key, { rules, expires: Date.now() + 20_000 });
+  if (cache.size > MAX_CACHED_RULE_SETS) cache.clear();
+  return rules;
 }
+
 export async function mayComplete(document: vscode.TextDocument, patterns: readonly string[]): Promise<boolean> {
   if (!vscode.workspace.isTrusted || document.uri.scheme !== "file" || document.isClosed) return false;
   const folder = vscode.workspace.getWorkspaceFolder(document.uri);
@@ -39,10 +54,12 @@ export async function mayComplete(document: vscode.TextDocument, patterns: reado
     const relatives = await safeWorkspaceRelativePaths(folder.uri.fsPath, document.uri.fsPath);
     if (!relatives) return false;
     if (relatives.some(isSensitivePath)) return false;
-    const filters = await loadIgnore(folder, patterns);
-    return !relatives.some((relative) => ignoredByAny(relative, filters));
+    for (const relative of relatives) {
+      if (ignoredByScopedRules(relative, await loadIgnore(folder, relative, patterns))) return false;
+    }
+    return true;
   } catch {
-    // Fail closed for inaccessible paths, symlink resolution errors and invalid ignore rules.
+    // Fail closed when ignore files, canonical paths or rules cannot be trusted.
     return false;
   }
 }
