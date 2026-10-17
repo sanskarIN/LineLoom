@@ -31,3 +31,10 @@
 - Fixed timeout state handling so aborted timeouts do not leave the status bar spinning.
 - Added privacy-safe, synthetic-fixture model benchmark instructions and a command-line benchmark script.
 - Verified the GitHub commit author and committer identity in the repository Git history uses sanskarin@outlook.in.
+
+## Validation evidence and external CI blocker
+
+- A GitHub Actions run verified TypeScript type checking, linting, Vitest, and build on Windows, macOS and Ubuntu with Vitest 5 and VSCE 4.
+- An earlier Ubuntu extension-host integration test with mocked Ollama passed; a later run failed **during VS Code download** due to network ETIMEDOUT (not a test assertion). Latest commit still needs completed integration verification.
+- Security audit on updated dependencies reported **0 vulnerabilities** in the successful run.
+- VSIX candidate packaging is now independent of the external VS Code download step, so a preview artifact can be inspected even when integration cannot download VS Code. This does **not** remove integration from stable release gates.

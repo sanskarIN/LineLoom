@@ -2,8 +2,10 @@
 import os from "node:os";
 import { performance } from "node:perf_hooks";
 const args = process.argv.slice(2);
-const model = args[args.indexOf("--model") + 1] || "qwen2.5-coder:1.5b";
-const runs = Math.min(20, Math.max(1, Number(args[args.indexOf("--runs") + 1]) || 3));
+const modelIndex = args.indexOf("--model");
+const runsIndex = args.indexOf("--runs");
+const model = modelIndex >= 0 ? (args[modelIndex + 1] || "qwen2.5-coder:1.5b") : "qwen2.5-coder:1.5b";
+const runs = Math.min(20, Math.max(1, Number(runsIndex >= 0 ? args[runsIndex + 1] : 3) || 3));
 const endpoint = "http://127.0.0.1:11434";
 const sample = "def add(a: int, b: int) -> int:\n    return ";
 const measurements = [];
