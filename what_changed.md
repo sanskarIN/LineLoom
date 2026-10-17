@@ -16,3 +16,9 @@
 - CI, dependency audit and draft-only tag-based release pipelines added. Workflow runs and real Ollama hardware checks still require verification.
 - Automatic lockfile bootstrap workflow generates a dependency lock on `main`; check that it ran and the generated file was actually committed.
 - Do **not** tag or publish a stable release until [docs/releases/v1.0.0.md](docs/releases/v1.0.0.md) gates pass.
+
+## CI feedback fixes
+
+- GitHub CI initially reported one ESLint `no-useless-escape` error in completion prompt matching; removed the escape.
+- Security audit revealed vulnerable transitive packages in Vitest 3 and @vscode/vsce 3; updated to Vitest 5 and @vscode/vsce 4 for a fresh security run.
+- Added an original 128×128 PNG extension icon, SVG design source and five small example files.

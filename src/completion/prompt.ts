@@ -6,7 +6,7 @@ export interface PromptData { prompt: string; suffix?: string }
  * receive bounded before/after snippets as untrusted data in an instruction prompt.
  */
 export function buildPrompt(language: LanguageSpec, context: DocumentContext, model: string): PromptData {
-  if (/^qwen2\.5-coder(?:[:\-]|$)/i.test(model)) {
+  if (/^qwen2\.5-coder(?:[:-]|$)/i.test(model)) {
     return { prompt: context.prefix, ...(context.suffix ? { suffix: context.suffix } : {}) };
   }
   return {
