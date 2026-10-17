@@ -1,0 +1,207 @@
+{
+  "name": "lineloom",
+  "displayName": "LineLoom",
+  "version": "1.0.0",
+  "publisher": "sanskarIN",
+  "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
+  "license": "Apache-2.0",
+  "private": false,
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "keywords": [
+    "autocomplete",
+    "ollama",
+    "local-ai",
+    "typescript",
+    "python",
+    "rust",
+    "kotlin",
+    "privacy-first"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanskarIN/LineLoom.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sanskarIN/LineLoom/issues"
+  },
+  "homepage": "https://github.com/sanskarIN/LineLoom#readme",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "lineloom.enable",
+        "title": "Enable Autocomplete",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.disable",
+        "title": "Disable Autocomplete",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.trigger",
+        "title": "Trigger Completion",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.selectModel",
+        "title": "Select Model",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.checkConnection",
+        "title": "Check Ollama Connection",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.openSettings",
+        "title": "Open Settings",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.diagnostics",
+        "title": "Open Diagnostics",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.setup",
+        "title": "Show Setup Guide",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.performance",
+        "title": "Show Completion Performance",
+        "category": "LineLoom"
+      }
+    ],
+    "configuration": {
+      "title": "LineLoom",
+      "properties": {
+        "lineloom.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline code completion."
+        },
+        "lineloom.autoTrigger": {
+          "type": "boolean",
+          "default": true,
+          "description": "Allow suggestions while typing; manual triggers remain available."
+        },
+        "lineloom.model": {
+          "type": "string",
+          "default": "qwen2.5-coder:1.5b",
+          "description": "Installed Ollama model to use. No models are downloaded automatically."
+        },
+        "lineloom.endpoint": {
+          "type": "string",
+          "default": "http://127.0.0.1:11434",
+          "description": "Ollama HTTP endpoint. Remote endpoints require explicit separate approval."
+        },
+        "lineloom.allowRemoteEndpoints": {
+          "type": "boolean",
+          "default": false,
+          "description": "Permit explicitly approved remote HTTPS inference endpoints. Source code may leave your machine."
+        },
+        "lineloom.debounceMs": {
+          "type": "integer",
+          "default": 250,
+          "minimum": 0,
+          "maximum": 3000
+        },
+        "lineloom.timeoutMs": {
+          "type": "integer",
+          "default": 12000,
+          "minimum": 1000,
+          "maximum": 120000
+        },
+        "lineloom.maxContextChars": {
+          "type": "integer",
+          "default": 8000,
+          "minimum": 512,
+          "maximum": 30000
+        },
+        "lineloom.maxOutputTokens": {
+          "type": "integer",
+          "default": 128,
+          "minimum": 16,
+          "maximum": 512
+        },
+        "lineloom.multiLine": {
+          "type": "boolean",
+          "default": true
+        },
+        "lineloom.temperature": {
+          "type": "number",
+          "default": 0.1,
+          "minimum": 0,
+          "maximum": 1
+        },
+        "lineloom.contextSize": {
+          "type": "integer",
+          "default": 4096,
+          "minimum": 512,
+          "maximum": 32768
+        },
+        "lineloom.keepAlive": {
+          "type": "string",
+          "default": "5m"
+        },
+        "lineloom.excludedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Additional ignored paths relative to workspace root (gitignore syntax)."
+        },
+        "lineloom.crossFileContext": {
+          "type": "boolean",
+          "default": false,
+          "description": "Reserved for a future release; no cross-file reads occur in v1.0.0."
+        },
+        "lineloom.performanceDiagnostics": {
+          "type": "boolean",
+          "default": false,
+          "description": "Track privacy-preserving aggregate performance timings in memory."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "watch": "node scripts/build.mjs --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check src test scripts package.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "package": "npm run check && vsce package --no-dependencies",
+    "package:list": "vsce ls --no-dependencies"
+  },
+  "dependencies": {
+    "ignore": "^7.0.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@types/node": "^22.0.0",
+    "@types/vscode": "^1.96.0",
+    "@vscode/test-electron": "^2.5.0",
+    "@vscode/vsce": "^3.9.2",
+    "esbuild": "^0.25.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.5.0",
+    "typescript": "^5.8.3",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.2.0"
+  }
+}
