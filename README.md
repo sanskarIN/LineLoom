@@ -4,14 +4,14 @@
 
 LineLoom is a free Apache-2.0-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Preview status:** LineLoom v0.2.0 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.2.0 release notes](docs/releases/v0.2.0.md) for verified tests and known limitations.
+> **Preview status:** LineLoom v0.2.1 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.2.1 release notes](docs/releases/v0.2.1.md) for verified tests and known limitations.
 
 ## Features
 
 - Native VS Code inline suggestions for **Python, JavaScript, TypeScript, Rust and Kotlin**.
 - Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family.
 - User-selected installed model, endpoint, timeouts, output limits, temperature and automatic-trigger controls.
-- Cancellation on newer requests, editor changes and timeouts; bounded multi-line suggestions, echo cleanup and short-lived repeat-request caching.
+- Cancellation on newer requests, active cursor/editor changes and timeouts; bounded multi-line suggestions, echo cleanup and short-lived repeat-request caching.
 - Only the active trusted-workspace document is used for completion; rejects symlinks escaping the workspace and excludes sensitive filenames and root-level `.gitignore`, `.lineloomignore` and user-specified patterns.
 - Local loopback by default; remote HTTPS needs both a setting and per-origin interactive approval. No background model downloads.
 
@@ -31,7 +31,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20). Cross-file context is **not implemented** in v0.1.1 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20). Cross-file context is **not implemented** in v0.2.1 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -41,7 +41,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v0.2.0 preview release notes](docs/releases/v0.2.0.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v0.2.1 preview release notes](docs/releases/v0.2.1.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
 
 ## Development
 
@@ -51,7 +51,7 @@ npm run check
 npm run package
 ```
 
-The GitHub pre-release ships an installable VSIX for community testing. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
+The GitHub pre-release ships an installable VSIX for community testing, with streaming cancellation and bounded model-list responses. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 

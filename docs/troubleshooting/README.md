@@ -15,3 +15,5 @@
 **Diagnostics:** Command Palette > *LineLoom: Open Diagnostics*. It reports only settings and aggregated counts, never source code.
 
 **v0.1.1:** a model-connection check is capped to approximately eight seconds. Suggestions are discarded if you change editors, move the cursor, close a file, or alter exclusions while the local model is working. Inaccessible ignore rules or documents are conservatively excluded.
+
+**v0.2.1:** changing the current cursor, document or active editor cancels obsolete in-flight code generation. Model-list discovery responses are limited to 256 KB, and an interrupted/stalled generation stream is explicitly cancelled. If model discovery exceeds that bound, use a local Ollama server with a smaller installed model list or report the issue with diagnostics that omit code and credentials.

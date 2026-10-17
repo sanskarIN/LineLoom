@@ -9,3 +9,7 @@ Mocked integration does not prove real-model completion quality or visible ghost
 ## v0.2.0 test extension host
 
 The integration runner opens a throwaway trusted workspace with synthetic source fixtures, starts a mocked local Ollama HTTP server, invokes the real VS Code inline provider, tests cache reuse and checks that .env files are denied. This does **not** replace manual model-inference/UX tests on Windows, Linux and macOS.
+
+## v0.2.1 regression checks
+
+Unit tests cover interrupted NDJSON streams (including stalled readers), split multibyte UTF-8 characters, 10,000-character streaming output safety limits and 256 KB model-list size limits. VS Code extension-host tests exercise the inline provider with a mocked local Ollama server. The full cross-platform CI is required to succeed before triggering GitHub preview publication.

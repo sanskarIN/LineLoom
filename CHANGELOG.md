@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.2.1] — 2026-10-17 — Pre-release maintenance
+
+- Added abort-signal cancellation for stalled NDJSON Ollama response streams, even when no further bytes arrive.
+- Enforced a 256 KB maximum on downloaded Ollama model discovery JSON before parsing.
+- Avoided including raw model-server errors that might contain source code or credentials in exception messages.
+- Abort obsolete model requests when the active editor, cursor position or document version changes.
+- Added unit tests for split UTF-8 stream chunks, cancellation of stalled streams, excessive generation output, model-list safety limits and server error handling.
+- Improved VS Code extension-host regression coverage around cursor movement and cancellation.
+- No new model downloads, remote services, telemetry or permission requirements.
+
+**Pre-release limitations:** real locally installed Ollama output quality, offline smoke tests, representative CPU/GPU response timings and manual installation on Windows, macOS and Linux still require independent verification. Stable v1.0.0 remains blocked.
+
 ## [0.2.0] — 2026-10-17 — Pre-release
 
 - Added configurable maximum inline suggestion lines (default 8, range 1–20).

@@ -51,13 +51,13 @@ jobs:
       - run: npm ci
       - run: npm run check
       - name: Build VSIX package
-        run: npx vsce package --no-dependencies -o LineLoom-0.2.0.vsix
+        run: npx vsce package --no-dependencies -o LineLoom-0.2.1.vsix
       - name: Checksum
-        run: sha256sum LineLoom-0.2.0.vsix > LineLoom-0.2.0.sha256
+        run: sha256sum LineLoom-0.2.1.vsix > LineLoom-0.2.1.sha256
       - uses: actions/upload-artifact@v4
         with:
-          name: LineLoom-0.2.0-candidate
+          name: LineLoom-0.2.1-candidate
           path: |
-            LineLoom-0.2.0.vsix
-            LineLoom-0.2.0.sha256
+            LineLoom-0.2.1.vsix
+            LineLoom-0.2.1.sha256
           if-no-files-found: error
