@@ -145,6 +145,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }));
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
+  for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    context.subscriptions.push(
+      watcher, watcher.onDidChange(clearIgnoreCache),
+      watcher.onDidCreate(clearIgnoreCache), watcher.onDidDelete(clearIgnoreCache)
+    );
+  }
   status.set(readConfig().enabled ? "ready" : "disabled");
   // The first-run message is intentionally user-initiated: no unsolicited onboarding modal.
 }

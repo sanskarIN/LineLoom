@@ -38,3 +38,10 @@
 - An earlier Ubuntu extension-host integration test with mocked Ollama passed; a later run failed **during VS Code download** due to network ETIMEDOUT (not a test assertion). Latest commit still needs completed integration verification.
 - Security audit on updated dependencies reported **0 vulnerabilities** in the successful run.
 - VSIX candidate packaging is now independent of the external VS Code download step, so a preview artifact can be inspected even when integration cannot download VS Code. This does **not** remove integration from stable release gates.
+
+## Privacy hardening and development host
+
+- Separated root `.gitignore`, `.lineloomignore`, and user exclusion groups so negations cannot override exclusions from another group.
+- Denied additional credential and private-configuration paths such as `.npmrc`, `.ssh`, and `.aws`.
+- Installed ignore-file change watchers to clear the cached rules.
+- Added VS Code F5 launch and build tasks with documented development host instructions.
