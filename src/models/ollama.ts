@@ -1,4 +1,4 @@
-import { validateEndpoint } from "../settings/config";
+import { validateEndpoint } from "../settings/endpoint";
 export interface OllamaModel { name: string; size?: number }
 export interface GenerateInput {
   model: string; prompt: string; suffix?: string; numPredict: number;
