@@ -144,6 +144,14 @@ export function activate(context: vscode.ExtensionContext): void {
       status.set(readConfig().enabled ? "ready" : "disabled");
     }
   }));
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((editor) => engine?.cancelIfEditorChanged(editor)),
+    vscode.window.onDidChangeTextEditorSelection((event) => {
+      if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
+    }),
+    vscode.workspace.onDidChangeTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor)),
+    vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
+  );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
   for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);

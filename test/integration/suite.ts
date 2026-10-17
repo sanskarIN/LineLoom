@@ -74,6 +74,16 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+        // Repeated same-cursor notifications must not cancel or discard matching completions.
+        engine.cancelIfEditorChanged(editor);
+        assert.equal(engine.getStats().cacheHits, 1);
+        const shifted = document.positionAt(document.getText().length - 1);
+        editor.selection = new vscode.Selection(shifted, shifted);
+        engine.cancelIfEditorChanged(editor);
+        editor.selection = new vscode.Selection(position, position);
+        const afterMovement = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(afterMovement?.length, "Expected suggestion after cursor movement");
+        assert.equal(engine.getStats().cacheHits, 1, "Cursor movement must invalidate memory cache");
         const privateUri = vscode.Uri.joinPath(folder.uri, ".env");
         const privateDoc = await vscode.workspace.openTextDocument(privateUri);
         const privateEditor = await vscode.window.showTextDocument(privateDoc);

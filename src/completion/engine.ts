@@ -18,6 +18,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   private generation = 0;
   private readonly suggestions = new SuggestionCache();
   private controller: AbortController | undefined;
+  private target: { uri: string; version: number; position: vscode.Position } | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0
@@ -31,7 +32,20 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.generation++;
     this.controller?.abort();
     this.controller = undefined;
+    this.target = undefined;
     this.suggestions.clear();
+  }
+  /** Cancel only if the active editor no longer matches the request's original cursor. */
+  cancelIfEditorChanged(editor: vscode.TextEditor | undefined): void {
+    const target = this.target;
+    if (!target) return;
+    if (!editor ||
+        editor.document.uri.toString() !== target.uri ||
+        editor.document.version !== target.version ||
+        !editor.selection.active.isEqual(target.position)) {
+      this.cancel();
+      this.onState("ready");
+    }
   }
   dispose(): void { this.cancel(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
@@ -58,6 +72,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!language || token.isCancellationRequested) return;
     const requestId = ++this.generation;
     this.controller?.abort();
+    this.target = { uri: document.uri.toString(), version: document.version, position };
     if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation) {
       if (requestId === this.generation) this.onState("ready");
       return;
