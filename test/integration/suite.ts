@@ -2,6 +2,8 @@ import * as vscode from "vscode";
 import * as assert from "node:assert/strict";
 import * as http from "node:http";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
+import { CompletionEngine } from "../../src/completion/engine";
+
 
 export async function run(): Promise<void> {
   const extension = vscode.extensions.getExtension("sanskarIN.lineloom");
@@ -39,6 +41,55 @@ export async function run(): Promise<void> {
       model: "lineloom-test:latest", prompt: "const answer = ",
       numPredict: 32, contextSize: 1024, temperature: 0, keepAlive: "1m"
     }, new AbortController().signal), "42");
+    // Verify the actual inline provider in a real VS Code editor with a fake local Ollama server.
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(folder, "Expected a trusted test workspace");
+    assert.ok(vscode.workspace.isTrusted, "Workspace trust is required for a completion test");
+    const configuration = vscode.workspace.getConfiguration("lineloom");
+    const oldValues = {
+      endpoint: configuration.get<string>("endpoint"),
+      model: configuration.get<string>("model"),
+      debounceMs: configuration.get<number>("debounceMs")
+    };
+    const engine = new CompletionEngine(() => undefined, () => false);
+    try {
+      await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
+      await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+      await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+      const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
+      const document = await vscode.workspace.openTextDocument(file);
+      const editor = await vscode.window.showTextDocument(document);
+      const position = document.positionAt(document.getText().length);
+      editor.selection = new vscode.Selection(position, position);
+      const cancellation = new vscode.CancellationTokenSource();
+      try {
+        const trigger = {
+          triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
+          selectedCompletionInfo: undefined
+        };
+        const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(first?.length, "Expected inline completion from the mocked model");
+        assert.equal(first[0].insertText, "42");
+        const second = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(second?.length, "Expected reuse of the cached inline completion");
+        assert.equal(second[0].insertText, "42");
+        assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+        const privateUri = vscode.Uri.joinPath(folder.uri, ".env");
+        const privateDoc = await vscode.workspace.openTextDocument(privateUri);
+        const privateEditor = await vscode.window.showTextDocument(privateDoc);
+        const privateCursor = privateDoc.positionAt(privateDoc.getText().length);
+        privateEditor.selection = new vscode.Selection(privateCursor, privateCursor);
+        const blocked = await engine.provideInlineCompletionItems(privateDoc, privateCursor, trigger, cancellation.token);
+        assert.equal(blocked, undefined, "Never provide inline completions from .env");
+      } finally {
+        cancellation.dispose();
+      }
+    } finally {
+      engine.dispose();
+      await configuration.update("endpoint", oldValues.endpoint, vscode.ConfigurationTarget.Global);
+      await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
+      await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
+    }
     await vscode.commands.executeCommand("lineloom.disable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);
     await vscode.commands.executeCommand("lineloom.enable");
