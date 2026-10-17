@@ -3,6 +3,7 @@ import * as assert from "node:assert/strict";
 import * as http from "node:http";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
+import { mayComplete } from "../../src/privacy/exclusions";
 
 
 export async function run(): Promise<void> {
@@ -45,6 +46,13 @@ export async function run(): Promise<void> {
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "Expected a trusted test workspace");
     assert.ok(vscode.workspace.isTrusted, "Workspace trust is required for a completion test");
+    // Nested ignore sources deny targets independently of their parent files.
+    const deniedByApp = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "src", "blocked.ts"));
+    const deniedByGit = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "src", "blocked-by-git.ts"));
+    const permitted = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "src", "allowed.ts"));
+    assert.equal(await mayComplete(deniedByApp, []), false, "Nested .lineloomignore must deny blocked.ts");
+    assert.equal(await mayComplete(deniedByGit, []), false, "Nested .gitignore must deny blocked-by-git.ts");
+    assert.equal(await mayComplete(permitted, []), true, "Sibling source file should remain eligible");
     const configuration = vscode.workspace.getConfiguration("lineloom");
     const oldValues = {
       endpoint: configuration.get<string>("endpoint"),
