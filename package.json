@@ -21,7 +21,11 @@
     "python",
     "rust",
     "kotlin",
-    "privacy-first"
+    "privacy-first",
+    "go",
+    "java",
+    "c",
+    "cpp"
   ],
   "repository": {
     "type": "git",
@@ -80,6 +84,11 @@
         "command": "lineloom.performance",
         "title": "Show Completion Performance",
         "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.manageLanguages",
+        "title": "Manage Autocomplete Languages",
+        "category": "LineLoom"
       }
     ],
     "configuration": {
@@ -89,6 +98,36 @@
           "type": "boolean",
           "default": true,
           "description": "Enable inline code completion."
+        },
+        "lineloom.enabledLanguages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "kotlin",
+              "go",
+              "java",
+              "c",
+              "cpp"
+            ]
+          },
+          "default": [
+            "python",
+            "javascript",
+            "typescript",
+            "rust",
+            "kotlin",
+            "go",
+            "java",
+            "c",
+            "cpp"
+          ],
+          "uniqueItems": true,
+          "description": "Language IDs permitted for inline suggestions. Empty array disables completion for every language. JSX/TSX follow JavaScript/TypeScript."
         },
         "lineloom.autoTrigger": {
           "type": "boolean",

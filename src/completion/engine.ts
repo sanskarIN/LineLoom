@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
-import { getLanguage } from "../languages/registry";
+import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { shouldAutoComplete } from "./trigger";
 import { buildPrompt } from "./prompt";
@@ -70,7 +70,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!config.enabled) { this.onState("disabled"); return; }
     if (!config.autoTrigger && context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) return;
     const language = getLanguage(document.languageId);
-    if (!language || token.isCancellationRequested) return;
+    if (!language || !isLanguageEnabled(language, config.enabledLanguages) || token.isCancellationRequested) return;
     const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
     if (!shouldAutoComplete(document.lineAt(position.line).text.slice(0, position.character),
       config.minAutoTriggerChars, manual)) return;

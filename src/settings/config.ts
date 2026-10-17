@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
+import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
 export interface LineLoomConfig {
   enabled: boolean;
   autoTrigger: boolean;
+  enabledLanguages: SupportedLanguage[];
   minAutoTriggerChars: number;
   model: string;
   endpoint: string;
@@ -27,6 +29,8 @@ export function readConfig(): LineLoomConfig {
   return {
     enabled: c.get("enabled", true),
     autoTrigger: c.get("autoTrigger", true),
+    enabledLanguages: normalizeEnabledLanguages(c.get<unknown>("enabledLanguages")),
+
     minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
     model: c.get("model", "qwen2.5-coder:1.5b").trim(),
     endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
