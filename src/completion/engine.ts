@@ -10,14 +10,14 @@ import { generateCompletion } from "../models/ollama";
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
   requests: number; completions: number; cancelled: number; failed: number;
-  totalLatencyMs: number; lastLatencyMs: number;
+  totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
   private controller: AbortController | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
-    totalLatencyMs: 0, lastLatencyMs: 0
+    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
@@ -71,7 +71,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       const controller = new AbortController();
       this.controller = controller;
       const cancelSubscription = token.onCancellationRequested(() => controller.abort());
-      const timeout = setTimeout(() => controller.abort(), config.timeoutMs);
+      let timedOut = false;
+      const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, config.timeoutMs);
       const start = performance.now();
       this.metrics.requests++;
       this.onState("generating");
@@ -91,6 +92,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         if (config.performanceDiagnostics) {
           this.metrics.totalLatencyMs += latency;
           this.metrics.lastLatencyMs = latency;
+          this.metrics.measuredRequests++;
         }
         this.onState("ready");
         if (!suggestion) return;
@@ -98,8 +100,14 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         const insertion = new vscode.Range(position, position);
         return [new vscode.InlineCompletionItem(suggestion, insertion)];
       } catch (error: unknown) {
+        if (timedOut && requestId === this.generation) {
+          this.metrics.failed++;
+          this.onState("unavailable");
+          return;
+        }
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation) {
           this.metrics.cancelled++;
+          if (requestId === this.generation) this.onState("ready");
           return;
         }
         this.metrics.failed++;

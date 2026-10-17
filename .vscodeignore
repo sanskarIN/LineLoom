@@ -13,3 +13,5 @@
 **/package-lock.json
 **/.gitignore
 **/what_changed.md
+
+**/*.svg

@@ -10,4 +10,4 @@ private/
 generated/
 ```
 
-Rules are cached for 30 seconds. Nested `.gitignore` files are not yet read. Root ignore files and user patterns are applied jointly; sensitive path blocking cannot be overridden. This is **not a secret scanner**: if your source contains credentials in a normal filename, LineLoom cannot guarantee that they will be detected. Exclude sensitive directories explicitly.
+Rules are cached for at most 30 seconds, with changes to ignore files triggering cache invalidation. Each ignore source is evaluated separately, so negative patterns in one source cannot override another source's exclusions. Nested `.gitignore` files are not yet read. Root ignore files and user patterns are applied jointly; sensitive path blocking cannot be overridden. This is **not a secret scanner**: if your source contains credentials in a normal filename, LineLoom cannot guarantee that they will be detected. Exclude sensitive directories explicitly.

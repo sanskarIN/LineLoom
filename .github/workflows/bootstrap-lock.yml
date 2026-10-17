@@ -1,0 +1,29 @@
+name: Generate package lock
+on:
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - .github/workflows/bootstrap-lock.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  lock:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install --package-lock-only --ignore-scripts
+      - name: Commit reproducible npm lockfile
+        run: |
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git -c user.name='Sanskar' -c user.email='sanskarin@outlook.in' commit -m 'chore: lock npm dependency graph'
+            git push origin HEAD:main
+          fi

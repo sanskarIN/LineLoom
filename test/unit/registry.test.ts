@@ -7,5 +7,7 @@ describe("language registry", () => {
   it("rejects unsupported language IDs", () => {
     expect(getLanguage("go")).toBeUndefined();
     expect(getLanguage("rust")?.extensions).toContain(".rs");
+    expect(getLanguage("typescriptreact")?.id).toBe("typescript");
+    expect(getLanguage("javascriptreact")?.id).toBe("javascript");
   });
 });
