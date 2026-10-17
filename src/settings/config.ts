@@ -10,6 +10,7 @@ export interface LineLoomConfig {
   maxContextChars: number;
   maxOutputTokens: number;
   multiLine: boolean;
+  maxSuggestionLines: number;
   temperature: number;
   contextSize: number;
   keepAlive: string;
@@ -33,6 +34,7 @@ export function readConfig(): LineLoomConfig {
     maxContextChars: clamp(c.get("maxContextChars", 8000), 512, 30000),
     maxOutputTokens: clamp(c.get("maxOutputTokens", 128), 16, 512),
     multiLine: c.get("multiLine", true),
+    maxSuggestionLines: clamp(c.get("maxSuggestionLines", 8), 1, 20),
     temperature: clamp(c.get("temperature", 0.1), 0, 1),
     contextSize: clamp(c.get("contextSize", 4096), 512, 32768),
     keepAlive: c.get("keepAlive", "5m"),

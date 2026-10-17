@@ -1,4 +1,6 @@
 import * as vscode from "vscode";
+import { createHash } from "node:crypto";
+import { SuggestionCache } from "./cache";
 import { getLanguage } from "../languages/registry";
 import { extractContext } from "../context/extract";
 import { buildPrompt } from "./prompt";
@@ -10,14 +12,15 @@ import { generateCompletion } from "../models/ollama";
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
   requests: number; completions: number; cancelled: number; failed: number;
-  totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number;
+  totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  private readonly suggestions = new SuggestionCache();
   private controller: AbortController | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
-    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0
+    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
@@ -28,6 +31,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.generation++;
     this.controller?.abort();
     this.controller = undefined;
+    this.suggestions.clear();
   }
   dispose(): void { this.cancel(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
@@ -73,6 +77,19 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       const offset = document.offsetAt(position);
       const extracted = extractContext(document.getText(), offset, config.maxContextChars);
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
+      const key = createHash("sha256").update(JSON.stringify([
+        document.uri.toString(), document.version, offset, url.origin, config.model,
+        config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
+        config.maxSuggestionLines, extracted.prefix, extracted.suffix
+      ])).digest("hex");
+      const cached = this.suggestions.get(key);
+      const active = vscode.window.activeTextEditor;
+      if (cached && active?.document === document && active.selection.active.isEqual(position)) {
+        this.metrics.cacheHits++;
+        this.onState("ready");
+        this.metrics.completions++;
+        return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
+      }
       const prompt = buildPrompt(language, extracted, config.model);
       const controller = new AbortController();
       this.controller = controller;
@@ -101,7 +118,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           if (requestId === this.generation) this.onState("ready");
           return;
         }
-        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine);
+        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines);
         const latency = performance.now() - start;
         if (config.performanceDiagnostics) {
           this.metrics.totalLatencyMs += latency;
@@ -111,6 +128,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         if (!suggestion) return;
         this.metrics.completions++;
+        this.suggestions.put(key, suggestion);
         const insertion = new vscode.Range(position, position);
         return [new vscode.InlineCompletionItem(suggestion, insertion)];
       } catch (error: unknown) {

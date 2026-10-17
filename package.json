@@ -138,6 +138,13 @@
           "type": "boolean",
           "default": true
         },
+        "lineloom.maxSuggestionLines": {
+          "type": "integer",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum lines to offer per inline suggestion (single-line mode always uses one line)."
+        },
         "lineloom.temperature": {
           "type": "number",
           "default": 0.1,
