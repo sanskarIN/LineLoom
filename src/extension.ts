@@ -99,7 +99,7 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
     "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0));
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
-    output.appendLine("Average duration: " + (stats.requests ? stats.totalLatencyMs / stats.requests : 0).toFixed(0) + "ms (successful measured requests only)");
+    output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");
   }
   output.show(true);
 }
@@ -111,7 +111,7 @@ export function activate(context: vscode.ExtensionContext): void {
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint
   );
   context.subscriptions.push(output, status, engine);
-  const selectors: vscode.DocumentSelector = LANGUAGES.map((language) => ({ language: language.id, scheme: "file" }));
+  const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
   function command(id: string, fn: () => unknown): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, fn));
@@ -145,6 +145,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }));
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
+  for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
+    const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+    context.subscriptions.push(
+      watcher, watcher.onDidChange(clearIgnoreCache),
+      watcher.onDidCreate(clearIgnoreCache), watcher.onDidDelete(clearIgnoreCache)
+    );
+  }
   status.set(readConfig().enabled ? "ready" : "disabled");
   // The first-run message is intentionally user-initiated: no unsolicited onboarding modal.
 }

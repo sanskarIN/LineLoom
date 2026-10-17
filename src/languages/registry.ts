@@ -15,5 +15,6 @@ export const LANGUAGES: readonly LanguageSpec[] = [
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
 export function getLanguage(id: string): LanguageSpec | undefined {
-  return byId.get(id as SupportedLanguage);
+  const aliases: Record<string, SupportedLanguage> = { javascriptreact: "javascript", typescriptreact: "typescript" };
+  return byId.get((aliases[id] ?? id) as SupportedLanguage);
 }
