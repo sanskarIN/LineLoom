@@ -22,3 +22,5 @@
 - GitHub CI initially reported one ESLint `no-useless-escape` error in completion prompt matching; removed the escape.
 - Security audit revealed vulnerable transitive packages in Vitest 3 and @vscode/vsce 3; updated to Vitest 5 and @vscode/vsce 4 for a fresh security run.
 - Added an original 128×128 PNG extension icon, SVG design source and five small example files.
+
+- Updated esbuild to 0.28 to satisfy Vite 8's optional peer requirements with Vitest 5; fixes ERESOLVE from the first upgrade attempt.
