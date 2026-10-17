@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 export interface LineLoomConfig {
   enabled: boolean;
   autoTrigger: boolean;
+  minAutoTriggerChars: number;
   model: string;
   endpoint: string;
   allowRemoteEndpoints: boolean;
@@ -26,6 +27,7 @@ export function readConfig(): LineLoomConfig {
   return {
     enabled: c.get("enabled", true),
     autoTrigger: c.get("autoTrigger", true),
+    minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
     model: c.get("model", "qwen2.5-coder:1.5b").trim(),
     endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
     allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),

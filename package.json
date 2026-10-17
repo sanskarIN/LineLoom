@@ -95,6 +95,13 @@
           "default": true,
           "description": "Allow suggestions while typing; manual triggers remain available."
         },
+        "lineloom.minAutoTriggerChars": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 32,
+          "description": "Minimum non-whitespace characters typed on the current line before an automatic model request; manual completion is always available."
+        },
         "lineloom.model": {
           "type": "string",
           "default": "qwen2.5-coder:1.5b",

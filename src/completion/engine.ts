@@ -2,7 +2,8 @@ import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
 import { getLanguage } from "../languages/registry";
-import { extractContext } from "../context/extract";
+import { extractContextWindow } from "../context/extract";
+import { shouldAutoComplete } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
@@ -70,6 +71,9 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!config.autoTrigger && context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) return;
     const language = getLanguage(document.languageId);
     if (!language || token.isCancellationRequested) return;
+    const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
+    if (!shouldAutoComplete(document.lineAt(position.line).text.slice(0, position.character),
+      config.minAutoTriggerChars, manual)) return;
     const requestId = ++this.generation;
     this.controller?.abort();
     this.target = { uri: document.uri.toString(), version: document.version, position };
@@ -90,7 +94,12 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       if (!config.model) { this.onState("unavailable"); return; }
       const version = document.version;
       const offset = document.offsetAt(position);
-      const extracted = extractContext(document.getText(), offset, config.maxContextChars);
+      // Read only the bounded prefix/suffix ranges: do not copy large editor buffers.
+      const totalLength = document.offsetAt(document.positionAt(Number.MAX_SAFE_INTEGER));
+      const extracted = extractContextWindow(
+        (start, end) => document.getText(new vscode.Range(document.positionAt(start), document.positionAt(end))),
+        offset, totalLength, config.maxContextChars
+      );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
       const key = createHash("sha256").update(JSON.stringify([
         document.uri.toString(), document.version, offset, url.origin, config.model,
