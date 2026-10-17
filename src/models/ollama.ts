@@ -21,7 +21,7 @@ async function readableResponse(response: Response): Promise<Response> {
 }
 export async function listModels(origin: string, signal?: AbortSignal): Promise<OllamaModel[]> {
   const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal) }));
-  const body: unknown = await response.json();
+  const body: unknown = await readBoundedJson(response);
   if (!body || typeof body !== "object" || !("models" in body) || !Array.isArray(body.models)) throw new Error("Unexpected /api/tags response.");
   return body.models.filter((m: unknown): m is OllamaModel => Boolean(m && typeof m === "object" && "name" in m && typeof m.name === "string"));
 }
@@ -30,10 +30,34 @@ export async function showModel(origin: string, model: string, signal?: AbortSig
     method: "POST", headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ model }), signal: requestSignal(signal)
   });
-  if (response.status === 404) return false;
+  if (response.status === 404) {
+    await response.body?.cancel().catch(() => undefined);
+    return false;
+  }
   await readableResponse(response);
   await response.body?.cancel().catch(() => undefined);
   return true;
+}
+/** Limit model discovery responses before parsing JSON from an untrusted endpoint. */
+async function readBoundedJson(response: Response): Promise<unknown> {
+  if (!response.body) throw new Error("Ollama returned an empty model list response.");
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let json = "";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      bytes += value.byteLength;
+      if (bytes > 256_000) throw new Error("Ollama model list exceeded safety limit.");
+      json += decoder.decode(value, { stream: true });
+    }
+    return JSON.parse(json + decoder.decode()) as unknown;
+  } finally {
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
+  }
 }
 /** Parse arbitrary NDJSON chunk boundaries; reject malformed streams and excessive output. */
 export async function parseNdjson(
@@ -42,12 +66,15 @@ export async function parseNdjson(
 ): Promise<string> {
   const reader = stream.getReader();
   const decoder = new TextDecoder();
+  const onAbort = (): void => { void reader.cancel().catch(() => undefined); };
+  signal?.addEventListener("abort", onAbort, { once: true });
   let carry = ""; let result = ""; let sawDone = false;
   function handle(line: string): void {
     if (!line.trim()) return;
     const data: unknown = JSON.parse(line);
     if (!data || typeof data !== "object") throw new Error("Invalid Ollama JSON event.");
-    if ("error" in data && typeof data.error === "string") throw new Error(data.error);
+    // Never propagate raw server error strings: they may contain code or credentials.
+    if ("error" in data) throw new Error("Ollama model reported a generation error.");
     if ("response" in data && typeof data.response === "string") {
       result += data.response;
       if (result.length > 10_000) throw new Error("Ollama output exceeded safety limit.");
@@ -58,6 +85,7 @@ export async function parseNdjson(
     while (!sawDone) {
       if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
       const { done, value } = await reader.read();
+      if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
       if (done) break;
       carry += decoder.decode(value, { stream: true });
       if (carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
@@ -72,7 +100,11 @@ export async function parseNdjson(
     if (!sawDone && carry.trim()) handle(carry.trim());
     if (!sawDone) throw new Error("Incomplete Ollama response stream.");
     return result;
-  } finally { await reader.cancel().catch(() => undefined); reader.releaseLock(); }
+  } finally {
+    signal?.removeEventListener("abort", onAbort);
+    await reader.cancel().catch(() => undefined);
+    reader.releaseLock();
+  }
 }
 export async function generateCompletion(
   origin: string, input: GenerateInput, signal: AbortSignal

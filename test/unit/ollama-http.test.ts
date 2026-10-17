@@ -4,6 +4,10 @@ import { listModels, showModel } from "../../src/models/ollama";
 afterEach(() => vi.unstubAllGlobals());
 
 describe("Ollama endpoint requests", () => {
+  it("rejects overlarge model-list responses without parsing them", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: ["x".repeat(260_000)] }))));
+    await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/safety limit/);
+  });
   it("lists models from a valid response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(
       JSON.stringify({ models: [{ name: "qwen2.5-coder:1.5b" }, { broken: true }] }),

@@ -19,6 +19,32 @@ describe("Ollama streaming NDJSON", () => {
     await expect(parseNdjson(stream(['{"response":"hi"}\n']))).rejects.toThrow(/Incomplete/);
   });
   it("reports an explicit model error", async () => {
-    await expect(parseNdjson(stream(['{"error":"model missing"}\n']))).rejects.toThrow(/model missing/);
+    await expect(parseNdjson(stream(['{"error":"sensitive server response"}\n']))).rejects.toThrow(/generation error/);
   });
+  it("supports split multibyte UTF-8 across stream chunks", async () => {
+    const bytes = new TextEncoder().encode('{"response":"🚀","done":false}\n{"done":true}\n');
+    const emoji = new TextEncoder().encode("🚀");
+    const index = bytes.findIndex((b, i) => b === emoji[0] && bytes[i + 1] === emoji[1]);
+    const streamBytes = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(bytes.slice(0, index + 1));
+      controller.enqueue(bytes.slice(index + 1));
+      controller.close();
+    } });
+    expect(await parseNdjson(streamBytes)).toBe("🚀");
+  });
+  it("interrupts a stalled stream when cancelled", async () => {
+    const controller = new AbortController();
+    const stalled = new ReadableStream<Uint8Array>({ start() {} });
+    const pending = parseNdjson(stalled, controller.signal);
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+  });
+  it("rejects excessive generated output", async () => {
+    const huge = JSON.stringify({ response: "x".repeat(10_001), done: true }) + "\n";
+    await expect(parseNdjson(stream([huge]))).rejects.toThrow(/safety limit/);
+  });
+  it("does not echo raw remote server error text", async () => {
+    await expect(parseNdjson(stream(['{"error":"password=do-not-repeat"}\n']))).rejects.toThrow("generation error");
+  });
+
 });
