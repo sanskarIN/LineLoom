@@ -1,0 +1,2 @@
+LineLoom v0.1.1 publication trigger.
+Release pipeline must pass npm ci, typecheck, lint, tests, extension-host integration, security audit and VSIX checksum validation before creating the GitHub pre-release.
