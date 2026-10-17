@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.2.0] — 2026-10-17 — Pre-release
+
+- Added configurable maximum inline suggestion lines (default 8, range 1–20).
+- Improved generated code filtering: bounded partial echo removal, line-ending/NUL normalization, indentation preservation and truncation.
+- Added a short-lived eight-entry memory-only cache for identical model and editor context; digested keys and automatic clear on extension cancellation/configuration changes.
+- Added a real VS Code editor/provider integration test with a simulated local Ollama server, cache reuse and private-file denial.
+- Expanded unit coverage for filtering edge cases and cache expiration/eviction.
+- Retained five initial language families, local-first model inference and opt-in remote endpoint restrictions.
+
+**Early-preview limitation:** real model output quality, CPU/GPU timings and manual cross-platform VSIX installation are not yet independently verified.
+
 ## [0.1.1] — 2026-10-17 — Pre-release maintenance update
 
 - Resolve workspace symlinks before reading source context; disallow symlinks that point outside the trusted workspace or to an excluded canonical target.

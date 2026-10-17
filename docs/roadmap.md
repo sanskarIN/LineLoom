@@ -4,7 +4,9 @@
 
 **v0.1.1 (pre-release):** privacy hardening, stale-suggestion prevention, and bounded model discovery.
 
-**v0.2.0 (future pre-release):** incremental editor experience and regression coverage improvements, after community feedback.
+**v0.2.0 (pre-release):** improved completion cleanup, suggestion-line limit, short-lived repeat-request cache and VS Code provider integration regression checks.
+
+**Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** five language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
 

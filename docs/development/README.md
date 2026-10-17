@@ -5,3 +5,7 @@ Run `npm ci` with Node.js 22+, then open the repository in VS Code and press **F
 Use `npm run watch` during development and `npm run check` for TypeScript, linting, tests and bundling. `npm run test:integration` invokes the official VS Code extension test runner and downloads a VS Code build. Linux CI uses `xvfb-run -a npm run test:integration`.
 
 Mocked integration does not prove real-model completion quality or visible ghost text; install Ollama manually and test in the editor before releasing.
+
+## v0.2.0 test extension host
+
+The integration runner opens a throwaway trusted workspace with synthetic source fixtures, starts a mocked local Ollama HTTP server, invokes the real VS Code inline provider, tests cache reuse and checks that .env files are denied. This does **not** replace manual model-inference/UX tests on Windows, Linux and macOS.

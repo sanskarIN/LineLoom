@@ -11,3 +11,7 @@
 Commands use native VS Code status bars, notifications and configuration UI; there are no webviews, third-party analytics, shell invocations or automatic model downloads.
 
 **Intentional limitations:** no full syntax-tree analysis, no cross-file indexing, no guaranteed syntax-correct suggestions, no language-server integration, and no universal model-specific FIM template. Rust performance modules are deliberately deferred pending profiling.
+
+## v0.2.0 completion cache
+
+Identical in-flight request parameters and current-document context are digested into an ephemeral SHA-256 key after privacy checks. A small, bounded, memory-only cache retains successful completion text for up to 15 seconds to reduce duplicate local inference. It is cleared when extension settings change or the provider is disposed. Cache hits still require an active, matching editor and the usual trusted-workspace and sensitive path checks. The extension neither persists these results nor indexes other files.
