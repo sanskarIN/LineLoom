@@ -187,7 +187,8 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
-    "test:integration": "node scripts/integration.mjs"
+    "test:integration": "node scripts/integration.mjs",
+    "benchmark": "node scripts/benchmark.mjs"
   },
   "dependencies": {
     "ignore": "^7.0.5"

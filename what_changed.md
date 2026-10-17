@@ -24,3 +24,10 @@
 - Added an original 128×128 PNG extension icon, SVG design source and five small example files.
 
 - Updated esbuild to 0.28 to satisfy Vite 8's optional peer requirements with Vitest 5; fixes ERESOLVE from the first upgrade attempt.
+
+## Additional completion refinements
+
+- Registered JSX and TSX VS Code language IDs as aliases for the JavaScript and TypeScript language families; still exactly five v1 language families.
+- Fixed timeout state handling so aborted timeouts do not leave the status bar spinning.
+- Added privacy-safe, synthetic-fixture model benchmark instructions and a command-line benchmark script.
+- Verified the GitHub commit author and committer identity in the repository Git history uses sanskarin@outlook.in.
