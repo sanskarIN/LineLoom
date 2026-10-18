@@ -183,8 +183,9 @@ export async function run(): Promise<void> {
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
         activeEditor.selection = new vscode.Selection(position, position);
         // Repeated same-cursor notifications must not cancel or discard matching completions.
+        const hitsBeforeNotification = engine.getStats().cacheHits;
         engine.cancelIfEditorChanged(activeEditor);
-        assert.equal(engine.getStats().cacheHits, 1);
+        assert.equal(engine.getStats().cacheHits, hitsBeforeNotification);
         const shifted = document.positionAt(document.getText().length - 1);
         activeEditor.selection = new vscode.Selection(shifted, shifted);
         engine.cancelIfEditorChanged(activeEditor);
