@@ -9,11 +9,11 @@ const labels: Record<CompletionState, { icon: string; label: string; tip: string
 };
 export class LineLoomStatus implements vscode.Disposable {
   private readonly item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
-  constructor() { this.item.command = "lineloom.diagnostics"; this.set("ready"); this.item.show(); }
-  set(state: CompletionState): void {
+  constructor() { this.item.command = "lineloom.quickActions"; this.set("ready"); this.item.show(); }
+  set(state: CompletionState, automatic = true): void {
     const item = labels[state];
-    this.item.text = item.icon + " " + item.label;
-    this.item.tooltip = item.tip + " • Click for diagnostics";
+    this.item.text = item.icon + " " + (state === "ready" && !automatic ? "LineLoom Manual" : item.label);
+    this.item.tooltip = item.tip + " • Click for Quick Actions";
   }
   dispose(): void { this.item.dispose(); }
 }

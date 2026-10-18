@@ -56,6 +56,16 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.quickActions",
+        "title": "Quick Actions",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.toggleAutomatic",
+        "title": "Pause or Resume Automatic Suggestions",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.selectModel",
         "title": "Select Model",
         "category": "LineLoom"
