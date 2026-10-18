@@ -1,0 +1,29 @@
+/** Pure Quick Actions model: no network requests or VS Code side effects. */
+export interface QuickAction {
+  id: string;
+  label: string;
+  description: string;
+  command: string;
+}
+export function quickActions(enabled: boolean, automatic: boolean): QuickAction[] {
+  return [
+    {
+      id: "toggleEnabled",
+      label: enabled ? "$(circle-slash) Disable Autocomplete" : "$(check) Enable Autocomplete",
+      description: enabled ? "Turn off all LineLoom suggestions" : "Turn on LineLoom suggestions",
+      command: enabled ? "lineloom.disable" : "lineloom.enable"
+    },
+    {
+      id: "toggleAutomatic",
+      label: automatic ? "$(debug-pause) Pause Automatic Suggestions" : "$(play) Resume Automatic Suggestions",
+      description: "Manual completion remains available while automatic suggestions are paused",
+      command: "lineloom.toggleAutomatic"
+    },
+    { id: "trigger", label: "$(sparkle) Trigger Completion", description: "Request a suggestion at the current cursor", command: "lineloom.trigger" },
+    { id: "model", label: "$(symbol-method) Select Model", description: "Choose from models on the approved Ollama endpoint", command: "lineloom.selectModel" },
+    { id: "languages", label: "$(code) Manage Languages", description: "Choose which editor languages can request suggestions", command: "lineloom.manageLanguages" },
+    { id: "connection", label: "$(plug) Check Ollama Connection", description: "Contact the current endpoint only when selected", command: "lineloom.checkConnection" },
+    { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },
+    { id: "settings", label: "$(gear) Open Settings", description: "Change LineLoom preferences in VS Code", command: "lineloom.openSettings" }
+  ];
+}

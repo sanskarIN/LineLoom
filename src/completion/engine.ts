@@ -1,6 +1,10 @@
 import * as vscode from "vscode";
-import { getLanguage } from "../languages/registry";
-import { extractContext } from "../context/extract";
+import { createHash } from "node:crypto";
+import { SuggestionCache } from "./cache";
+import { EmptySuggestionBackoff } from "./backoff";
+import { getLanguage, isLanguageEnabled } from "../languages/registry";
+import { extractContextWindow } from "../context/extract";
+import { shouldAutoComplete, hasSingleInsertionCursor } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
@@ -10,14 +14,19 @@ import { generateCompletion } from "../models/ollama";
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
   requests: number; completions: number; cancelled: number; failed: number;
-  totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number;
+  totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
+  emptySuggestions: number; suppressedEmptyRetries: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  private readonly suggestions = new SuggestionCache();
+  private readonly emptyBackoff = new EmptySuggestionBackoff();
   private controller: AbortController | undefined;
+  private target: { uri: string; version: number; position: vscode.Position } | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
-    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0
+    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
+    emptySuggestions: 0, suppressedEmptyRetries: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
@@ -28,6 +37,21 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.generation++;
     this.controller?.abort();
     this.controller = undefined;
+    this.target = undefined;
+    this.suggestions.clear();
+    this.emptyBackoff.clear();
+  }
+  /** Cancel only if the active editor no longer matches the request's original cursor. */
+  cancelIfEditorChanged(editor: vscode.TextEditor | undefined): void {
+    const target = this.target;
+    if (!target) return;
+    if (!editor ||
+        editor.document.uri.toString() !== target.uri ||
+        editor.document.version !== target.version ||
+        !hasSingleInsertionCursor(editor.selections, target.position.line, target.position.character)) {
+      this.cancel();
+      this.onState("ready");
+    }
   }
   dispose(): void { this.cancel(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
@@ -51,11 +75,32 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!config.enabled) { this.onState("disabled"); return; }
     if (!config.autoTrigger && context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) return;
     const language = getLanguage(document.languageId);
-    if (!language || token.isCancellationRequested) return;
+    if (!language || !isLanguageEnabled(language, config.enabledLanguages) || token.isCancellationRequested) return;
+    // Do not overwrite an active native IntelliSense entry during automatic triggering.
+    if (context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic && context.selectedCompletionInfo) return;
+    const initialVersion = document.version;
+    const isTargetCurrent = (): boolean => {
+      const active = vscode.window.activeTextEditor;
+      return Boolean(active && active.document === document &&
+        document.version === initialVersion &&
+        hasSingleInsertionCursor(active.selections, position.line, position.character));
+    };
+    if (!isTargetCurrent()) return;
+    const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
+    if (!shouldAutoComplete(document.lineAt(position.line).text.slice(0, position.character),
+      config.minAutoTriggerChars, manual)) return;
     const requestId = ++this.generation;
     this.controller?.abort();
-    if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation) return;
-    if (!await mayComplete(document, config.excludedPaths) || token.isCancellationRequested || requestId !== this.generation) return;
+    this.target = { uri: document.uri.toString(), version: initialVersion, position };
+    if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation || !isTargetCurrent()) {
+      if (requestId === this.generation) this.onState("ready");
+      return;
+    }
+    if (!await mayComplete(document, config.excludedPaths) || token.isCancellationRequested ||
+        requestId !== this.generation || !isTargetCurrent()) {
+      if (requestId === this.generation) this.onState("ready");
+      return;
+    }
     try {
       const url = validateEndpoint(config.endpoint);
       if (url.remote && (!config.allowRemoteEndpoints || !this.remoteApproved(url.origin))) {
@@ -63,10 +108,37 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         return;
       }
       if (!config.model) { this.onState("unavailable"); return; }
-      const version = document.version;
+      const version = initialVersion;
       const offset = document.offsetAt(position);
-      const extracted = extractContext(document.getText(), offset, config.maxContextChars);
+      // Read only the bounded prefix/suffix ranges: do not copy large editor buffers.
+      const totalLength = document.offsetAt(document.positionAt(Number.MAX_SAFE_INTEGER));
+      const extracted = extractContextWindow(
+        (start, end) => document.getText(new vscode.Range(document.positionAt(start), document.positionAt(end))),
+        offset, totalLength, config.maxContextChars
+      );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
+      const key = createHash("sha256").update(JSON.stringify([
+        document.uri.toString(), document.languageId, document.version, offset, url.origin, config.model,
+        config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
+        config.maxSuggestionLines, extracted.prefix, extracted.suffix
+      ])).digest("hex");
+      const cached = this.suggestions.get(key);
+      const active = vscode.window.activeTextEditor;
+      if (cached && active?.document === document && isTargetCurrent() &&
+          !token.isCancellationRequested && requestId === this.generation) {
+        this.metrics.cacheHits++;
+        this.onState("ready");
+        this.metrics.completions++;
+        return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
+      }
+      if (token.isCancellationRequested || requestId !== this.generation || !isTargetCurrent()) return;
+      // An exact empty-result retry is rarely useful while nothing has changed.
+      // Explicit completion requests always bypass the short-lived backoff.
+      if (!manual && this.emptyBackoff.shouldSkip(key)) {
+        this.metrics.suppressedEmptyRetries++;
+        this.onState("ready");
+        return;
+      }
       const prompt = buildPrompt(language, extracted, config.model);
       const controller = new AbortController();
       this.controller = controller;
@@ -82,12 +154,15 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           numPredict: config.maxOutputTokens, contextSize: config.contextSize,
           temperature: config.temperature, keepAlive: config.keepAlive
         }, controller.signal);
+        // Privacy and cursor state may have changed while the model was responding.
+        const stillAllowed = isTargetCurrent() && await mayComplete(document, readConfig().excludedPaths);
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
-            document.version !== version || !position.isEqual(document.positionAt(offset))) {
+            document.version !== version || !isTargetCurrent() || !stillAllowed) {
           this.metrics.cancelled++;
+          if (requestId === this.generation) this.onState("ready");
           return;
         }
-        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine);
+        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines);
         const latency = performance.now() - start;
         if (config.performanceDiagnostics) {
           this.metrics.totalLatencyMs += latency;
@@ -95,8 +170,13 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           this.metrics.measuredRequests++;
         }
         this.onState("ready");
-        if (!suggestion) return;
+        if (!suggestion) {
+          this.metrics.emptySuggestions++;
+          this.emptyBackoff.rememberEmpty(key);
+          return;
+        }
         this.metrics.completions++;
+        this.suggestions.put(key, suggestion);
         const insertion = new vscode.Range(position, position);
         return [new vscode.InlineCompletionItem(suggestion, insertion)];
       } catch (error: unknown) {

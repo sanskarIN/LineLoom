@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractContext } from "../../src/context/extract";
+import { extractContext, extractContextWindow } from "../../src/context/extract";
 describe("active-document context", () => {
   it("contains bounded prefix and suffix around cursor", () => {
     const value = extractContext("alpha\nbeta\ngamma", 8, 128);
@@ -17,4 +17,16 @@ describe("active-document context", () => {
   it("extracts indentation without importing another file", () => {
     expect(extractContext("fn main() {\n    let value", 25, 256).indentation).toBe("    ");
   });
+  it("reads only bounded slices instead of a full large buffer", () => {
+    const text = "p".repeat(250_000) + "cursor" + "s".repeat(250_000);
+    const reads: Array<[number, number]> = [];
+    const result = extractContextWindow((start, end) => {
+      reads.push([start, end]);
+      return text.slice(start, end);
+    }, 250_006, text.length, 512);
+    expect(result.prefix.length + result.suffix.length).toBeLessThanOrEqual(512);
+    expect(reads).toHaveLength(2);
+    expect(reads.every(([start, end]) => end - start <= 512)).toBe(true);
+  });
+
 });

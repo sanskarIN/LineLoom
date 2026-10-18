@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "0.1.0",
+  "version": "0.6.1",
   "publisher": "sanskarIN",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "Apache-2.0",
@@ -21,7 +21,11 @@
     "python",
     "rust",
     "kotlin",
-    "privacy-first"
+    "privacy-first",
+    "go",
+    "java",
+    "c",
+    "cpp"
   ],
   "repository": {
     "type": "git",
@@ -49,6 +53,16 @@
       {
         "command": "lineloom.trigger",
         "title": "Trigger Completion",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.quickActions",
+        "title": "Quick Actions",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.toggleAutomatic",
+        "title": "Pause or Resume Automatic Suggestions",
         "category": "LineLoom"
       },
       {
@@ -80,6 +94,11 @@
         "command": "lineloom.performance",
         "title": "Show Completion Performance",
         "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.manageLanguages",
+        "title": "Manage Autocomplete Languages",
+        "category": "LineLoom"
       }
     ],
     "configuration": {
@@ -90,10 +109,47 @@
           "default": true,
           "description": "Enable inline code completion."
         },
+        "lineloom.enabledLanguages": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "python",
+              "javascript",
+              "typescript",
+              "rust",
+              "kotlin",
+              "go",
+              "java",
+              "c",
+              "cpp"
+            ]
+          },
+          "default": [
+            "python",
+            "javascript",
+            "typescript",
+            "rust",
+            "kotlin",
+            "go",
+            "java",
+            "c",
+            "cpp"
+          ],
+          "uniqueItems": true,
+          "description": "Language IDs permitted for inline suggestions. Empty array disables completion for every language. JSX/TSX follow JavaScript/TypeScript."
+        },
         "lineloom.autoTrigger": {
           "type": "boolean",
           "default": true,
           "description": "Allow suggestions while typing; manual triggers remain available."
+        },
+        "lineloom.minAutoTriggerChars": {
+          "type": "integer",
+          "default": 2,
+          "minimum": 0,
+          "maximum": 32,
+          "description": "Minimum non-whitespace characters typed on the current line before an automatic model request; manual completion is always available."
         },
         "lineloom.model": {
           "type": "string",
@@ -137,6 +193,13 @@
         "lineloom.multiLine": {
           "type": "boolean",
           "default": true
+        },
+        "lineloom.maxSuggestionLines": {
+          "type": "integer",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum lines to offer per inline suggestion (single-line mode always uses one line)."
         },
         "lineloom.temperature": {
           "type": "number",

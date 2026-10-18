@@ -1,7 +1,10 @@
 import * as vscode from "vscode";
+import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
 export interface LineLoomConfig {
   enabled: boolean;
   autoTrigger: boolean;
+  enabledLanguages: SupportedLanguage[];
+  minAutoTriggerChars: number;
   model: string;
   endpoint: string;
   allowRemoteEndpoints: boolean;
@@ -10,6 +13,7 @@ export interface LineLoomConfig {
   maxContextChars: number;
   maxOutputTokens: number;
   multiLine: boolean;
+  maxSuggestionLines: number;
   temperature: number;
   contextSize: number;
   keepAlive: string;
@@ -25,6 +29,9 @@ export function readConfig(): LineLoomConfig {
   return {
     enabled: c.get("enabled", true),
     autoTrigger: c.get("autoTrigger", true),
+    enabledLanguages: normalizeEnabledLanguages(c.get<unknown>("enabledLanguages")),
+
+    minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
     model: c.get("model", "qwen2.5-coder:1.5b").trim(),
     endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
     allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),
@@ -33,6 +40,7 @@ export function readConfig(): LineLoomConfig {
     maxContextChars: clamp(c.get("maxContextChars", 8000), 512, 30000),
     maxOutputTokens: clamp(c.get("maxOutputTokens", 128), 16, 512),
     multiLine: c.get("multiLine", true),
+    maxSuggestionLines: clamp(c.get("maxSuggestionLines", 8), 1, 20),
     temperature: clamp(c.get("temperature", 0.1), 0, 1),
     contextSize: clamp(c.get("contextSize", 4096), 512, 32768),
     keepAlive: c.get("keepAlive", "5m"),

@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { LANGUAGES } from "./languages/registry";
 import { CompletionEngine } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
+import { quickActions } from "./ui/actions";
 import { clearIgnoreCache } from "./privacy/exclusions";
 import { readConfig, validateEndpoint } from "./settings/config";
 import { listModels, showModel } from "./models/ollama";
@@ -81,6 +82,36 @@ async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
   }
 }
+async function openQuickActions(): Promise<void> {
+  const config = readConfig();
+  const choice = await vscode.window.showQuickPick(
+    quickActions(config.enabled, config.autoTrigger).map((action) => ({
+      label: action.label, description: action.description, command: action.command
+    })),
+    { placeHolder: "LineLoom Quick Actions — choose an action" }
+  );
+  if (!choice) return;
+  // The action is always chosen from a fixed internal allowlist of commands.
+  await vscode.commands.executeCommand(choice.command);
+}
+
+async function manageLanguages(): Promise<void> {
+  const allowed = new Set(readConfig().enabledLanguages);
+  const selected = await vscode.window.showQuickPick(
+    LANGUAGES.map((language) => ({
+      label: language.label,
+      description: language.id,
+      picked: allowed.has(language.id)
+    })),
+    { canPickMany: true, placeHolder: "Select languages for LineLoom autocomplete (none disables all)" }
+  );
+  if (!selected) return;
+  const chosen = selected.map((item) => item.description);
+  await vscode.workspace.getConfiguration("lineloom").update("enabledLanguages", chosen, vscode.ConfigurationTarget.Global);
+  vscode.window.showInformationMessage("LineLoom autocomplete enabled for " +
+    (chosen.length ? chosen.length + " language(s)." : "no languages."));
+}
+
 function showDiagnostics(output: vscode.OutputChannel, context: vscode.ExtensionContext): void {
   output.clear();
   const config = readConfig();
@@ -94,9 +125,12 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   output.appendLine("Model: " + config.model);
   output.appendLine("Enabled: " + config.enabled + "; automatic: " + config.autoTrigger);
   output.appendLine("Cross-file context: not implemented (no cross-file reads)");
-  output.appendLine("Supported languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
+  output.appendLine("Registered languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
+  output.appendLine("Enabled language IDs: " + config.enabledLanguages.join(", "));
   output.appendLine("Requests: " + (stats?.requests ?? 0) + "; completions: " + (stats?.completions ?? 0) +
-    "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0));
+    "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0) +
+    "; empty responses: " + (stats?.emptySuggestions ?? 0) +
+    "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0));
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
     output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");
@@ -107,7 +141,7 @@ export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
   const status = new LineLoomStatus();
   engine = new CompletionEngine(
-    (state) => status.set(state),
+    (state) => status.set(state, readConfig().autoTrigger),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint
   );
   context.subscriptions.push(output, status, engine);
@@ -118,7 +152,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }
   command("lineloom.enable", async () => {
     await vscode.workspace.getConfiguration("lineloom").update("enabled", true, vscode.ConfigurationTarget.Global);
-    status.set("ready");
+    status.set("ready", readConfig().autoTrigger);
   });
   command("lineloom.disable", async () => {
     await vscode.workspace.getConfiguration("lineloom").update("enabled", false, vscode.ConfigurationTarget.Global);
@@ -126,7 +160,15 @@ export function activate(context: vscode.ExtensionContext): void {
     status.set("disabled");
   });
   command("lineloom.trigger", () => vscode.commands.executeCommand("editor.action.inlineSuggest.trigger"));
+  command("lineloom.quickActions", () => openQuickActions());
+  command("lineloom.toggleAutomatic", async () => {
+    const config = readConfig();
+    await vscode.workspace.getConfiguration("lineloom").update(
+      "autoTrigger", !config.autoTrigger, vscode.ConfigurationTarget.Global
+    );
+  });
   command("lineloom.selectModel", () => selectModel(context));
+  command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context));
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", "@ext:sanskarIN.lineloom"));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
@@ -141,9 +183,18 @@ export function activate(context: vscode.ExtensionContext): void {
     if (event.affectsConfiguration("lineloom")) {
       engine?.cancel();
       clearIgnoreCache();
-      status.set(readConfig().enabled ? "ready" : "disabled");
+      const config = readConfig();
+      status.set(config.enabled ? "ready" : "disabled", config.autoTrigger);
     }
   }));
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((editor) => engine?.cancelIfEditorChanged(editor)),
+    vscode.window.onDidChangeTextEditorSelection((event) => {
+      if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
+    }),
+    vscode.workspace.onDidChangeTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor)),
+    vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
+  );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
   for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
@@ -152,7 +203,8 @@ export function activate(context: vscode.ExtensionContext): void {
       watcher.onDidCreate(clearIgnoreCache), watcher.onDidDelete(clearIgnoreCache)
     );
   }
-  status.set(readConfig().enabled ? "ready" : "disabled");
+  const current = readConfig();
+  status.set(current.enabled ? "ready" : "disabled", current.autoTrigger);
   // The first-run message is intentionally user-initiated: no unsolicited onboarding modal.
 }
 export function deactivate(): void { engine?.cancel(); engine = undefined; }
