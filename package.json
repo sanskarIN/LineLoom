@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "publisher": "sanskarIN",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "Apache-2.0",

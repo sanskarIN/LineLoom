@@ -13,3 +13,7 @@ Run **LineLoom: Open Diagnostics** to inspect the in-memory `empty responses` an
 ## v0.7.0 typed continuation counter
 
 The diagnostics channel includes **typed continuation reuses**, a local session-only aggregate count of proposals returned from a short-lived suggestion remainder rather than a new model request. This count contains no code, prompt or model-response content. It is not a measured time saved and must not be marketed as a benchmark without independent real-machine testing.
+
+## v0.7.1 conservative continuation invalidation
+
+The typed-continuation reuse counter only increases after the actual VS Code edit shape and surrounding-code fingerprints pass. Editing elsewhere or replacing text will skip reuse and may require fresh model inference. The counter is a session-only diagnostic, not proof of saved wall-clock time or real Ollama performance.

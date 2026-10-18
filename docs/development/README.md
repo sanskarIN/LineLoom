@@ -45,3 +45,7 @@ The HTTP test suite checks `redirect: "error"` on model listing, model lookup an
 ## v0.7.0 typed-continuation tests
 
 Unit tests cover one-step typing and expiry, exact prefix/suffix fingerprints, rejected context mutations, profile/document/language changes, non-consecutive versions, and oversized candidates. The VS Code extension-host suite types the first character of a synthetic mock suggestion into a test file and checks that LineLoom provides only the remainder **without a second simulated Ollama request**. This verifies the provider's wiring but not user-perceived ghost-text quality or real-model inference speed on actual hardware.
+
+## v0.7.1 edit-event regression checks
+
+Run `npm run check` and `npm run test:integration`. Unit tests exercise correct same-position one-step insertions and reject replacements, multi-part changes, different cursor offsets, wrong inserted text, skipped document versions and full suggestion acceptance. The extension-host suite subscribes to **actual** `vscode.workspace.onDidChangeTextDocument` notifications while editing a disposable synthetic source file. It confirms that valid typing can reuse the remaining mock suggestion without HTTP traffic, whereas an unrelated edit causes a fresh mocked Ollama request. Real-model quality is not measured by these tests.

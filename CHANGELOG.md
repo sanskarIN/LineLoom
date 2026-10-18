@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.7.1] — 2026-10-18 — Typed Continuation Edit Safety Preview
+
+- Hardened v0.7.0 typed-prefix reuse to verify **the actual VS Code text edit**, rather than relying on matching before/after text alone.
+- A cached continuation is retained only for a single forward insertion at the previous cursor, containing 1–32 characters that match the beginning of the existing suggestion. It is discarded on replacements, multi-part edits, edits elsewhere, mismatched text, non-consecutive document versions and full suggestion acceptance.
+- Connected the completion engine to `onDidChangeTextDocument` so the same real VS Code document-change event used by the editor decides whether previously generated text is still eligible for reuse.
+- Kept original trust, ignore-file, cursor, document and model/settings checks. Candidate text and context fingerprints are still short-lived in memory, not persisted.
+- Expanded unit tests for edit-shape rejection and the VS Code extension-host test to verify that unrelated changes force a fresh mocked Ollama request. The extension-host integration test consumes real VS Code edit notifications.
+- No new remote providers, inference permissions, cross-file context, telemetry or automatic model downloads.
+
+**Pre-release limits:** real-model autocomplete usefulness, offline setup, human ghost-text acceptance, CPU/GPU performance and manual installed-VSIX checks on Windows, macOS and Linux still need independent validation.
+
 ## [0.7.0] — 2026-10-18 — Typed Suggestion Continuations Preview
 
 - Added typed-prefix continuation reuse: when a developer enters the first part of a displayed completion, LineLoom may instantly propose only the remaining text rather than sending an identical follow-up prompt to Ollama.
