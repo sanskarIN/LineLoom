@@ -1,0 +1,2 @@
+LineLoom v0.7.0 GitHub pre-release publication marker.
+Publishing is conditional on locked installation, typecheck, lint, Vitest, extension bundling, VS Code editor integration with mocked Ollama, dependency audit, VSIX archive inspection and SHA-256 checksum.
