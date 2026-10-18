@@ -130,7 +130,8 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   output.appendLine("Requests: " + (stats?.requests ?? 0) + "; completions: " + (stats?.completions ?? 0) +
     "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0) +
     "; empty responses: " + (stats?.emptySuggestions ?? 0) +
-    "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0));
+    "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0) +
+    "; typed continuation reuses: " + (stats?.continuationHits ?? 0));
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
     output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");

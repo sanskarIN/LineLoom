@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
 import { EmptySuggestionBackoff } from "./backoff";
+import { ContinuationCache, type ContinuationPoint } from "./continuation";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { shouldAutoComplete, hasSingleInsertionCursor } from "./trigger";
@@ -15,31 +16,33 @@ export type CompletionState = "ready" | "generating" | "disabled" | "unavailable
 export interface CompletionStats {
   requests: number; completions: number; cancelled: number; failed: number;
   totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
-  emptySuggestions: number; suppressedEmptyRetries: number;
+  emptySuggestions: number; suppressedEmptyRetries: number; continuationHits: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
   private readonly suggestions = new SuggestionCache();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
+  private readonly continuations = new ContinuationCache();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
-    emptySuggestions: 0, suppressedEmptyRetries: 0
+    emptySuggestions: 0, suppressedEmptyRetries: 0, continuationHits: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
   getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
-  cancel(): void {
+  cancel(preserveContinuation = false): void {
     this.generation++;
     this.controller?.abort();
     this.controller = undefined;
     this.target = undefined;
     this.suggestions.clear();
     this.emptyBackoff.clear();
+    if (!preserveContinuation) this.continuations.clear();
   }
   /** Cancel only if the active editor no longer matches the request's original cursor. */
   cancelIfEditorChanged(editor: vscode.TextEditor | undefined): void {
@@ -49,7 +52,12 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         editor.document.uri.toString() !== target.uri ||
         editor.document.version !== target.version ||
         !hasSingleInsertionCursor(editor.selections, target.position.line, target.position.character)) {
-      this.cancel();
+      // Preserve only a potential one-step typed continuation in the same file.
+      // The cache itself verifies exact hashed context, suffix and settings.
+      const preserve = Boolean(editor &&
+        editor.document.uri.toString() === target.uri &&
+        editor.document.version === target.version + 1);
+      this.cancel(preserve);
       this.onState("ready");
     }
   }
@@ -117,6 +125,27 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         offset, totalLength, config.maxContextChars
       );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
+      const profileDigest = createHash("sha256").update(JSON.stringify([
+        url.origin, config.model, config.temperature, config.contextSize,
+        config.maxOutputTokens, config.multiLine, config.maxSuggestionLines,
+        config.maxContextChars
+      ])).digest("hex");
+      const continuationPoint: ContinuationPoint = {
+        documentId: document.uri.toString(), languageId: document.languageId,
+        version: document.version, offset, prefix: extracted.prefix,
+        suffix: extracted.suffix, profileDigest
+      };
+      // A typed prefix of the previous suggestion can be offered without
+      // another Ollama request only after the privacy and editor checks above.
+      const remainder = !manual ? this.continuations.remainder(continuationPoint) : undefined;
+      if (remainder && isTargetCurrent() && !token.isCancellationRequested &&
+          requestId === this.generation) {
+        this.continuations.remember(continuationPoint, remainder);
+        this.metrics.continuationHits++;
+        this.metrics.completions++;
+        this.onState("ready");
+        return [new vscode.InlineCompletionItem(remainder, new vscode.Range(position, position))];
+      }
       const key = createHash("sha256").update(JSON.stringify([
         document.uri.toString(), document.languageId, document.version, offset, url.origin, config.model,
         config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
@@ -129,6 +158,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.metrics.cacheHits++;
         this.onState("ready");
         this.metrics.completions++;
+        this.continuations.remember(continuationPoint, cached);
         return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
       }
       if (token.isCancellationRequested || requestId !== this.generation || !isTargetCurrent()) return;
@@ -176,6 +206,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           return;
         }
         this.metrics.completions++;
+        this.continuations.remember(continuationPoint, suggestion);
         this.suggestions.put(key, suggestion);
         const insertion = new vscode.Range(position, position);
         return [new vscode.InlineCompletionItem(suggestion, insertion)];

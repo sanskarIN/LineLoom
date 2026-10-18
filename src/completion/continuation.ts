@@ -1,0 +1,68 @@
+import { createHash } from "node:crypto";
+
+/** Only hashes of surrounding code are retained, plus the already-generated suggestion. */
+export interface ContinuationPoint {
+  documentId: string;
+  languageId: string;
+  version: number;
+  offset: number;
+  prefix: string;
+  suffix: string;
+  profileDigest: string;
+}
+interface Stored {
+  documentId: string;
+  languageId: string;
+  version: number;
+  offset: number;
+  prefixDigest: string;
+  suffixDigest: string;
+  profileDigest: string;
+  suggestion: string;
+  expires: number;
+}
+function digest(value: string): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+/**
+ * Reuse the untyped remainder only after one simple forward edit.
+ * All original surrounding text must match; short or shifted context windows
+ * merely miss the optimization rather than guessing or sending more code.
+ */
+export class ContinuationCache {
+  private entry: Stored | undefined;
+  constructor(private readonly ttlMs = 12_000, private readonly maxTyped = 32) {}
+
+  remember(point: ContinuationPoint, suggestion: string, now = Date.now()): void {
+    if (!suggestion || suggestion.length > 6_000) {
+      this.entry = undefined;
+      return;
+    }
+    this.entry = {
+      documentId: point.documentId, languageId: point.languageId,
+      version: point.version, offset: point.offset,
+      prefixDigest: digest(point.prefix), suffixDigest: digest(point.suffix),
+      profileDigest: point.profileDigest, suggestion, expires: now + this.ttlMs
+    };
+  }
+
+  remainder(point: ContinuationPoint, now = Date.now()): string | undefined {
+    const saved = this.entry;
+    if (!saved) return;
+    if (saved.expires <= now) {
+      this.clear();
+      return;
+    }
+    if (saved.documentId !== point.documentId || saved.languageId !== point.languageId ||
+        saved.profileDigest !== point.profileDigest || point.version !== saved.version + 1 ||
+        digest(point.suffix) !== saved.suffixDigest) return;
+    const typed = point.offset - saved.offset;
+    if (typed < 1 || typed > this.maxTyped || typed >= saved.suggestion.length) return;
+    if (!point.prefix.endsWith(saved.suggestion.slice(0, typed))) return;
+    if (digest(point.prefix.slice(0, -typed)) !== saved.prefixDigest) return;
+    return saved.suggestion.slice(typed);
+  }
+
+  clear(): void { this.entry = undefined; }
+}
