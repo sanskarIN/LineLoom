@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createServer } from "node:http";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -67,6 +68,40 @@ describe("Ollama endpoint requests", () => {
       contextSize: 1024, temperature: 0, keepAlive: "1m"
     }, new AbortController().signal)).rejects.toThrow("fetch failed");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not forward source to a redirect destination on real loopback HTTP", async () => {
+    let forwarded = 0;
+    const receiver = createServer((_request, response) => {
+      forwarded++;
+      response.end('{"response":"leaked","done":true}\n');
+    });
+    const redirector = createServer((_request, response) => {
+      response.writeHead(307, { Location: destination + "/api/generate" });
+      response.end();
+    });
+    let destination = "";
+    try {
+      await new Promise<void>((resolve) => receiver.listen(0, "127.0.0.1", resolve));
+      const receiverAddress = receiver.address();
+      expect(receiverAddress).not.toBeNull();
+      if (!receiverAddress || typeof receiverAddress === "string") throw new Error("Missing receiver port");
+      destination = "http://127.0.0.1:" + receiverAddress.port;
+      await new Promise<void>((resolve) => redirector.listen(0, "127.0.0.1", resolve));
+      const redirectAddress = redirector.address();
+      if (!redirectAddress || typeof redirectAddress === "string") throw new Error("Missing redirect port");
+      const origin = "http://127.0.0.1:" + redirectAddress.port;
+      await expect(generateCompletion(origin, {
+        model: "test", prompt: "private example", numPredict: 16,
+        contextSize: 1024, temperature: 0, keepAlive: "1m"
+      }, new AbortController().signal)).rejects.toThrow();
+      expect(forwarded).toBe(0);
+    } finally {
+      await Promise.all([
+        new Promise<void>((resolve) => redirector.close(() => resolve())),
+        new Promise<void>((resolve) => receiver.close(() => resolve()))
+      ]);
+    }
   });
 
 });
