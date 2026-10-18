@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.7.0] — 2026-10-18 — Typed Suggestion Continuations Preview
+
+- Added typed-prefix continuation reuse: when a developer enters the first part of a displayed completion, LineLoom may instantly propose only the remaining text rather than sending an identical follow-up prompt to Ollama.
+- Reuse is restricted to one consecutive document version, one forward insertion of 1–32 matching characters, the same file and VS Code language mode, the exact same surrounding context and suffix (SHA-256 digests), and unchanged endpoint/model/completion settings.
+- The continuation cache holds only **one generated suggestion** plus hashed context and metadata in memory, expires after 12 seconds, and is cleared on settings changes, unrelated edits and provider disposal. It does not write source or prompts to disk.
+- Existing trusted-workspace and ignore-file privacy checks run **before** any continuation reuse, and manual completion requests still go through normal Ollama behavior.
+- Added a privacy-safe local aggregate `typed continuation reuses` counter to LineLoom diagnostics; no raw code or suggestions are logged.
+- Added unit tests for successful and rejected reuse (mismatched code, suffix, language, settings, editor, version, expiry), and a VS Code extension-host test confirming typed continuation emits no extra model request.
+- Kept all nine registered language modes, redirect protection, local Ollama default, explicit remote HTTPS approval and Quick Actions unchanged.
+
+**Preview limitations:** continuation reuse is intentionally conservative and may fall back to inference in long sliding context windows or multi-edit sequences. Automated mocked-model tests do not establish real-model quality or measured user-perceived latency.
+
 ## [0.6.1] — 2026-10-18 — Ollama Redirect Safety Preview
 
 - **Privacy/security:** explicitly set `redirect: "error"` on all Ollama `fetch` requests, including generation, model discovery and model lookup. An HTTP 3xx response cannot automatically forward a source snippet to another origin.

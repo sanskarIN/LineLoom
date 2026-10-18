@@ -41,3 +41,7 @@ Unit tests verify the action allowlist, enable/disable state mapping and automat
 ## v0.6.1 network redirect privacy regression
 
 The HTTP test suite checks `redirect: "error"` on model listing, model lookup and completion generation. An additional test starts two ephemeral local HTTP servers: one returns an HTTP 307 pointing to the other, and the suite confirms that the destination receives zero requests. These tests use synthetic prompts, never private workspace data. VS Code extension-host tests continue to use mocked Ollama responses; no real-model output quality is implied.
+
+## v0.7.0 typed-continuation tests
+
+Unit tests cover one-step typing and expiry, exact prefix/suffix fingerprints, rejected context mutations, profile/document/language changes, non-consecutive versions, and oversized candidates. The VS Code extension-host suite types the first character of a synthetic mock suggestion into a test file and checks that LineLoom provides only the remainder **without a second simulated Ollama request**. This verifies the provider's wiring but not user-perceived ghost-text quality or real-model inference speed on actual hardware.

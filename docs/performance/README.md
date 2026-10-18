@@ -9,3 +9,7 @@ No benchmark results are yet recorded in the repository. Never publish invented 
 ## v0.5.0 local request-efficiency counters
 
 Run **LineLoom: Open Diagnostics** to inspect the in-memory `empty responses` and `suppressed empty retries` counters. These counters are not benchmark measurements; they only describe the current extension session, and they do not contain source code, prompts or model response text. The five-second negative-result backoff is deliberately limited to identical automatic requests; it does not throttle explicit manual completions.
+
+## v0.7.0 typed continuation counter
+
+The diagnostics channel includes **typed continuation reuses**, a local session-only aggregate count of proposals returned from a short-lived suggestion remainder rather than a new model request. This count contains no code, prompt or model-response content. It is not a measured time saved and must not be marketed as a benchmark without independent real-machine testing.

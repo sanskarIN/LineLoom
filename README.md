@@ -4,11 +4,12 @@
 
 LineLoom is a free Apache-2.0-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Preview status:** LineLoom v0.6.1 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.6.1 release notes](docs/releases/v0.6.1.md) for verified tests and known limitations.
+> **Preview status:** LineLoom v0.7.0 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.7.0 release notes](docs/releases/v0.7.0.md) for verified tests and known limitations.
 
 ## Features
 
 - Native VS Code inline suggestions for **nine language IDs**: Python, JavaScript/JSX, TypeScript/TSX, Rust, Kotlin, **Go, Java, C and C++**. Go, Java, C and C++ remain experimental.
+- **Typed suggestion continuation:** when you type the beginning of an inline suggestion, LineLoom can offer the remaining text immediately from short-lived memory without another Ollama generation. Context, settings, active editor, workspace privacy and one-step edit checks must all match. No cross-file reads.
 - Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family. Improved cleanup removes common model control tokens and explanations outside leading fenced code blocks. Ollama streams have total-byte, event-count and per-event safety limits.
 - **Quick Actions from the status bar:** enable/disable completion, pause/resume automatic suggestions, trigger manually, choose a model, manage languages, check connection, open diagnostics or settings. Model discovery and connection checks run only when selected by the user.
 - User-selected installed model, endpoint, timeouts, output limits, temperature, automatic-trigger controls and **per-language opt-in/out settings**.
@@ -33,7 +34,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Quick Actions · Pause or Resume Automatic Suggestions · Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Manage Autocomplete Languages · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32). Cross-file context is **not implemented** in v0.6.1 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32). Cross-file context is **not implemented** in v0.7.0 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -43,7 +44,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v0.6.1 preview release notes](docs/releases/v0.6.1.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v0.7.0 preview release notes](docs/releases/v0.7.0.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
 
 ## Development
 
@@ -53,7 +54,7 @@ npm run check
 npm run package
 ```
 
-The GitHub pre-release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
+The GitHub pre-release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 

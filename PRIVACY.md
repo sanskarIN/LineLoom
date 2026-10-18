@@ -1,4 +1,4 @@
-# LineLoom privacy policy (v0.6.1 preview)
+# LineLoom privacy policy (v0.7.0 preview)
 
 LineLoom runs as an extension inside the VS Code extension host. It does not require an account. It does not include telemetry, advertising, analytics, or automated uploads to a LineLoom-operated server.
 
@@ -8,7 +8,7 @@ LineLoom runs as an extension inside the VS Code extension host. It does not req
 
 **Exclusions:** untrusted workspaces, virtual/non-file editors, files outside opened workspace folders, high-risk filenames, and configured ignore patterns are ineligible. Both root and nested `.gitignore` and `.lineloomignore` files on the document's directory path are checked (up to 24 scopes); unreadable policy files or excessively deep paths are denied. Negation rules cannot override exclusions from other sources. Canonical symlink targets within a workspace are checked independently. Comprehensive content-level secret detection is **not** implemented; never place sensitive source code in an allowed file without checking your settings.
 
-**Storage:** the remote origin approval is stored in VS Code global state. User settings and the chosen model are stored by VS Code. Metrics are optional aggregate counters/timing values held in memory, not persisted. The extension keeps a bounded, short-lived in-process cache of completion text (up to eight entries for roughly 15 seconds) and hashed cache keys, but does not intentionally write editor context or suggestions to disk.
+**Storage:** the remote origin approval is stored in VS Code global state. User settings and the chosen model are stored by VS Code. Metrics are optional aggregate counters/timing values held in memory, not persisted. The extension keeps a bounded, short-lived in-process cache of completion text (up to eight entries for roughly 15 seconds) and hashed cache keys, but does not intentionally write editor context or suggestions to disk. Version 0.7.0 adds a single-entry, 12-second **typed continuation cache** containing the already-generated suggestion, the current file identity and version, cursor offset, settings digest and SHA-256 hashes of preceding and following code. It does not retain unencrypted prefix or suffix strings in this cache. Matching a typed continuation occurs only after the usual trusted-workspace and path-exclusion checks.
 
 **Logs:** diagnostics show model name, loopback/remote status and aggregate counters, not source snippets, prompt bodies, inference responses or credentials.
 
