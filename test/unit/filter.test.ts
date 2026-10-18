@@ -19,4 +19,14 @@ describe("completion filtering", () => {
     expect(cleanCompletion("foo\0\rbar", "", "", true)).toBe("foo\nbar"));
   it("rejects only-overlap completions", () =>
     expect(cleanCompletion("after", "", "after", true)).toBe(""));
+  it("keeps only the leading fenced code block, not follow-up prose", () =>
+    expect(cleanCompletion("```go\nfmt.Println(42)\n```\nThis prints a value.", "", "", true)).toBe("fmt.Println(42)"));
+  it("strips model-boundary FIM and chat markers", () => {
+    expect(cleanCompletion("<|fim_middle|>return x;<|fim_suffix|>", "", "", true)).toBe("return x;");
+    expect(cleanCompletion("let x = 1;<|endoftext|>", "", "", true)).toBe("let x = 1;");
+    expect(cleanCompletion("<|im_start|>assistant\n42<|im_end|>", "", "", true)).toBe("42");
+  });
+  it("does not rewrite control-token text inside an ordinary code string", () =>
+    expect(cleanCompletion('const s = "<|fim_middle|>";', "", "", true)).toBe('const s = "<|fim_middle|>";'));
+
 });

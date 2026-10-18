@@ -2,7 +2,14 @@
 export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
   // Normalise line endings without trimming meaningful leading Python indentation.
   let value = raw.replace(/\r\n?/g, "\n").replace(/\0/g, "");
-  value = value.replace(/^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
+  // Remove boundary-only control tokens without touching tokens inside code literals.
+  value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
+  value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
+  value = value.replace(/^<\|im_start\|>assistant[^\n]*\n/, "");
+  // Prefer the first fenced code block, dropping explanations that follow it.
+  const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
+  if (fenced) value = fenced[1];
+  else value = value.replace(/^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
   value = value.replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "");
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
