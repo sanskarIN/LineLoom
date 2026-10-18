@@ -189,9 +189,27 @@ export async function run(): Promise<void> {
         const shifted = document.positionAt(document.getText().length - 1);
         activeEditor.selection = new vscode.Selection(shifted, shifted);
         engine.cancelIfEditorChanged(activeEditor);
-        // Do not race the workbench's asynchronous selection notifications with a
-        // second mocked completion. The cursor-change check above must invalidate
-        // the request immediately; the .env test below still exercises new requests.
+        // The prior cursor change invalidates the old cached suggestion.
+        // A freshly generated inline suggestion can be reused if the developer
+        // types its first character in a single ordinary edit.
+        const refreshed = document.positionAt(document.getText().length);
+        activeEditor.selection = new vscode.Selection(refreshed, refreshed);
+        const renewed = await engine.provideInlineCompletionItems(document, refreshed, trigger, cancellation.token);
+        assert.equal(renewed?.[0]?.insertText, "42", "Expected a new candidate for typed continuation");
+        const callsBeforeTyping = generationCalls;
+        const applied = await activeEditor.edit((edit) => edit.insert(refreshed, "4"));
+        assert.equal(applied, true, "Integration editor edit should apply");
+        const afterTyping = document.positionAt(document.getText().length);
+        activeEditor.selection = new vscode.Selection(afterTyping, afterTyping);
+        engine.cancelIfEditorChanged(activeEditor);
+        const continued = await engine.provideInlineCompletionItems(document, afterTyping, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        assert.equal(continued?.[0]?.insertText, "2", "Should offer only the untyped remainder");
+        assert.equal(generationCalls, callsBeforeTyping, "Typed continuation must not call Ollama again");
+        assert.equal(engine.getStats().continuationHits, 1, "Expected one re-used typed continuation");
+
         const privateUri = vscode.Uri.joinPath(folder.uri, ".env");
         const privateDoc = await vscode.workspace.openTextDocument(privateUri);
         const privateEditor = await vscode.window.showTextDocument(privateDoc);
