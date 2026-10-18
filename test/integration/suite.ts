@@ -17,6 +17,8 @@ export async function run(): Promise<void> {
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
+  let mockEmptyResponses = false;
+  let generationCalls = 0;
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
@@ -24,8 +26,13 @@ export async function run(): Promise<void> {
     } else if (request.url === "/api/show") {
       response.end(JSON.stringify({ details: { family: "test" } }));
     } else if (request.url === "/api/generate") {
-      response.write(JSON.stringify({ response: "42", done: false }) + "\n");
-      response.end(JSON.stringify({ done: true }) + "\n");
+      generationCalls++;
+      if (mockEmptyResponses) {
+        response.end(JSON.stringify({ done: true }) + "\n");
+      } else {
+        response.write(JSON.stringify({ response: "42", done: false }) + "\n");
+        response.end(JSON.stringify({ done: true }) + "\n");
+      }
     } else {
       response.statusCode = 404;
       response.end("{}");
@@ -84,6 +91,27 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Empty responses should back off only for identical automatic requests.
+        // Manual retries must still be permitted without moving the cursor.
+        await configuration.update("model", "lineloom-empty:latest", vscode.ConfigurationTarget.Global);
+        mockEmptyResponses = true;
+        const automatic = {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        };
+        const firstEmpty = await engine.provideInlineCompletionItems(document, position, automatic, cancellation.token);
+        assert.equal(firstEmpty, undefined, "Empty mock output should not insert a suggestion");
+        const callsAfterEmpty = generationCalls;
+        const repeatedEmpty = await engine.provideInlineCompletionItems(document, position, automatic, cancellation.token);
+        assert.equal(repeatedEmpty, undefined);
+        assert.equal(generationCalls, callsAfterEmpty, "Repeated identical automatic request must back off");
+        const manualRetry = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.equal(manualRetry, undefined);
+        assert.equal(generationCalls, callsAfterEmpty + 1, "Manual invocation must bypass empty-result backoff");
+        assert.equal(engine.getStats().suppressedEmptyRetries, 1);
+        mockEmptyResponses = false;
+        await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         // Exercise preview language providers with actual VS Code file modes.
         for (const [filename, languageId] of [
           ["editor-test.go", "go"], ["editor-test.java", "java"],
