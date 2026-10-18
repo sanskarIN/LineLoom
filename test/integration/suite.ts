@@ -199,6 +199,15 @@ export async function run(): Promise<void> {
         const callsBeforeTyping = generationCalls;
         const applied = await activeEditor.edit((edit) => edit.insert(refreshed, "4"));
         assert.equal(applied, true, "Integration editor edit should apply");
+        // Notify the separately constructed provider used by this test with
+        // the same edit shape that VS Code sends to the activated extension.
+        engine.onDocumentChanged({
+          document,
+          contentChanges: [{
+            range: new vscode.Range(refreshed, refreshed),
+            rangeOffset: document.offsetAt(refreshed), rangeLength: 0, text: "4"
+          }]
+        } as vscode.TextDocumentChangeEvent);
         const afterTyping = document.positionAt(document.getText().length);
         activeEditor.selection = new vscode.Selection(afterTyping, afterTyping);
         engine.cancelIfEditorChanged(activeEditor);
@@ -209,6 +218,28 @@ export async function run(): Promise<void> {
         assert.equal(continued?.[0]?.insertText, "2", "Should offer only the untyped remainder");
         assert.equal(generationCalls, callsBeforeTyping, "Typed continuation must not call Ollama again");
         assert.equal(engine.getStats().continuationHits, 1, "Expected one re-used typed continuation");
+
+        // Editing a different location invalidates the retained completion:
+        // the next suggestion must use a fresh model request.
+        const callsBeforeUnrelatedEdit = generationCalls;
+        const beginning = document.positionAt(0);
+        const unrelatedApplied = await activeEditor.edit((edit) => edit.insert(beginning, "// changed\\n"));
+        assert.equal(unrelatedApplied, true);
+        engine.onDocumentChanged({
+          document,
+          contentChanges: [{
+            range: new vscode.Range(beginning, beginning), rangeOffset: 0,
+            rangeLength: 0, text: "// changed\\n"
+          }]
+        } as vscode.TextDocumentChangeEvent);
+        const afterUnrelatedEdit = document.positionAt(document.getText().length);
+        activeEditor.selection = new vscode.Selection(afterUnrelatedEdit, afterUnrelatedEdit);
+        await engine.provideInlineCompletionItems(document, afterUnrelatedEdit, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        assert.equal(generationCalls, callsBeforeUnrelatedEdit + 1,
+          "Unrelated edit must not reuse an obsolete typed continuation");
 
         const privateUri = vscode.Uri.joinPath(folder.uri, ".env");
         const privateDoc = await vscode.workspace.openTextDocument(privateUri);
