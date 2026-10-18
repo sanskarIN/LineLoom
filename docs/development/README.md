@@ -25,3 +25,7 @@ The unit suite validates all nine language identifiers, JSX/TSX aliases, per-lan
 ## v0.4.1 foreground editor safety tests
 
 The pure single-cursor guard tests reject selection replacements, multiple cursors, and stale positions. In the VS Code extension-host integration suite (using synthetic code and a simulated local Ollama service), regression checks verify that these states, native IntelliSense collisions, and a cursor shift during debounce make **zero extra inference requests**. The provider also rechecks the original document/version/position after async workspace privacy gates. These tests do not prove real-model usefulness.
+
+## v0.5.0 response-quality checks
+
+The unit suite now checks short-lived backoff expiry, LRU eviction, fingerprint isolation and clearing. Completion cleanup tests cover boundary FIM/chat tokens, opening fenced code blocks with extra prose afterward and intact control-token-like strings inside legitimate source code. The VS Code extension-host integration test uses a simulated Ollama response that produces no code; it verifies a repeated automatic request makes no additional HTTP inference call, while a manual request is allowed through immediately. A mocked model cannot establish real completion quality.

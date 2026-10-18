@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.5.0] — 2026-10-18 — Completion Quality & Efficiency Preview
+
+- Added a bounded memory-only 5-second backoff for identical automatic completion requests that produce no insertable code.
+- Manual completion bypasses the empty-result backoff so developers can retry immediately.
+- Scoped backoff entries to SHA-256 fingerprints incorporating the active document, language mode, version, cursor, model, endpoint and bounded context. Entries are cleared whenever the engine is reset.
+- Improved model-output cleaning for leading fenced code blocks followed by commentary and common boundary FIM/chat tokens, while leaving token-like text inside code string literals intact.
+- Added local aggregate counters for empty suggestions and suppressed retries to privacy-preserving diagnostics.
+- Expanded unit tests for backoff expiry, isolation, LRU eviction and boundary token filtering, along with an extension-host integration test for suppressed automatic retries and an immediate manual retry.
+- Retained nine VS Code language IDs, Ollama inference, conservative file exclusions and the explicit remote HTTPS approval boundary.
+
+**Limitations:** the empty-result backoff applies only when the entire request fingerprint matches; it is not a model-quality guarantee. Real Ollama output quality, real-world editor UX and hardware benchmarking across all nine languages still need independent validation before a stable release.
+
 ## [0.4.1] — 2026-10-18 — Editor Safety Maintenance Preview
 
 - Revalidate the active document, its original version, cursor position and single empty selection before reading/sending the completion prompt, after debounce, and after asynchronous privacy checks.

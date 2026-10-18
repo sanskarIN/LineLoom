@@ -6,7 +6,7 @@
 4. `extractContextWindow` uses limited text ranges around the cursor (not a whole-file copy) and computes indentation.
 5. `buildPrompt` uses Ollama's `suffix` for configured Qwen2.5 Coder model names and a conservative completion prompt for other models.
 6. `generateCompletion` calls `/api/generate` and parses streaming NDJSON events, capped in size.
-7. `cleanCompletion` removes common response artifacts and exact suffix overlaps. VS Code displays native ghost text and handles acceptance.
+7. `cleanCompletion` removes common response artifacts, leading fenced-code commentary, boundary FIM tokens and exact suffix overlaps. VS Code displays native ghost text and handles acceptance.
 
 Commands use native VS Code status bars, notifications and configuration UI; there are no webviews, third-party analytics, shell invocations or automatic model downloads.
 
@@ -23,3 +23,7 @@ Before context is read or any inference occurs, the provider evaluates the curre
 ## v0.4.0 language registration and preferences
 
 The language registry maps nine VS Code language identifiers to language-specific guidance. JavaScript React and TypeScript React share their respective JavaScript/TypeScript preferences. The `lineloom.enabledLanguages` setting is normalized to known IDs only: unknown identifiers cannot inadvertently enable inference, and an intentionally empty list prevents all provider requests. The VS Code **Manage Autocomplete Languages** command updates that same setting, and preference changes invalidate in-progress suggestions and cached results. New Go, Java, C and C++ language support is experimental until live-model quality testing is completed.
+
+## v0.5.0 adaptive empty-result backoff
+
+Successful nonempty completions use the existing short-lived eight-entry result cache. When a model returns empty or unusable output, a separate bounded, in-process 16-entry backoff records the hashed exact request fingerprint for up to five seconds. Subsequent *automatic* requests with an unchanged cursor, code context, language, model and endpoint skip inference. **Manual** invocations always bypass the backoff. No code content, prompts or fingerprints are written to disk, and resetting the provider clears both caches. The explicit privacy checks and foreground-editor gate are still performed before consulting either cache.
