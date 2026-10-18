@@ -77,6 +77,9 @@ export class ContinuationCache {
   ): void {
     const saved = this.entry;
     if (!saved || saved.documentId !== documentId) return;
+    // VS Code also emits metadata-only events (such as a dirty-state update)
+    // after a real edit. They do not represent additional source mutations.
+    if (changes.length === 0) return;
     const edit = changes[0];
     if (version !== saved.version + 1 || changes.length !== 1 || !edit ||
         edit.rangeOffset !== saved.offset || edit.rangeLength !== 0 ||

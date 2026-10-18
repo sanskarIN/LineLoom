@@ -84,4 +84,12 @@ describe("typed suggestion continuation", () => {
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 201)).toBeUndefined();
   });
 
+  it("ignores metadata-only VS Code notifications following a valid edit", () => {
+    const cache = new ContinuationCache();
+    cache.remember(sample(), "42", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [{ rangeOffset: 15, rangeLength: 0, text: "4" }]);
+    cache.invalidateOnEdit("file:///sample.ts", 5, []);
+    expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 200)).toBe("2");
+  });
+
 });
