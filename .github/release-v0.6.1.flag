@@ -1,0 +1,2 @@
+LineLoom v0.6.1 GitHub pre-release publishing marker.
+The publication workflow must pass locked dependencies, typecheck, lint, unit tests, the VS Code extension-host integration with mocked Ollama, dependency audit, VSIX integrity and SHA-256 checksum before publishing.
