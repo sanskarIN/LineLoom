@@ -20,7 +20,7 @@ async function readableResponse(response: Response): Promise<Response> {
   return response;
 }
 export async function listModels(origin: string, signal?: AbortSignal): Promise<OllamaModel[]> {
-  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal) }));
+  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal), redirect: "error" }));
   const body: unknown = await readBoundedJson(response);
   if (!body || typeof body !== "object" || !("models" in body) || !Array.isArray(body.models)) throw new Error("Unexpected /api/tags response.");
   return body.models.filter((m: unknown): m is OllamaModel => Boolean(m && typeof m === "object" && "name" in m && typeof m.name === "string"));
@@ -28,7 +28,7 @@ export async function listModels(origin: string, signal?: AbortSignal): Promise<
 export async function showModel(origin: string, model: string, signal?: AbortSignal): Promise<boolean> {
   const response = await fetch(endpointUrl(origin, "/api/show"), {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model }), signal: requestSignal(signal)
+    body: JSON.stringify({ model }), signal: requestSignal(signal), redirect: "error"
   });
   if (response.status === 404) {
     await response.body?.cancel().catch(() => undefined);
@@ -131,7 +131,7 @@ export async function generateCompletion(
   };
   const response = await readableResponse(await fetch(endpointUrl(origin, "/api/generate"), {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request), signal
+    body: JSON.stringify(request), signal, redirect: "error"
   }));
   if (!response.body) throw new Error("Ollama did not provide a response stream.");
   return parseNdjson(response.body, signal);

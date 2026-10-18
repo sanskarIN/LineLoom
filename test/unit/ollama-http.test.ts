@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { listModels, showModel } from "../../src/models/ollama";
+import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -36,4 +36,37 @@ describe("Ollama endpoint requests", () => {
     await listModels("http://127.0.0.1:11434");
     expect(requests[0]).toBeInstanceOf(AbortSignal);
   });
+  it("never follows redirects during discovery, model lookup or source completion", async () => {
+    const fetchMock = vi.fn(async (url: string, options: RequestInit) => {
+      expect(options.redirect).toBe("error");
+      if (url.endsWith("/api/tags")) return new Response(JSON.stringify({ models: [] }));
+      if (url.endsWith("/api/show")) return new Response(JSON.stringify({ details: {} }));
+      if (url.endsWith("/api/generate")) {
+        return new Response('{"response":"safe","done":true}\n');
+      }
+      throw new Error("Unexpected endpoint");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const origin = "http://127.0.0.1:11434";
+    expect(await listModels(origin)).toEqual([]);
+    expect(await showModel(origin, "example")).toBe(true);
+    expect(await generateCompletion(origin, {
+      model: "example", prompt: "const privateCode = ", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, new AbortController().signal)).toBe("safe");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+  it("propagates rejected redirect errors without sending a second request", async () => {
+    const fetchMock = vi.fn(async (_url: string, opts: RequestInit) => {
+      expect(opts.redirect).toBe("error");
+      throw new TypeError("fetch failed");
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateCompletion("http://127.0.0.1:11434", {
+      model: "test", prompt: "do not forward", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, new AbortController().signal)).rejects.toThrow("fetch failed");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
 });
