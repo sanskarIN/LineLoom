@@ -102,7 +102,7 @@ export async function parseNdjson(
       carry += decoder.decode(value, { stream: true });
       if (carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
       let newline = carry.indexOf("\n");
-      while (newline >= 0) {
+      while (newline >= 0 && !sawDone) {
         handle(carry.slice(0, newline).trim());
         carry = carry.slice(newline + 1);
         newline = carry.indexOf("\n");

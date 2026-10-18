@@ -63,4 +63,9 @@ describe("Ollama streaming NDJSON", () => {
     expect(await parseNdjson(stream(['{"response":"ok","done":true}\n']))).toBe("ok");
   });
 
+  it("stops processing after the terminal done event in a single chunk", async () => {
+    const payload = '{"response":"ok","done":true}\n{"error":"ignored after completion"}\n';
+    expect(await parseNdjson(stream([payload]))).toBe("ok");
+  });
+
 });
