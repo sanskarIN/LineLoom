@@ -1,2 +1,0 @@
-LineLoom v0.4.0 GitHub pre-release publishing marker.
-The publication pipeline runs npm ci, typecheck, lint, unit tests, a mocked VS Code extension-host integration test, dependency audit, VSIX archive inspection and SHA-256 checksum generation before tagging the release.

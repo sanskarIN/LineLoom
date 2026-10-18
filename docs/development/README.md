@@ -21,3 +21,7 @@ The extension-host runner creates nested `src/.gitignore` and `src/.lineloomigno
 ## v0.4.0 new-language regression tests
 
 The unit suite validates all nine language identifiers, JSX/TSX aliases, per-language enablement, and generic model language-specific prompts. The VS Code extension-host integration suite opens synthetic `.go`, `.java`, `.c` and `.cpp` files, checks their detected editor language modes, verifies completion provider responses from a mocked Ollama server, and ensures disabling Go excludes it. Four corresponding sample programs are located under `examples/`. These tests establish wiring, **not** useful suggestions from real model weights or quality assurance for the new compilers.
+
+## v0.4.1 foreground editor safety tests
+
+The pure single-cursor guard tests reject selection replacements, multiple cursors, and stale positions. In the VS Code extension-host integration suite (using synthetic code and a simulated local Ollama service), regression checks verify that these states, native IntelliSense collisions, and a cursor shift during debounce make **zero extra inference requests**. The provider also rechecks the original document/version/position after async workspace privacy gates. These tests do not prove real-model usefulness.

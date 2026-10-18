@@ -12,6 +12,8 @@
 
 **v0.4.0 (pre-release):** Go, Java, C, C++ editor registrations and configurable language-selection UI with regression tests.
 
+**v0.4.1 (pre-release):** editor-state revalidation, single-cursor insertion safety and IntelliSense cooperation, with regression checks.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**

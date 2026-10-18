@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.4.1] — 2026-10-18 — Editor Safety Maintenance Preview
+
+- Revalidate the active document, its original version, cursor position and single empty selection before reading/sending the completion prompt, after debounce, and after asynchronous privacy checks.
+- Avoid sending current-document snippets when the request was invalidated while a nested ignore policy was being evaluated.
+- Reject inline completions for selected text and multi-cursor editing, where a single-cursor ghost-text insertion could be confusing.
+- Do not compete with the selected VS Code IntelliSense completion when the request is automatic; manual triggers remain supported when no text is selected.
+- Apply the same cursor/selection validation to cached suggestions and final streamed-model responses.
+- Add unit tests for single-cursor eligibility and VS Code extension-host regression checks for selected text, multi-cursor states, native completion collisions and cursor changes while waiting for debounce.
+- Retain all nine existing language IDs, Ollama-first operation and existing privacy, exclusions and remote HTTPS approval.
+
+**Still preview-only:** real Ollama generation quality, manual installation on Windows/macOS/Linux, hardware performance and offline usage have not been independently accepted. No new external services or cloud model downloads were added.
+
 ## [0.4.0] — 2026-10-17 — Language Expansion Preview
 
 - Added experimental native VS Code inline completion support for **Go, Java, C and C++**, increasing the recognized language IDs from five to nine.
