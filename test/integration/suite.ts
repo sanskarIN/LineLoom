@@ -13,7 +13,8 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.setup", "lineloom.performance"
+    "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
+    "lineloom.quickActions", "lineloom.toggleAutomatic"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
@@ -65,6 +66,7 @@ export async function run(): Promise<void> {
       endpoint: configuration.get<string>("endpoint"),
       model: configuration.get<string>("model"),
       debounceMs: configuration.get<number>("debounceMs"),
+      autoTrigger: configuration.get<boolean>("autoTrigger"),
       enabledLanguages: configuration.get<string[]>("enabledLanguages")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
@@ -72,6 +74,7 @@ export async function run(): Promise<void> {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+      await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
       const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
       const document = await vscode.workspace.openTextDocument(file);
@@ -91,6 +94,19 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+        await vscode.commands.executeCommand("lineloom.toggleAutomatic");
+        assert.equal(configuration.get("autoTrigger"), false, "Pause command must disable automatic triggering");
+        const requestsWhilePaused = engine.getStats().requests;
+        const paused = await engine.provideInlineCompletionItems(document, position, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        assert.equal(paused, undefined, "Automatic suggestions should be paused");
+        assert.equal(engine.getStats().requests, requestsWhilePaused, "Paused automatic request must not call Ollama");
+        const manualWhilePaused = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(manualWhilePaused?.length, "Manual completion should work while automatic suggestions are paused");
+        await vscode.commands.executeCommand("lineloom.toggleAutomatic");
+        assert.equal(configuration.get("autoTrigger"), true, "Resume command must restore automatic triggering");
 
         // Empty responses should back off only for identical automatic requests.
         // Manual retries must still be permitted without moving the cursor.
@@ -190,6 +206,7 @@ export async function run(): Promise<void> {
       await configuration.update("endpoint", oldValues.endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
+      await configuration.update("autoTrigger", oldValues.autoTrigger, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
