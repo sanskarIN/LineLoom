@@ -47,4 +47,20 @@ describe("Ollama streaming NDJSON", () => {
     await expect(parseNdjson(stream(['{"error":"password=do-not-repeat"}\n']))).rejects.toThrow("generation error");
   });
 
+  it("rejects streams that transfer too many bytes without producing code", async () => {
+    await expect(parseNdjson(stream(["\n".repeat(1_000_001)]))).rejects.toThrow(/stream exceeded safety limit/);
+  });
+  it("rejects excessive numbers of tiny NDJSON events", async () => {
+    const events = Array.from({ length: 4_097 }, () => '{"done":false}\n').join("");
+    await expect(parseNdjson(stream([events]))).rejects.toThrow(/event count exceeded safety limit/);
+  });
+  it("fails closed on malformed response and status event types", async () => {
+    await expect(parseNdjson(stream(['{"response":42,"done":false}\n']))).rejects.toThrow(/Invalid Ollama response event/);
+    await expect(parseNdjson(stream(['{"done":"true"}\n']))).rejects.toThrow(/Invalid Ollama completion status/);
+    await expect(parseNdjson(stream(['[]\n']))).rejects.toThrow(/Invalid Ollama JSON event/);
+  });
+  it("accepts valid final events with completion text", async () => {
+    expect(await parseNdjson(stream(['{"response":"ok","done":true}\n']))).toBe("ok");
+  });
+
 });

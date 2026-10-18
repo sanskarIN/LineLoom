@@ -69,17 +69,27 @@ export async function parseNdjson(
   const onAbort = (): void => { void reader.cancel().catch(() => undefined); };
   signal?.addEventListener("abort", onAbort, { once: true });
   let carry = ""; let result = ""; let sawDone = false;
+  let streamedBytes = 0; let eventCount = 0;
+  const MAX_STREAM_BYTES = 1_000_000;
+  const MAX_EVENTS = 4_096;
   function handle(line: string): void {
     if (!line.trim()) return;
+    if (++eventCount > MAX_EVENTS) throw new Error("Ollama event count exceeded safety limit.");
     const data: unknown = JSON.parse(line);
-    if (!data || typeof data !== "object") throw new Error("Invalid Ollama JSON event.");
+    if (!data || typeof data !== "object" || Array.isArray(data)) {
+      throw new Error("Invalid Ollama JSON event.");
+    }
     // Never propagate raw server error strings: they may contain code or credentials.
     if ("error" in data) throw new Error("Ollama model reported a generation error.");
-    if ("response" in data && typeof data.response === "string") {
+    if ("response" in data) {
+      if (typeof data.response !== "string") throw new Error("Invalid Ollama response event.");
       result += data.response;
       if (result.length > 10_000) throw new Error("Ollama output exceeded safety limit.");
     }
-    if ("done" in data && data.done === true) sawDone = true;
+    if ("done" in data) {
+      if (typeof data.done !== "boolean") throw new Error("Invalid Ollama completion status.");
+      if (data.done) sawDone = true;
+    }
   }
   try {
     while (!sawDone) {
@@ -87,6 +97,8 @@ export async function parseNdjson(
       const { done, value } = await reader.read();
       if (signal?.aborted) throw new DOMException("Cancelled", "AbortError");
       if (done) break;
+      streamedBytes += value.byteLength;
+      if (streamedBytes > MAX_STREAM_BYTES) throw new Error("Ollama stream exceeded safety limit.");
       carry += decoder.decode(value, { stream: true });
       if (carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
       let newline = carry.indexOf("\n");
