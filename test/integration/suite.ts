@@ -105,20 +105,22 @@ export async function run(): Promise<void> {
         const goDenied = await engine.provideInlineCompletionItems(goDoc, goPosition, trigger, cancellation.token);
         assert.equal(goDenied, undefined, "Disabled Go language must not request inference");
         await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
-        await vscode.window.showTextDocument(document);
-        editor.selection = new vscode.Selection(position, position);
+        const activeEditor = await vscode.window.showTextDocument(document);
+        activeEditor.selection = new vscode.Selection(position, position);
         // Selection replacement and multiple cursors must never send context to Ollama.
         const requestsBeforeGuards = engine.getStats().requests;
-        editor.selection = new vscode.Selection(document.positionAt(0), position);
+        activeEditor.selection = new vscode.Selection(document.positionAt(0), position);
+        assert.equal(vscode.window.activeTextEditor?.document.uri.toString(), document.uri.toString());
+        assert.equal(vscode.window.activeTextEditor?.selection.isEmpty, false, "Fixture must contain highlighted text");
         const selectedTextResult = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.equal(selectedTextResult, undefined, "Selection replacement must not request a completion");
-        editor.selections = [
+        activeEditor.selections = [
           new vscode.Selection(position, position),
           new vscode.Selection(document.positionAt(0), document.positionAt(0))
         ];
         const multiCursorResult = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.equal(multiCursorResult, undefined, "Multiple cursors must not request inference");
-        editor.selection = new vscode.Selection(position, position);
+        activeEditor.selection = new vscode.Selection(position, position);
         const nativeSuggestion = await engine.provideInlineCompletionItems(document, position, {
           triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
           selectedCompletionInfo: { text: "answer", range: new vscode.Range(position, position) }
@@ -128,20 +130,20 @@ export async function run(): Promise<void> {
 
         // A cursor change while waiting for debounce must prevent any network request.
         await configuration.update("debounceMs", 75, vscode.ConfigurationTarget.Global);
-        editor.selection = new vscode.Selection(position, position);
+        activeEditor.selection = new vscode.Selection(position, position);
         const pendingStale = engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
-        editor.selection = new vscode.Selection(document.positionAt(0), document.positionAt(0));
+        activeEditor.selection = new vscode.Selection(document.positionAt(0), document.positionAt(0));
         const stale = await pendingStale;
         assert.equal(stale, undefined, "Moving the cursor during debounce must discard the request");
         assert.equal(engine.getStats().requests, requestsBeforeGuards, "Stale debounce must not send source");
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
-        editor.selection = new vscode.Selection(position, position);
+        activeEditor.selection = new vscode.Selection(position, position);
         // Repeated same-cursor notifications must not cancel or discard matching completions.
-        engine.cancelIfEditorChanged(editor);
+        engine.cancelIfEditorChanged(activeEditor);
         assert.equal(engine.getStats().cacheHits, 1);
         const shifted = document.positionAt(document.getText().length - 1);
-        editor.selection = new vscode.Selection(shifted, shifted);
-        engine.cancelIfEditorChanged(editor);
+        activeEditor.selection = new vscode.Selection(shifted, shifted);
+        engine.cancelIfEditorChanged(activeEditor);
         // Do not race the workbench's asynchronous selection notifications with a
         // second mocked completion. The cursor-change check above must invalidate
         // the request immediately; the .env test below still exercises new requests.
