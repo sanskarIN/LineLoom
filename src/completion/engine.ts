@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
+import { EmptySuggestionBackoff } from "./backoff";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { shouldAutoComplete, hasSingleInsertionCursor } from "./trigger";
@@ -14,15 +15,18 @@ export type CompletionState = "ready" | "generating" | "disabled" | "unavailable
 export interface CompletionStats {
   requests: number; completions: number; cancelled: number; failed: number;
   totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
+  emptySuggestions: number; suppressedEmptyRetries: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
   private readonly suggestions = new SuggestionCache();
+  private readonly emptyBackoff = new EmptySuggestionBackoff();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
   private readonly metrics: CompletionStats = {
     requests: 0, completions: 0, cancelled: 0, failed: 0,
-    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0
+    totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
+    emptySuggestions: 0, suppressedEmptyRetries: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
@@ -35,6 +39,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.controller = undefined;
     this.target = undefined;
     this.suggestions.clear();
+    this.emptyBackoff.clear();
   }
   /** Cancel only if the active editor no longer matches the request's original cursor. */
   cancelIfEditorChanged(editor: vscode.TextEditor | undefined): void {
@@ -113,7 +118,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
       const key = createHash("sha256").update(JSON.stringify([
-        document.uri.toString(), document.version, offset, url.origin, config.model,
+        document.uri.toString(), document.languageId, document.version, offset, url.origin, config.model,
         config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
         config.maxSuggestionLines, extracted.prefix, extracted.suffix
       ])).digest("hex");
@@ -127,6 +132,13 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
       }
       if (token.isCancellationRequested || requestId !== this.generation || !isTargetCurrent()) return;
+      // An exact empty-result retry is rarely useful while nothing has changed.
+      // Explicit completion requests always bypass the short-lived backoff.
+      if (!manual && this.emptyBackoff.shouldSkip(key)) {
+        this.metrics.suppressedEmptyRetries++;
+        this.onState("ready");
+        return;
+      }
       const prompt = buildPrompt(language, extracted, config.model);
       const controller = new AbortController();
       this.controller = controller;
@@ -158,7 +170,11 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           this.metrics.measuredRequests++;
         }
         this.onState("ready");
-        if (!suggestion) return;
+        if (!suggestion) {
+          this.metrics.emptySuggestions++;
+          this.emptyBackoff.rememberEmpty(key);
+          return;
+        }
         this.metrics.completions++;
         this.suggestions.put(key, suggestion);
         const insertion = new vscode.Range(position, position);
