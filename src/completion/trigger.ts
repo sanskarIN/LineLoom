@@ -7,3 +7,19 @@ export function shouldAutoComplete(lineBeforeCursor: string, minChars: number, m
   const required = Math.max(0, Math.min(32, Math.trunc(minChars)));
   return lineBeforeCursor.trim().length >= required;
 }
+
+/** Minimal cursor shape, kept independent of VS Code so it can be unit-tested. */
+export interface SingleCursor {
+  isEmpty: boolean;
+  active: { line: number; character: number };
+}
+
+/** Ignore selection replacements and multi-cursor editing: the provider inserts at one cursor. */
+export function hasSingleInsertionCursor(
+  selections: readonly SingleCursor[], line: number, character: number
+): boolean {
+  return selections.length === 1 &&
+    selections[0].isEmpty &&
+    selections[0].active.line === line &&
+    selections[0].active.character === character;
+}
