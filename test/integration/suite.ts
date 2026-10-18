@@ -71,9 +71,20 @@ export async function run(): Promise<void> {
     };
     const engine = new CompletionEngine(() => undefined, () => false);
     // Subscribe to VS Code's genuine change events, matching production wiring.
-    const editSubscription = vscode.workspace.onDidChangeTextDocument(
-      (event) => engine.onDocumentChanged(event)
-    );
+    // Test-only diagnostics record edit SHAPES, never the source or edit text.
+    const observedShapes: Array<{ version: number; changes: Array<{ offset: number; replaced: number; length: number; matching: boolean }> }> = [];
+    const editSubscription = vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document.uri.path.endsWith("/editor-test.ts")) {
+        observedShapes.push({
+          version: event.document.version,
+          changes: event.contentChanges.map((change) => ({
+            offset: change.rangeOffset, replaced: change.rangeLength,
+            length: change.text.length, matching: "42".startsWith(change.text)
+          }))
+        });
+      }
+      engine.onDocumentChanged(event);
+    });
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
@@ -201,6 +212,7 @@ export async function run(): Promise<void> {
         const renewed = await engine.provideInlineCompletionItems(document, refreshed, trigger, cancellation.token);
         assert.equal(renewed?.[0]?.insertText, "42", "Expected a new candidate for typed continuation");
         const callsBeforeTyping = generationCalls;
+        observedShapes.length = 0;
         const applied = await activeEditor.edit((edit) => edit.insert(refreshed, "4"));
         assert.equal(applied, true, "Integration editor edit should apply");
         const afterTyping = document.positionAt(document.getText().length);
@@ -210,7 +222,8 @@ export async function run(): Promise<void> {
           triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
           selectedCompletionInfo: undefined
         }, cancellation.token);
-        assert.equal(continued?.[0]?.insertText, "2", "Should offer only the untyped remainder");
+        assert.equal(continued?.[0]?.insertText, "2",
+          "Should offer only the untyped remainder; observed editor change shapes: " + JSON.stringify(observedShapes));
         assert.equal(generationCalls, callsBeforeTyping, "Typed continuation must not call Ollama again");
         assert.equal(engine.getStats().continuationHits, 1, "Expected one re-used typed continuation");
 
