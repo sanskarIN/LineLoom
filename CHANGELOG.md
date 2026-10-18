@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.5.1] — 2026-10-18 — Streaming Resilience Preview
+
+- Bounded Ollama generation response streams to **1,000,000 total transferred bytes** and **4,096 NDJSON events**, in addition to the existing 10,000-character generated output cap.
+- Fixed chunk-boundary handling so a single network read containing many ordinary NDJSON events is not rejected as one oversized event; individual incomplete events remain limited to 50,000 characters.
+- Stopped processing events immediately after the first terminal `done: true` marker, avoiding contradictory events trailing an already-finished response.
+- Validated model-stream event structure and rejected non-string `response` values, invalid `done` types and array events, rather than interpreting them as valid completions.
+- Expanded streaming regression tests for large multi-event chunks, malformed events, excessive event counts, oversized transfers and terminal event handling.
+- No new providers, permissions or automatic model downloads. The existing nine language IDs and workspace privacy gates remain unchanged.
+
+**Still pre-release:** Ollama model-quality measurements, manual Windows/macOS/Linux VSIX installation tests, offline behavior and representative hardware performance remain to be verified before stable v1.0.0.
+
 ## [0.5.0] — 2026-10-18 — Completion Quality & Efficiency Preview
 
 - Added a bounded memory-only 5-second backoff for identical automatic completion requests that produce no insertable code.

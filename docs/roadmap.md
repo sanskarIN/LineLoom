@@ -16,6 +16,8 @@
 
 **v0.5.0 (pre-release):** empty-result retry backoff, stricter model response cleanup and unit/editor regression tests.
 
+**v0.5.1 (pre-release):** bounded streaming resources, event-schema validation and chunk-boundary regression coverage.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**

@@ -27,3 +27,7 @@ The language registry maps nine VS Code language identifiers to language-specifi
 ## v0.5.0 adaptive empty-result backoff
 
 Successful nonempty completions use the existing short-lived eight-entry result cache. When a model returns empty or unusable output, a separate bounded, in-process 16-entry backoff records the hashed exact request fingerprint for up to five seconds. Subsequent *automatic* requests with an unchanged cursor, code context, language, model and endpoint skip inference. **Manual** invocations always bypass the backoff. No code content, prompts or fingerprints are written to disk, and resetting the provider clears both caches. The explicit privacy checks and foreground-editor gate are still performed before consulting either cache.
+
+## v0.5.1 bounded Ollama streaming
+
+In addition to the generated-output character cap, `parseNdjson` rejects a response after **1,000,000 transferred bytes** or **4,096 decoded NDJSON events**. Transport chunks may contain multiple independent small events; the **50,000-character event-line limit** applies to each event or partial event, not the full transport chunk. Events with invalid `response` or `done` field types are rejected. Parsing stops at the first `done: true`, and the stream reader is cancelled in cleanup. These are defensive resource limits, not language-model correctness guarantees.

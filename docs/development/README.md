@@ -29,3 +29,7 @@ The pure single-cursor guard tests reject selection replacements, multiple curso
 ## v0.5.0 response-quality checks
 
 The unit suite now checks short-lived backoff expiry, LRU eviction, fingerprint isolation and clearing. Completion cleanup tests cover boundary FIM/chat tokens, opening fenced code blocks with extra prose afterward and intact control-token-like strings inside legitimate source code. The VS Code extension-host integration test uses a simulated Ollama response that produces no code; it verifies a repeated automatic request makes no additional HTTP inference call, while a manual request is allowed through immediately. A mocked model cannot establish real completion quality.
+
+## v0.5.1 Ollama streaming regressions
+
+The unit suite exercises byte- and event-count limits, individual oversized NDJSON lines, valid large chunks composed of small events, invalid event shapes and trailing data after a terminal `done: true` response. The Linux VS Code extension-host integration suite continues to use a simulated local Ollama server rather than installed model weights. Do not claim model-quality or latency improvements without independent real-model measurements.
