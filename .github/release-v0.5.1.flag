@@ -1,2 +1,0 @@
-LineLoom v0.5.1 GitHub pre-release trigger.
-Publication is conditional on npm ci, TypeScript, lint, unit tests, mocked VS Code extension-host integration, dependency audit, VSIX archive inspection and checksum generation succeeding.

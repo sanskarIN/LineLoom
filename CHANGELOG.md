@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.6.0] — 2026-10-18 — Editor Quick Actions Preview
+
+- Changed the LineLoom status-bar click action from diagnostics-only to **LineLoom: Quick Actions**, an editor-native menu for commonly used tasks.
+- Added a single menu to enable/disable all suggestions, pause/resume only automatic suggestions, manually trigger completion, select an installed Ollama model, manage active languages, check the endpoint, open diagnostics and open settings.
+- Added **LineLoom: Pause or Resume Automatic Suggestions**; manual inline completion remains available while automatic inference is disabled. The setting persists until the user changes it.
+- Updated the ready status-bar label to **LineLoom Manual** while automatic suggestions are paused, with a Quick Actions tooltip.
+- Preserved the explicit remote-HTTPS approval step: opening Quick Actions alone does not initiate inference, fetch a model list or contact a remote endpoint.
+- Expanded pure unit tests for menu action mapping and VS Code extension-host integration checks for pausing/resuming automatic generation and retaining manual completion.
+- No additional data collection, network providers, accounts or automatic model downloads.
+
+**Pre-release limitations:** real-model completion usefulness, offline setup, CPU/GPU responsiveness and manual VSIX/editor verification on Windows, macOS and Linux still need user testing before stable v1.0.0.
+
 ## [0.5.1] — 2026-10-18 — Streaming Resilience Preview
 
 - Bounded Ollama generation response streams to **1,000,000 total transferred bytes** and **4,096 NDJSON events**, in addition to the existing 10,000-character generated output cap.

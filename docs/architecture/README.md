@@ -31,3 +31,7 @@ Successful nonempty completions use the existing short-lived eight-entry result 
 ## v0.5.1 bounded Ollama streaming
 
 In addition to the generated-output character cap, `parseNdjson` rejects a response after **1,000,000 transferred bytes** or **4,096 decoded NDJSON events**. Transport chunks may contain multiple independent small events; the **50,000-character event-line limit** applies to each event or partial event, not the full transport chunk. Events with invalid `response` or `done` field types are rejected. Parsing stops at the first `done: true`, and the stream reader is cancelled in cleanup. These are defensive resource limits, not language-model correctness guarantees.
+
+## v0.6.0 Quick Actions workflow
+
+The VS Code status-bar item invokes `lineloom.quickActions` instead of immediately opening diagnostics. Its menu entries are built by a pure action mapper and execute known internal commands only when explicitly chosen. Pausing automatic suggestions updates the existing `lineloom.autoTrigger` global setting and thus preserves the manual provider path while preventing automatic inference. The status item shows **LineLoom Manual** while this setting is off. The workflow does not change the server or make an unrequested HTTP call. A manual model selection or connection check still uses the existing endpoint validation and remote-HTTPS approval gate.

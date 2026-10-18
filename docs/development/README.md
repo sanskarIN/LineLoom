@@ -33,3 +33,7 @@ The unit suite now checks short-lived backoff expiry, LRU eviction, fingerprint 
 ## v0.5.1 Ollama streaming regressions
 
 The unit suite exercises byte- and event-count limits, individual oversized NDJSON lines, valid large chunks composed of small events, invalid event shapes and trailing data after a terminal `done: true` response. The Linux VS Code extension-host integration suite continues to use a simulated local Ollama server rather than installed model weights. Do not claim model-quality or latency improvements without independent real-model measurements.
+
+## v0.6.0 Quick Actions regression checks
+
+Unit tests verify the action allowlist, enable/disable state mapping and automatic pause/resume labels. The VS Code extension-host suite checks that `lineloom.quickActions` and `lineloom.toggleAutomatic` are registered; pausing blocks automatic inference while preserving manually triggered completions. Tests exercise a **mocked Ollama server**, not live model inference. Confirm status-bar menu ergonomics manually in real VS Code before a stable release.
