@@ -61,6 +61,13 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       this.onState("ready");
     }
   }
+  /** Verify the actual VS Code edit before attempting any cached continuation. */
+  onDocumentChanged(event: vscode.TextDocumentChangeEvent): void {
+    this.continuations.invalidateOnEdit(
+      event.document.uri.toString(), event.document.version, event.contentChanges
+    );
+    this.cancelIfEditorChanged(vscode.window.activeTextEditor);
+  }
   dispose(): void { this.cancel(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
     if (ms === 0) return !token.isCancellationRequested;

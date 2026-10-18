@@ -64,5 +64,28 @@ export class ContinuationCache {
     return saved.suggestion.slice(typed);
   }
 
+  /**
+   * VS Code reports the actual edit shape, not merely the resulting text.
+   * A continuation is reusable only after one forward insertion at the
+   * original cursor, with exactly the expected generated characters.
+   * Do not retain the source edit text after this synchronous check.
+   */
+  invalidateOnEdit(
+    documentId: string,
+    version: number,
+    changes: readonly { rangeOffset: number; rangeLength: number; text: string }[]
+  ): void {
+    const saved = this.entry;
+    if (!saved || saved.documentId !== documentId) return;
+    const edit = changes[0];
+    if (version !== saved.version + 1 || changes.length !== 1 || !edit ||
+        edit.rangeOffset !== saved.offset || edit.rangeLength !== 0 ||
+        edit.text.length < 1 || edit.text.length > this.maxTyped ||
+        edit.text.length >= saved.suggestion.length ||
+        !saved.suggestion.startsWith(edit.text)) {
+      this.clear();
+    }
+  }
+
   clear(): void { this.entry = undefined; }
 }

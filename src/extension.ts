@@ -193,7 +193,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
     }),
-    vscode.workspace.onDidChangeTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor)),
+    vscode.workspace.onDidChangeTextDocument((event) => engine?.onDocumentChanged(event)),
     vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
