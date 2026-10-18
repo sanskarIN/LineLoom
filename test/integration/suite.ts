@@ -95,7 +95,7 @@ export async function run(): Promise<void> {
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
         await vscode.commands.executeCommand("lineloom.toggleAutomatic");
-        assert.equal(configuration.get("autoTrigger"), false, "Pause command must disable automatic triggering");
+        assert.equal(vscode.workspace.getConfiguration("lineloom").get("autoTrigger"), false, "Pause command must disable automatic triggering");
         const requestsWhilePaused = engine.getStats().requests;
         const paused = await engine.provideInlineCompletionItems(document, position, {
           triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
@@ -106,7 +106,7 @@ export async function run(): Promise<void> {
         const manualWhilePaused = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(manualWhilePaused?.length, "Manual completion should work while automatic suggestions are paused");
         await vscode.commands.executeCommand("lineloom.toggleAutomatic");
-        assert.equal(configuration.get("autoTrigger"), true, "Resume command must restore automatic triggering");
+        assert.equal(vscode.workspace.getConfiguration("lineloom").get("autoTrigger"), true, "Resume command must restore automatic triggering");
 
         // Empty responses should back off only for identical automatic requests.
         // Manual retries must still be permitted without moving the cursor.
