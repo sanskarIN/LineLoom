@@ -1,10 +1,10 @@
-# LineLoom privacy policy (v0.3.0 preview)
+# LineLoom privacy policy (v0.6.1 preview)
 
 LineLoom runs as an extension inside the VS Code extension host. It does not require an account. It does not include telemetry, advertising, analytics, or automated uploads to a LineLoom-operated server.
 
 **Context collected for a suggestion:** the language ID, a bounded selection of text preceding and following the editor cursor in the **currently open document**, indentation and document version. Those snippets are transmitted through HTTP to the configured Ollama-compatible inference endpoint. No entire-repository scanning or cross-file context is implemented. Generated suggestions are returned to VS Code ghost text; only accepted suggestions are inserted by VS Code.
 
-**Local by default:** `http://127.0.0.1:11434`. Remote servers may receive snippets and retain data according to their operators' policies. A non-loopback endpoint must use HTTPS and requires both an explicit setting and interactive per-origin approval. A proxy or nonstandard local installation may have additional network behavior beyond LineLoom's control.
+**Local by default:** `http://127.0.0.1:11434`. Remote servers may receive snippets and retain data according to their operators' policies. A non-loopback endpoint must use HTTPS and requires both an explicit setting and interactive per-origin approval. LineLoom explicitly rejects HTTP redirects for model discovery, model lookup and generation to prevent a configured server from forwarding requests (including editor snippets) to a different destination without fresh approval. This blocks HTTP redirect forwarding but cannot control proxies, DNS configuration or how an approved server itself handles received snippets.
 
 **Exclusions:** untrusted workspaces, virtual/non-file editors, files outside opened workspace folders, high-risk filenames, and configured ignore patterns are ineligible. Both root and nested `.gitignore` and `.lineloomignore` files on the document's directory path are checked (up to 24 scopes); unreadable policy files or excessively deep paths are denied. Negation rules cannot override exclusions from other sources. Canonical symlink targets within a workspace are checked independently. Comprehensive content-level secret detection is **not** implemented; never place sensitive source code in an allowed file without checking your settings.
 

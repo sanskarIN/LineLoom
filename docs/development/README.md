@@ -37,3 +37,7 @@ The unit suite exercises byte- and event-count limits, individual oversized NDJS
 ## v0.6.0 Quick Actions regression checks
 
 Unit tests verify the action allowlist, enable/disable state mapping and automatic pause/resume labels. The VS Code extension-host suite checks that `lineloom.quickActions` and `lineloom.toggleAutomatic` are registered; pausing blocks automatic inference while preserving manually triggered completions. Tests exercise a **mocked Ollama server**, not live model inference. Confirm status-bar menu ergonomics manually in real VS Code before a stable release.
+
+## v0.6.1 network redirect privacy regression
+
+The HTTP test suite checks `redirect: "error"` on model listing, model lookup and completion generation. An additional test starts two ephemeral local HTTP servers: one returns an HTTP 307 pointing to the other, and the suite confirms that the destination receives zero requests. These tests use synthetic prompts, never private workspace data. VS Code extension-host tests continue to use mocked Ollama responses; no real-model output quality is implied.

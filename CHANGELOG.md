@@ -2,6 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.6.1] — 2026-10-18 — Ollama Redirect Safety Preview
+
+- **Privacy/security:** explicitly set `redirect: "error"` on all Ollama `fetch` requests, including generation, model discovery and model lookup. An HTTP 3xx response cannot automatically forward a source snippet to another origin.
+- Fail closed when an endpoint attempts to redirect, rather than silently treating a new destination as the same approved endpoint.
+- Added HTTP unit coverage asserting redirects are rejected across all three API routes and a real loopback HTTP server test checking that an attempted redirect to a separate listener sends it **zero requests**.
+- Kept the existing trusted-workspace gate, nested ignore rules, explicit remote-HTTPS origin approval and editor-state checks unchanged.
+- No new services, model downloads, data collection or permissions.
+
+**Pre-release caveat:** this prevents automatic HTTP redirect forwarding, not data retention by an already approved remote server, network proxy behavior or errors in generated code. Manual offline/model-quality verification is still required before stable v1.0.0.
+
 ## [0.6.0] — 2026-10-18 — Editor Quick Actions Preview
 
 - Changed the LineLoom status-bar click action from diagnostics-only to **LineLoom: Quick Actions**, an editor-native menu for commonly used tasks.

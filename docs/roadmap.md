@@ -20,6 +20,8 @@
 
 **v0.6.0 (pre-release):** status-bar Quick Actions, automatic suggestion pause/resume with manual fallback and integrated workflow tests.
 
+**v0.6.1 (pre-release):** HTTP redirect rejection for Ollama requests and privacy regression tests.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**

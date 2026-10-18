@@ -35,3 +35,7 @@ In addition to the generated-output character cap, `parseNdjson` rejects a respo
 ## v0.6.0 Quick Actions workflow
 
 The VS Code status-bar item invokes `lineloom.quickActions` instead of immediately opening diagnostics. Its menu entries are built by a pure action mapper and execute known internal commands only when explicitly chosen. Pausing automatic suggestions updates the existing `lineloom.autoTrigger` global setting and thus preserves the manual provider path while preventing automatic inference. The status item shows **LineLoom Manual** while this setting is off. The workflow does not change the server or make an unrequested HTTP call. A manual model selection or connection check still uses the existing endpoint validation and remote-HTTPS approval gate.
+
+## v0.6.1 redirect-safe inference requests
+
+All three Ollama HTTP operations (`/api/tags`, `/api/show`, `/api/generate`) now send `fetch` with `redirect: "error"`. An endpoint may still receive an allowed request, but it cannot direct LineLoom's HTTP client to send the prompt to a new location via HTTP redirects. An attempted redirect rejects that request; it never automatically authorizes the redirected destination. This is an additional layer after endpoint validation and per-origin remote HTTPS approval. Proxies, DNS resolution and the approved server's own data handling remain outside the extension's control.

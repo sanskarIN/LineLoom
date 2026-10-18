@@ -1,2 +1,0 @@
-LineLoom v0.6.0 GitHub pre-release publishing marker.
-Publication is conditional on a reproducible npm ci, TypeScript checks, lint, unit tests, bundled build, mocked VS Code extension-host integration, dependency audit, VSIX archive verification and SHA-256 generation.
