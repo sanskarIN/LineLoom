@@ -54,6 +54,15 @@ describe("Ollama streaming NDJSON", () => {
     const events = Array.from({ length: 4_097 }, () => '{"done":false}\n').join("");
     await expect(parseNdjson(stream([events]))).rejects.toThrow(/event count exceeded safety limit/);
   });
+  it("accepts many small events in one large transport chunk", async () => {
+    const events = '{"response":"x","done":false}\n'.repeat(1_800) + '{"done":true}\n';
+    const result = await parseNdjson(stream([events]));
+    expect(result).toHaveLength(1_800);
+  });
+  it("rejects a single oversized incomplete JSON event", async () => {
+    const chunk = '{"response":"' + "z".repeat(50_001);
+    await expect(parseNdjson(stream([chunk]))).rejects.toThrow(/oversized Ollama event/);
+  });
   it("fails closed on malformed response and status event types", async () => {
     await expect(parseNdjson(stream(['{"response":42,"done":false}\n']))).rejects.toThrow(/Invalid Ollama response event/);
     await expect(parseNdjson(stream(['{"done":"true"}\n']))).rejects.toThrow(/Invalid Ollama completion status/);
