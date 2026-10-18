@@ -70,6 +70,10 @@ export async function run(): Promise<void> {
       enabledLanguages: configuration.get<string[]>("enabledLanguages")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
+    // Subscribe to VS Code's genuine change events, matching production wiring.
+    const editSubscription = vscode.workspace.onDidChangeTextDocument(
+      (event) => engine.onDocumentChanged(event)
+    );
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
@@ -199,15 +203,6 @@ export async function run(): Promise<void> {
         const callsBeforeTyping = generationCalls;
         const applied = await activeEditor.edit((edit) => edit.insert(refreshed, "4"));
         assert.equal(applied, true, "Integration editor edit should apply");
-        // Notify the separately constructed provider used by this test with
-        // the same edit shape that VS Code sends to the activated extension.
-        engine.onDocumentChanged({
-          document,
-          contentChanges: [{
-            range: new vscode.Range(refreshed, refreshed),
-            rangeOffset: document.offsetAt(refreshed), rangeLength: 0, text: "4"
-          }]
-        } as vscode.TextDocumentChangeEvent);
         const afterTyping = document.positionAt(document.getText().length);
         activeEditor.selection = new vscode.Selection(afterTyping, afterTyping);
         engine.cancelIfEditorChanged(activeEditor);
@@ -225,13 +220,6 @@ export async function run(): Promise<void> {
         const beginning = document.positionAt(0);
         const unrelatedApplied = await activeEditor.edit((edit) => edit.insert(beginning, "// changed\\n"));
         assert.equal(unrelatedApplied, true);
-        engine.onDocumentChanged({
-          document,
-          contentChanges: [{
-            range: new vscode.Range(beginning, beginning), rangeOffset: 0,
-            rangeLength: 0, text: "// changed\\n"
-          }]
-        } as vscode.TextDocumentChangeEvent);
         const afterUnrelatedEdit = document.positionAt(document.getText().length);
         activeEditor.selection = new vscode.Selection(afterUnrelatedEdit, afterUnrelatedEdit);
         await engine.provideInlineCompletionItems(document, afterUnrelatedEdit, {
@@ -252,6 +240,7 @@ export async function run(): Promise<void> {
         cancellation.dispose();
       }
     } finally {
+      editSubscription.dispose();
       engine.dispose();
       await configuration.update("endpoint", oldValues.endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
