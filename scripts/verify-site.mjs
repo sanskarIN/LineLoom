@@ -17,7 +17,7 @@ test("static site identity follows the preview manifest", () => {
   assert.match(page, /v0\.9\.4 preview/);
   assert.match(page, /LineLoom-0\.9\.4\.vsix/);
   assert.match(page, /v0\.9\.4/);
-  assert.ok(!page.includes("LineLoom-0.9.4.vsix"), "obsolete download link");
+  assert.ok(!page.includes("LineLoom-0.9.3.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
   assert.match(page, /not an actual model benchmark or editor screenshot/);
 });
