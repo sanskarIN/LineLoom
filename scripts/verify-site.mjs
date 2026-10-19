@@ -43,7 +43,8 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
-  assert.doesNotMatch(page, /https?:\/\/(marketplace\.visualstudio\.com\/items\?|open-vsx\.org\/extension\/)/, "Do not invent marketplace listing URLs");
+  // The official Microsoft Marketplace listing is now published; Open VSX is not.
+  assert.doesNotMatch(page, /https?:\/\/open-vsx\.org\/extension\//, "Do not advertise an unpublished Open VSX listing");
 });
 
 test("every local asset and fragment navigation target exists", () => {
@@ -92,4 +93,33 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
     assert.ok(existsSync(resolve(dir, ref)), "Missing installation-guide asset: " + ref);
   }
   assert.ok(!guide.includes("Visual Studio Marketplace download"), "Do not claim marketplace publication");
+});
+
+
+test("published Marketplace listing is primary and Open VSX remains pending", () => {
+  const marketplaceUrl = "https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom";
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  const publisherGuide = readFileSync(resolve(root, "docs/publishing.md"), "utf8");
+  const releaseNotes = readFileSync(resolve(root, "docs/releases/v1.0.0.md"), "utf8");
+  const roadmap = readFileSync(resolve(root, "docs/roadmap.md"), "utf8");
+
+  for (const [label, text] of [
+    ["homepage", page],
+    ["install guide", guide],
+    ["README", readme],
+    ["publishing guide", publisherGuide],
+    ["release notes", releaseNotes],
+    ["roadmap", roadmap],
+  ]) {
+    assert.ok(text.includes(marketplaceUrl), label + " must link to the official published listing");
+  }
+  assert.ok(page.includes('<a class="button button-primary" href="' + marketplaceUrl + '">'), "Homepage should prioritize Marketplace");
+  assert.ok(guide.includes('id="marketplace"'), "Install page should include direct Marketplace instructions");
+  assert.ok(guide.includes("code --install-extension SanskarCodes.lineloom"), "Marketplace CLI command should be shown");
+  assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "README should include Marketplace CLI command");
+  assert.ok(page.includes("Open VSX publication has not yet been verified"));
+  assert.ok(publisherGuide.includes("Open VSX is not published/verified yet"));
+  assert.ok(readme.includes("Open VSX publication is still"));
+  assert.doesNotMatch(page + guide + readme, /https?:\\/\\/open-vsx\\.org\\/extension\\//, "Do not invent an Open VSX listing");
 });
