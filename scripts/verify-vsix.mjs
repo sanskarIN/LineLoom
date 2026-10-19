@@ -40,7 +40,8 @@ try {
   }
   assert.equal(packaged.publisher, "SanskarCodes");
   assert.equal(packaged.name, "lineloom");
-  assert.ok(packaged.version.startsWith("0."), "Stable release may not use the preview workflow");
+  assert.match(packaged.version, /^\d+\.\d+\.\d+$/, "Package must have a semantic three-part version");
+  assert.equal(packaged.version, source.version);
   assert.ok(entries.some(x => x === "extension/assets/icons/lineloom.png"), "Missing extension icon");
   console.log("Verified VS Code VSIX: " + packaged.publisher + "." + packaged.name + "@" + packaged.version);
   console.log("Install in VS Code using Extensions → ... → Install from VSIX (never the Visual Studio installer).");
