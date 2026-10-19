@@ -2,6 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
+## [1.0.0] — 2026-10-19 — First Stable GitHub Release
+
+- First **stable-channel GitHub VSIX release** of LineLoom under publisher `SanskarCodes` with the release/lockfile version set to 1.0.0.
+- Switched default VSIX packaging and automated release artifacts to omit the VS Code pre-release flag; preserved explicit `npm run package:preview` for experimental builds.
+- Maintained CI across Windows, macOS and Linux, mocked Ollama extension-host tests, privacy unit checks, website tests, and the clean VS Code CLI installation smoke test.
+- Continued versioned download and installation documentation on GitHub Pages; stored ZIP/manifest verification and SHA-256 alongside release assets.
+- The current code supports native editor inline completions with user-installed Ollama models, language controls, privacy gates and local-first settings.
+- **Testing caveat:** no independently recorded real-model cross-platform editor acceptance or CPU/GPU latency measurements were provided at publication; no unperformed checks are presented as passed. Microsoft Marketplace and Open VSX uploads are separate pending steps.
+
+
 ## [0.9.5] — 2026-10-19 — Packaged Installation Smoke & Stable Readiness
 
 - Verified that the previous Windows user screenshot demonstrates v0.9.4 installation **inside VS Code**, rather than real model completion or a broken VSIX download.
