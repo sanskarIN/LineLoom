@@ -38,6 +38,8 @@
 
 **v0.9.3 (pre-release):** add a responsive static GitHub Pages website, automated deployment workflow, static-site regression tests and clear preview onboarding.
 
+**v0.9.4 (pre-release):** clarify VS Code extension installation versus the full Visual Studio VSIX Installer; add a GitHub Pages help page and automated VSIX archive/manifest verification.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
