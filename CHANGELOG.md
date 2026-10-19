@@ -2,14 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
-## [1.0.0] — 2026-10-19 — First Stable GitHub Release
+## [1.0.0] — 2026-10-19 — First Stable Release
+
+**Post-release distribution update (no source/version change):** v1.0.0 is also published on [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) under `SanskarCodes.lineloom`. Installation is available directly through VS Code Extensions or `code --install-extension SanskarCodes.lineloom`. Open VSX remains pending. GitHub v1.0.0 tag and shipped VSIX have not been modified.
 
 - First **stable-channel GitHub VSIX release** of LineLoom under publisher `SanskarCodes` with the release/lockfile version set to 1.0.0.
 - Switched default VSIX packaging and automated release artifacts to omit the VS Code pre-release flag; preserved explicit `npm run package:preview` for experimental builds.
 - Maintained CI across Windows, macOS and Linux, mocked Ollama extension-host tests, privacy unit checks, website tests, and the clean VS Code CLI installation smoke test.
 - Continued versioned download and installation documentation on GitHub Pages; stored ZIP/manifest verification and SHA-256 alongside release assets.
 - The current code supports native editor inline completions with user-installed Ollama models, language controls, privacy gates and local-first settings.
-- **Testing caveat:** no independently recorded real-model cross-platform editor acceptance or CPU/GPU latency measurements were provided at publication; no unperformed checks are presented as passed. Microsoft Marketplace and Open VSX uploads are separate pending steps.
+- **Testing caveat:** no independently recorded real-model cross-platform editor acceptance or CPU/GPU latency measurements were provided at publication; no unperformed checks are presented as passed. Marketplace is now live; Open VSX is still pending.
 
 
 ## [0.9.5] — 2026-10-19 — Packaged Installation Smoke & Stable Readiness
