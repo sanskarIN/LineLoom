@@ -4,11 +4,11 @@
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Preview status:** LineLoom v0.9.4 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.9.4 release notes](docs/releases/v0.9.4.md) for verified tests and known limitations.
+> **Preview status:** LineLoom v0.9.5 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.9.5 release notes](docs/releases/v0.9.5.md) for verified tests and known limitations.
 
 ## Install the GitHub preview
 
-The latest GitHub pre-release includes a `LineLoom-0.9.4.vsix` package marked for the VS Code **pre-release channel**. Download it from the [v0.9.4 release page](https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.4) once published and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-0.9.4.vsix`).
+The latest GitHub pre-release includes a `LineLoom-0.9.5.vsix` package marked for the VS Code **pre-release channel**. Download it from the [v0.9.5 release page](https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.5) once published and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-0.9.5.vsix`).
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
@@ -19,6 +19,10 @@ The latest GitHub pre-release includes a `LineLoom-0.9.4.vsix` package marked fo
 The LineLoom static website is maintained in [`site/`](site/) and deployed through the [GitHub Pages workflow](.github/workflows/pages.yml), subject to repository GitHub Pages being enabled under **Settings → Pages → GitHub Actions**. Intended URL: https://sanskarin.github.io/LineLoom/. See the [deployment guide](docs/github-pages.md) to verify when it is actually live.
 
 Website content is excluded from the extension VSIX package. This does not add hosted inference, an account requirement or telemetry.
+
+## Pre-release verification status
+
+The v0.9.5 packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Stable v1.0.0 and Marketplace/Open VSX publication are reserved for a later explicit release decision.**
 
 ## Features
 
@@ -51,7 +55,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Quick Actions · Pause or Resume Automatic Suggestions · Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Manage Autocomplete Languages · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v0.9.4 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v0.9.5 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -61,7 +65,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v0.9.4 preview release notes](docs/releases/v0.9.4.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v0.9.5 preview release notes](docs/releases/v0.9.5.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
 
 ## Development
 
