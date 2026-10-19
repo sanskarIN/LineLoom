@@ -121,5 +121,5 @@ test("published Marketplace listing is primary and Open VSX remains pending", ()
   assert.ok(page.includes("Open VSX publication has not yet been verified"));
   assert.ok(publisherGuide.includes("Open VSX is not published/verified yet"));
   assert.ok(readme.includes("Open VSX publication is still"));
-  assert.doesNotMatch(page + guide + readme, /https?:\\/\\/open-vsx\\.org\\/extension\\//, "Do not invent an Open VSX listing");
+  assert.ok(!(page + guide + readme).includes("open-vsx.org/extension/"), "Do not invent an Open VSX listing");
 });
