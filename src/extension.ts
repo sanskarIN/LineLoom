@@ -6,6 +6,7 @@ import { LineLoomStatus } from "./ui/status";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache } from "./privacy/exclusions";
 import { readConfig, validateEndpoint } from "./settings/config";
+import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
 
 let engine: CompletionEngine | undefined;
@@ -31,14 +32,27 @@ async function approveEndpoint(context: vscode.ExtensionContext, ask: boolean): 
     { modal: true }, action
   );
   if (selected !== action) return;
+  const latest = readConfig();
+  // Never approve an origin from an obsolete prompt if the user changed
+  // the configured endpoint or disabled remote inference meanwhile.
+  try {
+    const current = validateEndpoint(latest.endpoint);
+    if (current.origin !== endpoint.origin || !latest.allowRemoteEndpoints) return;
+  } catch { return; }
   await context.globalState.update("approvedRemoteOrigin", endpoint.origin);
   return endpoint.origin;
+}
+function selectionOriginCurrent(context: vscode.ExtensionContext, origin: string): boolean {
+  const latest = readConfig();
+  return isEndpointSelectionCurrent(origin, latest.endpoint, latest.allowRemoteEndpoints,
+    (target) => context.globalState.get<string>("approvedRemoteOrigin") === target);
 }
 async function checkConnection(context: vscode.ExtensionContext): Promise<void> {
   const origin = await approveEndpoint(context, true);
   if (!origin) return;
   try {
     const models = await listModels(origin);
+    if (!selectionOriginCurrent(context, origin)) return;
     const selected = readConfig().model;
     const present = models.some((model) => model.name === selected);
     vscode.window.showInformationMessage(
@@ -63,7 +77,9 @@ async function selectModel(context: vscode.ExtensionContext): Promise<void> {
       { placeHolder: "Choose an installed Ollama model" }
     );
     if (!picked) return;
+    if (!selectionOriginCurrent(context, origin)) return;
     if (!await showModel(origin, picked.label)) throw new Error("Model no longer installed.");
+    if (!selectionOriginCurrent(context, origin)) return;
     await vscode.workspace.getConfiguration("lineloom").update("model", picked.label, vscode.ConfigurationTarget.Global);
     engine?.cancel();
     vscode.window.showInformationMessage("LineLoom model selected: " + picked.label);
@@ -78,6 +94,7 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
   if (!origin) return;
   try {
     const models = await listModels(origin);
+    if (!selectionOriginCurrent(context, origin)) return;
     if (!models.length) {
       vscode.window.showInformationMessage("No Ollama models installed on the configured endpoint.");
       return;
@@ -99,10 +116,11 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
     const selected = await vscode.window.showQuickPick(choices, {
       placeHolder: "Assign an installed model for " + language.label + " or use the default"
     });
-    if (!selected) return;
+    if (!selected || !selectionOriginCurrent(context, origin)) return;
     if (selected.model && !await showModel(origin, selected.model)) {
       throw new Error("Selected model is no longer available.");
     }
+    if (!selectionOriginCurrent(context, origin)) return;
     // Keep the global default intact; only the selected language is changed.
     const updated = normalizeLanguageModels(
       vscode.workspace.getConfiguration("lineloom").get<unknown>("languageModels")
