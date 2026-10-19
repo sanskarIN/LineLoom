@@ -1,0 +1,3 @@
+LineLoom v0.9.3 GitHub pre-release publication trigger.
+The v0.9.3 website, checks and package fixes merged by PR #14 after successful CI on Windows, macOS and Linux, static-site checks and mocked editor integration.
+Publish GitHub preview artifacts only. Do NOT create a stable release; GitHub Pages and external registry publication have their own independent deployment / manual activation steps.
