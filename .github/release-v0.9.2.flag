@@ -1,0 +1,4 @@
+LineLoom v0.9.2 GitHub pre-release publication trigger.
+This marker is created after PR #13 merged with all cross-platform CI, mocked VS Code extension-host tests, and pre-release VSIX packaging passing.
+This workflow publishes only a GitHub pre-release with a VS Code Marketplace pre-release-marked VSIX.
+No Microsoft Marketplace or Open VSX upload is performed, and stable v1.0.0 is explicitly blocked pending real-world validation.
