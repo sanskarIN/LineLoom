@@ -4,7 +4,13 @@
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Preview status:** LineLoom v0.9.1 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.9.1 release notes](docs/releases/v0.9.1.md) for verified tests and known limitations.
+> **Preview status:** LineLoom v0.9.2 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.9.2 release notes](docs/releases/v0.9.2.md) for verified tests and known limitations.
+
+## Install the GitHub preview
+
+The latest GitHub pre-release includes a `LineLoom-0.9.2.vsix` package marked for the VS Code **pre-release channel**. Download it from the [v0.9.2 release page](https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.2) once published and use **Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-0.9.2.vsix`).
+
+**Registry status:** the GitHub pre-release is distinct from Microsoft Visual Studio Marketplace and Open VSX listings. Neither listing should be advertised before publication is confirmed. The extension publisher ID is **SanskarCodes**, not the GitHub user ID `sanskarIN`. [Publisher onboarding / registry instructions](docs/publishing.md).
 
 ## Features
 
@@ -26,8 +32,8 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 1. Install [VS Code](https://code.visualstudio.com/) and [Ollama](https://ollama.com/download) for Windows, Linux or macOS.
 2. Start Ollama according to its platform instructions. Confirm that `http://127.0.0.1:11434/api/tags` is reachable locally.
 3. Install a coding model yourself: `ollama pull qwen2.5-coder:1.5b`. Downloads consume storage; see model licensing and system requirements.
-4. For local development: `npm install`, `npm run build`, then open the repo in VS Code and press **F5** to launch an Extension Development Host.
-5. In the Extension Development Host, open a **trusted folder** containing a supported source file (e.g. `.py`, `.js`, `.ts`, `.rs`, `.kt`, `.go`, `.java`, `.c`, or `.cpp`).
+4. Install the VSIX from the GitHub preview release as described above. For local development from source instead, run `npm ci`, `npm run build`, open the repo in VS Code and press **F5**.
+5. In VS Code (or the Extension Development Host), open a **trusted folder** containing a supported source file (e.g. `.py`, `.js`, `.ts`, `.rs`, `.kt`, `.go`, `.java`, `.c`, or `.cpp`).
 6. Type some code, or run **LineLoom: Trigger Completion**. Accept native inline text with your VS Code inline-suggest keybinding.
 7. Run **LineLoom: Check Ollama Connection** or **LineLoom: Select Model** if suggestions do not appear.
 
@@ -37,7 +43,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Quick Actions · Pause or Resume Automatic Suggestions · Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Manage Autocomplete Languages · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v0.9.1 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v0.9.2 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -47,7 +53,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v0.9.1 preview release notes](docs/releases/v0.9.1.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v0.9.2 preview release notes](docs/releases/v0.9.2.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
 
 ## Development
 
@@ -57,7 +63,7 @@ npm run check
 npm run package
 ```
 
-The GitHub pre-release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and Marketplace publication have stricter gates. [Roadmap](docs/roadmap.md).
+The GitHub pre-release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and external registry publication have separate verification gates. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 
