@@ -36,7 +36,7 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     'id="install"',
     'id="privacy"',
     'id="faq"',
-    'GitHub pre-release',
+    'GitHub stable release',
     "does <strong>not</strong> provide comprehensive content-level secret detection",
     "no built-in telemetry",
     "not implemented in this release",
