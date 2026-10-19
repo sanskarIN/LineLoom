@@ -6,7 +6,7 @@ describe("per-language installed Ollama models", () => {
     const parsed = normalizeLanguageModels({
       rust: " code-llama:7b ", python: "qwen2.5-coder:1.5b",
       unknownLanguage: "unrelated", javascript: 42, kotlin: "",
-      go: "X".repeat(129), java: "contains\\nnewline",
+      go: "X".repeat(129), java: "contains" + String.fromCharCode(10) + "newline",
       c: "local-c:latest"
     });
     expect(parsed).toEqual({
