@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Install the LineLoom VS Code stable VSIX correctly on Windows, macOS and Linux. Fix the Visual Studio VSIX Installer error.">
+  <meta name="description" content="Install LineLoom from the official VS Code Marketplace on Windows, macOS and Linux, or install the GitHub VSIX manually.">
   <link rel="canonical" href="https://sanskarin.github.io/LineLoom/install.html">
   <link rel="icon" type="image/svg+xml" href="./assets/lineloom.svg">
   <link rel="stylesheet" href="./styles.css">
@@ -20,10 +20,20 @@
   <main class="shell install-doc" id="main">
     <p class="section-kicker">LINELOOM HELP / STABLE v1.0.0</p>
     <h1>Install the extension.<br><span class="brand-accent">In the right editor.</span></h1>
-    <p class="doc-intro">LineLoom is built for <strong>Visual Studio Code</strong>. A <code>.vsix</code> file is downloaded as a normal extension archive; it is <strong>not</strong> a Windows executable. Don't double-click it in File Explorer.</p>
+    <p class="doc-intro">LineLoom is available directly on the <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">official Visual Studio Marketplace</a>. This is the easiest installation method in Visual Studio Code. A <code>.vsix</code> download from GitHub is an optional extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
+    <section class="doc-block" id="marketplace">
+      <h2>Recommended — Install from VS Code Marketplace</h2>
+      <ol>
+        <li>Open <a href="https://code.visualstudio.com/">Visual Studio Code</a> and press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> (Windows/Linux) or open the Extensions view on macOS.</li>
+        <li>Search for <strong>LineLoom</strong> and verify the publisher is <strong>SanskarCodes</strong>.</li>
+        <li>Click <strong>Install</strong>. Alternatively, open <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">LineLoom on the VS Code Marketplace</a>.</li>
+        <li>Start your independently installed Ollama model and use <strong>LineLoom: Quick Actions</strong> to check the connection.</li>
+      </ol>
+      <div class="command doc-command"><code>code --install-extension SanskarCodes.lineloom</code><button class="copy" type="button" data-copy="code --install-extension SanskarCodes.lineloom" aria-label="Copy Marketplace installation command">Copy</button></div>
+    </section>
     <aside class="install-warning" aria-label="Important installer warning"><strong>Got “One or more extensions are for Visual Studio Code”?</strong><p>You opened LineLoom using the <em>Visual Studio VSIX Installer</em> (for the full Visual Studio IDE), rather than VS Code. This error usually means the download already succeeded; it does not prove the archive is broken. Close that installer and follow the VS Code steps below.</p></aside>
     <section class="doc-block" id="windows">
-      <h2>Windows 11 — recommended method</h2>
+      <h2>Windows 11 — manual GitHub VSIX installation</h2>
       <ol>
         <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0">Download <code>LineLoom-1.0.0.vsix</code></a> from GitHub release assets (save it normally).</li>
         <li>Launch <a href="https://code.visualstudio.com/">Visual Studio Code</a>, not Visual Studio Community, Enterprise, or VSIX Installer.</li>
@@ -49,9 +59,9 @@
         <li>If the <code>code</code> command isn't recognized, use the UI method. On macOS, you may first need to install the <code>code</code> shell command from the VS Code Command Palette.</li>
         <li>If VS Code reports an extension error, copy its exact text—without personal information—and <a href="https://github.com/sanskarIN/LineLoom/issues">open a GitHub issue</a>. VSIX packaging tests alone cannot verify every machine.</li>
       </ul>
-      <p><strong>Marketplace status:</strong> GitHub VSIX publication does not mean the extension has already been published to Microsoft Marketplace or Open VSX. Publisher: <code>SanskarCodes</code>.</p>
+      <p><strong>Registry status:</strong> LineLoom v1.0.0 is available from the <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">official VS Code Marketplace</a> under publisher <code>SanskarCodes</code>. Open VSX requires a separate publication and is not yet confirmed. Installing from a local VSIX is still supported.</p>
     </section>
-    <div class="doc-actions"><a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download LineLoom v1.0.0 VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
+    <div class="doc-actions"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Install from VS Code Marketplace ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
   </main>
   <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v1.0.0 · stable release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
   <script src="./site.js" defer></script>

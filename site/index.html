@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="LineLoom is an open-source, privacy-minded inline code completion extension for VS Code, powered by the Ollama models you choose.">
+  <meta name="description" content="Install LineLoom from VS Code Marketplace. Local-first, open-source inline code completion powered by your own Ollama models.">
   <meta name="robots" content="index,follow">
   <meta property="og:type" content="website">
   <meta property="og:title" content="LineLoom — Code completion on your terms">
@@ -23,7 +23,7 @@
       <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
       <nav aria-label="Main navigation" class="nav-links">
         <a href="#features">Features</a>
-        <a href="./install.html">Install help</a>
+        <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Marketplace</a><a href="./install.html">Install help</a>
         <a href="#privacy">Privacy</a>
         <a href="#faq">FAQ</a>
       </nav>
@@ -37,10 +37,11 @@
         <h1 id="hero-title">Code completion.<br><em>On your terms.</em></h1>
         <p class="hero-intro">Natural inline suggestions in VS Code, powered by the Ollama model you run. No LineLoom account, no built-in analytics, and no mandatory cloud service.</p>
         <div class="cta-line">
-          <a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download stable VSIX <span aria-hidden="true">↗</span></a>
-          <a class="button button-outline" href="#install">Installation guide <span aria-hidden="true">↓</span></a>
+          <a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Install in VS Code <span aria-hidden="true">↗</span></a>
+          <a class="button button-outline" href="./install.html">Installation guide <span aria-hidden="true">↓</span></a>
         </div>
         <p class="mini-note">Stable v1.0.0 release. Requires <a href="https://code.visualstudio.com/" target="_blank" rel="noopener noreferrer">VS Code 1.96+</a> and your independently installed <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer">Ollama</a> model.</p>
+        <p class="mini-note">Prefer manual installation? <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download the LineLoom-1.0.0.vsix GitHub package</a> and install it inside VS Code.</p>
         <div class="hero-stats" aria-label="LineLoom overview">
           <div><strong>9</strong><span>language IDs</span></div>
           <div><strong>MIT</strong><span>open-source license</span></div>
@@ -84,7 +85,7 @@
       <div class="steps-grid">
         <article class="step"><span class="step-number">01</span><h3>Install Ollama</h3><p>Get Ollama for your operating system and start its service.</p><a href="https://ollama.com/download" target="_blank" rel="noopener noreferrer">Get Ollama <span aria-hidden="true">↗</span></a></article>
         <article class="step"><span class="step-number">02</span><h3>Pull a coding model</h3><p>Download an example model yourself. Model terms and hardware needs vary.</p><div class="command"><code>ollama pull qwen2.5-coder:1.5b</code><button class="copy" type="button" data-copy="ollama pull qwen2.5-coder:1.5b" aria-label="Copy Ollama command">Copy</button></div></article>
-        <article class="step"><span class="step-number">03</span><h3>Install LineLoom</h3><p>Get the GitHub stable VSIX, then use VS Code's “Install from VSIX” action (do not double-click the file).</p><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0">View v1.0.0 release <span aria-hidden="true">↗</span></a></article>
+        <article class="step"><span class="step-number">03</span><h3>Install LineLoom</h3><p>Install from the public VS Code Marketplace listing, or sideload the stable VSIX from GitHub if needed.</p><a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Install from Marketplace <span aria-hidden="true">↗</span></a></article>
         <article class="step"><span class="step-number">04</span><h3>Start writing</h3><p>Open a trusted project and use “LineLoom: Quick Actions” to choose a model and check the connection.</p><a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/troubleshooting/README.md">Troubleshooting <span aria-hidden="true">↗</span></a></article>
       </div>
       <div class="install-note"><span aria-hidden="true">ⓘ</span><p>The default endpoint is <code>http://127.0.0.1:11434</code>. You can configure a remote HTTPS endpoint only with explicit approval; in that case code snippets can leave your device.</p></div>
@@ -95,13 +96,13 @@
         <details><summary>Is LineLoom free?</summary><p>Yes. The extension source is released under the MIT License. Ollama and individual downloaded models have separate licenses and hardware requirements.</p></details>
         <details><summary>Does it need internet access?</summary><p>After independently installing Ollama, a compatible model, and the extension, loopback inference can work without internet access. Fully offline setup and behavior across platforms have not yet been manually validated for stable release.</p></details>
         <details><summary>Is this stable software?</summary><p>v1.0.0 is a GitHub stable release. Automated testing and a clean VS Code CLI install are verified. Actual model quality and hands-on acceptance across platforms are not independently certified.</p></details>
-        <details><summary>Is LineLoom on VS Code Marketplace or Open VSX?</summary><p>This website links to the GitHub stable release. Store listings are separate from GitHub Releases and must be verified before being announced. Publisher ID: SanskarCodes.</p></details>
+        <details><summary>Is LineLoom on VS Code Marketplace or Open VSX?</summary><p>Yes, LineLoom v1.0.0 is published on <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a> under publisher SanskarCodes. Open VSX publication has not yet been verified and requires a separate namespace claim and upload. The GitHub stable VSIX remains available as an alternative.</p></details>
         <details><summary>What about cross-file or repository-wide context?</summary><p>Cross-file retrieval/indexing is not implemented in this release. LineLoom currently uses bounded context from the active trusted-workspace document.</p></details>
       </div>
     </section>
-    <section class="final-cta shell"><div><span class="section-kicker">READY TO TRY IT?</span><h2>Keep your focus.<br><span>Keep your control.</span></h2><p>Install the stable release, send feedback and help shape what's next.</p></div><div class="final-buttons"><a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0">Get LineLoom v1.0.0 ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/issues">Report an issue ↗</a></div></section>
+    <section class="final-cta shell"><div><span class="section-kicker">READY TO TRY IT?</span><h2>Keep your focus.<br><span>Keep your control.</span></h2><p>Install the stable release, send feedback and help shape what's next.</p></div><div class="final-buttons"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Install LineLoom in VS Code ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/issues">Report an issue ↗</a></div></section>
   </main>
-  <footer class="footer"><div class="shell footer-row"><div><a class="brand" href="./"><img src="./assets/lineloom.svg" alt="" width="28" height="28"><span>Line<span class="brand-accent">Loom</span></span></a><p>Open source. Local-first. Built by <a href="https://github.com/sanskarIN">Sanskar</a>.</p></div><div class="footer-links"><a href="https://github.com/sanskarIN/LineLoom">Source</a><a href="https://github.com/sanskarIN/LineLoom/releases">Releases</a><a href="./install.html">Install help</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/LICENSE">MIT License</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/publishing.md">Publishing</a></div></div><div class="shell footer-bottom"><span>© 2026 LineLoom contributors. An independent project; no affiliation with Microsoft or Ollama.</span><span>v1.0.0 · stable</span></div></footer>
+  <footer class="footer"><div class="shell footer-row"><div><a class="brand" href="./"><img src="./assets/lineloom.svg" alt="" width="28" height="28"><span>Line<span class="brand-accent">Loom</span></span></a><p>Open source. Local-first. Built by <a href="https://github.com/sanskarIN">Sanskar</a>.</p></div><div class="footer-links"><a href="https://github.com/sanskarIN/LineLoom">Source</a><a href="https://github.com/sanskarIN/LineLoom/releases">Releases</a><a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">VS Code Marketplace</a><a href="./install.html">Install help</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/LICENSE">MIT License</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/publishing.md">Publishing</a></div></div><div class="shell footer-bottom"><span>© 2026 LineLoom contributors. An independent project; no affiliation with Microsoft or Ollama.</span><span>v1.0.0 · stable</span></div></footer>
   <script src="./site.js" defer></script>
 </body>
 </html>
