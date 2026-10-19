@@ -15,45 +15,45 @@
   <header class="site-header"><div class="shell nav">
     <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
     <nav aria-label="Help navigation" class="nav-links"><a href="./">Home</a><a href="#windows">Windows</a><a href="#mac-linux">macOS / Linux</a><a href="#diagnostics">Troubleshooting</a></nav>
-    <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.4" target="_blank" rel="noopener noreferrer">Preview v0.9.4 ↗</a>
+    <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.5" target="_blank" rel="noopener noreferrer">Preview v0.9.5 ↗</a>
   </div></header>
   <main class="shell install-doc" id="main">
-    <p class="section-kicker">LINELOOM HELP / PREVIEW v0.9.4</p>
+    <p class="section-kicker">LINELOOM HELP / PREVIEW v0.9.5</p>
     <h1>Install the extension.<br><span class="brand-accent">In the right editor.</span></h1>
     <p class="doc-intro">LineLoom is built for <strong>Visual Studio Code</strong>. A <code>.vsix</code> file is downloaded as a normal extension archive; it is <strong>not</strong> a Windows executable. Don't double-click it in File Explorer.</p>
     <aside class="install-warning" aria-label="Important installer warning"><strong>Got “One or more extensions are for Visual Studio Code”?</strong><p>You opened LineLoom using the <em>Visual Studio VSIX Installer</em> (for the full Visual Studio IDE), rather than VS Code. This error usually means the download already succeeded; it does not prove the archive is broken. Close that installer and follow the VS Code steps below.</p></aside>
     <section class="doc-block" id="windows">
       <h2>Windows 11 — recommended method</h2>
       <ol>
-        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.4">Download <code>LineLoom-0.9.4.vsix</code></a> from GitHub release assets (save it normally).</li>
+        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.5">Download <code>LineLoom-0.9.5.vsix</code></a> from GitHub release assets (save it normally).</li>
         <li>Launch <a href="https://code.visualstudio.com/">Visual Studio Code</a>, not Visual Studio Community, Enterprise, or VSIX Installer.</li>
         <li>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> to open the Extensions view.</li>
         <li>Click the <strong>three dots (…)</strong> in the Extensions view, select <strong>Install from VSIX…</strong>, then choose the downloaded file.</li>
         <li>Confirm <strong>LineLoom</strong> appears under installed extensions. Start independently installed <a href="https://ollama.com/download">Ollama</a> and use <strong>LineLoom: Quick Actions</strong> to choose a model.</li>
       </ol>
       <h3>PowerShell alternative</h3><p>Run this command from your Downloads folder if the <code>code</code> command is available in your terminal:</p>
-      <div class="command doc-command"><code>code --install-extension .\LineLoom-0.9.4.vsix</code><button class="copy" type="button" data-copy="code --install-extension .\LineLoom-0.9.4.vsix" aria-label="Copy PowerShell installation command">Copy</button></div>
+      <div class="command doc-command"><code>code --install-extension .\LineLoom-0.9.5.vsix</code><button class="copy" type="button" data-copy="code --install-extension .\LineLoom-0.9.5.vsix" aria-label="Copy PowerShell installation command">Copy</button></div>
       <p>Otherwise, use the built-in Extensions menu described above. You do <strong>not</strong> need to change your Windows file associations.</p>
     </section>
     <section class="doc-block" id="mac-linux">
       <h2>macOS and Linux</h2>
-      <ol><li>Download <code>LineLoom-0.9.4.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.4">GitHub preview</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
-      <div class="command doc-command"><code>code --install-extension ./LineLoom-0.9.4.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-0.9.4.vsix" aria-label="Copy installation command">Copy</button></div>
+      <ol><li>Download <code>LineLoom-0.9.5.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.5">GitHub preview</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
+      <div class="command doc-command"><code>code --install-extension ./LineLoom-0.9.5.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-0.9.5.vsix" aria-label="Copy installation command">Copy</button></div>
     </section>
     <section class="doc-block" id="diagnostics">
       <h2>If installation still fails</h2>
       <ul>
         <li>Check the actual app: select <strong>Help → About</strong> in VS Code. Full Visual Studio and VS Code are different applications.</li>
-        <li>Verify the file ends in <code>.vsix</code> and was obtained from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.4">official GitHub release</a>. A checksum asset is included there.</li>
+        <li>Verify the file ends in <code>.vsix</code> and was obtained from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.5">official GitHub release</a>. A checksum asset is included there.</li>
         <li>Check your VS Code version meets the manifest requirement of <strong>1.96.0 or later</strong> (compatible stable versions).</li>
         <li>If the <code>code</code> command isn't recognized, use the UI method. On macOS, you may first need to install the <code>code</code> shell command from the VS Code Command Palette.</li>
         <li>If VS Code reports an extension error, copy its exact text—without personal information—and <a href="https://github.com/sanskarIN/LineLoom/issues">open a GitHub issue</a>. VSIX packaging tests alone cannot verify every machine.</li>
       </ul>
       <p><strong>Marketplace status:</strong> GitHub VSIX publication does not mean the extension has already been published to Microsoft Marketplace or Open VSX. Publisher: <code>SanskarCodes</code>.</p>
     </section>
-    <div class="doc-actions"><a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/download/v0.9.4/LineLoom-0.9.4.vsix">Download LineLoom v0.9.4 VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
+    <div class="doc-actions"><a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/download/v0.9.5/LineLoom-0.9.5.vsix">Download LineLoom v0.9.5 VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
   </main>
-  <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v0.9.4 · pre-release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
+  <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v0.9.5 · pre-release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
   <script src="./site.js" defer></script>
 </body>
 </html>

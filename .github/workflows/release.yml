@@ -1,13 +1,13 @@
-name: Publish LineLoom v0.9.4 GitHub pre-release
+name: Publish LineLoom v0.9.5 GitHub pre-release
 on:
   push:
     branches: [main]
     paths:
-      - .github/release-v0.9.4.flag
+      - .github/release-v0.9.5.flag
 permissions:
   contents: read
 concurrency:
-  group: lineloom-prerelease-v0.9.4
+  group: lineloom-prerelease-v0.9.5
   cancel-in-progress: false
 jobs:
   publish:
@@ -25,7 +25,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='0.9.4'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected pre-release publisher/version/lockfile')}"
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='0.9.5'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected pre-release publisher/version/lockfile')}"
       - name: Install exactly locked dependencies
         run: npm ci
       - name: Typecheck, lint, unit tests, bundle
@@ -43,13 +43,18 @@ jobs:
           npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
           cat "LineLoom-${VERSION}.sha256"
+      - name: Install pre-release VSIX using isolated VS Code CLI
+        shell: bash
+        run: |
+          set -euo pipefail
+          xvfb-run -a npm run test:install-vsix -- "LineLoom-0.9.5.vsix"
       - name: Reject duplicate release tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if gh release view "v0.9.4" >/dev/null 2>&1; then
-            echo "Release v0.9.4 already exists; refusing to overwrite it."
+          if gh release view "v0.9.5" >/dev/null 2>&1; then
+            echo "Release v0.9.5 already exists; refusing to overwrite it."
             exit 1
           fi
       - name: Publish GitHub pre-release only (not Marketplace or Open VSX)
@@ -57,8 +62,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "v0.9.4" \
-            "LineLoom-0.9.4.vsix" "LineLoom-0.9.4.sha256" \
+          gh release create "v0.9.5" \
+            "LineLoom-0.9.5.vsix" "LineLoom-0.9.5.sha256" \
             --target "${GITHUB_SHA}" --prerelease --latest=false \
-            --title "LineLoom v0.9.4 — VS Code Installation & VSIX Verification Preview" \
-            --notes-file "docs/releases/v0.9.4.md"
+            --title "LineLoom v0.9.5 — VS Code Installation Smoke & Stable Readiness Preview" \
+            --notes-file "docs/releases/v0.9.5.md"
