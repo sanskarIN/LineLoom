@@ -83,7 +83,7 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(page, /href="\.\/install\.html"/);
   assert.match(guide, /Visual Studio VSIX Installer/);
   assert.match(guide, /One or more extensions are for Visual Studio Code/);
-  assert.match(guide, /Don't double-click/);
+  assert.match(guide, /(?:do not|don\x27t) double-click/i);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
   assert.ok(guide.includes("LineLoom-" + pkg.version + ".vsix"));
