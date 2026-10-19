@@ -128,6 +128,20 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         return;
       }
       if (!model) { this.onState("unavailable"); return; }
+      // Privacy gate before constructing or sending any prompt. Workspace
+      // settings may change during debounce or async ignore-file inspection,
+      // before the configuration-change event reaches the engine.
+      const mayUseCurrentConfiguration = (): boolean => {
+        const latest = readConfig();
+        return isRequestConfigurationCurrent(config, latest, language, manual) &&
+          vscode.workspace.isTrusted &&
+          (!url.remote || (latest.allowRemoteEndpoints && this.remoteApproved(url.origin)));
+      };
+      if (!mayUseCurrentConfiguration() || token.isCancellationRequested ||
+          requestId !== this.generation || !isTargetCurrent()) {
+        this.onState("ready");
+        return;
+      }
       const version = initialVersion;
       const offset = document.offsetAt(position);
       // Read only the bounded prefix/suffix ranges: do not copy large editor buffers.
@@ -150,7 +164,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       // A typed prefix of the previous suggestion can be offered without
       // another Ollama request only after the privacy and editor checks above.
       const remainder = !manual ? this.continuations.remainder(continuationPoint) : undefined;
-      if (remainder && isTargetCurrent() && !token.isCancellationRequested &&
+      if (remainder && mayUseCurrentConfiguration() && isTargetCurrent() && !token.isCancellationRequested &&
           requestId === this.generation) {
         this.continuations.remember(continuationPoint, remainder);
         this.metrics.continuationHits++;
@@ -165,15 +179,16 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       ])).digest("hex");
       const cached = this.suggestions.get(key);
       const active = vscode.window.activeTextEditor;
-      if (cached && active?.document === document && isTargetCurrent() &&
-          !token.isCancellationRequested && requestId === this.generation) {
+      if (cached && active?.document === document && mayUseCurrentConfiguration() &&
+          isTargetCurrent() && !token.isCancellationRequested && requestId === this.generation) {
         this.metrics.cacheHits++;
         this.onState("ready");
         this.metrics.completions++;
         this.continuations.remember(continuationPoint, cached);
         return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
       }
-      if (token.isCancellationRequested || requestId !== this.generation || !isTargetCurrent()) return;
+      if (token.isCancellationRequested || requestId !== this.generation ||
+          !isTargetCurrent() || !mayUseCurrentConfiguration()) return;
       // An exact empty-result retry is rarely useful while nothing has changed.
       // Explicit completion requests always bypass the short-lived backoff.
       if (!manual && this.emptyBackoff.shouldSkip(key)) {
