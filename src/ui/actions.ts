@@ -21,6 +21,7 @@ export function quickActions(enabled: boolean, automatic: boolean): QuickAction[
     },
     { id: "trigger", label: "$(sparkle) Trigger Completion", description: "Request a suggestion at the current cursor", command: "lineloom.trigger" },
     { id: "model", label: "$(symbol-method) Select Model", description: "Choose from models on the approved Ollama endpoint", command: "lineloom.selectModel" },
+    { id: "languageModel", label: "$(settings-gear) Assign Language Model", description: "Choose a separate installed Ollama model for one language", command: "lineloom.selectLanguageModel" },
     { id: "languages", label: "$(code) Manage Languages", description: "Choose which editor languages can request suggestions", command: "lineloom.manageLanguages" },
     { id: "connection", label: "$(plug) Check Ollama Connection", description: "Contact the current endpoint only when selected", command: "lineloom.checkConnection" },
     { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },

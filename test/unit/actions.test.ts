@@ -7,8 +7,8 @@ describe("LineLoom Quick Actions", () => {
     const disabled = quickActions(false, true);
     expect(enabled[0].command).toBe("lineloom.disable");
     expect(disabled[0].command).toBe("lineloom.enable");
-    expect(enabled).toHaveLength(8);
-    expect(new Set(enabled.map(action => action.id)).size).toBe(8);
+    expect(enabled).toHaveLength(9);
+    expect(new Set(enabled.map(action => action.id)).size).toBe(9);
   });
   it("offers an automatic pause/resume toggle, keeping manual triggering accessible", () => {
     expect(quickActions(true, true)[1].label).toMatch(/Pause Automatic/);
@@ -19,6 +19,7 @@ describe("LineLoom Quick Actions", () => {
     const actions = quickActions(false, false);
     expect(actions.every(action => /^lineloom\.[a-zA-Z]+$/.test(action.command))).toBe(true);
     expect(actions.some(action => action.command === "lineloom.selectModel")).toBe(true);
+    expect(actions.some(action => action.command === "lineloom.selectLanguageModel")).toBe(true);
     expect(actions.some(action => action.command === "lineloom.checkConnection")).toBe(true);
   });
 });

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { LANGUAGES } from "./languages/registry";
+import { normalizeLanguageModels } from "./settings/language-models";
 import { CompletionEngine } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { quickActions } from "./ui/actions";
@@ -70,6 +71,56 @@ async function selectModel(context: vscode.ExtensionContext): Promise<void> {
     vscode.window.showWarningMessage("Could not retrieve installed Ollama models. Check your inference endpoint.");
   }
 }
+async function selectLanguageModel(context: vscode.ExtensionContext): Promise<void> {
+  // This is user initiated; remote model discovery keeps the same explicit
+  // HTTPS-origin approval boundary as the ordinary Select Model command.
+  const origin = await approveEndpoint(context, true);
+  if (!origin) return;
+  try {
+    const models = await listModels(origin);
+    if (!models.length) {
+      vscode.window.showInformationMessage("No Ollama models installed on the configured endpoint.");
+      return;
+    }
+    const configuration = readConfig();
+    const language = await vscode.window.showQuickPick(
+      LANGUAGES.map((item) => ({
+        label: item.label, description: item.id,
+        detail: "Current: " + (configuration.languageModels[item.id] || "Default (" + configuration.model + ")"),
+        languageId: item.id
+      })),
+      { placeHolder: "Choose the language to assign an Ollama model" }
+    );
+    if (!language) return;
+    const choices = [
+      { label: "$(discard) Use Default Model", description: configuration.model, model: "" },
+      ...models.map((model) => ({ label: model.name, description: "Installed on the approved endpoint", model: model.name }))
+    ];
+    const selected = await vscode.window.showQuickPick(choices, {
+      placeHolder: "Assign an installed model for " + language.label + " or use the default"
+    });
+    if (!selected) return;
+    if (selected.model && !await showModel(origin, selected.model)) {
+      throw new Error("Selected model is no longer available.");
+    }
+    // Keep the global default intact; only the selected language is changed.
+    const updated = normalizeLanguageModels(
+      vscode.workspace.getConfiguration("lineloom").get<unknown>("languageModels")
+    );
+    if (selected.model) updated[language.languageId] = selected.model;
+    else delete updated[language.languageId];
+    await vscode.workspace.getConfiguration("lineloom").update(
+      "languageModels", updated, vscode.ConfigurationTarget.Global
+    );
+    engine?.cancel();
+    vscode.window.showInformationMessage(
+      "LineLoom " + language.label + ": " + (selected.model || "default model") + "."
+    );
+  } catch {
+    vscode.window.showWarningMessage("Could not assign a language model. Check the selected Ollama endpoint and installed models.");
+  }
+}
+
 async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
   const action = await vscode.window.showInformationMessage(
     "Welcome to LineLoom. Install and start Ollama, run 'ollama pull qwen2.5-coder:1.5b', then check your connection.",
@@ -123,6 +174,7 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   output.appendLine("Workspace trusted: " + vscode.workspace.isTrusted);
   output.appendLine("Inference location: " + location);
   output.appendLine("Model: " + config.model);
+  output.appendLine("Language model overrides: " + Object.keys(config.languageModels).length + " configured (inspect VS Code settings to review model tags)");
   output.appendLine("Enabled: " + config.enabled + "; automatic: " + config.autoTrigger);
   output.appendLine("Cross-file context: not implemented (no cross-file reads)");
   output.appendLine("Registered languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
@@ -169,6 +221,7 @@ export function activate(context: vscode.ExtensionContext): void {
     );
   });
   command("lineloom.selectModel", () => selectModel(context));
+  command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context));
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", "@ext:sanskarIN.lineloom"));
