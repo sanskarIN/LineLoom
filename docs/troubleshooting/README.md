@@ -1,5 +1,7 @@
 # Troubleshooting
 
+**Open VSX installation:** [LineLoom v1.0.0 on Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom) is published under namespace `SanskarCodes` for editors configured to use Open VSX. Verify that your editor uses the matching registry before installing. A public listing does not imply an Open VSX verified-publisher badge.
+
 **Recommended VS Code installation:** [LineLoom v1.0.0 on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) or run `code --install-extension SanskarCodes.lineloom` using VS Code's CLI. Check publisher `SanskarCodes` in VS Code Extensions. If you downloaded the GitHub `.vsix` instead, install it through VS Code Extensions → … → Install from VSIX; do not double-click it in Windows Explorer.
 
 

@@ -42,9 +42,9 @@
 
 **v0.9.5 (pre-release):** automate isolated VS Code CLI installation of the packaged VSIX and track genuine cross-platform/model acceptance evidence before v1.0.0.
 
-**v1.0.0 (released 2026-10-19):** Stable GitHub VSIX and [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) publication. Independently measured Ollama model quality and manual cross-platform acceptance remain ongoing; do not claim these unperformed tests have passed.
+**v1.0.0 (released 2026-10-19):** Stable GitHub VSIX, [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) publication. Independently measured Ollama model quality and manual cross-platform acceptance remain ongoing; do not claim these unperformed tests have passed.
 
-**Next distribution milestone:** verify ownership of the Open VSX `SanskarCodes` namespace, publish the existing v1.0.0 stable VSIX to Open VSX, and verify the public listing before adding any Open VSX download or install links.
+**Next distribution milestone:** maintain both published registries, pursue Open VSX publisher verification if eligible (registry currently reports `verified: false`), and coordinate future version updates across GitHub, Visual Studio Marketplace and Open VSX.
 
 **Next maintenance:** user-reported completion-quality fixes, more editor behavior checks and real-model verification.
 

@@ -4,7 +4,7 @@ Website source: `site/` (standalone HTML, CSS, SVG and small JavaScript, with no
 
 https://sanskarin.github.io/LineLoom/
 
-**Primary install destination:** [LineLoom v1.0.0 on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom). The GitHub VSIX remains an alternate path, and Open VSX is not yet published.
+**Official install destinations:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) for VS Code and [Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom) for compatible editors. Stable v1.0.0 is public on both. The [GitHub VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix) remains an alternate/manual installation path.
 
 ## First-time GitHub Pages activation
 
@@ -29,6 +29,6 @@ npm run test:site
 
 Use a local server (for example `npx serve site` if you already have that utility) and inspect keyboard tab navigation, contrast, 320px/768px/desktop layout, copy-button behavior and actual outbound links. The editor illustration is explicitly labeled an illustrative mockup, **not** a VS Code screenshot or measured output.
 
-**Versioning:** Website links target the release version declared in `package.json` and tested in `npm run test:site`. The current stable version is v1.0.0. The homepage's primary install action opens the verified Marketplace listing; the download page retains the original GitHub release fallback. A Page deployment can finish before the tagged GitHub release exists; the download URL only works after the release workflow succeeds. The site is intentionally independent from the binary packaging and is excluded from VSIX contents.
+**Versioning:** Website links target the release version declared in `package.json` and tested in `npm run test:site`. The current stable version is v1.0.0. The homepage links to both public registries, with Marketplace as the primary VS Code install action. The installation page also retains the original GitHub release fallback. A Page deployment can finish before the tagged GitHub release exists; the download URL only works after the release workflow succeeds. The site is intentionally independent from the binary packaging and is excluded from VSIX contents.
 
 **Not provided by this deployment:** Marketplace or Open VSX publication, model downloads, hosted Ollama inference, stable v1.0.0 verification, or editor testing with real local models. See [publishing guide](publishing.md) and [stable gate](releases/v1.0.0.md).
