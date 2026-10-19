@@ -7,7 +7,7 @@ import { mayComplete } from "../../src/privacy/exclusions";
 
 
 export async function run(): Promise<void> {
-  const extension = vscode.extensions.getExtension("sanskarIN.lineloom");
+  const extension = vscode.extensions.getExtension("SanskarCodes.lineloom");
   assert.ok(extension, "VS Code must discover LineLoom");
   await extension.activate();
   const required = [
