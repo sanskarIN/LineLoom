@@ -12,6 +12,7 @@ import { mayComplete } from "../privacy/exclusions";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { generateCompletion } from "../models/ollama";
 import { isRequestConfigurationCurrent } from "./request-state";
+import { resolveLanguageModel } from "../settings/language-models";
 
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
@@ -92,6 +93,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!config.autoTrigger && context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) return;
     const language = getLanguage(document.languageId);
     if (!language || !isLanguageEnabled(language, config.enabledLanguages) || token.isCancellationRequested) return;
+    const model = resolveLanguageModel(config.model, language.id, config.languageModels);
     // Do not overwrite an active native IntelliSense entry during automatic triggering.
     if (context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic && context.selectedCompletionInfo) return;
     const initialVersion = document.version;
@@ -125,7 +127,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("unavailable");
         return;
       }
-      if (!config.model) { this.onState("unavailable"); return; }
+      if (!model) { this.onState("unavailable"); return; }
       const version = initialVersion;
       const offset = document.offsetAt(position);
       // Read only the bounded prefix/suffix ranges: do not copy large editor buffers.
@@ -136,7 +138,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
       const profileDigest = createHash("sha256").update(JSON.stringify([
-        url.origin, config.model, config.temperature, config.contextSize,
+        url.origin, model, config.temperature, config.contextSize,
         config.maxOutputTokens, config.multiLine, config.maxSuggestionLines,
         config.maxContextChars
       ])).digest("hex");
@@ -157,7 +159,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         return [new vscode.InlineCompletionItem(remainder, new vscode.Range(position, position))];
       }
       const key = createHash("sha256").update(JSON.stringify([
-        document.uri.toString(), document.languageId, document.version, offset, url.origin, config.model,
+        document.uri.toString(), document.languageId, document.version, offset, url.origin, model,
         config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
         config.maxSuggestionLines, extracted.prefix, extracted.suffix
       ])).digest("hex");
@@ -179,7 +181,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         return;
       }
-      const prompt = buildPrompt(language, extracted, config.model);
+      const prompt = buildPrompt(language, extracted, model);
       const controller = new AbortController();
       this.controller = controller;
       const cancelSubscription = token.onCancellationRequested(() => controller.abort());
@@ -190,7 +192,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       this.onState("generating");
       try {
         const raw = await generateCompletion(url.origin, {
-          model: config.model, prompt: prompt.prompt, suffix: prompt.suffix,
+          model, prompt: prompt.prompt, suffix: prompt.suffix,
           numPredict: config.maxOutputTokens, contextSize: config.contextSize,
           temperature: config.temperature, keepAlive: config.keepAlive
         }, controller.signal);

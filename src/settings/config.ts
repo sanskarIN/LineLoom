@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { normalizeLanguageModels, type LanguageModels } from "./language-models";
 import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
 export interface LineLoomConfig {
   enabled: boolean;
@@ -7,6 +8,7 @@ export interface LineLoomConfig {
   minAutoTriggerChars: number;
   suppressMidTokenAuto: boolean;
   model: string;
+  languageModels: LanguageModels;
   endpoint: string;
   allowRemoteEndpoints: boolean;
   debounceMs: number;
@@ -35,6 +37,7 @@ export function readConfig(): LineLoomConfig {
     minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
     suppressMidTokenAuto: c.get("suppressMidTokenAuto", true),
     model: c.get("model", "qwen2.5-coder:1.5b").trim(),
+    languageModels: normalizeLanguageModels(c.get<unknown>("languageModels")),
     endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
     allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),
     debounceMs: clamp(c.get("debounceMs", 250), 0, 3000),

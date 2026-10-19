@@ -15,6 +15,7 @@ export function isRequestConfigurationCurrent(
   if (!latest.enabled || (!manual && !latest.autoTrigger) ||
       !isLanguageEnabled(language, latest.enabledLanguages)) return false;
   return initial.model === latest.model &&
+    JSON.stringify(initial.languageModels) === JSON.stringify(latest.languageModels) &&
     initial.endpoint === latest.endpoint &&
     initial.allowRemoteEndpoints === latest.allowRemoteEndpoints &&
     initial.maxContextChars === latest.maxContextChars &&

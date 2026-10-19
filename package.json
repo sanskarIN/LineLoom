@@ -239,6 +239,14 @@
           "type": "boolean",
           "default": true,
           "description": "Avoid automatic Ollama requests when the cursor is directly before an existing identifier character. Explicit manual completions bypass this guard."
+        },
+        "lineloom.languageModels": {
+          "type": "object",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          },
+          "description": "Optional installed Ollama model tags for specific language IDs (python, javascript, typescript, rust, kotlin, go, java, c, cpp). Empty or unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. Other languages use lineloom.model. No model downloads are performed."
         }
       }
     }
