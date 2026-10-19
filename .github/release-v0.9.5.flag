@@ -1,0 +1,3 @@
+Trigger LineLoom v0.9.5 GitHub pre-release only after PR #16 passed Windows/macOS/Linux CI, mocked Ollama VS Code extension-host tests, dependency security and headless clean VS Code VSIX installation smoke.
+The final stable v1.0.0 release is explicitly deferred until the user requests it and real-model/manual cross-platform QA is complete.
+No Visual Studio Marketplace or Open VSX upload occurs in this workflow.
