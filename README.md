@@ -12,7 +12,7 @@ The GitHub v1.0.0 release includes a `LineLoom-1.0.0.vsix` package packaged for 
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
-**Registry status:** the GitHub pre-release is distinct from Microsoft Visual Studio Marketplace and Open VSX listings. Neither listing should be advertised before publication is confirmed. The extension publisher ID is **SanskarCodes**, not the GitHub user ID `sanskarIN`. [Publisher onboarding / registry instructions](docs/publishing.md).
+**Registry status:** the GitHub stable release is distinct from Microsoft Visual Studio Marketplace and Open VSX listings. Neither listing should be advertised before publication is confirmed. The extension publisher ID is **SanskarCodes**, not the GitHub user ID `sanskarIN`. [Publisher onboarding / registry instructions](docs/publishing.md).
 
 ## Project website and documentation
 
@@ -20,9 +20,9 @@ The LineLoom static website is maintained in [`site/`](site/) and deployed throu
 
 Website content is excluded from the extension VSIX package. This does not add hosted inference, an account requirement or telemetry.
 
-## Pre-release verification status
+## Release verification status
 
-The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v1.0.0-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace/Open VSX publication still requires separate publisher authorization, and real-model QA remains ongoing.**
+The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace/Open VSX publication still requires separate publisher authorization, and real-model QA remains ongoing.**
 
 ## Features
 
@@ -44,7 +44,7 @@ The v1.0.0 stable packaging workflow checks archive integrity **and** installs t
 1. Install [VS Code](https://code.visualstudio.com/) and [Ollama](https://ollama.com/download) for Windows, Linux or macOS.
 2. Start Ollama according to its platform instructions. Confirm that `http://127.0.0.1:11434/api/tags` is reachable locally.
 3. Install a coding model yourself: `ollama pull qwen2.5-coder:1.5b`. Downloads consume storage; see model licensing and system requirements.
-4. Install the VSIX from the GitHub preview release as described above. For local development from source instead, run `npm ci`, `npm run build`, open the repo in VS Code and press **F5**.
+4. Install the VSIX from the GitHub stable release as described above. For local development from source instead, run `npm ci`, `npm run build`, open the repo in VS Code and press **F5**.
 5. In VS Code (or the Extension Development Host), open a **trusted folder** containing a supported source file (e.g. `.py`, `.js`, `.ts`, `.rs`, `.kt`, `.go`, `.java`, `.c`, or `.cpp`).
 6. Type some code, or run **LineLoom: Trigger Completion**. Accept native inline text with your VS Code inline-suggest keybinding.
 7. Run **LineLoom: Check Ollama Connection** or **LineLoom: Select Model** if suggestions do not appear.
@@ -65,7 +65,7 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Architecture](docs/architecture/README.md)
 - [Development and testing](CONTRIBUTING.md)
 - [Troubleshooting](docs/troubleshooting/README.md)
-- [v1.0.0 preview release notes](docs/releases/v1.0.0.md) and [future v1.0.0 validation checklist](docs/releases/v1.0.0.md)
+- [v1.0.0 stable release notes](docs/releases/v1.0.0.md) and [ongoing manual QA checklist](docs/qa/v0.9.5-readiness.md)
 
 ## Development
 
@@ -75,7 +75,7 @@ npm run check
 npm run package
 ```
 
-The GitHub pre-release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Stable v1.0.0 and external registry publication have separate verification gates. [Roadmap](docs/roadmap.md).
+The GitHub v1.0.0 stable release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. External registry publication remains a separate authorized publishing step. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 
