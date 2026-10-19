@@ -27,6 +27,6 @@ npm run test:site
 
 Use a local server (for example `npx serve site` if you already have that utility) and inspect keyboard tab navigation, contrast, 320px/768px/desktop layout, copy-button behavior and actual outbound links. The editor illustration is explicitly labeled an illustrative mockup, **not** a VS Code screenshot or measured output.
 
-**Versioning:** Website links target the release version declared in `package.json` and tested in `npm run test:site`. The current preview is v0.9.5. A Page deployment can finish before the tagged GitHub release exists; the download URL only works after the release workflow succeeds. The site is intentionally independent from the binary packaging and is excluded from VSIX contents.
+**Versioning:** Website links target the release version declared in `package.json` and tested in `npm run test:site`. The current GitHub stable version is v1.0.0. A Page deployment can finish before the tagged GitHub release exists; the download URL only works after the release workflow succeeds. The site is intentionally independent from the binary packaging and is excluded from VSIX contents.
 
 **Not provided by this deployment:** Marketplace or Open VSX publication, model downloads, hosted Ollama inference, stable v1.0.0 verification, or editor testing with real local models. See [publishing guide](publishing.md) and [stable gate](releases/v1.0.0.md).
