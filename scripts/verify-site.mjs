@@ -11,13 +11,13 @@ const css = readFileSync(resolve(dir, "styles.css"), "utf8");
 const js = readFileSync(resolve(dir, "site.js"), "utf8");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 
-test("static site identity follows the preview manifest", () => {
+test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
-  assert.match(pkg.version, /^0\.\d+\.\d+$/);
-  assert.ok(page.includes("v" + pkg.version + " preview"));
+  assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
+  assert.ok(page.includes("v" + pkg.version + " stable"));
   assert.ok(page.includes("LineLoom-" + pkg.version + ".vsix"));
   assert.ok(page.includes("v" + pkg.version));
-  assert.ok(!page.includes("LineLoom-0.9.4.vsix"), "obsolete download link");
+  assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
   assert.match(page, /not an actual model benchmark or editor screenshot/);
 });
@@ -42,7 +42,7 @@ test("site has semantic layout, accessible navigation, honest preview privacy co
     "not implemented in this preview",
     "Go, Java, C and C++ are experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
-  assert.match(page, /pre-release/i);
+  assert.match(page, /stable release/i);
   assert.doesNotMatch(page, /https?:\/\/(marketplace\.visualstudio\.com\/items\?|open-vsx\.org\/extension\/)/, "Do not invent marketplace listing URLs");
 });
 
