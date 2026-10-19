@@ -8,7 +8,7 @@ describe("LineLoom root license metadata", () => {
     const lock = JSON.parse(readFileSync("package-lock.json", "utf8")) as {
       packages: Record<string, { license: string }>
     };
-    expect(license.startsWith("MIT License\n")).toBe(true);
+    expect(license.replace(/\r\n/g, "\n").startsWith("MIT License\n")).toBe(true);
     expect(license).toContain("Copyright (c) 2026 Sanskar");
     expect(license).toContain('THE SOFTWARE IS PROVIDED "AS IS"');
     expect(pkg.license).toBe("MIT");
