@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 
-describe("Marketplace preview manifest", () => {
+describe("Marketplace release manifest", () => {
   const pkg = JSON.parse(readFileSync("package.json", "utf8")) as {
     name: string;
     displayName: string;
@@ -29,16 +29,17 @@ describe("Marketplace preview manifest", () => {
   });
 
   it("keeps lockfile and extension version synchronized", () => {
-    expect(pkg.version.startsWith("0.")).toBe(true);
+    expect(pkg.version).toBe("1.0.0");
     expect(pkg.version.split(".")).toHaveLength(3);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
     expect(lock.packages[""].version).toBe(pkg.version);
   });
 
-  it("defaults to pre-release VSIX packaging, not stable marketplace packaging", () => {
-    expect(pkg.scripts.package).toContain("--pre-release");
+  it("packages stable by default and keeps preview packaging explicit", () => {
     expect(pkg.scripts.package).toContain("--no-dependencies");
-    expect(pkg.scripts["package:preview"]).toBe("npm run package");
+    expect(pkg.scripts.package).not.toContain("--pre-release");
+    expect(pkg.scripts["package:preview"]).toContain("vsce package --pre-release");
+    expect(pkg.scripts["package:stable"]).toBe("npm run package");
   });
 });

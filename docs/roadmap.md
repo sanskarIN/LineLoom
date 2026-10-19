@@ -42,7 +42,7 @@
 
 **v0.9.5 (pre-release):** automate isolated VS Code CLI installation of the packaged VSIX and track genuine cross-platform/model acceptance evidence before v1.0.0.
 
-**Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
+**After v1.0.0 GitHub stable:** complete real-model interactive QA and platform smoke checks, then publish the verified stable VSIX separately to Visual Studio Marketplace and Open VSX after account/namespace authorization.\n\n**Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
 

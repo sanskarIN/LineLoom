@@ -1,17 +1,17 @@
-name: Publish LineLoom v0.9.5 GitHub pre-release
+name: Publish LineLoom v1.0.0 GitHub stable release
 on:
   push:
     branches: [main]
     paths:
-      - .github/release-v0.9.5.flag
+      - .github/release-v1.0.0.flag
 permissions:
   contents: read
 concurrency:
-  group: lineloom-prerelease-v0.9.5
+  group: lineloom-stable-v1.0.0
   cancel-in-progress: false
 jobs:
   publish:
-    name: Verify, package and publish GitHub preview only
+    name: Verify, package and publish GitHub stable only
     if: github.repository == 'sanskarIN/LineLoom'
     runs-on: ubuntu-latest
     permissions:
@@ -21,11 +21,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Validate pre-release version, publisher and lockfile
+      - name: Validate stable version, publisher and lockfile
         shell: bash
         run: |
           set -euo pipefail
-          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='0.9.5'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected pre-release publisher/version/lockfile')}"
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='1.0.0'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected stable publisher/version/lockfile')}"
       - name: Install exactly locked dependencies
         run: npm ci
       - name: Typecheck, lint, unit tests, bundle
@@ -34,36 +34,36 @@ jobs:
         run: xvfb-run -a npm run test:integration
       - name: Dependency audit
         run: npm audit --audit-level=high
-      - name: Package marketplace-marked pre-release VSIX
+      - name: Package stable VSIX with archive verification
         shell: bash
         run: |
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
-          npx vsce package --pre-release --no-dependencies -o "LineLoom-${VERSION}.vsix"
+          npx vsce package --no-dependencies -o "LineLoom-${VERSION}.vsix"
           npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
           cat "LineLoom-${VERSION}.sha256"
-      - name: Install pre-release VSIX using isolated VS Code CLI
+      - name: Install stable VSIX using isolated VS Code CLI
         shell: bash
         run: |
           set -euo pipefail
-          xvfb-run -a npm run test:install-vsix -- "LineLoom-0.9.5.vsix"
+          xvfb-run -a npm run test:install-vsix -- "LineLoom-1.0.0.vsix"
       - name: Reject duplicate release tag
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          if gh release view "v0.9.5" >/dev/null 2>&1; then
-            echo "Release v0.9.5 already exists; refusing to overwrite it."
+          if gh release view "v1.0.0" >/dev/null 2>&1; then
+            echo "Release v1.0.0 already exists; refusing to overwrite it."
             exit 1
           fi
-      - name: Publish GitHub pre-release only (not Marketplace or Open VSX)
+      - name: Publish GitHub stable release only (not Marketplace or Open VSX)
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
-          gh release create "v0.9.5" \
-            "LineLoom-0.9.5.vsix" "LineLoom-0.9.5.sha256" \
-            --target "${GITHUB_SHA}" --prerelease --latest=false \
-            --title "LineLoom v0.9.5 — VS Code Installation Smoke & Stable Readiness Preview" \
-            --notes-file "docs/releases/v0.9.5.md"
+          gh release create "v1.0.0" \
+            "LineLoom-1.0.0.vsix" "LineLoom-1.0.0.sha256" \
+            --target "${GITHUB_SHA}" --latest \
+            --title "LineLoom v1.0.0 — Stable Release: VS Code + Ollama Inline Completions" \
+            --notes-file "docs/releases/v1.0.0.md"
