@@ -43,8 +43,8 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
-  // The official Microsoft Marketplace listing is now published; Open VSX is not.
-  assert.doesNotMatch(page, /https?:\/\/open-vsx\.org\/extension\//, "Do not advertise an unpublished Open VSX listing");
+  // Both official registries have publicly listed stable v1.0.0.
+  assert.ok(page.includes("https://open-vsx.org/extension/SanskarCodes/lineloom"), "Open VSX listing must be linked");
 });
 
 test("every local asset and fragment navigation target exists", () => {
@@ -96,30 +96,41 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
 });
 
 
-test("published Marketplace listing is primary and Open VSX remains pending", () => {
+test("official Marketplace and Open VSX listings are visible throughout published resources", () => {
   const marketplaceUrl = "https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom";
+  const openVsxUrl = "https://open-vsx.org/extension/SanskarCodes/lineloom";
   const guide = readFileSync(resolve(dir, "install.html"), "utf8");
   const readme = readFileSync(resolve(root, "README.md"), "utf8");
   const publisherGuide = readFileSync(resolve(root, "docs/publishing.md"), "utf8");
   const releaseNotes = readFileSync(resolve(root, "docs/releases/v1.0.0.md"), "utf8");
   const roadmap = readFileSync(resolve(root, "docs/roadmap.md"), "utf8");
+  const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
+  const pagesGuide = readFileSync(resolve(root, "docs/github-pages.md"), "utf8");
+  const troubleshooting = readFileSync(resolve(root, "docs/troubleshooting/README.md"), "utf8");
 
-  for (const [label, text] of [
+  for (const [label, content] of [
     ["homepage", page],
     ["install guide", guide],
     ["README", readme],
     ["publishing guide", publisherGuide],
     ["release notes", releaseNotes],
     ["roadmap", roadmap],
+    ["changelog", changelog],
+    ["Pages guide", pagesGuide],
+    ["troubleshooting", troubleshooting],
   ]) {
-    assert.ok(text.includes(marketplaceUrl), label + " must link to the official published listing");
+    assert.ok(content.includes(marketplaceUrl), label + " should link to the published Microsoft Marketplace listing");
+    assert.ok(content.includes(openVsxUrl), label + " should link to the published Open VSX listing");
   }
-  assert.ok(page.includes('<a class="button button-primary" href="' + marketplaceUrl + '">'), "Homepage should prioritize Marketplace");
-  assert.ok(guide.includes('id="marketplace"'), "Install page should include direct Marketplace instructions");
-  assert.ok(guide.includes("code --install-extension SanskarCodes.lineloom"), "Marketplace CLI command should be shown");
-  assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "README should include Marketplace CLI command");
-  assert.ok(page.includes("Open VSX publication has not yet been verified"));
-  assert.ok(publisherGuide.includes("Open VSX is not published/verified yet"));
-  assert.ok(readme.includes("Open VSX publication is still"));
-  assert.ok(!(page + guide + readme).includes("open-vsx.org/extension/"), "Do not invent an Open VSX listing");
+  assert.ok(page.includes('<a class="button button-primary" href="' + marketplaceUrl + '">'), "Marketplace should be the primary VS Code CTA");
+  assert.ok(page.includes('<a class="button button-outline" href="' + openVsxUrl + '">'), "Open VSX should appear as a clear second download action");
+  assert.ok(guide.includes('id="marketplace"'), "Installation guide should explain Microsoft Marketplace");
+  assert.ok(guide.includes('id="open-vsx"'), "Installation guide should explain Open VSX");
+  assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "VS Code CLI install command must be documented");
+  assert.ok(readme.includes("LineLoom-1.0.0.vsix"), "GitHub VSIX fallback should remain available");
+  assert.ok(page.includes("Open VSX currently shows no publisher verification badge"), "Avoid falsely claiming an Open VSX verified publisher");
+  assert.ok(publisherGuide.includes("verified: false"), "Record verified-badge distinction accurately");
+  assert.ok(!page.includes("Open VSX publication has not yet been verified"), "Remove old unlaunched registry language");
+  assert.ok(!publisherGuide.includes("Open VSX is not published/verified yet"), "Remove old unlaunched registry language");
+  assert.ok(!readme.includes("Open VSX publication is still"), "Remove old unlaunched registry language");
 });
