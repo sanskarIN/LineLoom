@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "publisher": "SanskarCodes",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "MIT",
@@ -34,7 +34,7 @@
   "bugs": {
     "url": "https://github.com/sanskarIN/LineLoom/issues"
   },
-  "homepage": "https://github.com/sanskarIN/LineLoom#readme",
+  "homepage": "https://sanskarin.github.io/LineLoom/",
   "activationEvents": [
     "onStartupFinished"
   ],
@@ -271,7 +271,8 @@
     "test:integration": "node scripts/integration.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "package:preview": "npm run package",
-    "test:site": "node --test scripts/verify-site.mjs"
+    "test:site": "node --test scripts/verify-site.mjs",
+    "verify:vsix": "node scripts/verify-vsix.mjs"
   },
   "dependencies": {
     "ignore": "^7.0.5"
