@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.5] — 2026-10-19 — Packaged Installation Smoke & Stable Readiness
+
+- Verified that the previous Windows user screenshot demonstrates v0.9.4 installation **inside VS Code**, rather than real model completion or a broken VSIX download.
+- Added an isolated real VS Code CLI smoke test that installs the shipped preview VSIX and checks `SanskarCodes.lineloom@0.9.5` appears in the installed extensions list, with no user-profile mutation.
+- Made CI and the release workflow require this packaged-install check alongside existing ZIP integrity, mocked extension-host, cross-platform, site and dependency security checks.
+- Added a manual QA evidence matrix for genuine suggestions, acceptance, privacy, model diagnostics, and Windows/macOS/Linux tests before eventual stable v1.0.0.
+- Updated installation docs, GitHub Pages download links, pre-release version and lockfile. No stable or external registry publishing is performed.
+
+
 ## [0.9.4] — 2026-10-19 — VS Code Installation & VSIX Verification Preview
 
 - Clarified that VSIX files for LineLoom must be installed in **Visual Studio Code**, not the full Visual Studio IDE's VSIX Installer. Windows file associations can misleadingly open the wrong program despite a successful download.
