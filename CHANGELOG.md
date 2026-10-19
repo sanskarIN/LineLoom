@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.2] — 2026-10-19 — Marketplace Identity & Preview Packaging
+
+- Updated the extension `publisher` to **SanskarCodes** to match the newly created Visual Studio Marketplace publisher; the GitHub organization/user remains `sanskarIN`.
+- Updated package and npm lockfile to `0.9.2`. Added a regression test guarding extension identity, package/lockfile version alignment and default VSIX pre-release packaging.
+- Made `npm run package`, CI candidates and the GitHub release workflow use `vsce package --pre-release`, so assets are explicitly marked for VS Code's preview channel.
+- CI now derives preview artifact names from `package.json` and requires Linux extension-host integration before uploading preview candidates.
+- Added practical manual instructions for Microsoft Marketplace and Open VSX publisher setup, separate from the GitHub pre-release.
+- Preserved the existing nine-language completion engine and privacy controls; this is a **distribution/readiness** update, not a claim of improved model accuracy.
+
+**Registry status:** v0.9.2 is a GitHub pre-release; the Microsoft Marketplace and Open VSX require separate verified publishing actions. **Stable v1.0.0 remains blocked** pending real-model and manual cross-platform verification.
+
 ## [0.9.1] — 2026-10-19 — Pre-Dispatch Privacy & Model-Picker Safety Preview
 
 - Added a **send-time safety gate** to the completion provider: after typing debounce and asynchronous sensitive-file checks, the extension revalidates current inference settings, model assignments, trusted-workspace state, and explicit remote-endpoint consent before building and sending a prompt.
