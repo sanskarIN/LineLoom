@@ -1,6 +1,7 @@
 # LineLoom
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/SanskarCodes.lineloom?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
+[![Open VSX Registry](https://img.shields.io/open-vsx/v/SanskarCodes/lineloom?label=Open%20VSX)](https://open-vsx.org/extension/SanskarCodes/lineloom)
 [![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
 [![MIT license](https://img.shields.io/badge/license-MIT-70d6ce)](LICENSE)
 
@@ -12,7 +13,11 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 ## Install LineLoom
 
-**[Install LineLoom from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)** — the official public listing for publisher `SanskarCodes`, extension ID `SanskarCodes.lineloom`.
+Install the stable v1.0.0 from your editor's supported registry:
+
+- **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)** — for VS Code users.
+- **[Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom)** — for compatible editors using the Open VSX extension registry.
+- Both official listings use publisher `SanskarCodes`, extension ID `SanskarCodes.lineloom`, and version **1.0.0**.
 
 In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify the publisher **SanskarCodes**, and choose **Install**. You can also use the Command Palette's **Extensions: Install Extensions** action, or the VS Code CLI:
 
@@ -20,13 +25,15 @@ In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify th
 code --install-extension SanskarCodes.lineloom
 ```
 
+If your editor obtains extensions from Open VSX, open its Extensions view, search for **LineLoom**, and verify the publisher **SanskarCodes**. The same stable v1.0.0 is also available from [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom). The Open VSX entry is publicly downloadable; publisher verification/badge status is separate.
+
 ### Alternative: install the GitHub stable VSIX
 
 The [GitHub v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0) includes `LineLoom-1.0.0.vsix` for offline/manual installation. Download the VSIX and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.0.0.vsix`).
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
-**Registry status:** LineLoom **v1.0.0 is now public on [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)**. Open VSX publication is still **pending** namespace authorization and a separate upload. GitHub owner `sanskarIN` and extension publisher ID `SanskarCodes` are intentionally different. [Publishing and Open VSX instructions](docs/publishing.md).
+**Registry status:** LineLoom **v1.0.0 is published on [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom)**. The Open VSX registry currently reports `verified: false` for the publisher; this does **not** mean the extension is unpublished. GitHub owner `sanskarIN` and extension publisher ID `SanskarCodes` are intentionally different. [Publisher and update instructions](docs/publishing.md).
 
 ## Project website and documentation
 
@@ -36,7 +43,7 @@ Website content is excluded from the extension VSIX package. This does not add h
 
 ## Release verification status
 
-The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace is live; Open VSX publication remains pending, and real-model QA remains ongoing.**
+The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace and Open VSX are live; hands-on real-model QA remains ongoing.**
 
 ## Features
 
@@ -89,7 +96,7 @@ npm run check
 npm run package
 ```
 
-The GitHub v1.0.0 stable release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. The [VS Code Marketplace listing](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) is public; Open VSX requires a separate authorized publication. [Roadmap](docs/roadmap.md).
+The GitHub v1.0.0 stable release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. Both the [VS Code Marketplace listing](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX listing](https://open-vsx.org/extension/SanskarCodes/lineloom) are public; each future update must be published separately. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 
