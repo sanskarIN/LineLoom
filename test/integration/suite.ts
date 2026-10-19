@@ -211,6 +211,10 @@ export async function run(): Promise<void> {
         // types its first character in a single ordinary edit.
         const refreshed = document.positionAt(document.getText().length);
         activeEditor.selection = new vscode.Selection(refreshed, refreshed);
+        // Drain previously queued editor-selection notifications before starting
+        // a new generation. They can otherwise cancel a valid fresh request.
+        await new Promise<void>((resolve) => setTimeout(resolve, 125));
+        engine.cancel();
         const renewed = await engine.provideInlineCompletionItems(document, refreshed, trigger, cancellation.token);
         assert.equal(renewed?.[0]?.insertText, "42", "Expected a new candidate for typed continuation");
         const callsBeforeTyping = generationCalls;
