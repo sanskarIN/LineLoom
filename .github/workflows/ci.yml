@@ -55,6 +55,12 @@ jobs:
           npx vsce package --pre-release --no-dependencies -o "LineLoom-${VERSION}.vsix"
           npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
+      - name: Install packaged preview in a clean VS Code CLI profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
           name: lineloom-marketplace-preview-candidate
