@@ -13,11 +13,11 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 
 test("static site identity follows the preview manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
-  assert.equal(pkg.version, "0.9.4");
-  assert.match(page, /v0\.9\.4 preview/);
-  assert.match(page, /LineLoom-0\.9\.4\.vsix/);
-  assert.match(page, /v0\.9\.4/);
-  assert.ok(!page.includes("LineLoom-0.9.3.vsix"), "obsolete download link");
+  assert.match(pkg.version, /^0\.\d+\.\d+$/);
+  assert.ok(page.includes("v" + pkg.version + " preview"));
+  assert.ok(page.includes("LineLoom-" + pkg.version + ".vsix"));
+  assert.ok(page.includes("v" + pkg.version));
+  assert.ok(!page.includes("LineLoom-0.9.4.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
   assert.match(page, /not an actual model benchmark or editor screenshot/);
 });
@@ -85,8 +85,9 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /Don't double-click/);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
-  assert.match(guide, /LineLoom-0\.9\.4\.vsix/);
+  assert.ok(guide.includes("LineLoom-" + pkg.version + ".vsix"));
   assert.match(guide, /SanskarCodes/);
+  assert.ok(guide.includes("v" + pkg.version));
   for (const [, ref] of guide.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
     assert.ok(existsSync(resolve(dir, ref)), "Missing installation-guide asset: " + ref);
   }
