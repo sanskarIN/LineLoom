@@ -71,6 +71,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.selectLanguageModel",
+        "title": "Assign Language Model",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.checkConnection",
         "title": "Check Ollama Connection",
         "category": "LineLoom"
