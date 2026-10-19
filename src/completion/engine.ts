@@ -11,6 +11,7 @@ import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { generateCompletion } from "../models/ollama";
+import { isRequestConfigurationCurrent } from "./request-state";
 
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
@@ -194,7 +195,13 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           temperature: config.temperature, keepAlive: config.keepAlive
         }, controller.signal);
         // Privacy and cursor state may have changed while the model was responding.
-        const stillAllowed = isTargetCurrent() && await mayComplete(document, readConfig().excludedPaths);
+        const latest = readConfig();
+        // Configuration changes can race an HTTP response and the extension's
+        // onDidChangeConfiguration callback. Fail closed for superseded settings.
+        const settingsCurrent = isRequestConfigurationCurrent(config, latest, language, manual) &&
+          (!url.remote || (latest.allowRemoteEndpoints && this.remoteApproved(url.origin)));
+        const stillAllowed = settingsCurrent && isTargetCurrent() &&
+          await mayComplete(document, latest.excludedPaths);
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
             document.version !== version || !isTargetCurrent() || !stillAllowed) {
           this.metrics.cancelled++;
