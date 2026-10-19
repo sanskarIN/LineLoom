@@ -31,5 +31,6 @@ export function hasSingleInsertionCursor(
  */
 export function shouldRequestAtCursor(nextText: string, manual: boolean, suppressMidToken = true): boolean {
   if (manual || !suppressMidToken) return true;
-  return !/^[\p{L}\p{N}\p{M}\p{Pc}\u200c\u200d$]/u.test(nextText);
+  return !(/^[\p{L}\p{N}\p{M}\p{Pc}$]/u.test(nextText) ||
+    nextText.startsWith("\u200c") || nextText.startsWith("\u200d"));
 }
