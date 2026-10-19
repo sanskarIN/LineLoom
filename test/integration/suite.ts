@@ -192,7 +192,11 @@ export async function run(): Promise<void> {
         // A cursor change while waiting for debounce must prevent any network request.
         await configuration.update("debounceMs", 75, vscode.ConfigurationTarget.Global);
         activeEditor.selection = new vscode.Selection(position, position);
-        const pendingStale = engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        // Use AUTOMATIC invocation: explicit manual requests deliberately bypass debounce.
+        const pendingStale = engine.provideInlineCompletionItems(document, position, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
         activeEditor.selection = new vscode.Selection(document.positionAt(0), document.positionAt(0));
         const stale = await pendingStale;
         assert.equal(stale, undefined, "Moving the cursor during debounce must discard the request");

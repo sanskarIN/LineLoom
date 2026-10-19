@@ -32,7 +32,7 @@ describe("inline insertion cursor gate", () => {
 
 describe("mid-token automatic request gate", () => {
   it("blocks suggestions immediately before identifier characters", () => {
-    for (const next of ["foo", "42", "_value", "$amount", "变量", "école"]) {
+    for (const next of ["foo", "42", "_value", "$amount", "变量", "école", "\u0301accent", "\u093e", "\u200cword", "\u200dword", "\u203fconnector"]) {
       expect(shouldRequestAtCursor(next, false)).toBe(false);
     }
   });
