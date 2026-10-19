@@ -5,6 +5,7 @@
 **/examples/**
 **/src/**
 **/scripts/**
+**/site/**
 **/node_modules/**
 **/*.ts
 **/*.map
