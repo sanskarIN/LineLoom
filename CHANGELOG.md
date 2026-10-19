@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.4] — 2026-10-19 — VS Code Installation & VSIX Verification Preview
+
+- Clarified that VSIX files for LineLoom must be installed in **Visual Studio Code**, not the full Visual Studio IDE's VSIX Installer. Windows file associations can misleadingly open the wrong program despite a successful download.
+- Added a dedicated GitHub Pages installation/troubleshooting page and linked it from the homepage, README and developer guides, including Windows PowerShell and VS Code Extensions UI instructions.
+- Added a read-only VSIX ZIP/package identity verification step to CI and the pre-release pipeline, checking bundled extension files, publisher/version consistency and exclusion of web assets or environment files.
+- Updated version and lockfile to **0.9.4**, keeping the `SanskarCodes.lineloom` extension ID, pre-release VSIX flag and MIT license.
+- No change to inference algorithms; **stable v1.0.0 remains blocked** until real-model and physical cross-platform testing.
+
+
 ## [0.9.3] — 2026-10-19 — GitHub Pages Website & Preview Distribution
 
 - Created a responsive, accessible static marketing and installation website in `site/` with original vector assets, honest preview limitations, manual setup and privacy guidance.
