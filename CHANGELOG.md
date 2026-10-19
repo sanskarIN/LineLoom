@@ -2,6 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.8.1] — 2026-10-19 — Unicode & Response-State Safety Preview
+
+- Improved the automatic mid-identifier guard for Unicode combining marks, connector punctuation and zero-width identifier joiners. Manual triggering and the configurable opt-out continue to work.
+- Corrected an outdated editor integration regression: automatic cursor cancellation is tested during the configured typing debounce; explicit manual completion intentionally skips that debounce.
+- Added a final configuration-state gate when Ollama finishes generating: superseded settings, disabled autocomplete, a removed language mode, altered model/endpoint parameters or withdrawn remote-HTTPS approval cannot yield a suggestion, even if a VS Code configuration event is delayed.
+- Expanded pure unit tests for current inference preferences, automatic/manual eligibility, model changes and output-affecting settings.
+- Preserved MIT licensing, the local-first privacy model, nine supported editor language IDs, no telemetry and no new runtime dependencies.
+
+**Limitations:** these are source and mocked-Ollama editor checks. Real-model code quality, GPU/CPU responsiveness, offline user setup and manual VSIX install verification remain open pre-stable requirements.
+
 ## [0.8.0] — 2026-10-19 — Manual Responsiveness & MIT Preview
 
 - **License:** changed current project-owned LineLoom source distribution from **Apache-2.0 to MIT**. Updated the root `LICENSE`, npm package metadata, README, contribution guidance and a historical licensing note. Existing Apache-2.0 releases remain available under their original terms; dependencies and third-party ownership rights remain separate.

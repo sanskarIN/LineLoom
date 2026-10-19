@@ -53,3 +53,9 @@ VS Code's `onDidChangeTextDocument` event now forwards the real edit descriptors
 The completion engine checks a small portion of the active VS Code line before requesting automatic completion: if the character **immediately after the caret** is an identifier-like Unicode letter/number, underscore or dollar sign, automatic completion is skipped by default. The `lineloom.suppressMidTokenAuto` setting can disable the gate. Explicit/manual requests ignore that guard and use zero typing debounce; all other privacy, endpoint authorization, cancellation, version and cursor checks remain active. The guard does not scan another file, inspect an AST or transmit additional context.
 
 The project-owned source license is now MIT; historical Apache-2.0 release tags are preserved. See [licensing history](../licensing.md).
+
+## v0.8.1 response-state guard
+
+The completion engine rechecks the **latest** settings at the end of generation, before showing native inline ghost text. It rejects output from a superseded model, endpoint, network-approval policy, output parameters or language enablement, or if the extension or automatic mode was disabled. A remote origin must also still be explicitly approved. This supplements the existing cancellation notification, current editor/selection/version checks and second sensitive-file exclusion check. These checks cannot retract code already sent to a previously approved server.
+
+Automatic completion's next-character heuristic now includes Unicode combining marks, connector punctuation and zero-width identifier joiners alongside letters and digits. It remains a small heuristic rather than a full Unicode language grammar.

@@ -28,6 +28,8 @@
 
 **v0.8.0 (pre-release):** MIT licensing update with historical notices; manual completion bypasses typing debounce; automatic mid-token identifier guard with opt-out and editor tests.
 
+**v0.8.1 (pre-release):** complete Unicode identifier boundary handling; post-inference settings and remote-origin revalidation; corrected automatic debounce regression tests.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
