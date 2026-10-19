@@ -1,4 +1,4 @@
-# Extension registry publishing (pre-release only)
+# Extension registry publishing (GitHub stable v1.0.0)
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
@@ -6,25 +6,25 @@ LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub reposi
 
 ## Preview safety and required checks
 
-- Keep the extension on `0.x` and use `--pre-release` when creating VSIX assets for marketplace beta/pre-release channels.
+- The default v1.0.0 VSIX is a **stable channel** package and must **not** include `--pre-release`. Use `npm run package:preview` only for future explicitly marked experimental updates.
 - `package.json` must contain `"publisher": "SanskarCodes"`; changing this later changes the installed extension ID.
 - `npm ci && npm run check`; on Linux CI run `xvfb-run -a npm run test:integration`.
 - `npm audit --audit-level=high`; confirm test results before release.
 - `npm run package` generates a pre-release VSIX by default. To choose an explicit destination, run:
 
 ```sh
-npx vsce package --pre-release --no-dependencies -o LineLoom-0.9.5.vsix
+npx vsce package --no-dependencies -o LineLoom-1.0.0.vsix
 ```
 
-- For Windows, do not double-click the downloaded VSIX; Microsoft Visual Studio VSIX Installer is for a different product. Open Visual Studio Code → Extensions → … → **Install from VSIX…**. The user-friendly guide is at https://sanskarin.github.io/LineLoom/install.html.\n- Inspect included files (`npx vsce ls --no-dependencies`) and the VSIX archive (`npm run verify:vsix -- LineLoom-0.9.5.vsix` on a Linux shell with `unzip`). Do not include secrets, personal files, or `node_modules`.
-- The preview release workflow also installs the VSIX in a **temporary VS Code CLI profile** and lists `SanskarCodes.lineloom`; this is not proof of real-model completion. See [manual QA evidence matrix](qa/v0.9.5-readiness.md).\n- Install the exact VSIX in a fresh compatible VS Code user profile and test both automatic ghost text and accepting a suggestion with a **real** independently installed Ollama model. Repeat for all supported operating systems before claiming stable readiness.
-- The GitHub release pipeline uses `--prerelease` and `--latest=false`. Neither setting publishes to external registries, and neither substitutes for the VSIX `--pre-release` option.
+- For Windows, do not double-click the downloaded VSIX; Microsoft Visual Studio VSIX Installer is for a different product. Open Visual Studio Code → Extensions → … → **Install from VSIX…**. The user-friendly guide is at https://sanskarin.github.io/LineLoom/install.html.\n- Inspect included files (`npx vsce ls --no-dependencies`) and the VSIX archive (`npm run verify:vsix -- LineLoom-1.0.0.vsix` on a Linux shell with `unzip`). Do not include secrets, personal files, or `node_modules`.
+- The GitHub release workflow installs the VSIX in a **temporary VS Code CLI profile** and lists `SanskarCodes.lineloom`; this is not proof of real-model completion. See [manual QA evidence matrix](qa/v1.0.0-readiness.md).\n- Install the exact VSIX in a fresh compatible VS Code user profile and test both automatic ghost text and accepting a suggestion with a **real** independently installed Ollama model. Repeat for all supported operating systems before claiming stable readiness.
+- The GitHub v1.0.0 release is tagged **stable**, not pre-release. GitHub Releases never publish to external registries by themselves.
 
 ## Microsoft Visual Studio Marketplace (manual initial publication)
 
 1. Visit https://marketplace.visualstudio.com/manage/publishers/ and sign in as an authorized owner of the publisher **SanskarCodes**.
 2. Choose **New extension -> Visual Studio Code** (not the separate full Visual Studio extension format).
-3. Upload the verified `LineLoom-0.9.5.vsix` from the GitHub v0.9.5 release. It is packaged with VS Code's `--pre-release` metadata.
+3. Upload the verified `LineLoom-1.0.0.vsix` from the GitHub v1.0.0 release. It is packaged for the stable channel (without the `--pre-release` flag).
 4. Verify the listing, selected pre-release channel, icon, license, README, repository link, privacy notice and installation guidance. If review or publication is pending, do not advertise a public listing.
 5. Store links may be added to the README **after** they resolve to a published page.
 
@@ -41,7 +41,7 @@ Future automation should prefer Microsoft's documented OIDC/Entra workload-feder
 5. Only after permission is granted, authenticate with `ovsx` (or configure trusted OIDC publishing) and publish the **same verified** VSIX:
 
 ```sh
-npx ovsx publish LineLoom-0.9.5.vsix
+npx ovsx publish LineLoom-1.0.0.vsix
 ```
 
 Follow your locally configured `ovsx` auth mechanism; tokens must not be committed or pasted into issues. Confirm `SanskarCodes.lineloom` on the registry before advertising it.
