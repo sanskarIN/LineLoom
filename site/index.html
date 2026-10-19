@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="LineLoom is an open-source, privacy-minded inline code completion extension for VS Code, powered by the Ollama models you choose.">
+  <meta name="robots" content="index,follow">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="LineLoom — Code completion on your terms">
+  <meta property="og:description" content="Local-first, open-source inline completions in VS Code. Your model. Your editor. Your control.">
+  <meta property="og:url" content="https://sanskarin.github.io/LineLoom/">
+  <meta property="og:image" content="https://sanskarin.github.io/LineLoom/assets/social-preview.svg">
+  <link rel="canonical" href="https://sanskarin.github.io/LineLoom/">
+  <link rel="icon" type="image/svg+xml" href="./assets/lineloom.svg">
+  <link rel="stylesheet" href="./styles.css">
+  <title>LineLoom — Code completion on your terms</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="shell nav">
+      <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
+      <nav aria-label="Main navigation" class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#install">Get started</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+      <a class="nav-github" href="https://github.com/sanskarIN/LineLoom" target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+    </div>
+  </header>
+  <main id="main">
+    <section class="hero shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <span class="eyebrow"><span class="status-dot" aria-hidden="true"></span> Open source &amp; local-first <span class="eyebrow-divider" aria-hidden="true">/</span> v0.9.3 preview</span>
+        <h1 id="hero-title">Code completion.<br><em>On your terms.</em></h1>
+        <p class="hero-intro">Natural inline suggestions in VS Code, powered by the Ollama model you run. No LineLoom account, no built-in analytics, and no mandatory cloud service.</p>
+        <div class="cta-line">
+          <a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/download/v0.9.3/LineLoom-0.9.3.vsix">Download preview VSIX <span aria-hidden="true">↗</span></a>
+          <a class="button button-outline" href="#install">Installation guide <span aria-hidden="true">↓</span></a>
+        </div>
+        <p class="mini-note">Pre-release software. Requires <a href="https://code.visualstudio.com/" target="_blank" rel="noopener noreferrer">VS Code 1.96+</a> and your independently installed <a href="https://ollama.com/" target="_blank" rel="noopener noreferrer">Ollama</a> model.</p>
+        <div class="hero-stats" aria-label="LineLoom overview">
+          <div><strong>9</strong><span>language IDs</span></div>
+          <div><strong>MIT</strong><span>open-source license</span></div>
+          <div><strong>0</strong><span>built-in telemetry</span></div>
+        </div>
+      </div>
+      <div class="editor-scene">
+        <div class="editor-ambient"></div>
+        <div class="editor-window" aria-label="Illustrative editor sample showing an example inline code suggestion">
+          <div class="editor-bar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="editor-tab">weather.ts</span><span class="editor-label">VISUAL EXAMPLE</span></div>
+          <div class="editor-body">
+            <div class="line"><span class="number">01</span><span><span class="syntax-violet">type</span> <span class="syntax-blue">Reading</span> = {</span></div>
+            <div class="line"><span class="number">02</span><span> &nbsp;temperature: <span class="syntax-yellow">number</span>;</span></div>
+            <div class="line"><span class="number">03</span><span> &nbsp;unit: <span class="syntax-green">"C"</span> | <span class="syntax-green">"F"</span>;</span></div>
+            <div class="line"><span class="number">04</span><span>};</span></div>
+            <div class="line muted-line"><span class="number">05</span><span>&nbsp;</span></div>
+            <div class="line"><span class="number">06</span><span><span class="syntax-violet">function</span> <span class="syntax-blue">formatReading</span>(r: Reading) {</span></div>
+            <div class="line"><span class="number">07</span><span> &nbsp;<span class="syntax-violet">return</span> <span class="typing-cursor"> </span><span class="ghost">`${r.temperature}°${r.unit}`;</span></span></div>
+            <div class="line"><span class="number">08</span><span>}</span></div>
+          </div>
+          <div class="editor-tooltip"><span class="tooltip-icon">◇</span><span><strong>LineLoom</strong> <small>Example inline suggestion · Tab to accept</small></span><span class="tooltip-key">TAB</span></div>
+          <div class="editor-footer"><span>◇ LineLoom</span><span>TypeScript <span class="footer-sep">│</span> Ollama · local</span></div>
+        </div>
+        <div class="scene-caption">An illustrative UI mockup, not an actual model benchmark or editor screenshot.</div>
+      </div>
+    </section>
+    <section class="section shell" id="features" aria-labelledby="features-title">
+      <div class="section-head"><div><span class="section-kicker">WHY LINELOOM</span><h2 id="features-title">Less friction. More flow.</h2></div><p>Focused tools for the code you're already writing—not a service you have to surrender your workflow to.</p></div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">⌁</span><h3>Native inline suggestions</h3><p>VS Code ghost text with configurable automatic and manual triggers, multiline suggestions and cancellation.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">◎</span><h3>Your Ollama models</h3><p>Choose your installed default model, or assign a different installed model to each supported language.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">◈</span><h3>Privacy-aware by design</h3><p>Trusted workspaces, path exclusions and explicit remote endpoint approval help limit unintended disclosure.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">↗</span><h3>Smart continuation</h3><p>Reuse a short-lived suggestion when the typed prefix still matches, without asking your model again.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">⌘</span><h3>Quick Actions</h3><p>Control completion, models, connection checks, language settings and diagnostics from the status bar.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">◇</span><h3>Open and inspectable</h3><p>MIT-licensed source, documented architecture, release artifacts and automated checks in public GitHub.</p></article>
+      </div>
+    </section>
+    <section class="languages-band" aria-labelledby="languages-title"><div class="shell languages-inner"><div><span class="section-kicker">LANGUAGE COVERAGE</span><h2 id="languages-title">Your editor, your stack.</h2><p>Nine registered language IDs. Go, Java, C and C++ are experimental in this preview.</p></div><div class="language-list" aria-label="Supported language IDs"><span>Python</span><span>JavaScript</span><span>TypeScript</span><span>Rust</span><span>Kotlin</span><span>Go <sup>beta</sup></span><span>Java <sup>beta</sup></span><span>C <sup>beta</sup></span><span>C++ <sup>beta</sup></span></div></div></section>
+    <section class="section shell" id="install" aria-labelledby="install-title">
+      <div class="section-head"><div><span class="section-kicker">QUICK START</span><h2 id="install-title">From install to inline.</h2></div><p>No LineLoom sign-up or preconfigured cloud key required. You bring the model.</p></div>
+      <div class="steps-grid">
+        <article class="step"><span class="step-number">01</span><h3>Install Ollama</h3><p>Get Ollama for your operating system and start its service.</p><a href="https://ollama.com/download" target="_blank" rel="noopener noreferrer">Get Ollama <span aria-hidden="true">↗</span></a></article>
+        <article class="step"><span class="step-number">02</span><h3>Pull a coding model</h3><p>Download an example model yourself. Model terms and hardware needs vary.</p><div class="command"><code>ollama pull qwen2.5-coder:1.5b</code><button class="copy" type="button" data-copy="ollama pull qwen2.5-coder:1.5b" aria-label="Copy Ollama command">Copy</button></div></article>
+        <article class="step"><span class="step-number">03</span><h3>Install LineLoom</h3><p>Get the GitHub preview VSIX, then use VS Code's “Install from VSIX” action.</p><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.3">View v0.9.3 release <span aria-hidden="true">↗</span></a></article>
+        <article class="step"><span class="step-number">04</span><h3>Start writing</h3><p>Open a trusted project and use “LineLoom: Quick Actions” to choose a model and check the connection.</p><a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/troubleshooting/README.md">Troubleshooting <span aria-hidden="true">↗</span></a></article>
+      </div>
+      <div class="install-note"><span aria-hidden="true">ⓘ</span><p>The default endpoint is <code>http://127.0.0.1:11434</code>. You can configure a remote HTTPS endpoint only with explicit approval; in that case code snippets can leave your device.</p></div>
+    </section>
+    <section class="section privacy-section shell" id="privacy" aria-labelledby="privacy-title"><div class="privacy-panel"><div class="privacy-symbol" aria-hidden="true">◈</div><div><span class="section-kicker">KNOW WHERE YOUR CODE GOES</span><h2 id="privacy-title">Local-first doesn't mean guesswork.</h2><p>LineLoom submits bounded context from the active document to your configured Ollama-compatible endpoint. On loopback, requests stay on your computer's networking stack. If you approve a remote HTTPS endpoint, the snippets travel to that server and are governed by its policies.</p><p>LineLoom has no built-in telemetry or automatic repository indexing. It excludes sensitive paths, but it does <strong>not</strong> provide comprehensive content-level secret detection. Review your settings before using confidential code.</p><a class="text-link" href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Read the full privacy policy <span aria-hidden="true">↗</span></a></div></div></section>
+    <section class="section shell faq-section" id="faq" aria-labelledby="faq-title"><div class="section-head"><div><span class="section-kicker">GOOD TO KNOW</span><h2 id="faq-title">Frequently asked questions.</h2></div></div>
+      <div class="faq-list">
+        <details><summary>Is LineLoom free?</summary><p>Yes. The extension source is released under the MIT License. Ollama and individual downloaded models have separate licenses and hardware requirements.</p></details>
+        <details><summary>Does it need internet access?</summary><p>After independently installing Ollama, a compatible model, and the extension, loopback inference can work without internet access. Fully offline setup and behavior across platforms have not yet been manually validated for stable release.</p></details>
+        <details><summary>Is this stable software?</summary><p>No. v0.9.3 is a GitHub pre-release. Real model-quality tests, manual editor-acceptance tests and cross-platform smoke tests remain part of the v1.0.0 gate.</p></details>
+        <details><summary>Is LineLoom on VS Code Marketplace or Open VSX?</summary><p>This website links to the GitHub preview. Store listings are separate from GitHub Releases and must be verified before being announced. Publisher ID: SanskarCodes.</p></details>
+        <details><summary>What about cross-file or repository-wide context?</summary><p>Cross-file retrieval/indexing is not implemented in this preview. LineLoom currently uses bounded context from the active trusted-workspace document.</p></details>
+      </div>
+    </section>
+    <section class="final-cta shell"><div><span class="section-kicker">READY TO TRY IT?</span><h2>Keep your focus.<br><span>Keep your control.</span></h2><p>Explore the preview, send feedback and help shape what's next.</p></div><div class="final-buttons"><a class="button button-primary" href="https://github.com/sanskarIN/LineLoom/releases/tag/v0.9.3">Get the v0.9.3 preview ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/issues">Report an issue ↗</a></div></section>
+  </main>
+  <footer class="footer"><div class="shell footer-row"><div><a class="brand" href="./"><img src="./assets/lineloom.svg" alt="" width="28" height="28"><span>Line<span class="brand-accent">Loom</span></span></a><p>Open source. Local-first. Built by <a href="https://github.com/sanskarIN">Sanskar</a>.</p></div><div class="footer-links"><a href="https://github.com/sanskarIN/LineLoom">Source</a><a href="https://github.com/sanskarIN/LineLoom/releases">Releases</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/LICENSE">MIT License</a><a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/publishing.md">Publishing</a></div></div><div class="shell footer-bottom"><span>© 2026 LineLoom contributors. An independent project; no affiliation with Microsoft or Ollama.</span><span>v0.9.3 · pre-release</span></div></footer>
+  <script src="./site.js" defer></script>
+</body>
+</html>
