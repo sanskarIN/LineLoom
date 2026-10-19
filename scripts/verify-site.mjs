@@ -13,11 +13,11 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 
 test("static site identity follows the preview manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
-  assert.equal(pkg.version, "0.9.3");
+  assert.equal(pkg.version, "0.9.4");
   assert.match(page, /v0\.9\.3 preview/);
   assert.match(page, /LineLoom-0\.9\.3\.vsix/);
   assert.match(page, /v0\.9\.3/);
-  assert.ok(!page.includes("LineLoom-0.9.2.vsix"), "obsolete download link");
+  assert.ok(!page.includes("LineLoom-0.9.3.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
   assert.match(page, /not an actual model benchmark or editor screenshot/);
 });
@@ -74,4 +74,21 @@ test("social preview and brand icon are locally bundled SVG files", () => {
   assert.match(preview, /<svg/);
   assert.match(preview, /LineLoom/);
   assert.ok(existsSync(resolve(dir, ".nojekyll")));
+});
+
+
+test("VS Code installation guide covers Visual Studio VSIX Installer association", () => {
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  assert.match(page, /href="\.\/install\.html"/);
+  assert.match(guide, /Visual Studio VSIX Installer/);
+  assert.match(guide, /One or more extensions are for Visual Studio Code/);
+  assert.match(guide, /Don't double-click/);
+  assert.match(guide, /Install from VSIX/);
+  assert.match(guide, /code --install-extension/);
+  assert.match(guide, /LineLoom-0\.9\.4\.vsix/);
+  assert.match(guide, /SanskarCodes/);
+  for (const [, ref] of guide.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
+    assert.ok(existsSync(resolve(dir, ref)), "Missing installation-guide asset: " + ref);
+  }
+  assert.ok(!guide.includes("Visual Studio Marketplace download"), "Do not claim marketplace publication");
 });
