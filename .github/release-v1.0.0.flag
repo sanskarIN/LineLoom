@@ -1,0 +1,4 @@
+LineLoom v1.0.0 FIRST STABLE GITHUB RELEASE trigger.
+PR #17 was merged after all Windows, macOS and Linux CI checks, Linux VS Code mocked-Ollama extension-host integration, stable-channel packaged VSIX verification, clean VS Code CLI install and dependency security checks passed.
+This marker triggers the verified GitHub stable release workflow only.
+No Microsoft Visual Studio Marketplace or Open VSX registry publication is performed. Real Ollama/manual platform acceptance cases remain ongoing, and release notes document that explicitly.
