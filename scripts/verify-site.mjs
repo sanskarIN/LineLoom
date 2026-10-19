@@ -22,7 +22,7 @@ test("static site identity follows the release manifest", () => {
   assert.match(page, /not an actual model benchmark or editor screenshot/);
 });
 
-test("site has semantic layout, accessible navigation, honest preview privacy copy", () => {
+test("site has semantic layout, accessible navigation, honest stable-release privacy copy", () => {
   for (const fragment of [
     '<html lang="en">',
     'name="viewport"',
@@ -39,8 +39,8 @@ test("site has semantic layout, accessible navigation, honest preview privacy co
     'GitHub pre-release',
     "does <strong>not</strong> provide comprehensive content-level secret detection",
     "no built-in telemetry",
-    "not implemented in this preview",
-    "Go, Java, C and C++ are experimental",
+    "not implemented in this release",
+    "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
   assert.doesNotMatch(page, /https?:\/\/(marketplace\.visualstudio\.com\/items\?|open-vsx\.org\/extension\/)/, "Do not invent marketplace listing URLs");
