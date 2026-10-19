@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.8.0] — 2026-10-19 — Manual Responsiveness & MIT Preview
+
+- **License:** changed current project-owned LineLoom source distribution from **Apache-2.0 to MIT**. Updated the root `LICENSE`, npm package metadata, README, contribution guidance and a historical licensing note. Existing Apache-2.0 releases remain available under their original terms; dependencies and third-party ownership rights remain separate.
+- **Manual responsiveness:** explicit **LineLoom: Trigger Completion** requests bypass the normal typing debounce, while retaining all existing cursor, workspace-trust, ignored-file, approved-endpoint and cancellation checks.
+- **Smarter automatic inference:** a new editor-local guard avoids automatic completions when the cursor is directly before an identifier character (including Unicode letters and digits, underscores and dollar signs). This reduces unintended suggestions while editing existing identifiers, without reading additional files.
+- **Control:** added `lineloom.suppressMidTokenAuto` (default `true`) so developers can opt out of this heuristic. Explicit/manual completion is unaffected.
+- **Regression coverage:** unit tests for Unicode identifier boundaries, manual override and opt-out; a mocked VS Code extension-host check for mid-token suppression and manual fallback; and a consistency test for the project MIT license and locked npm package metadata.
+- **Safety:** keeps the nine registered languages, local-first Ollama behavior, redirection rejection, sensitive-file protection, typed-continuation validation and no telemetry. No new runtime dependencies were added.
+
+**Pre-release limitations:** actual hardware latency, real coding-model usefulness, full offline setup and manual VSIX acceptance across Windows/macOS/Linux remain unverified. The mid-token gate is a conservative character-boundary heuristic rather than an AST-aware parser.
+
 ## [0.7.1] — 2026-10-18 — Typed Continuation Edit Safety Preview
 
 - Hardened v0.7.0 typed-prefix reuse to verify **the actual VS Code text edit**, rather than relying on matching before/after text alone.

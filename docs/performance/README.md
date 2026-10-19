@@ -17,3 +17,7 @@ The diagnostics channel includes **typed continuation reuses**, a local session-
 ## v0.7.1 conservative continuation invalidation
 
 The typed-continuation reuse counter only increases after the actual VS Code edit shape and surrounding-code fingerprints pass. Editing elsewhere or replacing text will skip reuse and may require fresh model inference. The counter is a session-only diagnostic, not proof of saved wall-clock time or real Ollama performance.
+
+## v0.8.0 timing and request suppression
+
+Explicit/manual inline-completion requests no longer wait for the typing debounce. Automatic requests inside an existing identifier are skipped by default. These changes are verified by code and synthetic editor tests, **not** by measured Ollama time-to-first-token or real-user latency benchmarks. The actual model/hardware configuration remains the dominant latency factor; collect reproducible measurements before claiming a speed-up.

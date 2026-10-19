@@ -47,3 +47,9 @@ After a successful Ollama completion or exact-result cache hit, the completion e
 ## v0.7.1 actual-edit validation for typed continuations
 
 VS Code's `onDidChangeTextDocument` event now forwards the real edit descriptors to the completion engine. A retained typed-completion remainder is invalidated unless the touched file is the original source and the event represents **exactly one zero-length range insertion** at the previous cursor, with 1–32 characters matching the beginning of that candidate, and a consecutive document version. Multi-cursor/multi-change batches, text replacement, deletion, unrelated source edits and out-of-order document updates clear the candidate. The existing SHA-256 prefix/suffix, configuration digest, trust and ignore-file checks remain independent requirements before a remainder can be returned. No edit text is kept after validation.
+
+## v0.8.0 request timing and in-token guard
+
+The completion engine checks a small portion of the active VS Code line before requesting automatic completion: if the character **immediately after the caret** is an identifier-like Unicode letter/number, underscore or dollar sign, automatic completion is skipped by default. The `lineloom.suppressMidTokenAuto` setting can disable the gate. Explicit/manual requests ignore that guard and use zero typing debounce; all other privacy, endpoint authorization, cancellation, version and cursor checks remain active. The guard does not scan another file, inspect an AST or transmit additional context.
+
+The project-owned source license is now MIT; historical Apache-2.0 release tags are preserved. See [licensing history](../licensing.md).

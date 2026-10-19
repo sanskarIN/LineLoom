@@ -49,3 +49,7 @@ Unit tests cover one-step typing and expiry, exact prefix/suffix fingerprints, r
 ## v0.7.1 edit-event regression checks
 
 Run `npm run check` and `npm run test:integration`. Unit tests exercise correct same-position one-step insertions and reject replacements, multi-part changes, different cursor offsets, wrong inserted text, skipped document versions and full suggestion acceptance. The extension-host suite subscribes to **actual** `vscode.workspace.onDidChangeTextDocument` notifications while editing a disposable synthetic source file. It confirms that valid typing can reuse the remaining mock suggestion without HTTP traffic, whereas an unrelated edit causes a fresh mocked Ollama request. Real-model quality is not measured by these tests.
+
+## v0.8.0 editor responsiveness and licensing checks
+
+Unit tests cover the automatic mid-token boundary for ASCII/Unicode identifiers, punctuation and empty suffixes, plus the user-selectable opt-out and manual override. The VS Code extension-host integration test invokes the actual provider in the middle of a synthetic identifier and confirms no additional **mock Ollama** request occurs until manual triggering or disabling the guard. Run `npm ci && npm run check && npm run test:integration` to verify the feature. The MIT test checks root license text and both npm license fields; it accepts Windows CRLF line endings. No automatic real-model quality or latency measurements are claimed.
