@@ -4,7 +4,7 @@
  * real VS Code CLI. This is a headless smoke test, not an interactive test of
  * inline completion, and never downloads an inference model or reads user data.
  *
- * Usage: node scripts/smoke-install-vsix.mjs LineLoom-0.9.5.vsix
+ * Usage: node scripts/smoke-install-vsix.mjs LineLoom-1.0.0.vsix
  */
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, rmSync, statSync, readFileSync } from "node:fs";
@@ -22,8 +22,8 @@ if (!candidate || !candidate.toLowerCase().endsWith(".vsix")) {
   try {
     if (!statSync(packagePath).isFile()) throw new Error("Not a VSIX file");
     const { version, publisher, name } = JSON.parse(readFileSync("package.json", "utf8"));
-    if (publisher !== "SanskarCodes" || name !== "lineloom" || !/^0\.\d+\.\d+$/.test(version)) {
-      throw new Error("This smoke test is restricted to LineLoom pre-release packages.");
+    if (publisher !== "SanskarCodes" || name !== "lineloom" || !/^\d+\.\d+\.\d+$/.test(version)) {
+      throw new Error("This smoke test is restricted to versioned LineLoom packages.");
     }
     directory = mkdtempSync(join(tmpdir(), "lineloom-vsix-install-"));
     const extensionsDir = join(directory, "extensions");
