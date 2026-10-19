@@ -1,28 +1,42 @@
 # LineLoom
 
+[![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/SanskarCodes.lineloom?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
+[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
+[![MIT license](https://img.shields.io/badge/license-MIT-70d6ce)](LICENSE)
+
 **Write less. Build more. Stay in control.**
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
 > **Stable GitHub release:** v1.0.0 is the first major release. Automated tests verify packaging and mocked-model behavior; actual model quality, interactive editor acceptance and hardware latency are not independently certified. See [v1.0.0 release notes](docs/releases/v1.0.0.md) for verified tests and known limitations.
 
-## Install the GitHub stable release
+## Install LineLoom
 
-The GitHub v1.0.0 release includes a `LineLoom-1.0.0.vsix` package packaged for the VS Code **stable channel**. Download it from the [v1.0.0 release page](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0) once published and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.0.0.vsix`).
+**[Install LineLoom from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)** — the official public listing for publisher `SanskarCodes`, extension ID `SanskarCodes.lineloom`.
+
+In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify the publisher **SanskarCodes**, and choose **Install**. You can also use the Command Palette's **Extensions: Install Extensions** action, or the VS Code CLI:
+
+```sh
+code --install-extension SanskarCodes.lineloom
+```
+
+### Alternative: install the GitHub stable VSIX
+
+The [GitHub v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0) includes `LineLoom-1.0.0.vsix` for offline/manual installation. Download the VSIX and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.0.0.vsix`).
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
-**Registry status:** the GitHub stable release is distinct from Microsoft Visual Studio Marketplace and Open VSX listings. Neither listing should be advertised before publication is confirmed. The extension publisher ID is **SanskarCodes**, not the GitHub user ID `sanskarIN`. [Publisher onboarding / registry instructions](docs/publishing.md).
+**Registry status:** LineLoom **v1.0.0 is now public on [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)**. Open VSX publication is still **pending** namespace authorization and a separate upload. GitHub owner `sanskarIN` and extension publisher ID `SanskarCodes` are intentionally different. [Publishing and Open VSX instructions](docs/publishing.md).
 
 ## Project website and documentation
 
-The LineLoom static website is maintained in [`site/`](site/) and deployed through the [GitHub Pages workflow](.github/workflows/pages.yml), subject to repository GitHub Pages being enabled under **Settings → Pages → GitHub Actions**. Intended URL: https://sanskarin.github.io/LineLoom/. See the [deployment guide](docs/github-pages.md) to verify when it is actually live.
+The [LineLoom website](https://sanskarin.github.io/LineLoom/) is live and maintained in [`site/`](site/), deployed through the [GitHub Pages workflow](.github/workflows/pages.yml). The [deployment guide](docs/github-pages.md) documents verification and maintenance.
 
 Website content is excluded from the extension VSIX package. This does not add hosted inference, an account requirement or telemetry.
 
 ## Release verification status
 
-The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace/Open VSX publication still requires separate publisher authorization, and real-model QA remains ongoing.**
+The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace is live; Open VSX publication remains pending, and real-model QA remains ongoing.**
 
 ## Features
 
@@ -44,7 +58,7 @@ The v1.0.0 stable packaging workflow checks archive integrity **and** installs t
 1. Install [VS Code](https://code.visualstudio.com/) and [Ollama](https://ollama.com/download) for Windows, Linux or macOS.
 2. Start Ollama according to its platform instructions. Confirm that `http://127.0.0.1:11434/api/tags` is reachable locally.
 3. Install a coding model yourself: `ollama pull qwen2.5-coder:1.5b`. Downloads consume storage; see model licensing and system requirements.
-4. Install the VSIX from the GitHub stable release as described above. For local development from source instead, run `npm ci`, `npm run build`, open the repo in VS Code and press **F5**.
+4. [Install LineLoom from Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) (recommended), or use the GitHub VSIX as described above. For local development from source instead, run `npm ci`, `npm run build`, open the repo in VS Code and press **F5**.
 5. In VS Code (or the Extension Development Host), open a **trusted folder** containing a supported source file (e.g. `.py`, `.js`, `.ts`, `.rs`, `.kt`, `.go`, `.java`, `.c`, or `.cpp`).
 6. Type some code, or run **LineLoom: Trigger Completion**. Accept native inline text with your VS Code inline-suggest keybinding.
 7. Run **LineLoom: Check Ollama Connection** or **LineLoom: Select Model** if suggestions do not appear.
@@ -75,7 +89,7 @@ npm run check
 npm run package
 ```
 
-The GitHub v1.0.0 stable release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. External registry publication remains a separate authorized publishing step. [Roadmap](docs/roadmap.md).
+The GitHub v1.0.0 stable release ships an installable VSIX for community testing, including nine language IDs, per-language selection, nested ignore protection, bounded editor context, foreground-editor preflight checks, a short-lived empty-result retry backoff, typed-prefix continuation reuse, bounded NDJSON parsing and redirect-safe Ollama requests. It includes a mocked-Ollama editor-level integration check. Real Ollama model quality, offline behavior and manual cross-platform verification remain unverified; see the release notes. The [VS Code Marketplace listing](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) is public; Open VSX requires a separate authorized publication. [Roadmap](docs/roadmap.md).
 
 ## Maintainer
 
