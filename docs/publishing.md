@@ -2,15 +2,15 @@
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
-**Current publication status:** GitHub publishes the VSIX as a pre-release. Do **not** claim that VS Code Marketplace or Open VSX listings exist until each listing is actually visible. Publishing to either registry requires the publisher's own authenticated action. No token, account credential, or registry secret belongs in this repository.
+**Current publication status:** GitHub publishes v1.0.0 as a stable release. Do **not** claim that VS Code Marketplace or Open VSX listings exist until each listing is actually visible. Publishing to either registry requires the publisher's own authenticated action. No token, account credential, or registry secret belongs in this repository.
 
-## Preview safety and required checks
+## Stable release package safety and required checks
 
 - The default v1.0.0 VSIX is a **stable channel** package and must **not** include `--pre-release`. Use `npm run package:preview` only for future explicitly marked experimental updates.
 - `package.json` must contain `"publisher": "SanskarCodes"`; changing this later changes the installed extension ID.
 - `npm ci && npm run check`; on Linux CI run `xvfb-run -a npm run test:integration`.
 - `npm audit --audit-level=high`; confirm test results before release.
-- `npm run package` generates a pre-release VSIX by default. To choose an explicit destination, run:
+- `npm run package` generates a stable VSIX by default. To choose an explicit destination, run:
 
 ```sh
 npx vsce package --no-dependencies -o LineLoom-1.0.0.vsix
@@ -25,7 +25,7 @@ npx vsce package --no-dependencies -o LineLoom-1.0.0.vsix
 1. Visit https://marketplace.visualstudio.com/manage/publishers/ and sign in as an authorized owner of the publisher **SanskarCodes**.
 2. Choose **New extension -> Visual Studio Code** (not the separate full Visual Studio extension format).
 3. Upload the verified `LineLoom-1.0.0.vsix` from the GitHub v1.0.0 release. It is packaged for the stable channel (without the `--pre-release` flag).
-4. Verify the listing, selected pre-release channel, icon, license, README, repository link, privacy notice and installation guidance. If review or publication is pending, do not advertise a public listing.
+4. Verify the listing, stable channel, icon, license, README, repository link, privacy notice and installation guidance. If review or publication is pending, do not advertise a public listing.
 5. Store links may be added to the README **after** they resolve to a published page.
 
 Official guide: https://code.visualstudio.com/api/working-with-extensions/publishing-extension
@@ -48,6 +48,6 @@ Follow your locally configured `ovsx` auth mechanism; tokens must not be committ
 
 Official guide: https://github.com/eclipse-openvsx/openvsx/wiki/Publishing-Extensions
 
-## Stable v1.0.0 gate
+## Post-release verification and limitations
 
-The `docs/releases/v1.0.0.md` checklist remains **BLOCKED** until manual editor install/acceptance checks, real CPU/GPU Ollama measurements, offline tests, privacy behavior, and Windows/macOS/Linux smoke tests are recorded. Having store listings is not proof of model or code-completion quality. Never create a stable GitHub or marketplace release merely because an automated packaging check passes.
+GitHub v1.0.0 is the maintainer-requested stable channel release, but manual editor acceptance, real CPU/GPU Ollama measurements, offline use, privacy controls, and Windows/macOS/Linux hands-on model tests remain unverified and must not be described as passed. See `docs/qa/v0.9.5-readiness.md`. Each marketplace publication is a separate authorized action; do not claim any store listing until it is verified.
