@@ -1,5 +1,8 @@
 # Troubleshooting
 
+**Recommended VS Code installation:** [LineLoom v1.0.0 on Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) or run `code --install-extension SanskarCodes.lineloom` using VS Code's CLI. Check publisher `SanskarCodes` in VS Code Extensions. If you downloaded the GitHub `.vsix` instead, install it through VS Code Extensions → … → Install from VSIX; do not double-click it in Windows Explorer.
+
+
 **VSIX install fails with “One or more extensions are for Visual Studio Code”:** You launched the **Visual Studio VSIX Installer**, which is not the installer for **Visual Studio Code**. The VSIX was likely downloaded already. Close the installer; open VS Code, press `Ctrl+Shift+X`, choose **Extensions → … → Install from VSIX…** and select the downloaded `LineLoom-1.0.0.vsix` file. On Windows do not double-click the VSIX. Alternatively run `code --install-extension .\\LineLoom-1.0.0.vsix` in PowerShell from the download folder if the `code` CLI is available. See the [visual installation instructions](https://sanskarin.github.io/LineLoom/install.html).
 
 # Troubleshooting
