@@ -67,6 +67,7 @@ export async function run(): Promise<void> {
       model: configuration.get<string>("model"),
       debounceMs: configuration.get<number>("debounceMs"),
       autoTrigger: configuration.get<boolean>("autoTrigger"),
+      suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
       enabledLanguages: configuration.get<string[]>("enabledLanguages")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
@@ -90,6 +91,7 @@ export async function run(): Promise<void> {
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
+      await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
       const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
       const document = await vscode.workspace.openTextDocument(file);
@@ -242,6 +244,29 @@ export async function run(): Promise<void> {
         assert.equal(generationCalls, callsBeforeUnrelatedEdit + 1,
           "Unrelated edit must not reuse an obsolete typed continuation");
 
+        // Automatic completion should not interrupt an existing identifier.
+        // Manual completion must still work at the same cursor.
+        const identifierIndex = document.getText().indexOf("answer");
+        assert.ok(identifierIndex >= 0, "Expected identifier test fixture");
+        const midToken = document.positionAt(identifierIndex + 2);
+        activeEditor.selection = new vscode.Selection(midToken, midToken);
+        const callsBeforeMidToken = generationCalls;
+        const automaticMidToken = await engine.provideInlineCompletionItems(document, midToken, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        assert.equal(automaticMidToken, undefined, "Automatic request must not interrupt an identifier");
+        assert.equal(generationCalls, callsBeforeMidToken, "Mid-token automatic request must not call Ollama");
+        const manualMidToken = await engine.provideInlineCompletionItems(document, midToken, trigger, cancellation.token);
+        assert.ok(manualMidToken?.length, "Manual invocation must remain available mid-token");
+        await configuration.update("suppressMidTokenAuto", false, vscode.ConfigurationTarget.Global);
+        const allowAutomaticMidToken = await engine.provideInlineCompletionItems(document, midToken, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        assert.ok(allowAutomaticMidToken?.length, "Opting out should allow automatic mid-token completion");
+        await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
+
         const privateUri = vscode.Uri.joinPath(folder.uri, ".env");
         const privateDoc = await vscode.workspace.openTextDocument(privateUri);
         const privateEditor = await vscode.window.showTextDocument(privateDoc);
@@ -259,6 +284,7 @@ export async function run(): Promise<void> {
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", oldValues.autoTrigger, vscode.ConfigurationTarget.Global);
+      await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
