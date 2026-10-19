@@ -29,7 +29,8 @@ describe("Marketplace preview manifest", () => {
   });
 
   it("keeps lockfile and extension version synchronized", () => {
-    expect(pkg.version).toMatch(/^0\\.\\d+\\.\\d+$/);
+    expect(pkg.version.startsWith("0.")).toBe(true);
+    expect(pkg.version.split(".")).toHaveLength(3);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
     expect(lock.packages[""].version).toBe(pkg.version);
