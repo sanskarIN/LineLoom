@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.3] — 2026-10-19 — GitHub Pages Website & Preview Distribution
+
+- Created a responsive, accessible static marketing and installation website in `site/` with original vector assets, honest preview limitations, manual setup and privacy guidance.
+- Added a dedicated GitHub Pages deployment workflow using GitHub's official artifact/deploy actions. Site activation requires the repository's Pages source to be configured for GitHub Actions; publishing code alone is not sufficient.
+- Added static-site regression tests and made the existing CI/release `npm run check` suite validate them on every preview.
+- Removed website source from distributed VSIX contents via `.vscodeignore`.
+- Updated the `SanskarCodes` preview documentation, installation links, and next-release pipeline. This is **not** stable v1.0.0 or an external registry publication.
+
+
 ## [0.9.2] — 2026-10-19 — Marketplace Identity & Preview Packaging
 
 - Updated the extension `publisher` to **SanskarCodes** to match the newly created Visual Studio Marketplace publisher; the GitHub organization/user remains `sanskarIN`.

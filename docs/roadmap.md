@@ -36,6 +36,8 @@
 
 **v0.9.2 (pre-release):** use the SanskarCodes publisher identity, explicit Marketplace preview VSIX metadata, release/version integrity tests and separate registry onboarding documentation.
 
+**v0.9.3 (pre-release):** add a responsive static GitHub Pages website, automated deployment workflow, static-site regression tests and clear preview onboarding.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
