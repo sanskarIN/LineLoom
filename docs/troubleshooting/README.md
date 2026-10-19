@@ -1,5 +1,9 @@
 # Troubleshooting
 
+**VSIX install fails with “One or more extensions are for Visual Studio Code”:** You launched the **Visual Studio VSIX Installer**, which is not the installer for **Visual Studio Code**. The VSIX was likely downloaded already. Close the installer; open VS Code, press `Ctrl+Shift+X`, choose **Extensions → … → Install from VSIX…** and select the downloaded `LineLoom-0.9.4.vsix` file. On Windows do not double-click the VSIX. Alternatively run `code --install-extension .\\LineLoom-0.9.4.vsix` in PowerShell from the download folder if the `code` CLI is available. See the [visual installation instructions](https://sanskarin.github.io/LineLoom/install.html).
+
+# Troubleshooting
+
 **No ghost text:** confirm you opened a trusted workspace folder, the file is one of the nine supported language IDs (including experimental Go, Java, C and C++), `lineloom.enabled` is true, the model is installed and inline suggestions are enabled in VS Code. Run *LineLoom: Trigger Completion*.
 
 **Ollama unavailable:** install/start Ollama and check `http://127.0.0.1:11434/api/tags`. Run *LineLoom: Check Ollama Connection*. A model is not automatically downloaded.
