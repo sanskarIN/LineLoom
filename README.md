@@ -2,7 +2,7 @@
 
 **Write less. Build more. Stay in control.**
 
-LineLoom is a free Apache-2.0-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
+LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
 > **Preview status:** LineLoom v0.7.1 is an early public **pre-release**, not a stable v1.0.0. Automated checks do not guarantee code-completion quality. See [v0.7.1 release notes](docs/releases/v0.7.1.md) for verified tests and known limitations.
 
@@ -66,4 +66,4 @@ LineLoom is free and has **no subscription or paywall**. If useful, you may supp
 
 ## License
 
-[Apache License 2.0](LICENSE). LineLoom is an independent project; no affiliation or endorsement by Microsoft, GitHub, Ollama or model providers is implied.
+[MIT License](LICENSE). [Licensing history and third-party notices](docs/licensing.md). LineLoom is an independent project; no affiliation or endorsement by Microsoft, GitHub, Ollama or model providers is implied.

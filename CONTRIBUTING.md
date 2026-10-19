@@ -31,3 +31,7 @@ To add a language, extend `src/languages/registry.ts`, add representative langua
 ## Quality gates
 
 No hidden telemetry, automated code execution, unsolicited account/login, model downloads, or claims about untested accuracy. Test on Windows, Linux and macOS where possible and mark gaps explicitly. Do not submit confidential source code as a test fixture.
+
+## Licensing contributions
+
+LineLoom's current license is **MIT**. By contributing, confirm that you have the rights to submit your original work under the project's MIT terms, and preserve any required third-party copyright and license notices. The project cannot automatically relicense work owned by others; disclose reused code, fonts, media and licensing constraints in pull requests. Historical Apache-2.0 releases remain governed by the licenses shipped with those tags. See [licensing history](docs/licensing.md).

@@ -4,7 +4,7 @@
   "version": "0.7.1",
   "publisher": "sanskarIN",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "private": false,
   "main": "./dist/extension.js",
   "engines": {
