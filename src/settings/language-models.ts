@@ -11,7 +11,10 @@ export function normalizeLanguageModels(input: unknown): LanguageModels {
     const value = values[language];
     if (typeof value !== "string") continue;
     const model = value.trim();
-    if (model && model.length <= 128 && !/[\u0000-\u001f\u007f]/.test(model)) result[language] = model;
+    if (model && model.length <= 128 && ![...model].some((character) => {
+      const codePoint = character.codePointAt(0) ?? 0;
+      return codePoint < 32 || codePoint === 127;
+    })) result[language] = model;
   }
   return result;
 }
