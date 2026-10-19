@@ -2,6 +2,19 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.0] — 2026-10-19 — Per-Language Ollama Models Preview
+
+- Added a configurable `lineloom.languageModels` map for optional per-language Ollama model tags, falling back to the existing global `lineloom.model` when no override is assigned.
+- Added **LineLoom: Assign Language Model**, available directly from Quick Actions or the Command Palette. Choose one of nine language IDs and a model from the configured endpoint's installed list; **Use Default Model** clears the override.
+- Kept JSX and TSX aliases mapped to the existing JavaScript/TypeScript model assignments. Model names are validated, trimmed and bounded; unknown language keys and malformed configuration values are ignored rather than being used for inference.
+- Updated exact suggestion caching, typed-prefix continuation fingerprints, native FIM prompt selection and actual Ollama generation to consistently use the **resolved language model**.
+- Fail-closed revalidation now rejects stale model responses if per-language assignments change while a model request is running; VS Code configuration events also invalidate in-memory suggestion caches.
+- Added unit tests for model resolution, malformed settings, preference changes and Quick Action registration; verified the actual generated model tag through the mocked Ollama endpoint in VS Code integration tests.
+- The model picker contacts only the already configured and validated Ollama endpoint after user initiation; remote HTTPS approval is still required. No extra context files, telemetry, model downloads, accounts or new dependencies.
+- MIT license retained. Earlier Apache-2.0 release tags are unchanged.
+
+**Still preview:** successful synthetic model routing does not establish real-model code quality, end-user ghost-text acceptance or on-device CPU/GPU performance.
+
 ## [0.8.1] — 2026-10-19 — Unicode & Response-State Safety Preview
 
 - Improved the automatic mid-identifier guard for Unicode combining marks, connector punctuation and zero-width identifier joiners. Manual triggering and the configurable opt-out continue to work.

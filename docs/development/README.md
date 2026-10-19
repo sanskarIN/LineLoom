@@ -57,3 +57,7 @@ Unit tests cover the automatic mid-token boundary for ASCII/Unicode identifiers,
 ## v0.8.1 regression coverage
 
 Unit tests cover Unicode identifier continuation characters and the strict post-generation preference guard. The VS Code extension-host test now exercises the **automatic** trigger for debounce cancellation; manual invocations intentionally bypass the debounce since v0.8.0. End-to-end tests use a mock Ollama server and cannot establish actual model quality or measured latency.
+
+## v0.9.0 model routing checks
+
+Unit tests cover supported language maps, aliases, malformed model tags, unknown keys, fallback to the global Ollama model and rejection of late responses after an override changes. VS Code's extension-host integration suite configures a TypeScript override, observes the actual `model` field sent to the **mock Ollama HTTP** endpoint, clears the override and verifies a new request uses the global default. The extension does not automatically pull, inspect model quality or benchmark distinct models.

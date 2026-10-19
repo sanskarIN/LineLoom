@@ -30,6 +30,8 @@
 
 **v0.8.1 (pre-release):** complete Unicode identifier boundary handling; post-inference settings and remote-origin revalidation; corrected automatic debounce regression tests.
 
+**v0.9.0 (pre-release):** optional per-language installed Ollama model routing with Quick Actions management and provider integration regressions.
+
 **Next previews:** user-reported completion quality fixes, more editor behavior checks and real-model verification.
 
 **v1.0.0 (future stable):** stabilize all nine registered language IDs, active-document inline completion, local Ollama inference, manual model selection, privacy gate, tests and VSIX validation. **Stable release is gated on independent real-model and editor verification.**
