@@ -23,3 +23,13 @@ export function hasSingleInsertionCursor(
     selections[0].active.line === line &&
     selections[0].active.character === character;
 }
+
+/**
+ * When automatic completion is requested within an identifier, keep normal
+ * editing and native IntelliSense in control. Explicit invocations bypass it.
+ * This checks only the character directly after the caret; no extra file reads.
+ */
+export function shouldRequestAtCursor(nextText: string, manual: boolean, suppressMidToken = true): boolean {
+  if (manual || !suppressMidToken) return true;
+  return !/^[\\p{L}\\p{N}_$]/u.test(nextText);
+}

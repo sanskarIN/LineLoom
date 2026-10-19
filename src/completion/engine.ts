@@ -5,7 +5,7 @@ import { EmptySuggestionBackoff } from "./backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
-import { shouldAutoComplete, hasSingleInsertionCursor } from "./trigger";
+import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
@@ -102,12 +102,14 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     };
     if (!isTargetCurrent()) return;
     const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
-    if (!shouldAutoComplete(document.lineAt(position.line).text.slice(0, position.character),
-      config.minAutoTriggerChars, manual)) return;
+    const activeLine = document.lineAt(position.line).text;
+    if (!shouldAutoComplete(activeLine.slice(0, position.character), config.minAutoTriggerChars, manual)) return;
+    if (!shouldRequestAtCursor(activeLine.slice(position.character), manual, config.suppressMidTokenAuto)) return;
     const requestId = ++this.generation;
     this.controller?.abort();
     this.target = { uri: document.uri.toString(), version: initialVersion, position };
-    if (!await this.debounce(config.debounceMs, token) || requestId !== this.generation || !isTargetCurrent()) {
+    // An explicit developer request should never wait for the typing debounce.
+    if (!await this.debounce(manual ? 0 : config.debounceMs, token) || requestId !== this.generation || !isTargetCurrent()) {
       if (requestId === this.generation) this.onState("ready");
       return;
     }

@@ -234,6 +234,11 @@
           "type": "boolean",
           "default": false,
           "description": "Track privacy-preserving aggregate performance timings in memory."
+        },
+        "lineloom.suppressMidTokenAuto": {
+          "type": "boolean",
+          "default": true,
+          "description": "Avoid automatic Ollama requests when the cursor is directly before an existing identifier character. Explicit manual completions bypass this guard."
         }
       }
     }

@@ -5,6 +5,7 @@ export interface LineLoomConfig {
   autoTrigger: boolean;
   enabledLanguages: SupportedLanguage[];
   minAutoTriggerChars: number;
+  suppressMidTokenAuto: boolean;
   model: string;
   endpoint: string;
   allowRemoteEndpoints: boolean;
@@ -32,6 +33,7 @@ export function readConfig(): LineLoomConfig {
     enabledLanguages: normalizeEnabledLanguages(c.get<unknown>("enabledLanguages")),
 
     minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
+    suppressMidTokenAuto: c.get("suppressMidTokenAuto", true),
     model: c.get("model", "qwen2.5-coder:1.5b").trim(),
     endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
     allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),

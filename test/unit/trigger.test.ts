@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldAutoComplete, hasSingleInsertionCursor } from "../../src/completion/trigger";
+import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "../../src/completion/trigger";
 describe("automatic suggestion throttling", () => {
   it("defers suggestions until meaningful text is present", () => {
     expect(shouldAutoComplete("   ", 2, false)).toBe(false);
@@ -27,5 +27,22 @@ describe("inline insertion cursor gate", () => {
   it("rejects stale positions and missing selections", () => {
     expect(hasSingleInsertionCursor([cursor(2, 4)], 2, 5)).toBe(false);
     expect(hasSingleInsertionCursor([], 2, 4)).toBe(false);
+  });
+});
+
+describe("mid-token automatic request gate", () => {
+  it("blocks suggestions immediately before identifier characters", () => {
+    for (const next of ["foo", "42", "_value", "$amount", "变量", "école"]) {
+      expect(shouldRequestAtCursor(next, false)).toBe(false);
+    }
+  });
+  it("allows end-of-line and punctuation boundaries", () => {
+    for (const next of ["", "\\nnext", ")finish", ";", " next", ".", "{"]) {
+      expect(shouldRequestAtCursor(next, false)).toBe(true);
+    }
+  });
+  it("allows manual invocation and configurable opt-out", () => {
+    expect(shouldRequestAtCursor("identifier", true)).toBe(true);
+    expect(shouldRequestAtCursor("identifier", false, false)).toBe(true);
   });
 });
