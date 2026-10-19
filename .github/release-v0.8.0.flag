@@ -1,0 +1,2 @@
+LineLoom v0.8.0 GitHub pre-release marker.
+Publication requires npm ci, TypeScript, lint, unit tests including MIT metadata, VS Code extension-host integration with mocked Ollama, dependency audit, VSIX ZIP verification and SHA-256 checksums.
