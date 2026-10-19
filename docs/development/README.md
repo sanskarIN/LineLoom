@@ -61,3 +61,7 @@ Unit tests cover Unicode identifier continuation characters and the strict post-
 ## v0.9.0 model routing checks
 
 Unit tests cover supported language maps, aliases, malformed model tags, unknown keys, fallback to the global Ollama model and rejection of late responses after an override changes. VS Code's extension-host integration suite configures a TypeScript override, observes the actual `model` field sent to the **mock Ollama HTTP** endpoint, clears the override and verifies a new request uses the global default. The extension does not automatically pull, inspect model quality or benchmark distinct models.
+
+## v0.9.1 privacy regression tests
+
+Run `npm ci && npm run check` and `npm run test:integration`. Pure tests verify that endpoint changes, revoked HTTPS consent, invalid endpoint URLs, timeout changes and additional excluded paths invalidate their prior authorization. In the VS Code extension-host test, an automatic completion is queued with a nonzero debounce; changing either the model or a newly excluded file path before dispatch must result in **zero mock Ollama generation calls**. The suite uses synthetic source files and an ephemeral local test server. Real third-party model data handling and responsiveness cannot be determined from these tests.

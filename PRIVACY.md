@@ -1,4 +1,4 @@
-# LineLoom privacy policy (v0.9.0 preview)
+# LineLoom privacy policy (v0.9.1 preview)
 
 LineLoom runs as an extension inside the VS Code extension host. It does not require an account. It does not include telemetry, advertising, analytics, or automated uploads to a LineLoom-operated server.
 
@@ -22,3 +22,5 @@ Questions and security reports: use GitHub issues for non-sensitive concerns, an
 **v0.3.0 update:** LineLoom verifies canonical document paths, checks nested policy files in addition to root policy files, and copies at most the configured context window via editor ranges. These safeguards reduce accidental disclosure risk but are not a guarantee against secrets typed in ordinary source files.
 
 **v0.9.0 per-language model selection:** user-configured language model tags are local VS Code settings. The selected model is included in the normal Ollama request to the same validated endpoint; the feature does not introduce a new service, hidden model downloads or cross-file context. Opening the model picker alone does not send editor snippets; installed-model discovery occurs only after user action and the existing explicit remote-HTTPS approval gate. A model override does not change the privacy guarantees or data handling of an independently chosen Ollama server.
+
+**v0.9.1 dispatch-time protections:** pending inference now revalidates workspace trust, enabled languages, current model and settings, custom path exclusions, and remote endpoint approval immediately before sending editor context. Configuration/consent can change while an ignore-file scan or typing debounce is in progress. Existing completion responses still undergo a second check before insertion. The model-selection pickers also discard a result obtained from a no-longer-current endpoint. These checks do **not** retract source that an already-approved endpoint has previously received, nor control an external server's logging or data retention.

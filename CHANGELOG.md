@@ -2,6 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
+## [0.9.1] — 2026-10-19 — Pre-Dispatch Privacy & Model-Picker Safety Preview
+
+- Added a **send-time safety gate** to the completion provider: after typing debounce and asynchronous sensitive-file checks, the extension revalidates current inference settings, model assignments, trusted-workspace state, and explicit remote-endpoint consent before building and sending a prompt.
+- Rechecked the same settings on cached suggestions and typed-prefix continuation returns, preventing obsolete model/settings candidates from being displayed while a configuration event is delayed.
+- Added fail-closed comparisons for changed custom excluded paths and request timeout settings, in addition to existing model, endpoint, language and generation parameters.
+- Hardened model discovery and selection: both default and per-language model pickers verify the Ollama origin is **still the configured and approved endpoint** when a choice is saved. An endpoint or remote-HTTPS policy change while a picker is open silently discards the obsolete choice.
+- Prevented storing newly approved remote origins if a user changes or disables the endpoint during the HTTPS approval prompt.
+- Added unit tests for endpoint change/consent withdrawal and changed exclusions; added real VS Code extension-host regression checks showing stale model or excluded-file configuration during automatic debounce sends **zero** mock Ollama inference requests.
+- Preserved the existing MIT license, nine language IDs, local-first Ollama operation, sensitive path protection, redirect rejection, and no telemetry or new dependencies.
+
+**Important limitations:** these checks prevent starting a request under superseded settings; they cannot retract context that was previously sent to an approved server. Mock-model tests do not establish real-model accuracy, end-user latency, or manual cross-platform installation quality.
+
 ## [0.9.0] — 2026-10-19 — Per-Language Ollama Models Preview
 
 - Added a configurable `lineloom.languageModels` map for optional per-language Ollama model tags, falling back to the existing global `lineloom.model` when no override is assigned.

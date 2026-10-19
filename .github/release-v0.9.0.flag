@@ -1,2 +1,0 @@
-LineLoom v0.9.0 GitHub pre-release trigger.
-Publication is conditional on locked npm installation, typecheck, ESLint, Vitest, bundled VS Code extension, mocked-Ollama extension-host integration, dependency audit, VSIX ZIP integrity and SHA-256 checksum generation.
