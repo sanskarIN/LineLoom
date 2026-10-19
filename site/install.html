@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Install LineLoom from the official VS Code Marketplace on Windows, macOS and Linux, or install the GitHub VSIX manually.">
+  <meta name="description" content="Install LineLoom 1.0.0 from Visual Studio Marketplace, Open VSX Registry, or the stable GitHub VSIX package.">
   <link rel="canonical" href="https://sanskarin.github.io/LineLoom/install.html">
   <link rel="icon" type="image/svg+xml" href="./assets/lineloom.svg">
   <link rel="stylesheet" href="./styles.css">
@@ -20,7 +20,7 @@
   <main class="shell install-doc" id="main">
     <p class="section-kicker">LINELOOM HELP / STABLE v1.0.0</p>
     <h1>Install the extension.<br><span class="brand-accent">In the right editor.</span></h1>
-    <p class="doc-intro">LineLoom is available directly on the <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">official Visual Studio Marketplace</a>. This is the easiest installation method in Visual Studio Code. A <code>.vsix</code> download from GitHub is an optional extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
+    <p class="doc-intro">LineLoom v1.0.0 is published on <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a> and <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a>. Choose the registry your editor supports. A GitHub <code>.vsix</code> download is an optional extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
     <section class="doc-block" id="marketplace">
       <h2>Recommended — Install from VS Code Marketplace</h2>
       <ol>
@@ -30,6 +30,16 @@
         <li>Start your independently installed Ollama model and use <strong>LineLoom: Quick Actions</strong> to check the connection.</li>
       </ol>
       <div class="command doc-command"><code>code --install-extension SanskarCodes.lineloom</code><button class="copy" type="button" data-copy="code --install-extension SanskarCodes.lineloom" aria-label="Copy Marketplace installation command">Copy</button></div>
+    </section>
+    <section class="doc-block" id="open-vsx">
+      <h2>Open VSX Registry — compatible editors</h2>
+      <ol>
+        <li>Open your editor's Extensions view. Make sure it uses the <strong>Open VSX Registry</strong> as its extension source.</li>
+        <li>Search for <strong>LineLoom</strong>, verify the namespace/publisher <strong>SanskarCodes</strong>, and choose <strong>Install</strong>.</li>
+        <li>Or open <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">LineLoom v1.0.0 on Open VSX</a> to view the public stable extension listing and its download.</li>
+        <li>Run <strong>LineLoom: Quick Actions</strong> to select a locally installed Ollama coding model after installation.</li>
+      </ol>
+      <p>The Open VSX v1.0.0 package is publicly downloadable; publisher verification/badge status is a separate registry property. The extension uses the same identifier <code>SanskarCodes.lineloom</code>.</p>
     </section>
     <aside class="install-warning" aria-label="Important installer warning"><strong>Got “One or more extensions are for Visual Studio Code”?</strong><p>You opened LineLoom using the <em>Visual Studio VSIX Installer</em> (for the full Visual Studio IDE), rather than VS Code. This error usually means the download already succeeded; it does not prove the archive is broken. Close that installer and follow the VS Code steps below.</p></aside>
     <section class="doc-block" id="windows">
@@ -59,9 +69,9 @@
         <li>If the <code>code</code> command isn't recognized, use the UI method. On macOS, you may first need to install the <code>code</code> shell command from the VS Code Command Palette.</li>
         <li>If VS Code reports an extension error, copy its exact text—without personal information—and <a href="https://github.com/sanskarIN/LineLoom/issues">open a GitHub issue</a>. VSIX packaging tests alone cannot verify every machine.</li>
       </ul>
-      <p><strong>Registry status:</strong> LineLoom v1.0.0 is available from the <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">official VS Code Marketplace</a> under publisher <code>SanskarCodes</code>. Open VSX requires a separate publication and is not yet confirmed. Installing from a local VSIX is still supported.</p>
+      <p><strong>Registry status:</strong> LineLoom v1.0.0 is available on both <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a> and <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a> under publisher <code>SanskarCodes</code>. A local GitHub VSIX remains available for manual installation.</p>
     </section>
-    <div class="doc-actions"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Install from VS Code Marketplace ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
+    <div class="doc-actions"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">VS Code Marketplace ↗</a><a class="button button-outline" href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix">Download GitHub VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
   </main>
   <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v1.0.0 · stable release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
   <script src="./site.js" defer></script>
