@@ -1,17 +1,17 @@
-name: Publish LineLoom v0.9.1 pre-release
+name: Publish LineLoom v0.9.2 GitHub pre-release
 on:
   push:
     branches: [main]
     paths:
-      - .github/release-v0.9.1.flag
+      - .github/release-v0.9.2.flag
 permissions:
   contents: read
 concurrency:
-  group: lineloom-prerelease-v0.9.1
+  group: lineloom-prerelease-v0.9.2
   cancel-in-progress: false
 jobs:
   publish:
-    name: Verify, package and publish preview
+    name: Verify, package and publish GitHub preview only
     if: github.repository == 'sanskarIN/LineLoom'
     runs-on: ubuntu-latest
     permissions:
@@ -21,8 +21,11 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - name: Validate version
-        run: test "$(node -p "require('./package.json').version")" = "0.9.1"
+      - name: Validate pre-release version, publisher and lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='0.9.2'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected pre-release publisher/version/lockfile')}"
       - name: Install exactly locked dependencies
         run: npm ci
       - name: Typecheck, lint, unit tests, bundle
@@ -31,27 +34,31 @@ jobs:
         run: xvfb-run -a npm run test:integration
       - name: Dependency audit
         run: npm audit --audit-level=high
-      - name: Package VSIX
-        run: npx vsce package --no-dependencies -o LineLoom-0.9.1.vsix
-      - name: Verify archive and generate checksum
+      - name: Package marketplace-marked pre-release VSIX
+        shell: bash
         run: |
-          unzip -t LineLoom-0.9.1.vsix
-          sha256sum LineLoom-0.9.1.vsix > LineLoom-0.9.1.sha256
-          cat LineLoom-0.9.1.sha256
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          npx vsce package --pre-release --no-dependencies -o "LineLoom-${VERSION}.vsix"
+          unzip -t "LineLoom-${VERSION}.vsix"
+          sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
+          cat "LineLoom-${VERSION}.sha256"
       - name: Reject duplicate release tag
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          if gh release view "v0.9.1" >/dev/null 2>&1; then
-            echo "Release v0.9.1 already exists; refusing to overwrite it."
+          if gh release view "v0.9.2" >/dev/null 2>&1; then
+            echo "Release v0.9.2 already exists; refusing to overwrite it."
             exit 1
           fi
-      - name: Publish GitHub pre-release
+      - name: Publish GitHub pre-release only (not Marketplace or Open VSX)
         env:
           GH_TOKEN: ${{ github.token }}
+        shell: bash
         run: |
-          gh release create "v0.9.1" \
-            "LineLoom-0.9.1.vsix" "LineLoom-0.9.1.sha256" \
+          gh release create "v0.9.2" \
+            "LineLoom-0.9.2.vsix" "LineLoom-0.9.2.sha256" \
             --target "${GITHUB_SHA}" --prerelease --latest=false \
-            --title "LineLoom v0.9.1 — Pre-Dispatch Privacy & Model-Picker Safety Preview" \
-            --notes-file "docs/releases/v0.9.1.md"
+            --title "LineLoom v0.9.2 — Marketplace Identity & Preview Packaging" \
+            --notes-file "docs/releases/v0.9.2.md"
