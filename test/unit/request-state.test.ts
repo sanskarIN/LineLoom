@@ -10,6 +10,7 @@ const base: LineLoomConfig = {
   minAutoTriggerChars: 2,
   suppressMidTokenAuto: true,
   model: "example",
+  languageModels: {},
   endpoint: "http://127.0.0.1:11434",
   allowRemoteEndpoints: false,
   debounceMs: 250,
@@ -39,6 +40,7 @@ describe("post-inference configuration revalidation", () => {
   });
   it("rejects superseded model, origin, remote policy or language eligibility", () => {
     expect(isRequestConfigurationCurrent(base, { ...base, model: "another" }, language, true)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, { ...base, languageModels: { typescript: "new-model" } }, language, true)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, endpoint: "http://127.0.0.1:21212" }, language, true)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, allowRemoteEndpoints: true }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, enabledLanguages: ["python"] }, language, false)).toBe(false);

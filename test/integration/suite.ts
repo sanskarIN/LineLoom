@@ -14,12 +14,13 @@ export async function run(): Promise<void> {
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
-    "lineloom.quickActions", "lineloom.toggleAutomatic"
+    "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
   let mockEmptyResponses = false;
   let generationCalls = 0;
+  let lastModelSent = "";
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
@@ -27,6 +28,10 @@ export async function run(): Promise<void> {
     } else if (request.url === "/api/show") {
       response.end(JSON.stringify({ details: { family: "test" } }));
     } else if (request.url === "/api/generate") {
+      const parts: Buffer[] = [];
+      for await (const chunk of request) parts.push(Buffer.from(chunk));
+      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string };
+      lastModelSent = payload.model ?? "";
       generationCalls++;
       if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
@@ -65,6 +70,7 @@ export async function run(): Promise<void> {
     const oldValues = {
       endpoint: configuration.get<string>("endpoint"),
       model: configuration.get<string>("model"),
+      languageModels: configuration.get<Record<string, string>>("languageModels"),
       debounceMs: configuration.get<number>("debounceMs"),
       autoTrigger: configuration.get<boolean>("autoTrigger"),
       suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
@@ -89,6 +95,7 @@ export async function run(): Promise<void> {
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+      await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
@@ -104,13 +111,19 @@ export async function run(): Promise<void> {
           triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
           selectedCompletionInfo: undefined
         };
+        await configuration.update("languageModels", { typescript: "lineloom-typed:latest" }, vscode.ConfigurationTarget.Global);
         const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(first?.length, "Expected inline completion from the mocked model");
         assert.equal(first[0].insertText, "42");
+        assert.equal(lastModelSent, "lineloom-typed:latest", "TypeScript must use its assigned Ollama model");
         const second = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+        await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+        const fallback = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(fallback?.length, "Expected fallback to global Ollama model");
+        assert.equal(lastModelSent, "lineloom-test:latest", "Removing the language override must restore the default model");
         await vscode.commands.executeCommand("lineloom.toggleAutomatic");
         assert.equal(vscode.workspace.getConfiguration("lineloom").get("autoTrigger"), false, "Pause command must disable automatic triggering");
         const requestsWhilePaused = engine.getStats().requests;
@@ -290,6 +303,7 @@ export async function run(): Promise<void> {
       engine.dispose();
       await configuration.update("endpoint", oldValues.endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
+      await configuration.update("languageModels", oldValues.languageModels, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", oldValues.autoTrigger, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
