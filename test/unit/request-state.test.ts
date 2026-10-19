@@ -51,4 +51,16 @@ describe("post-inference configuration revalidation", () => {
     expect(isRequestConfigurationCurrent(base, { ...base, multiLine: false }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, suppressMidTokenAuto: false }, language, false)).toBe(false);
   });
+  it("rejects privacy exclusions and timeout changes before network dispatch", () => {
+    expect(isRequestConfigurationCurrent(base, {
+      ...base, excludedPaths: ["**/secrets.ts"]
+    }, language, true)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, {
+      ...base, timeoutMs: 2500
+    }, language, false)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, {
+      ...base, excludedPaths: []
+    }, language, true)).toBe(true);
+  });
+
 });

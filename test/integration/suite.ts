@@ -72,6 +72,7 @@ export async function run(): Promise<void> {
       model: configuration.get<string>("model"),
       languageModels: configuration.get<Record<string, string>>("languageModels"),
       debounceMs: configuration.get<number>("debounceMs"),
+      excludedPaths: configuration.get<string[]>("excludedPaths"),
       autoTrigger: configuration.get<boolean>("autoTrigger"),
       suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
       enabledLanguages: configuration.get<string[]>("enabledLanguages")
@@ -97,6 +98,7 @@ export async function run(): Promise<void> {
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
       await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+      await configuration.update("excludedPaths", [], vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
@@ -216,6 +218,27 @@ export async function run(): Promise<void> {
         assert.equal(engine.getStats().requests, requestsBeforeGuards, "Stale debounce must not send source");
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
         activeEditor.selection = new vscode.Selection(position, position);
+
+        // Delayed configuration notifications must not permit an old request
+        // to reach Ollama after its model or privacy exclusions change.
+        await configuration.update("debounceMs", 275, vscode.ConfigurationTarget.Global);
+        const beforeConfigChange = generationCalls;
+        const pendingOldModel = engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token
+        );
+        await configuration.update("model", "lineloom-other:latest", vscode.ConfigurationTarget.Global);
+        assert.equal(await pendingOldModel, undefined, "Superseded model request must be discarded");
+        assert.equal(generationCalls, beforeConfigChange, "Changed model must not send code to Ollama");
+        await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+        const pendingNewIgnore = engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token
+        );
+        await configuration.update("excludedPaths", ["editor-test.ts"], vscode.ConfigurationTarget.Global);
+        assert.equal(await pendingNewIgnore, undefined, "Changed file exclusions must reject queued completion");
+        assert.equal(generationCalls, beforeConfigChange, "Changed ignore rule must prevent Ollama dispatch");
+        await configuration.update("excludedPaths", [], vscode.ConfigurationTarget.Global);
+        await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+        activeEditor.selection = new vscode.Selection(position, position);
         // Repeated same-cursor notifications must not cancel or discard matching completions.
         const hitsBeforeNotification = engine.getStats().cacheHits;
         engine.cancelIfEditorChanged(activeEditor);
@@ -305,6 +328,7 @@ export async function run(): Promise<void> {
       await configuration.update("model", oldValues.model, vscode.ConfigurationTarget.Global);
       await configuration.update("languageModels", oldValues.languageModels, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", oldValues.debounceMs, vscode.ConfigurationTarget.Global);
+      await configuration.update("excludedPaths", oldValues.excludedPaths, vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", oldValues.autoTrigger, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
