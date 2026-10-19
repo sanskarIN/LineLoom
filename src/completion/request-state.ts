@@ -1,5 +1,5 @@
 import type { LineLoomConfig } from "../settings/config";
-import { isLanguageEnabled, type SupportedLanguage } from "../languages/registry";
+import { isLanguageEnabled, type LanguageSpec } from "../languages/registry";
 
 /**
  * Last-moment guard: a configuration event may be queued while the model
@@ -9,7 +9,7 @@ import { isLanguageEnabled, type SupportedLanguage } from "../languages/registry
 export function isRequestConfigurationCurrent(
   initial: LineLoomConfig,
   latest: LineLoomConfig,
-  language: SupportedLanguage,
+  language: LanguageSpec,
   manual: boolean
 ): boolean {
   if (!latest.enabled || (!manual && !latest.autoTrigger) ||
