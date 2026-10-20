@@ -7,6 +7,7 @@ LineLoom's status indicator on the right side of the VS Code status bar opens a 
 | Enable / Disable Autocomplete | Turns the entire provider on or off |
 | Pause / Resume Automatic Suggestions | Toggles only automatic inference while typing; **manual completion still works** when enabled |
 | Trigger Completion | Requests a suggestion explicitly at a valid single cursor |
+| Stop Current Generation (v1.2.1 candidate) | Aborts the current/queued LineLoom completion without pausing future automatic or manual suggestions |
 | Select Model | Requests installed-model information from the validated Ollama endpoint and allows selection |
 | Manage Languages | Chooses eligible VS Code editor language modes |
 | Check Ollama Connection | Performs a user-requested endpoint connection check |
