@@ -19,6 +19,7 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "enabled")?.command).toBe("lineloom.disable");
     expect(entries.find(item => item.id === "model")?.description).toBe("qwen2.5-coder:1.5b");
     expect(entries.find(item => item.id === "requests")?.description).toBe("3");
+    expect(entries.find(item => item.id === "cancel")?.command).toBe("lineloom.cancel");
     expect(entries.find(item => item.id === "state")?.description).toBe("Ready (model not automatically verified)");
     expect(entries.find(item => item.id === "cancelled")?.description).toBe("1");
     expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");
@@ -41,6 +42,7 @@ describe("LineLoom local sidebar model", () => {
       ...snapshot, completionState: "generating", averageLatencyMs: 12.6
     }).flatMap(group => group.items);
     expect(entries.find(item => item.id === "state")?.description).toBe("Generating");
+    expect(entries.find(item => item.id === "cancel")?.description).toContain("Stop the current Ollama request");
     expect(entries.find(item => item.id === "latency")?.description).toBe("13 ms");
     const unavailable = sidebarSections({ ...snapshot, completionState: "unavailable" })
       .flatMap(group => group.items);
