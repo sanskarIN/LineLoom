@@ -2,16 +2,22 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.1.0 development
+## [1.1.0] — 2026-10-20 — GitHub Pre-release
 
-- Corrected Open Settings and Setup Guide routing to the published `SanskarCodes.lineloom` extension identifier (rather than the GitHub owner ID).
-- Implemented a native LineLoom Activity Bar control center with quick completion,
-  model, language, connection, privacy and diagnostics actions.
-- Added an offline-only sidebar view model: opening or refreshing the view makes
-  no Ollama requests and does not expose source text or configured endpoint URLs.
-- Added unit tests for view labels, permission states, and manifest contributions,
-  with an extension-host check for the refresh command.
-- **Not released yet:** version remains 1.0.0 until v1.1.0 release gates pass.
+- **Pre-release channel only:** v1.0.0 remains the stable version distributed
+  on Visual Studio Marketplace and Open VSX; this preview is distributed via
+  a versioned GitHub VSIX with the VS Code pre-release marker.
+- Added the LineLoom native Activity Bar **Control Center** with completion,
+  model and language actions, workspace/endpoint privacy status, session
+  counters, connection checks and shortcuts to diagnostics.
+- Sidebar opening/refresh is local-only: it does not discover models, access
+  editor source, initiate HTTP requests, or expose endpoint host/port details.
+- Fixed Open Settings and Setup Guide extension lookup to use the published
+  `SanskarCodes.lineloom` ID.
+- Added model/manifest/view regression tests, Linux extension-host coverage,
+  packaged SVG/VSIX integrity checks, and preview-specific release gates.
+- **Acceptance outstanding:** real Ollama model output and latency on developer
+  machines, Windows/macOS/Linux hands-on sidebar checks and accessibility.
 
 ## [1.0.0] — 2026-10-19 — First Stable Release
 
