@@ -37,7 +37,7 @@ jobs:
       - name: Run VS Code extension-host integration
         run: xvfb-run -a npm run test:integration
   package:
-    name: v1.1.0 pre-release VSIX candidate
+    name: v1.1.1 pre-release VSIX candidate
     runs-on: ubuntu-latest
     needs: [check, integration]
     steps:
@@ -63,7 +63,7 @@ jobs:
           xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
-          name: lineloom-v1.1.0-preview-candidate
+          name: lineloom-v1.1.1-preview-candidate
           path: |
             LineLoom-*.vsix
             LineLoom-*.sha256
