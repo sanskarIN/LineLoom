@@ -14,10 +14,13 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  assert.ok(page.includes("v" + pkg.version + " pre-release"));
+  // A v1.2.0 build candidate exists, but the public site must not invent
+  // a published stable download or claim the registries are updated.
+  assert.equal(pkg.version, "1.2.0");
+  assert.ok(page.includes("v1.1.1 pre-release"));
   assert.ok(page.includes("v1.0.0 stable"), "Stable registry version must remain visible");
-  assert.ok(page.includes("LineLoom-" + pkg.version + ".vsix"));
-  assert.ok(page.includes("v" + pkg.version));
+  assert.ok(page.includes("LineLoom-1.1.1.vsix"));
+  assert.ok(page.includes("v1.2.0"));
   assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
   assert.match(page, /not an actual model benchmark or editor screenshot/);
@@ -87,10 +90,10 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /(?:do not|don\x27t) double-click/i);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
-  assert.ok(guide.includes("LineLoom-" + pkg.version + ".vsix"));
+  assert.ok(guide.includes("LineLoom-1.1.1.vsix"));
   assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
-  assert.ok(guide.includes("v" + pkg.version));
+  assert.ok(guide.includes("v1.2.0"));
   for (const [, ref] of guide.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
     assert.ok(existsSync(resolve(dir, ref)), "Missing installation-guide asset: " + ref);
   }
