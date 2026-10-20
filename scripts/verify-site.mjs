@@ -14,12 +14,12 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // The 1.2.1 source candidate is unreleased. GitHub v1.2.0 is stable, while external registries
-  // remain on separately published v1.0.0 until a verified registry update.
+  // The 1.2.1 source candidate is unreleased. GitHub and Open VSX both publicly
+  // distribute v1.2.0 Stable; Visual Studio Marketplace is a separate channel.
   assert.equal(pkg.version, "1.2.1");
   assert.ok(page.includes("v1.1.1 pre-release"));
   assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");
-  assert.ok(page.includes("v1.0.0"), "Registry version must remain visible");
+  assert.ok(page.includes("v1.0.0"), "Historical v1.0.0 milestone should remain visible");
   assert.ok(page.includes("LineLoom-1.2.0.vsix"));
   assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix"));
   assert.ok(page.includes("v1.2.0"));
@@ -49,7 +49,7 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
-  // Both official registries have publicly listed stable v1.0.0.
+  // Both official registries have public listings, but publish versions independently.
   assert.ok(page.includes("https://open-vsx.org/extension/SanskarCodes/lineloom"), "Open VSX listing must be linked");
 });
 
@@ -135,8 +135,10 @@ test("official Marketplace and Open VSX listings are visible throughout publishe
   assert.ok(guide.includes('id="open-vsx"'), "Installation guide should explain Open VSX");
   assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "VS Code CLI install command must be documented");
   assert.ok(readme.includes("LineLoom-1.2.0.vsix"), "GitHub stable VSIX fallback should remain available");
-  assert.ok(page.includes("Open VSX currently shows no publisher verification badge"), "Avoid falsely claiming an Open VSX verified publisher");
-  assert.ok(publisherGuide.includes("verified: false"), "Record verified-badge distinction accurately");
+  assert.ok(page.includes("Open VSX v1.2.0 Stable"), "Homepage must state the verified Open VSX stable version");
+  assert.ok(guide.includes("Open VSX v1.2.0 Stable"), "Installation guide must show the current Open VSX stable version");
+  assert.ok(publisherGuide.includes("verified: true"), "Publishing guide must reflect the verified Open VSX registry response");
+  assert.ok(!page.includes("Open VSX currently shows no publisher verification badge"), "Do not preserve obsolete publisher status");
   assert.ok(!page.includes("Open VSX publication has not yet been verified"), "Remove old unlaunched registry language");
   assert.ok(!publisherGuide.includes("Open VSX is not published/verified yet"), "Remove old unlaunched registry language");
   assert.ok(!readme.includes("Open VSX publication is still"), "Remove old unlaunched registry language");
