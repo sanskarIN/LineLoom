@@ -1,0 +1,13 @@
+# LineLoom v1.1.0 GitHub pre-release publishing trigger
+
+Approved channel: GitHub Releases PRE-RELEASE (not stable).
+Version: 1.1.0
+Publisher: SanskarCodes
+Stable registry versions to preserve: 1.0.0 (Visual Studio Marketplace and Open VSX)
+Development PR: #23 (cross-platform CI and packaged pre-release VSIX checks passed)
+Published release workflow: .github/workflows/release-preview.yml
+
+Publishing must pass the separate workflow gates (locked npm dependencies,
+typechecking, lint, tests, mocked-Ollama extension host, dependency audit,
+VSIX pre-release marker and checksum, and isolated VS Code CLI install).
+The v1.0.0 tag and release must never be edited.
