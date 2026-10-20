@@ -42,6 +42,13 @@ try {
   assert.equal(packaged.name, "lineloom");
   assert.match(packaged.version, /^\d+\.\d+\.\d+$/, "Package must have a semantic three-part version");
   assert.equal(packaged.version, source.version);
+  // Preview builds must contain VS Code's actual pre-release manifest property,
+  // not merely have a version number or a GitHub "pre-release" label.
+  if (process.env.LINELOOM_EXPECT_PRE_RELEASE === "1") {
+    const manifest = execFileSync("unzip", ["-p", path, "extension.vsixmanifest"], { encoding: "utf8" });
+    assert.ok(manifest.includes("Microsoft.VisualStudio.Code.PreRelease"),
+      "VSIX missing the VS Code pre-release marker; package with vsce --pre-release");
+  }
   assert.ok(entries.some(x => x === "extension/assets/icons/lineloom.png"), "Missing extension icon");
   // The Activity Bar icon must actually ship; manifest-only checks cannot catch
   // an overbroad .vscodeignore exclusion.
