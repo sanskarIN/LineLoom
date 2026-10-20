@@ -9,6 +9,7 @@ All notable changes follow Semantic Versioning.
   imply Ollama connectivity is verified.
 - Added in-memory cancellation counts, cache hits, typed-continuation reuses,
   empty results, and an optional measured average latency display.
+- Improved local Ollama error recovery messaging with bounded error categories and no raw server output.
 - Preserved no-request sidebar rendering, workspace trust, file-only scheme
   and remote endpoint approval boundaries.
 - Advanced package and lockfile to 1.2.0 for a **stable-channel VSIX candidate**.
