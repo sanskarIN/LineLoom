@@ -24,6 +24,9 @@ describe("Activity Bar control center registration", () => {
 
   it("exposes an explicit refresh action in the view title menu", () => {
     expect(manifest.contributes.commands.some(item => item.command === "lineloom.refreshSidebar")).toBe(true);
+    expect(manifest.contributes.commands).toContainEqual(expect.objectContaining({
+      command: "lineloom.cancel", title: "Stop Current Generation"
+    }));
     expect(manifest.contributes.menus["view/title"]).toContainEqual({
       command: "lineloom.refreshSidebar",
       when: "view == lineloom.dashboard",
