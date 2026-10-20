@@ -3,11 +3,12 @@ import { resolveLanguageModel, type LanguageModels } from "../settings/language-
 import type { SidebarEndpointState } from "./sidebar-model";
 
 /**
- * Describe only the active editor's VS Code language ID. Never receive
- * the document, URI, filename, contents, or a network client.
+ * Describe only the active editor's VS Code language ID and URI scheme.
+ * Never receive the document, full URI, filename, contents, or a network client.
  */
 export interface EditorContextInput {
   languageId?: string;
+  scheme?: string;
   enabled: boolean;
   workspaceTrusted: boolean;
   enabledLanguages: readonly SupportedLanguage[];
@@ -42,6 +43,7 @@ export function summarizeActiveEditor(input: EditorContextInput): EditorContextS
   let eligibility: string;
   if (!input.enabled) eligibility = "Autocomplete disabled";
   else if (!input.workspaceTrusted) eligibility = "Workspace restricted";
+  else if (input.scheme !== "file") eligibility = "Only local file editors support completion";
   else if (!isLanguageEnabled(language, input.enabledLanguages)) eligibility = "Language disabled in settings";
   else if (!selected.trim()) eligibility = "No model configured";
   else if (input.endpointState === "invalid") eligibility = "Invalid inference endpoint";

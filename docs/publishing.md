@@ -1,4 +1,4 @@
-# Extension registry publishing (stable v1.0.0 + GitHub v1.1.0 preview)
+# Extension registry publishing (stable v1.0.0 + GitHub v1.1.x previews)
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
@@ -15,13 +15,32 @@ installation before creating the GitHub release with `--prerelease` and
 editor preview channel. No Marketplace/Open VSX credentials are used.
 
 Stable v1.0.0 in both registries remains unchanged. A future **stable** registry
-release must use a new package version (such as v1.1.1), not reuse the v1.1.0
+release must use a new package version (planned v1.2.0), not reuse the v1.1.0
 pre-release version. Future registry publishing,
 manual platform and real-model testing are tracked in
 [release gate #21](https://github.com/sanskarIN/LineLoom/issues/21).
 For preview download/installation instructions, see
 [release notes](releases/v1.1.0.md). Do not present v1.1.0 as available in
 the registries until their *public* versions confirm it.
+
+## v1.1.1 GitHub-only preview and v1.2.0 stable plan
+
+The follow-up `v1.1.1` package contains editor-aware sidebar improvements and
+a file-scheme eligibility fix. A guarded GitHub Actions workflow at
+`.github/workflows/release-v1.1.1.yml` performs full typecheck, lint, unit,
+static site and mocked-Ollama integration suites, dependency audit, preview
+metadata verification, archive/checksum validation and an isolated VS Code CLI
+installation. After an explicit release flag is committed to main, that
+workflow may create **GitHub v1.1.1 with `--prerelease --latest=false`**.
+It has no third-party publishing tokens or registry-publish step.
+
+**Next stable version: v1.2.0**. The
+[stable release plan](releases/v1.2.0-plan.md) documents acceptance and
+distribution gates. A future v1.2.0 stable VSIX must omit the pre-release
+metadata, be tested on real machines, and be published independently to
+GitHub, Visual Studio Marketplace and Open VSX after authorization. Neither
+registry should be represented as distributing v1.1.1 just because the
+GitHub pre-release exists. Stable v1.0.0 remains unchanged.
 
 ## Stable release package safety and required checks
 

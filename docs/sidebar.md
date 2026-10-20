@@ -1,10 +1,11 @@
-# LineLoom sidebar (v1.1.0 preview + ongoing improvements)
+# LineLoom sidebar (v1.1.0 and v1.1.1 preview)
 
 LineLoom's next-release control center is a **native VS Code Activity Bar Tree View**.
 Open the LineLoom icon in the Activity Bar and select **Control Center**, or run
 **LineLoom: Open Control Center** from the Command Palette/status-bar Quick Actions. The feature
-is available in the published [v1.1.0 GitHub **pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0),
-while the published v1.0.0 stable extension does not include this view.
+was introduced in [v1.1.0 GitHub **pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0),
+with an extended Active Editor section in the v1.1.1 GitHub preview. The
+published v1.0.0 stable extension does not include this view.
 
 ## What is visible
 
@@ -12,11 +13,12 @@ while the published v1.0.0 stable extension does not include this view.
   and manually trigger a suggestion.
 - **Models & Languages:** show the configured default Ollama model, count language
   overrides and enabled languages, and open existing selection commands.
-- **Active Editor (next-version development):** display only the current VS Code
+- **Active Editor (v1.1.1 preview):** display only the current VS Code
   language ID's friendly name, effective default/override model and a provisional
   settings-level completion status. It reacts to editor changes. Unsupported
   languages and missing editors are clearly labeled, without reading filenames,
-  paths or source content.
+  paths or source content. A non-identifying document URI scheme is also
+  used so untitled and virtual documents are not shown as eligible.
 - **Privacy & Connection:** report workspace trust, and whether the inference
   endpoint is loopback, remote approved, remote blocked/pending approval, or invalid.
   Use Check Ollama Connection for an explicit user-initiated model-list request.

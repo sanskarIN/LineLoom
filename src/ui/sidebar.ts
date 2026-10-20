@@ -40,10 +40,11 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
     const config = readConfig();
     const stats = this.getStats();
     const originState = endpointState(this.isApproved);
-    // Only the VS Code language ID is inspected. No URI, filename or document
-    // contents are accessed merely because the sidebar is visible.
+    // Only the VS Code language ID and non-identifying URI scheme are inspected.
+    // No full URI, filename, file path or contents are accessed.
     const activeEditor = summarizeActiveEditor({
       languageId: vscode.window.activeTextEditor?.document.languageId,
+      scheme: vscode.window.activeTextEditor?.document.uri.scheme,
       enabled: config.enabled,
       workspaceTrusted: vscode.workspace.isTrusted,
       enabledLanguages: config.enabledLanguages,

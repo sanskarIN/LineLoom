@@ -1,0 +1,72 @@
+name: Publish LineLoom v1.1.1 GitHub pre-release
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/release-v1.1.1.flag
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-preview-v1.1.1
+  cancel-in-progress: false
+jobs:
+  publish:
+    name: Verify and publish GitHub v1.1.1 preview (not registries)
+    if: github.repository == 'sanskarIN/LineLoom'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify publisher, pre-release version and locked dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f .github/release-v1.1.1.flag
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.version!=='1.1.1'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected preview publisher/version/lockfile')}"
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript, lint, tests, website and bundle
+        run: npm run check
+      - name: Mocked Ollama extension-host integration
+        run: xvfb-run -a npm run test:integration
+      - name: Audit production and development dependencies
+        run: npm audit --audit-level=high
+      - name: Build pre-release VSIX with checksum and archive validation
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vsce package --pre-release --no-dependencies -o LineLoom-1.1.1.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.1.1.vsix
+          sha256sum LineLoom-1.1.1.vsix > LineLoom-1.1.1.sha256
+          cat LineLoom-1.1.1.sha256
+      - name: Install candidate VSIX in isolated VS Code CLI profile
+        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.1.1.vsix
+      - name: Reject existing release or tag before publishing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.1.1 >/dev/null 2>&1; then
+            echo "v1.1.1 release already exists. Refusing to overwrite."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v1.1.1 >/dev/null; then
+            echo "v1.1.1 tag already exists. Refusing to overwrite."
+            exit 1
+          fi
+      - name: Publish GitHub pre-release without changing stable latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v1.1.1 \
+            LineLoom-1.1.1.vsix LineLoom-1.1.1.sha256 \
+            --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "LineLoom v1.1.1 — Active Editor Sidebar Preview" \
+            --notes-file docs/releases/v1.1.1.md
