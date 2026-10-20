@@ -52,7 +52,7 @@
 
 **v1.1.0 (GitHub pre-release, published 2026-10-20):** native Activity Bar sidebar for model, language, privacy and completion controls, shipped as an opt-in preview VSIX. The follow-up stable package must use a distinct version (for example, v1.1.1) if published to VS Code Marketplace. Stable rollout to Visual Studio Marketplace/Open VSX remains separately gated on real-model and manual cross-platform acceptance. Continue language-aware model quality checks, request timing and context-cache tuning.
 
-**v1.1.1 (GitHub pre-release):** ship editor-aware model/eligibility status, language aliases, file-scheme safety checks, screen-reader naming, and privacy/extension-host regression coverage as an opt-in preview. Manually verified real-model and cross-platform acceptance remain outstanding.
+**v1.1.1 (GitHub pre-release, published 2026-10-20):** ship editor-aware model/eligibility status, language aliases, file-scheme safety checks, screen-reader naming, and privacy/extension-host regression coverage as an opt-in preview. Manually verified real-model and cross-platform acceptance remain outstanding.
 
 **v1.2.0 (planned next stable):** promote the native sidebar and privacy-safe completions after verified acceptance and registry rollout. Consider C# and Dart only if genuinely implemented and quality-tested, not as guaranteed v1.2.0 features. See [stable release plan](releases/v1.2.0-plan.md).
 
