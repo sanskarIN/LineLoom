@@ -111,6 +111,11 @@
         "title": "Refresh Sidebar",
         "category": "LineLoom",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "lineloom.openSidebar",
+        "title": "Open Control Center",
+        "category": "LineLoom"
       }
     ],
     "configuration": {
