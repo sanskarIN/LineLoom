@@ -9,6 +9,7 @@ import { clearIgnoreCache } from "./privacy/exclusions";
 import { readConfig, validateEndpoint } from "./settings/config";
 import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
+import { ollamaFailureMessage } from "./models/errors";
 
 const SETTINGS_FILTER = "@ext:SanskarCodes.lineloom";
 let engine: CompletionEngine | undefined;
@@ -61,8 +62,8 @@ async function checkConnection(context: vscode.ExtensionContext): Promise<void> 
       "LineLoom: Ollama reachable; " + models.length + " installed model(s). " +
       (present ? "Selected model is available." : "Selected model is not installed. Use LineLoom: Select Model.")
     );
-  } catch {
-    vscode.window.showWarningMessage("LineLoom cannot connect to Ollama. Ensure the server is running and the endpoint is correct.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 async function selectModel(context: vscode.ExtensionContext): Promise<void> {
@@ -85,8 +86,8 @@ async function selectModel(context: vscode.ExtensionContext): Promise<void> {
     await vscode.workspace.getConfiguration("lineloom").update("model", picked.label, vscode.ConfigurationTarget.Global);
     engine?.cancel();
     vscode.window.showInformationMessage("LineLoom model selected: " + picked.label);
-  } catch {
-    vscode.window.showWarningMessage("Could not retrieve installed Ollama models. Check your inference endpoint.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 async function selectLanguageModel(context: vscode.ExtensionContext): Promise<void> {
@@ -136,8 +137,8 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
     vscode.window.showInformationMessage(
       "LineLoom " + language.label + ": " + (selected.model || "default model") + "."
     );
-  } catch {
-    vscode.window.showWarningMessage("Could not assign a language model. Check the selected Ollama endpoint and installed models.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 
