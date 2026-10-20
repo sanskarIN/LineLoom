@@ -71,6 +71,7 @@ async function selectModel(context: vscode.ExtensionContext): Promise<void> {
   if (!origin) return;
   try {
     const models = await listModels(origin);
+    if (!selectionOriginCurrent(context, origin)) return;
     if (models.length === 0) {
       vscode.window.showInformationMessage("No models installed. Run: ollama pull qwen2.5-coder:1.5b");
       return;
