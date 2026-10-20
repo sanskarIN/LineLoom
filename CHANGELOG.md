@@ -2,6 +2,25 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.2.0 stable candidate
+
+- Added native sidebar completion engine state with explicit ready/generating,
+  unavailable, disabled and error feedback. A configured model name does not
+  imply Ollama connectivity is verified.
+- Added in-memory cancellation counts, cache hits, typed-continuation reuses,
+  empty results, and an optional measured average latency display.
+- Preserved no-request sidebar rendering, workspace trust, file-only scheme
+  and remote endpoint approval boundaries.
+- Advanced package and lockfile to 1.2.0 for a **stable-channel VSIX candidate**.
+  CI packages without `--pre-release` and rejects preview markers, risky
+  archive contents, wrong publisher/version and missing sidebar icons.
+- Added a manually authorized GitHub v1.2.0 stable-release workflow, candidate
+  release notes and explicit cross-OS real-Ollama acceptance matrix.
+- **Not published as stable:** real-model, hardware latency, upgrade and
+  interactive cross-platform/accessibility gates still lack evidence. Marketplace
+  and Open VSX remain independently published stable v1.0.0.
+- C# and Dart are not implemented in v1.2.0 candidate.
+
 ## [1.1.1] — 2026-10-20 — GitHub Pre-release
 
 - Add a local-only **Active Editor** sidebar section showing supported
