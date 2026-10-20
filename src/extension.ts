@@ -10,6 +10,7 @@ import { readConfig, validateEndpoint } from "./settings/config";
 import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
 
+const SETTINGS_FILTER = "@ext:SanskarCodes.lineloom";
 let engine: CompletionEngine | undefined;
 
 async function approveEndpoint(context: vscode.ExtensionContext, ask: boolean): Promise<string | undefined> {
@@ -148,7 +149,7 @@ async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
   switch (action) {
     case "Check Connection": await checkConnection(context); break;
     case "Select Model": await selectModel(context); break;
-    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", "@ext:sanskarIN.lineloom"); break;
+    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER); break;
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
   }
 }
@@ -253,7 +254,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context));
-  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", "@ext:sanskarIN.lineloom"));
+  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   command("lineloom.setup", () => setupGuide(context));
   command("lineloom.performance", () => {
