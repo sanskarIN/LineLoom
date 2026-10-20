@@ -9,6 +9,8 @@ describe("safe Ollama failure diagnostics", () => {
     expect(ollamaFailureMessage(new Error("Ollama returned HTTP 429."))).toMatch(/busy/);
     expect(ollamaFailureMessage(new Error("Model no longer installed."))).toMatch(/no longer installed/);
     expect(ollamaFailureMessage(new Error("Incomplete Ollama response stream."))).toMatch(/invalid/);
+    expect(ollamaFailureMessage(new Error("Ollama model list contained no valid model names.")))
+      .toMatch(/invalid/);
   });
   it("does not leak untrusted URLs, model output or server errors to the user", () => {
     const secret = "https://example.net/key?token=secret123";
