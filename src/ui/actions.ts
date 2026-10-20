@@ -24,6 +24,7 @@ export function quickActions(enabled: boolean, automatic: boolean): QuickAction[
     { id: "languageModel", label: "$(settings-gear) Assign Language Model", description: "Choose a separate installed Ollama model for one language", command: "lineloom.selectLanguageModel" },
     { id: "languages", label: "$(code) Manage Languages", description: "Choose which editor languages can request suggestions", command: "lineloom.manageLanguages" },
     { id: "connection", label: "$(plug) Check Ollama Connection", description: "Contact the current endpoint only when selected", command: "lineloom.checkConnection" },
+    { id: "sidebar", label: "$(layout-sidebar-left) Open Control Center", description: "Open the LineLoom Activity Bar sidebar", command: "lineloom.openSidebar" },
     { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },
     { id: "settings", label: "$(gear) Open Settings", description: "Change LineLoom preferences in VS Code", command: "lineloom.openSettings" }
   ];
