@@ -55,12 +55,12 @@ installation in an isolated VS Code CLI profile. Once CI passes, the
 
 **This candidate is not a published stable GitHub release** and is not
 automatically submitted to either registry. The versioned
-[stable release workflow](../../.github/workflows/release-v1.2.0.yml)
+[stable release workflow](../.github/workflows/release-v1.2.0.yml)
 can only be started with an explicit manual acceptance affirmation and
 HTTPS QA evidence URL on the main branch. The required physical-editor,
 actual Ollama and accessibility results must be recorded genuinely first.
 See [v1.2.0 notes](releases/v1.2.0.md) and
-[QA matrix](../docs/qa/v1.2.0-acceptance.md).
+[QA matrix](qa/v1.2.0-acceptance.md).
 
 After a stable GitHub release exists, independently submit its stable VSIX
 under `SanskarCodes.lineloom` to the
