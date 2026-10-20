@@ -16,3 +16,4 @@
 **/what_changed.md
 
 **/*.svg
+!assets/icons/sidebar.svg
