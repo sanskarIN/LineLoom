@@ -2,7 +2,7 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.1.1 development
+## [1.1.1] — 2026-10-20 — GitHub Pre-release
 
 - Add a local-only **Active Editor** sidebar section showing supported
   language, effective Ollama model (default or language override), and
@@ -14,7 +14,13 @@ All notable changes follow Semantic Versioning.
   item accessibility labels for keyboard and screen-reader workflows.
 - Extend pure and extension-host regression coverage; manual cross-platform,
   accessibility and actual-model acceptance remain explicitly unverified.
-- No version bump or GitHub/Marketplace/Open VSX release in this work.
+- Hardened the Active Editor settings diagnostic to respect the VS Code inline
+  completion provider's file-only scheme: untitled and virtual editors are
+  not falsely labeled as eligible. The UI inspects only the non-sensitive URI
+  scheme and language ID, never a file path or code content.
+- Updated package and lockfile to v1.1.1 with isolated preview VSIX release
+  verification; v1.2.0 is the planned next stable version.
+- This GitHub preview does not update stable v1.0.0 registry packages.
 
 ## [1.1.0] — 2026-10-20 — GitHub Pre-release
 
