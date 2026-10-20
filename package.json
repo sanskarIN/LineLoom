@@ -36,7 +36,8 @@
   },
   "homepage": "https://sanskarin.github.io/LineLoom/",
   "activationEvents": [
-    "onStartupFinished"
+    "onStartupFinished",
+    "onView:lineloom.dashboard"
   ],
   "contributes": {
     "commands": [
@@ -103,6 +104,17 @@
       {
         "command": "lineloom.manageLanguages",
         "title": "Manage Autocomplete Languages",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.refreshSidebar",
+        "title": "Refresh Sidebar",
+        "category": "LineLoom",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "lineloom.openSidebar",
+        "title": "Open Control Center",
         "category": "LineLoom"
       }
     ],
@@ -254,6 +266,32 @@
           "description": "Optional installed Ollama model tags for specific language IDs (python, javascript, typescript, rust, kotlin, go, java, c, cpp). Empty or unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. Other languages use lineloom.model. No model downloads are performed."
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "lineloom",
+          "title": "LineLoom",
+          "icon": "assets/icons/sidebar.svg"
+        }
+      ]
+    },
+    "views": {
+      "lineloom": [
+        {
+          "id": "lineloom.dashboard",
+          "name": "Control Center"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "lineloom.refreshSidebar",
+          "when": "view == lineloom.dashboard",
+          "group": "navigation"
+        }
+      ]
     }
   },
   "scripts": {

@@ -2,6 +2,16 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.1.0 development
+
+- Implemented a native LineLoom Activity Bar control center with quick completion,
+  model, language, connection, privacy and diagnostics actions.
+- Added an offline-only sidebar view model: opening or refreshing the view makes
+  no Ollama requests and does not expose source text or configured endpoint URLs.
+- Added unit tests for view labels, permission states, and manifest contributions,
+  with an extension-host check for the refresh command.
+- **Not released yet:** version remains 1.0.0 until v1.1.0 release gates pass.
+
 ## [1.0.0] — 2026-10-19 — First Stable Release
 
 **Post-release distribution update (no source/version change):** v1.0.0 is also published on [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) under `SanskarCodes.lineloom`. Installation is available directly through VS Code Extensions or `code --install-extension SanskarCodes.lineloom`. [Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom) now also lists stable v1.0.0 under the same publisher; its publisher verification badge is not yet verified. GitHub v1.0.0 tag and shipped VSIX have not been modified.

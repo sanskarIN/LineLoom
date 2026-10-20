@@ -43,6 +43,15 @@ try {
   assert.match(packaged.version, /^\d+\.\d+\.\d+$/, "Package must have a semantic three-part version");
   assert.equal(packaged.version, source.version);
   assert.ok(entries.some(x => x === "extension/assets/icons/lineloom.png"), "Missing extension icon");
+  // The Activity Bar icon must actually ship; manifest-only checks cannot catch
+  // an overbroad .vscodeignore exclusion.
+  const sidebar = packaged.contributes?.viewsContainers?.activitybar?.find(item => item.id === "lineloom");
+  if (sidebar) {
+    assert.equal(sidebar.icon, "assets/icons/sidebar.svg", "Unexpected sidebar icon path");
+    assert.ok(entries.includes("extension/" + sidebar.icon), "Missing packaged Activity Bar icon");
+    assert.ok(packaged.contributes.views?.lineloom?.some(view => view.id === "lineloom.dashboard"),
+      "Missing packaged LineLoom dashboard view");
+  }
   console.log("Verified VS Code VSIX: " + packaged.publisher + "." + packaged.name + "@" + packaged.version);
   console.log("Install in VS Code using Extensions → ... → Install from VSIX (never the Visual Studio installer).");
 } catch (err) {

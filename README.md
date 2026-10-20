@@ -11,6 +11,16 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Stable GitHub release:** v1.0.0 is the first major release. Automated tests verify packaging and mocked-model behavior; actual model quality, interactive editor acceptance and hardware latency are not independently certified. See [v1.0.0 release notes](docs/releases/v1.0.0.md) for verified tests and known limitations.
 
+## Next release development — v1.1.0
+
+A native **LineLoom Activity Bar sidebar** is under development. It groups completion
+controls, installed-model selection commands, language settings, a privacy-safe
+connection summary, aggregate session activity and troubleshooting actions in
+one VS Code Tree View. The sidebar **does not** contact Ollama simply by opening
+or refreshing it. See the [sidebar documentation](docs/sidebar.md) and the
+[v1.1.0 development branch](https://github.com/sanskarIN/LineLoom/tree/feat/v1.1.0-sidebar).
+**This feature is not included in the published v1.0.0 extension.**
+
 ## Install LineLoom
 
 Install the stable v1.0.0 from your editor's supported registry:
