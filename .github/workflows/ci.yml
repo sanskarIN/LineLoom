@@ -37,7 +37,7 @@ jobs:
       - name: Run VS Code extension-host integration
         run: xvfb-run -a npm run test:integration
   package:
-    name: v1.1.1 pre-release VSIX candidate
+    name: v1.2.0 stable VSIX candidate
     runs-on: ubuntu-latest
     needs: [check, integration]
     steps:
@@ -52,8 +52,8 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
-          npx vsce package --pre-release --no-dependencies -o "LineLoom-${VERSION}.vsix"
-          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
+          npx vsce package --no-dependencies -o "LineLoom-${VERSION}.vsix"
+          LINELOOM_EXPECT_STABLE=1 npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
       - name: Install packaged preview in a clean VS Code CLI profile
         shell: bash
@@ -63,7 +63,7 @@ jobs:
           xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
-          name: lineloom-v1.1.1-preview-candidate
+          name: lineloom-v1.2.0-stable-candidate
           path: |
             LineLoom-*.vsix
             LineLoom-*.sha256
