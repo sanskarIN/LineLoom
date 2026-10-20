@@ -3,6 +3,7 @@ import * as assert from "node:assert/strict";
 import * as http from "node:http";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
+import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { mayComplete } from "../../src/privacy/exclusions";
 
 
@@ -21,6 +22,24 @@ export async function run(): Promise<void> {
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
   // Refreshing the native sidebar is safe before a model server exists.
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
+  // Inspect the native Tree View API without invoking model discovery or reading
+  // editor source, and ensure keyboard/screen-reader names are populated.
+  const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
+  const roots = offlineSidebar.getChildren();
+  const activeSection = roots.find(node => node.kind === "section" && node.section.id === "editor");
+  assert.ok(activeSection && activeSection.kind === "section", "Missing active editor section");
+  const activeItems = offlineSidebar.getChildren(activeSection);
+  assert.ok(activeItems.some(node => node.kind === "item" && node.item.id === "editor-language"));
+  for (const node of activeItems) {
+    const item = offlineSidebar.getTreeItem(node);
+    assert.ok(item.accessibilityInformation?.label, "Tree item needs a screen-reader label");
+  }
+  let refreshEvents = 0;
+  const sidebarSubscription = offlineSidebar.onDidChangeTreeData(() => refreshEvents++);
+  offlineSidebar.refresh();
+  assert.equal(refreshEvents, 1, "Sidebar refresh should fire one tree change");
+  sidebarSubscription.dispose();
+  offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let generationCalls = 0;
   let lastModelSent = "";
