@@ -18,7 +18,7 @@ controls, installed-model selection commands, language settings, a privacy-safe
 connection summary, aggregate session activity and troubleshooting actions in
 one VS Code Tree View. The sidebar **does not** contact Ollama simply by opening
 or refreshing it. See the [sidebar documentation](docs/sidebar.md) and the
-[v1.1.0 development branch](https://github.com/sanskarIN/LineLoom/tree/feat/v1.1.0-sidebar).
+[unreleased source on main](https://github.com/sanskarIN/LineLoom/tree/main/src/ui).
 **This feature is not included in the published v1.0.0 extension.**
 
 ## Install LineLoom
