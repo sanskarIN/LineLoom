@@ -25,13 +25,15 @@ the registries until their *public* versions confirm it.
 
 ## v1.1.1 GitHub-only preview and v1.2.0 stable plan
 
-The follow-up `v1.1.1` package contains editor-aware sidebar improvements and
+The published [GitHub v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1)
+contains editor-aware sidebar improvements and
 a file-scheme eligibility fix. A guarded GitHub Actions workflow at
 `.github/workflows/release-v1.1.1.yml` performs full typecheck, lint, unit,
 static site and mocked-Ollama integration suites, dependency audit, preview
 metadata verification, archive/checksum validation and an isolated VS Code CLI
-installation. After an explicit release flag is committed to main, that
-workflow may create **GitHub v1.1.1 with `--prerelease --latest=false`**.
+installation. The explicit release flag was committed to main and the workflow successfully
+created **GitHub v1.1.1 with `--prerelease --latest=false`**, attaching the VSIX
+and SHA-256 checksum.
 It has no third-party publishing tokens or registry-publish step.
 
 **Next stable version: v1.2.0**. The
