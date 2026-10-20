@@ -92,6 +92,12 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         {
           id: "trigger", label: "Trigger Completion", icon: "wand",
           command: "lineloom.trigger"
+        },
+        {
+          id: "cancel", label: "Stop Current Generation", icon: "debug-stop",
+          description: snapshot.completionState === "generating"
+            ? "Stop the current Ollama request" : "Cancel any pending request; future suggestions stay enabled",
+          command: "lineloom.cancel"
         }
       ]
     },

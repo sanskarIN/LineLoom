@@ -1,4 +1,4 @@
-# LineLoom sidebar (v1.1.0 and v1.1.1 preview)
+# LineLoom sidebar (v1.2.0 GitHub stable and v1.2.1 development)
 
 LineLoom's next-release control center is a **native VS Code Activity Bar Tree View**.
 Open the LineLoom icon in the Activity Bar and select **Control Center**, or run
@@ -11,7 +11,9 @@ published v1.0.0 stable extension does not include this view.
 ## What is visible
 
 - **Completion:** turn autocomplete on or off, pause/resume automatic suggestions,
-  and manually trigger a suggestion.
+  manually trigger a suggestion, or use **Stop Current Generation** (available
+  in the unreleased v1.2.1 candidate) to abort a queued/in-flight request
+  without changing the persistent enable/automatic settings.
 - **Models & Languages:** show the configured default Ollama model, count language
   overrides and enabled languages, and open existing selection commands.
 - **Active Editor (v1.1.1 preview):** display only the current VS Code

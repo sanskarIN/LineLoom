@@ -20,6 +20,9 @@ export function quickActions(enabled: boolean, automatic: boolean): QuickAction[
       command: "lineloom.toggleAutomatic"
     },
     { id: "trigger", label: "$(sparkle) Trigger Completion", description: "Request a suggestion at the current cursor", command: "lineloom.trigger" },
+    { id: "cancel", label: "$(debug-stop) Stop Current Generation",
+      description: "Cancel any queued or in-flight request without disabling future suggestions",
+      command: "lineloom.cancel" },
     { id: "model", label: "$(symbol-method) Select Model", description: "Choose from models on the approved Ollama endpoint", command: "lineloom.selectModel" },
     { id: "languageModel", label: "$(settings-gear) Assign Language Model", description: "Choose a separate installed Ollama model for one language", command: "lineloom.selectLanguageModel" },
     { id: "languages", label: "$(code) Manage Languages", description: "Choose which editor languages can request suggestions", command: "lineloom.manageLanguages" },

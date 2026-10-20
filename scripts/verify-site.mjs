@@ -14,9 +14,9 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // GitHub v1.2.0 is stable and published, while external registries
+  // The 1.2.1 source candidate is unreleased. GitHub v1.2.0 is stable, while external registries
   // remain on separately published v1.0.0 until a verified registry update.
-  assert.equal(pkg.version, "1.2.0");
+  assert.equal(pkg.version, "1.2.1");
   assert.ok(page.includes("v1.1.1 pre-release"));
   assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");
   assert.ok(page.includes("v1.0.0"), "Registry version must remain visible");

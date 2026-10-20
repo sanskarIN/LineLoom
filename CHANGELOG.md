@@ -2,6 +2,17 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.2.1 maintenance candidate
+
+- Added a dedicated **Stop Current Generation** command to the Command Palette,
+  Quick Actions and the native Activity Bar sidebar. Cancels queued/debounced
+  and in-flight requests while preserving enable/auto-trigger settings.
+- Extended command, manifest, sidebar and mocked extension-host test coverage.
+- Advanced development package/lockfile to 1.2.1 and isolated CI patch-candidate
+  VSIX uploads. **v1.2.1 is not yet a GitHub or registry release.**
+- Public GitHub stable remains v1.2.0; external Marketplace/Open VSX
+  publication and hands-on Ollama/accessibility acceptance are separate tasks.
+
 ## [1.2.0] — 2026-10-20 — GitHub Stable Release
 
 - Added native sidebar completion engine state with explicit ready/generating,
