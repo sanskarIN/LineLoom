@@ -61,3 +61,5 @@
 **v2.0.0:** optional additional providers and deeper language intelligence, remaining local-first by default.
 
 No roadmap feature should be marketed as shipped before implementation and verification.
+
+**v1.2.1 (unreleased maintenance candidate):** explicitly cancel the current queued or in-flight completion while keeping automatic/manual settings intact. Add UI, editor-host regression checks, and package the development VSIX as a separate GitHub Actions artifact. Do not publish a new tag or either registry without a later release decision.
