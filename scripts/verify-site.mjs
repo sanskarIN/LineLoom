@@ -88,7 +88,7 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
   assert.ok(guide.includes("LineLoom-" + pkg.version + ".vsix"));
-  assert.match(guide, /v1\.1\.0 pre-release/);
+  assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
   assert.ok(guide.includes("v" + pkg.version));
   for (const [, ref] of guide.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
