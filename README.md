@@ -39,6 +39,27 @@ gates pass.
 distribute stable v1.0.0 until their public versions change. GitHub preview
 assets do not automatically update either registry.
 
+## v1.2.0 stable release candidate (not yet published)
+
+The **v1.2.0 source/build candidate** is being checked for a future stable
+release. It improves the native sidebar with live completion status, session
+cancellations, cache hits, continuation reuses, empty-result counts and
+opt-in measured latency. It also includes a stable-channel VSIX packaging
+check that rejects VS Code pre-release metadata.
+
+**Do not use an invented v1.2.0 release download link:** until real Ollama
+quality, manual Windows/macOS/Linux/editor accessibility and privacy acceptance
+have been recorded, the public stable release remains **v1.0.0** and the latest
+opt-in GitHub preview is [v1.1.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1).
+For verified, **downloadable candidate archives**, use the successful
+[GitHub Actions CI artifacts](https://github.com/sanskarIN/LineLoom/actions/workflows/ci.yml)
+named `lineloom-v1.2.0-stable-candidate`. The VS Code installable package
+is a `.vsix`, not an OS `.exe`.
+
+See [candidate notes](docs/releases/v1.2.0.md),
+[acceptance checklist](docs/qa/v1.2.0-acceptance.md) and
+[release issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
+
 ## Install LineLoom
 
 Install the stable v1.0.0 from your editor's supported registry:
