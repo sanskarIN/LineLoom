@@ -1,4 +1,4 @@
-# Extension registry publishing (stable v1.0.0 + GitHub v1.1.x previews)
+# Extension distribution: GitHub v1.2.0 stable and external registry releases
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
@@ -36,37 +36,43 @@ created **GitHub v1.1.1 with `--prerelease --latest=false`**, attaching the VSIX
 and SHA-256 checksum.
 It has no third-party publishing tokens or registry-publish step.
 
-**Next stable version: v1.2.0**. The
-[stable release plan](releases/v1.2.0-plan.md) documents acceptance and
-distribution gates. A future v1.2.0 stable VSIX must omit the pre-release
-metadata, be tested on real machines, and be published independently to
-GitHub, Visual Studio Marketplace and Open VSX after authorization. Neither
-registry should be represented as distributing v1.1.1 just because the
-GitHub pre-release exists. Stable v1.0.0 remains unchanged.
+**Next GitHub stable v1.2.0 is now published.** The
+[historical release plan](releases/v1.2.0-plan.md) and
+[QA tracker](https://github.com/sanskarIN/LineLoom/issues/21) document
+outstanding physical/manual checks. GitHub release status does not automatically
+change the Visual Studio Marketplace or Open VSX distribution.
 
-## v1.2.0 stable-channel candidate and manual publication gate
+## v1.2.0 GitHub stable release (published 2026-10-20)
 
-The `1.2.0` source package is prepared for stable-channel packaging:
-`.github/workflows/ci.yml` builds a VSIX **without** `--pre-release`,
-asserts the pre-release manifest marker is absent, creates SHA-256 and tests
-installation in an isolated VS Code CLI profile. Once CI passes, the
-`lineloom-v1.2.0-stable-candidate` artifact can be downloaded from
-[CI runs](https://github.com/sanskarIN/LineLoom/actions/workflows/ci.yml).
+The [GitHub v1.2.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0)
+is live, containing
+[`LineLoom-1.2.0.vsix`](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix)
+and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.sha256).
+The [release workflow](../.github/workflows/release-v1.2.0.yml)
+completed successfully, including mocked Ollama extension-host checks,
+high-severity dependency audit, stable metadata verification, package install
+smoke test, and checksum.
 
-**This candidate is not a published stable GitHub release** and is not
-automatically submitted to either registry. The versioned
-[stable release workflow](../.github/workflows/release-v1.2.0.yml)
-can only be started with an explicit manual acceptance affirmation and
-HTTPS QA evidence URL on the main branch. The required physical-editor,
-actual Ollama and accessibility results must be recorded genuinely first.
-See [v1.2.0 notes](releases/v1.2.0.md) and
-[QA matrix](qa/v1.2.0-acceptance.md).
+**QA disclosure:** Real Ollama, accessibility, manual Windows/macOS/Linux
+integration, privacy consent and upgrade tests are **NOT YET VERIFIED**.
+The owner explicitly authorized an initial **GitHub-only** stable distribution
+while those remain open in [issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
+See [release notes](releases/v1.2.0.md) and the
+[manual QA matrix](qa/v1.2.0-acceptance.md).
 
-After a stable GitHub release exists, independently submit its stable VSIX
-under `SanskarCodes.lineloom` to the
-[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
-and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom).
-Do not represent the current public v1.0.0 listing as v1.2.0.
+### Publish the same 1.2.0 stable version to external registries separately
+
+**Do not assume that either listing was updated by GitHub publishing.** The
+previous public registries carried **1.0.0** at last verification:
+
+- [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
+- [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom)
+
+To update them, use the already verified `LineLoom-1.2.0.vsix` with official
+registry publisher authentication under the existing `SanskarCodes.lineloom`
+identity. Keep tokens exclusively in secure environments. Confirm each listing
+shows 1.2.0 and correct stable/preview status **independently**. Neither
+registry is updated by the GitHub workflow.
 
 ## Stable release package safety and required checks
 
