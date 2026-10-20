@@ -1,4 +1,4 @@
-# LineLoom sidebar (v1.1.0 development)
+# LineLoom sidebar (v1.1.0 preview + ongoing improvements)
 
 LineLoom's next-release control center is a **native VS Code Activity Bar Tree View**.
 Open the LineLoom icon in the Activity Bar and select **Control Center**, or run
@@ -12,6 +12,11 @@ while the published v1.0.0 stable extension does not include this view.
   and manually trigger a suggestion.
 - **Models & Languages:** show the configured default Ollama model, count language
   overrides and enabled languages, and open existing selection commands.
+- **Active Editor (next-version development):** display only the current VS Code
+  language ID's friendly name, effective default/override model and a provisional
+  settings-level completion status. It reacts to editor changes. Unsupported
+  languages and missing editors are clearly labeled, without reading filenames,
+  paths or source content.
 - **Privacy & Connection:** report workspace trust, and whether the inference
   endpoint is loopback, remote approved, remote blocked/pending approval, or invalid.
   Use Check Ollama Connection for an explicit user-initiated model-list request.
@@ -19,7 +24,9 @@ while the published v1.0.0 stable extension does not include this view.
   aggregate counters, plus existing diagnostics.
 - **More Actions:** settings, setup instructions, and Quick Actions.
 
-The title-bar refresh icon refreshes the tree without querying Ollama.
+The title-bar refresh icon refreshes the tree without querying Ollama. Sidebar
+section and action labels also provide explicit screen-reader names; manual
+keyboard/high-contrast acceptance is tracked separately.
 
 ## Privacy and behavior
 
@@ -29,6 +36,11 @@ endpoint host/port, source text, file paths, prompt/response bodies, secrets or
 session history. Choosing an existing model or connection command is an explicit
 user action and uses the existing remote HTTPS approval flow. The view does not
 bypass workspace trust or the completion engine's private-file exclusions.
+
+The new Active Editor status deliberately cannot guarantee that the current
+file is eligible for completion: sensitive-file exclusions and ignore rules
+are checked only by the completion engine just before inference. That design
+avoids filesystem access while merely rendering the sidebar.
 
 The sidebar intentionally reuses commands instead of duplicating VS Code's
 configuration persistence and request logic. Settings changes refresh the view;
