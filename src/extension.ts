@@ -246,6 +246,15 @@ export function activate(context: vscode.ExtensionContext): void {
     status.set("disabled");
   });
   command("lineloom.trigger", () => vscode.commands.executeCommand("editor.action.inlineSuggest.trigger"));
+  // Invalidate the current generation ID and abort any pending HTTP stream.
+  // This also cancels a queued/debounced request before it can send source.
+  // Unlike Disable or Pause, subsequent completions are still permitted.
+  command("lineloom.cancel", () => {
+    engine?.cancel();
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+  });
   command("lineloom.quickActions", () => openQuickActions());
   command("lineloom.refreshSidebar", () => sidebar.refresh());
   command("lineloom.openSidebar", () => vscode.commands.executeCommand("workbench.view.extension.lineloom"));
