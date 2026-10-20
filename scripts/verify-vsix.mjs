@@ -32,6 +32,10 @@ try {
   assert.ok(!entries.some(x => /(^|\/)node_modules\//.test(x)), "VSIX must exclude node_modules");
   assert.ok(!entries.some(x => x.startsWith("extension/site/")), "VSIX must exclude the website");
   assert.ok(!entries.some(x => /(^|\/)\.env(\.|$)/.test(x)), "VSIX unexpectedly includes an environment file");
+  assert.ok(!entries.some(x => /(^|\/)(?:test|tests|scripts|\.github|examples)\//.test(x)),
+    "VSIX must exclude CI/build/test/example content");
+  assert.ok(!entries.some(x => /\.(?:pem|key|p12|pfx)$/i.test(x)),
+    "VSIX contains a potential private-key file");
 
   const source = JSON.parse(readFileSync("package.json", "utf8"));
   const packaged = JSON.parse(execFileSync("unzip", ["-p", path, "extension/package.json"], { encoding: "utf8" }));
@@ -44,10 +48,15 @@ try {
   assert.equal(packaged.version, source.version);
   // Preview builds must contain VS Code's actual pre-release manifest property,
   // not merely have a version number or a GitHub "pre-release" label.
+  assert.ok(!(process.env.LINELOOM_EXPECT_PRE_RELEASE === "1" &&
+    process.env.LINELOOM_EXPECT_STABLE === "1"), "Conflicting packaging expectations");
+  const manifest = execFileSync("unzip", ["-p", path, "extension.vsixmanifest"], { encoding: "utf8" });
+  const preRelease = manifest.includes("Microsoft.VisualStudio.Code.PreRelease");
   if (process.env.LINELOOM_EXPECT_PRE_RELEASE === "1") {
-    const manifest = execFileSync("unzip", ["-p", path, "extension.vsixmanifest"], { encoding: "utf8" });
-    assert.ok(manifest.includes("Microsoft.VisualStudio.Code.PreRelease"),
-      "VSIX missing the VS Code pre-release marker; package with vsce --pre-release");
+    assert.ok(preRelease, "VSIX missing the actual VS Code pre-release marker");
+  }
+  if (process.env.LINELOOM_EXPECT_STABLE === "1") {
+    assert.ok(!preRelease, "Stable VSIX contains a pre-release marker");
   }
   assert.ok(entries.some(x => x === "extension/assets/icons/lineloom.png"), "Missing extension icon");
   // The Activity Bar icon must actually ship; manifest-only checks cannot catch
