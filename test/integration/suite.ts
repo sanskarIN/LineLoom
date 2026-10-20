@@ -15,7 +15,7 @@ export async function run(): Promise<void> {
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
-    "lineloom.refreshSidebar"
+    "lineloom.refreshSidebar", "lineloom.openSidebar"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
