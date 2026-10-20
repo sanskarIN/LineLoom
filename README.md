@@ -11,38 +11,34 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Stable GitHub release:** v1.0.0 is the first major release. Automated tests verify packaging and mocked-model behavior; actual model quality, interactive editor acceptance and hardware latency are not independently certified. See [v1.0.0 release notes](docs/releases/v1.0.0.md) for verified tests and known limitations.
 
-## v1.1.0 sidebar pre-release (published on GitHub)
+## v1.1.1 Active Editor sidebar pre-release (GitHub)
 
-**v1.1.0 is an opt-in pre-release, not a replacement for the v1.0.0
-stable installation.** Preview builds add a native **LineLoom Activity Bar
-Control Center** with completion toggles, model/language commands, a
-privacy-safe endpoint classification, in-memory session counters and
-diagnostics. Opening or refreshing the sidebar does **not** contact Ollama
-or read source files.
+**v1.1.1 is an opt-in GitHub pre-release** containing the native Activity Bar
+Control Center from v1.1.0, plus the new **Active Editor** section with
+language detection, default/per-language effective model, and a provisional
+settings-level completion status. The UI uses only the language ID and
+non-identifying document scheme, never source text, paths or endpoint URLs.
+Untitled or virtual editors do not incorrectly appear eligible for completion.
 
-Download the published preview [`LineLoom-1.1.0.vsix`](https://github.com/sanskarIN/LineLoom/releases/download/v1.1.0/LineLoom-1.1.0.vsix)
-from the [v1.1.0 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0).
-Install through **VS Code → Extensions → … → Install from VSIX…** or
-`code --install-extension LineLoom-1.1.0.vsix`. Use the
-**LineLoom: Open Control Center** Command Palette entry or the Activity Bar
-icon. See [v1.1.0 notes](docs/releases/v1.1.0.md),
-[sidebar documentation](docs/sidebar.md) and [acceptance tracking](https://github.com/sanskarIN/LineLoom/issues/21).
+Once the preview release is published, install
+`LineLoom-1.1.1.vsix` from the
+[GitHub Releases page](https://github.com/sanskarIN/LineLoom/releases)
+using **VS Code → Extensions → … → Install from VSIX…**, or
+`code --install-extension LineLoom-1.1.1.vsix`.
+The [v1.1.1 release notes](docs/releases/v1.1.1.md) describe the changes,
+known limitations and checksum. Earlier
+[v1.1.0 preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0)
+remains available.
 
-**Registry versions:** Visual Studio Marketplace and Open VSX still distribute
-stable v1.0.0 unless their public listings explicitly show otherwise. GitHub
-pre-release assets are separate and do not automatically update registries.
+The next target is **v1.2.0 stable**. See the
+[stable release plan](docs/releases/v1.2.0-plan.md) and
+[manual test matrix](docs/qa/v1.1.1-sidebar-acceptance.md).
+Neither v1.1.1 nor v1.2.0 should be called stable until appropriate release
+gates pass.
 
-## Upcoming improvements (not yet released)
-
-Work for the future v1.1.1 release adds an **Active Editor** sidebar section
-with the current supported language, the effective default or per-language
-Ollama model, and a settings-level reason suggestions may be unavailable.
-The UI uses only VS Code's language ID and settings, not source text or file
-paths. The completion engine still performs sensitive-file and ignore-rule
-checks at request time. Screen-reader descriptions and editor-change refresh
-behavior are also being developed. See [sidebar documentation](docs/sidebar.md)
-and [manual acceptance matrix](docs/qa/v1.1.1-sidebar-acceptance.md).
-This is **not included in the v1.1.0 downloadable pre-release**.
+**Registry versions:** Visual Studio Marketplace and Open VSX continue to
+distribute stable v1.0.0 until their public versions change. GitHub preview
+assets do not automatically update either registry.
 
 ## Install LineLoom
 
