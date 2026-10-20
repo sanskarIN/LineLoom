@@ -1,0 +1,49 @@
+# LineLoom sidebar (v1.1.0 development)
+
+LineLoom's next-release control center is a **native VS Code Activity Bar Tree View**.
+Open the LineLoom icon in the Activity Bar and select **Control Center**. The feature
+is on the v1.1.0 development branch until reviewed and released; the published
+v1.0.0 extension does not have this view.
+
+## What is visible
+
+- **Completion:** turn autocomplete on or off, pause/resume automatic suggestions,
+  and manually trigger a suggestion.
+- **Models & Languages:** show the configured default Ollama model, count language
+  overrides and enabled languages, and open existing selection commands.
+- **Privacy & Connection:** report workspace trust, and whether the inference
+  endpoint is loopback, remote approved, remote blocked/pending approval, or invalid.
+  Use Check Ollama Connection for an explicit user-initiated model-list request.
+- **Session Activity:** request, suggestion and failure totals from in-memory
+  aggregate counters, plus existing diagnostics.
+- **More Actions:** settings, setup instructions, and Quick Actions.
+
+The title-bar refresh icon refreshes the tree without querying Ollama.
+
+## Privacy and behavior
+
+Rendering or refreshing the sidebar never reads other files, constructs inference
+prompts, contacts Ollama, or initiates endpoint consent. It does not display the
+endpoint host/port, source text, file paths, prompt/response bodies, secrets or
+session history. Choosing an existing model or connection command is an explicit
+user action and uses the existing remote HTTPS approval flow. The view does not
+bypass workspace trust or the completion engine's private-file exclusions.
+
+The sidebar intentionally reuses commands instead of duplicating VS Code's
+configuration persistence and request logic. Settings changes refresh the view;
+counters refresh after completion engine state notifications or on demand.
+
+## Developer QA
+
+1. Install dependencies with `npm ci`, then run `npm run check`.
+2. Launch the extension host with `F5`; open the LineLoom Activity Bar item.
+3. Test enable/disable and pause/resume, with and without an editor open.
+4. Configure a remote HTTPS Ollama origin and confirm the sidebar does **not**
+   connect until an explicit connection/model action, with approval enforced.
+5. Switch between trusted and restricted workspaces. Inspect the tree for
+   accurate status and no file contents or sensitive endpoint details.
+6. Confirm the existing status bar Quick Actions and inline provider still work.
+7. Run `npm run test:integration` in a compatible desktop/test environment.
+
+Release readiness also requires Windows/macOS/Linux host verification,
+packaged VSIX checks and real-model acceptance; these are not claimed here.
