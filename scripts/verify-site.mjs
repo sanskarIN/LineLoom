@@ -14,12 +14,14 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // A v1.2.0 build candidate exists, but the public site must not invent
-  // a published stable download or claim the registries are updated.
+  // GitHub v1.2.0 is stable and published, while external registries
+  // remain on separately published v1.0.0 until a verified registry update.
   assert.equal(pkg.version, "1.2.0");
   assert.ok(page.includes("v1.1.1 pre-release"));
-  assert.ok(page.includes("v1.0.0 stable"), "Stable registry version must remain visible");
-  assert.ok(page.includes("LineLoom-1.1.1.vsix"));
+  assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");
+  assert.ok(page.includes("v1.0.0"), "Registry version must remain visible");
+  assert.ok(page.includes("LineLoom-1.2.0.vsix"));
+  assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix"));
   assert.ok(page.includes("v1.2.0"));
   assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
@@ -90,7 +92,7 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /(?:do not|don\x27t) double-click/i);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
-  assert.ok(guide.includes("LineLoom-1.1.1.vsix"));
+  assert.ok(guide.includes("LineLoom-1.2.0.vsix"));
   assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
   assert.ok(guide.includes("v1.2.0"));
@@ -132,7 +134,7 @@ test("official Marketplace and Open VSX listings are visible throughout publishe
   assert.ok(guide.includes('id="marketplace"'), "Installation guide should explain Microsoft Marketplace");
   assert.ok(guide.includes('id="open-vsx"'), "Installation guide should explain Open VSX");
   assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "VS Code CLI install command must be documented");
-  assert.ok(readme.includes("LineLoom-1.0.0.vsix"), "GitHub VSIX fallback should remain available");
+  assert.ok(readme.includes("LineLoom-1.2.0.vsix"), "GitHub stable VSIX fallback should remain available");
   assert.ok(page.includes("Open VSX currently shows no publisher verification badge"), "Avoid falsely claiming an Open VSX verified publisher");
   assert.ok(publisherGuide.includes("verified: false"), "Record verified-badge distinction accurately");
   assert.ok(!page.includes("Open VSX publication has not yet been verified"), "Remove old unlaunched registry language");
