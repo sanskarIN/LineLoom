@@ -39,6 +39,9 @@ export async function listModels(origin: string, signal?: AbortSignal): Promise<
       ? { name, size } : { name });
     if (models.length >= 512) break;
   }
+  if (body.models.length > 0 && models.length === 0) {
+    throw new Error("Ollama model list contained no valid model names.");
+  }
   return models;
 }
 export async function showModel(origin: string, model: string, signal?: AbortSignal): Promise<boolean> {
