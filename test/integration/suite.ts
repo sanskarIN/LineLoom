@@ -14,10 +14,13 @@ export async function run(): Promise<void> {
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
-    "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel"
+    "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
+    "lineloom.refreshSidebar"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
+  // Refreshing the native sidebar is safe before a model server exists.
+  await vscode.commands.executeCommand("lineloom.refreshSidebar");
   let mockEmptyResponses = false;
   let generationCalls = 0;
   let lastModelSent = "";
