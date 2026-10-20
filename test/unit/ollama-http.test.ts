@@ -49,6 +49,13 @@ describe("Ollama endpoint requests", () => {
     expect(selected[0].name).toBe("model-0:latest");
     expect(selected.at(-1)?.name).toBe("model-511:latest");
   });
+  it("reports an unusable nonempty model list rather than claiming no models installed", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+      JSON.stringify({ models: [{ name: "danger\\nnewline" }, { name: " " }] })
+    )));
+    await expect(listModels("http://127.0.0.1:11434"))
+      .rejects.toThrow(/no valid model names/);
+  });
   it("fails safely on malformed model responses", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: {} }))));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/Unexpected/);
