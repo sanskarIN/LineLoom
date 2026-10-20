@@ -4,17 +4,23 @@ import { sidebarSections, type SidebarSnapshot } from "../../src/ui/sidebar-mode
 const snapshot: SidebarSnapshot = {
   enabled: true, autoTrigger: true, model: "qwen2.5-coder:1.5b",
   enabledLanguageCount: 9, languageOverrideCount: 1, workspaceTrusted: true,
-  endpointState: "loopback", requests: 3, completions: 2, failed: 0
+  endpointState: "loopback",
+  activeEditor: { language: "Rust", model: "rust-local", modelSource: "Language override",
+    eligibility: "Allowed by settings; file rules checked on request" },
+  requests: 3, completions: 2, failed: 0
 };
 describe("LineLoom local sidebar model", () => {
   it("exposes fixed command actions and useful offline state", () => {
     const groups = sidebarSections(snapshot);
-    expect(groups.map(group => group.id)).toEqual(["status", "models", "privacy", "activity", "actions"]);
+    expect(groups.map(group => group.id)).toEqual(["status", "models", "editor", "privacy", "activity", "actions"]);
     const entries = groups.flatMap(group => group.items);
     expect(new Set(entries.map(entry => entry.id)).size).toBe(entries.length);
     expect(entries.find(item => item.id === "enabled")?.command).toBe("lineloom.disable");
     expect(entries.find(item => item.id === "model")?.description).toBe("qwen2.5-coder:1.5b");
     expect(entries.find(item => item.id === "requests")?.description).toBe("3");
+    expect(entries.find(item => item.id === "editor-language")?.description).toBe("Rust");
+    expect(entries.find(item => item.id === "editor-model")?.description).toBe("rust-local (Language override)");
+    expect(entries.find(item => item.id === "editor-eligibility")?.description).toMatch(/file rules checked on request/);
     expect(entries.filter(item => item.command).every(item => /^lineloom\.[a-zA-Z]+$/.test(item.command!))).toBe(true);
   });
   it("uses enable and resume actions when completion is paused", () => {
@@ -31,6 +37,16 @@ describe("LineLoom local sidebar model", () => {
     }
     const untrusted = sidebarSections({ ...snapshot, workspaceTrusted: false });
     expect(JSON.stringify(untrusted)).toContain("Restricted (completion blocked)");
+  });
+  it("treats editor eligibility as provisional and does not show filenames", () => {
+    const entries = sidebarSections({
+      ...snapshot,
+      activeEditor: { language: "Unsupported language", model: "Not applicable",
+        modelSource: "", eligibility: "No inline provider for this language" }
+    }).flatMap(group => group.items);
+    expect(entries.find(item => item.id === "editor-eligibility")?.description)
+      .toBe("No inline provider for this language");
+    expect(JSON.stringify(entries)).not.toContain("/project/src/");
   });
   it("bounds untrusted model labels and strips control characters", () => {
     const model = "secret\n" + "x".repeat(200);

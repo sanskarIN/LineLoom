@@ -273,7 +273,10 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   }));
   context.subscriptions.push(
-    vscode.window.onDidChangeActiveTextEditor((editor) => engine?.cancelIfEditorChanged(editor)),
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      engine?.cancelIfEditorChanged(editor);
+      sidebar.refresh();
+    }),
     vscode.window.onDidChangeTextEditorSelection((event) => {
       if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
     }),

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import type { CompletionStats } from "../completion/engine";
+import { summarizeActiveEditor } from "./editor-context";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { sidebarSections, type SidebarEndpointState, type SidebarEntry, type SidebarSection } from "./sidebar-model";
 
@@ -38,6 +39,18 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
     }
     const config = readConfig();
     const stats = this.getStats();
+    const originState = endpointState(this.isApproved);
+    // Only the VS Code language ID is inspected. No URI, filename or document
+    // contents are accessed merely because the sidebar is visible.
+    const activeEditor = summarizeActiveEditor({
+      languageId: vscode.window.activeTextEditor?.document.languageId,
+      enabled: config.enabled,
+      workspaceTrusted: vscode.workspace.isTrusted,
+      enabledLanguages: config.enabledLanguages,
+      defaultModel: config.model,
+      languageModels: config.languageModels,
+      endpointState: originState
+    });
     return sidebarSections({
       enabled: config.enabled,
       autoTrigger: config.autoTrigger,
@@ -45,7 +58,8 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       enabledLanguageCount: config.enabledLanguages.length,
       languageOverrideCount: Object.keys(config.languageModels).length,
       workspaceTrusted: vscode.workspace.isTrusted,
-      endpointState: endpointState(this.isApproved),
+      endpointState: originState,
+      activeEditor,
       requests: stats?.requests ?? 0,
       completions: stats?.completions ?? 0,
       failed: stats?.failed ?? 0
@@ -61,6 +75,7 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       );
       item.id = "lineloom.section." + node.section.id;
       item.iconPath = new vscode.ThemeIcon(node.section.icon);
+      item.accessibilityInformation = { label: node.section.label + " section" };
       return item;
     }
     const data = node.item;
@@ -69,6 +84,10 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
     item.iconPath = new vscode.ThemeIcon(data.icon);
     item.description = data.description;
     item.tooltip = data.description ? data.label + " — " + data.description : data.label;
+    item.accessibilityInformation = {
+      label: data.description ? data.label + ": " + data.description : data.label,
+      role: data.command ? "button" : undefined
+    };
     if (data.command) {
       item.command = { command: data.command, title: data.label };
     }

@@ -2,6 +2,20 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.1.1 development
+
+- Add a local-only **Active Editor** sidebar section showing supported
+  language, effective Ollama model (default or language override), and
+  preliminary settings-level completion availability.
+- Explain unsupported languages, restricted workspaces, disabled languages,
+  invalid/blocked remote endpoints and pending approval without accessing
+  the current document's path or source contents.
+- Refresh editor context as tabs/editors change, and improve native tree
+  item accessibility labels for keyboard and screen-reader workflows.
+- Extend pure and extension-host regression coverage; manual cross-platform,
+  accessibility and actual-model acceptance remain explicitly unverified.
+- No version bump or GitHub/Marketplace/Open VSX release in this work.
+
 ## [1.1.0] — 2026-10-20 — GitHub Pre-release
 
 - **Pre-release channel only:** v1.0.0 remains the stable version distributed

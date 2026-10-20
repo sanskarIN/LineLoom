@@ -32,6 +32,18 @@ icon. See [v1.1.0 notes](docs/releases/v1.1.0.md),
 stable v1.0.0 unless their public listings explicitly show otherwise. GitHub
 pre-release assets are separate and do not automatically update registries.
 
+## Upcoming improvements (not yet released)
+
+Work for the future v1.1.1 release adds an **Active Editor** sidebar section
+with the current supported language, the effective default or per-language
+Ollama model, and a settings-level reason suggestions may be unavailable.
+The UI uses only VS Code's language ID and settings, not source text or file
+paths. The completion engine still performs sensitive-file and ignore-rule
+checks at request time. Screen-reader descriptions and editor-change refresh
+behavior are also being developed. See [sidebar documentation](docs/sidebar.md)
+and [manual acceptance matrix](docs/qa/v1.1.1-sidebar-acceptance.md).
+This is **not included in the v1.1.0 downloadable pre-release**.
+
 ## Install LineLoom
 
 Install the stable v1.0.0 from your editor's supported registry:
