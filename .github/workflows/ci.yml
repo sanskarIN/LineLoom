@@ -47,7 +47,7 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm run check
-      - name: Build preview-marked VSIX and checksum
+      - name: Build stable-channel VSIX and checksum
         shell: bash
         run: |
           set -euo pipefail
@@ -55,7 +55,7 @@ jobs:
           npx vsce package --no-dependencies -o "LineLoom-${VERSION}.vsix"
           LINELOOM_EXPECT_STABLE=1 npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
-      - name: Install packaged preview in a clean VS Code CLI profile
+      - name: Install packaged stable candidate in a clean VS Code CLI profile
         shell: bash
         run: |
           set -euo pipefail
