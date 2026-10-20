@@ -23,7 +23,26 @@ export async function listModels(origin: string, signal?: AbortSignal): Promise<
   const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal), redirect: "error" }));
   const body: unknown = await readBoundedJson(response);
   if (!body || typeof body !== "object" || !("models" in body) || !Array.isArray(body.models)) throw new Error("Unexpected /api/tags response.");
-  return body.models.filter((m: unknown): m is OllamaModel => Boolean(m && typeof m === "object" && "name" in m && typeof m.name === "string"));
+  // The endpoint may be remote and untrusted. Model names flow into native
+  // QuickPick UI and settings, so enforce a strict bounded Ollama tag shape.
+  // Never display server-provided control characters, newlines or commands.
+  const models: OllamaModel[] = [];
+  const seen = new Set<string>();
+  for (const entry of body.models) {
+    if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
+    const name: unknown = (entry as Record<string, unknown>).name;
+    if (typeof name !== "string" || name.length > 128 ||
+        !/^[A-Za-z0-9][A-Za-z0-9._/:@-]*$/.test(name) || seen.has(name)) continue;
+    seen.add(name);
+    const size: unknown = (entry as Record<string, unknown>).size;
+    models.push(typeof size === "number" && Number.isSafeInteger(size) && size >= 0
+      ? { name, size } : { name });
+    if (models.length >= 512) break;
+  }
+  if (body.models.length > 0 && models.length === 0) {
+    throw new Error("Ollama model list contained no valid model names.");
+  }
+  return models;
 }
 export async function showModel(origin: string, model: string, signal?: AbortSignal): Promise<boolean> {
   const response = await fetch(endpointUrl(origin, "/api/show"), {

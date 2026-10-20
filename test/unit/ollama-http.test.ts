@@ -16,6 +16,46 @@ describe("Ollama endpoint requests", () => {
     )));
     expect((await listModels("http://127.0.0.1:11434")).map(x => x.name)).toEqual(["qwen2.5-coder:1.5b"]);
   });
+  it("sanitizes untrusted model names before showing them in the picker", async () => {
+    const raw = [
+      { name: "qwen2.5-coder:1.5b", size: 1234567 },
+      { name: "qwen2.5-coder:1.5b", size: 2 },
+      { name: "hf.co/user/repository:Q4_K_M" },
+      { name: "bad\\nname" },
+      { name: " leading" },
+      { name: "trailing " },
+      { name: "$(warning) masquerading" },
+      { name: "x".repeat(129) },
+      { name: "" },
+      { name: 123 },
+      { name: "local:latest", size: -50 },
+      null,
+      [],
+      {}
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: raw }))));
+    const names = await listModels("http://127.0.0.1:11434");
+    expect(names).toEqual([
+      { name: "qwen2.5-coder:1.5b", size: 1234567 },
+      { name: "hf.co/user/repository:Q4_K_M" },
+      { name: "local:latest" }
+    ]);
+  });
+  it("bounds the number of model options shown for an untrusted endpoint", async () => {
+    const models = Array.from({ length: 600 }, (_, i) => ({ name: "model-" + i + ":latest" }));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models }))));
+    const selected = await listModels("http://127.0.0.1:11434");
+    expect(selected).toHaveLength(512);
+    expect(selected[0].name).toBe("model-0:latest");
+    expect(selected.at(-1)?.name).toBe("model-511:latest");
+  });
+  it("reports an unusable nonempty model list rather than claiming no models installed", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(
+      JSON.stringify({ models: [{ name: "danger\\nnewline" }, { name: " " }] })
+    )));
+    await expect(listModels("http://127.0.0.1:11434"))
+      .rejects.toThrow(/no valid model names/);
+  });
   it("fails safely on malformed model responses", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: {} }))));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/Unexpected/);

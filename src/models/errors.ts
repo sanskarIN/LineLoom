@@ -22,7 +22,7 @@ export function ollamaFailureMessage(error: unknown): string {
   if (/^Model no longer installed\./.test(error.message)) {
     return "The selected model is no longer installed. Select an available model.";
   }
-  if (/safety limit|oversized|Incomplete Ollama response|Invalid Ollama|Unexpected \/api\/tags/i.test(error.message)) {
+  if (/safety limit|oversized|Incomplete Ollama response|Invalid Ollama|Unexpected \/api\/tags|Ollama model list contained no valid model names/i.test(error.message)) {
     return "Ollama returned an invalid or oversized response. Check server compatibility.";
   }
   return "Cannot reach Ollama. Verify the server is running and the endpoint is correct.";
