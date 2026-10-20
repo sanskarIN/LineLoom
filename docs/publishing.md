@@ -14,7 +14,9 @@ installation before creating the GitHub release with `--prerelease` and
 `--latest=false`. It uses `vsce package --pre-release` to distinguish the
 editor preview channel. No Marketplace/Open VSX credentials are used.
 
-Stable v1.0.0 in both registries remains unchanged. Future registry publishing,
+Stable v1.0.0 in both registries remains unchanged. A future **stable** registry
+release must use a new package version (such as v1.1.1), not reuse the v1.1.0
+pre-release version. Future registry publishing,
 manual platform and real-model testing are tracked in
 [release gate #21](https://github.com/sanskarIN/LineLoom/issues/21).
 For preview download/installation instructions, see
