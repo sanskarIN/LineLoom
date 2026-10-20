@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { summarizeActiveEditor, type EditorContextInput } from "../../src/ui/editor-context";
 
 const initial: EditorContextInput = {
-  languageId: "rust", enabled: true, workspaceTrusted: true,
+  languageId: "rust", scheme: "file", enabled: true, workspaceTrusted: true,
   enabledLanguages: ["python", "typescript", "rust"],
   defaultModel: "global-model", languageModels: { rust: "rust-model", typescript: "ts-model" },
   endpointState: "loopback"
@@ -33,6 +33,8 @@ describe("privacy-preserving active editor summary", () => {
     [{ enabled: false }, "Autocomplete disabled"],
     [{ workspaceTrusted: false }, "Workspace restricted"],
     [{ enabledLanguages: ["python"] as EditorContextInput["enabledLanguages"] }, "Language disabled in settings"],
+    [{ scheme: "untitled" }, "Only local file editors support completion"],
+    [{ scheme: "git" }, "Only local file editors support completion"],
     [{ languageModels: {}, defaultModel: "" }, "No model configured"],
     [{ endpointState: "invalid" as const }, "Invalid inference endpoint"],
     [{ endpointState: "remote-blocked" as const }, "Remote endpoint disabled"],
