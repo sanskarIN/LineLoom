@@ -54,7 +54,7 @@
 
 **v1.1.1 (GitHub pre-release, published 2026-10-20):** ship editor-aware model/eligibility status, language aliases, file-scheme safety checks, screen-reader naming, and privacy/extension-host regression coverage as an opt-in preview. Manually verified real-model and cross-platform acceptance remain outstanding.
 
-**v1.2.0 (stable-channel release candidate; NOT YET RELEASED):** complete the native sidebar and privacy-safe completions, with stable VSIX candidate built in CI. Public stable publication and registry rollout remain gated on manually verified acceptance. Consider C# and Dart only if genuinely implemented and quality-tested, not as guaranteed v1.2.0 features. See [stable release plan](releases/v1.2.0-plan.md).
+**v1.2.0 (GitHub stable, published 2026-10-20):** [GitHub stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) ships the native sidebar, privacy-safe in-memory diagnostics, hardened Ollama model picker, and verified non-preview VSIX plus SHA-256. Published on GitHub after automated CI and clean install by owner authorization; real-model/manual cross-platform/accessibility/upgrade QA remains unverified and open in [issue #21](https://github.com/sanskarIN/LineLoom/issues/21). Visual Studio Marketplace/Open VSX v1.2.0 rollout is a separate pending step. C# and Dart are deferred.
 
 **v1.3.0:** opt-in selective repository context with documented exclusions and privacy review.
 
