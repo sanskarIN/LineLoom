@@ -1,3 +1,5 @@
+import type { EditorContextSummary } from "./editor-context";
+
 /** Sidebar labels and actions are computed locally. This module never contacts Ollama. */
 export type SidebarEndpointState =
   | "loopback"
@@ -14,6 +16,7 @@ export interface SidebarSnapshot {
   languageOverrideCount: number;
   workspaceTrusted: boolean;
   endpointState: SidebarEndpointState;
+  activeEditor: EditorContextSummary;
   requests: number;
   completions: number;
   failed: number;
@@ -90,6 +93,20 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
           description: snapshot.enabledLanguageCount + " selected", icon: "code",
           command: "lineloom.manageLanguages"
         }
+      ]
+    },
+    {
+      id: "editor", label: "Active Editor", icon: "symbol-file", items: [
+        { id: "editor-language", label: "Language", description: snapshot.activeEditor.language, icon: "code" },
+        { id: "editor-model", label: "Effective Model",
+          description: modelLabel(snapshot.activeEditor.model) +
+            (snapshot.activeEditor.modelSource ? " (" + snapshot.activeEditor.modelSource + ")" : ""),
+          icon: "symbol-method" },
+        { id: "editor-eligibility", label: "Completion Status",
+          description: snapshot.activeEditor.eligibility,
+          icon: snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+        { id: "editor-languages", label: "Manage Language Settings", icon: "gear",
+          command: "lineloom.manageLanguages" }
       ]
     },
     {
