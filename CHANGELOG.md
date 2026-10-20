@@ -4,6 +4,7 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.1.0 development
 
+- Corrected Open Settings and Setup Guide routing to the published `SanskarCodes.lineloom` extension identifier (rather than the GitHub owner ID).
 - Implemented a native LineLoom Activity Bar control center with quick completion,
   model, language, connection, privacy and diagnostics actions.
 - Added an offline-only sidebar view model: opening or refreshing the view makes
