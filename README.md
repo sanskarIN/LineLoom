@@ -11,15 +11,26 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Stable GitHub release:** v1.0.0 is the first major release. Automated tests verify packaging and mocked-model behavior; actual model quality, interactive editor acceptance and hardware latency are not independently certified. See [v1.0.0 release notes](docs/releases/v1.0.0.md) for verified tests and known limitations.
 
-## Next release development — v1.1.0
+## v1.1.0 sidebar pre-release (GitHub preview)
 
-A native **LineLoom Activity Bar sidebar** is under development. It groups completion
-controls, installed-model selection commands, language settings, a privacy-safe
-connection summary, aggregate session activity and troubleshooting actions in
-one VS Code Tree View. The sidebar **does not** contact Ollama simply by opening
-or refreshing it. See the [sidebar documentation](docs/sidebar.md) and the
-[unreleased source on main](https://github.com/sanskarIN/LineLoom/tree/main/src/ui).
-**This feature is not included in the published v1.0.0 extension.**
+**v1.1.0 is an opt-in pre-release, not a replacement for the v1.0.0
+stable installation.** Preview builds add a native **LineLoom Activity Bar
+Control Center** with completion toggles, model/language commands, a
+privacy-safe endpoint classification, in-memory session counters and
+diagnostics. Opening or refreshing the sidebar does **not** contact Ollama
+or read source files.
+
+When the preview is published, download `LineLoom-1.1.0.vsix` from the
+[GitHub Releases page](https://github.com/sanskarIN/LineLoom/releases).
+Install through **VS Code → Extensions → … → Install from VSIX…** or
+`code --install-extension LineLoom-1.1.0.vsix`. Use the
+**LineLoom: Open Control Center** Command Palette entry or the Activity Bar
+icon. See [v1.1.0 notes](docs/releases/v1.1.0.md),
+[sidebar documentation](docs/sidebar.md) and [acceptance tracking](https://github.com/sanskarIN/LineLoom/issues/21).
+
+**Registry versions:** Visual Studio Marketplace and Open VSX still distribute
+stable v1.0.0 unless their public listings explicitly show otherwise. GitHub
+pre-release assets are separate and do not automatically update registries.
 
 ## Install LineLoom
 

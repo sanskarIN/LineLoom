@@ -1,8 +1,27 @@
-# Extension registry publishing (GitHub stable v1.0.0)
+# Extension registry publishing (stable v1.0.0 + GitHub v1.1.0 preview)
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
 **Current publication status (2026-10-19):** LineLoom **v1.0.0** is public on [Microsoft Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) as **SanskarCodes.lineloom** and the independent [GitHub stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0). **Open VSX v1.0.0 is now publicly published** at [Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom). The registry reports `version: 1.0.0`, `preRelease: false`, `preview: false`, and `verified: false` (publisher badge/verification is separate from publication). No token, account credential, or registry secret belongs in this repository.
+
+## v1.1.0 GitHub-only pre-release (separate from stable registries)
+
+The native LineLoom sidebar is being distributed as an opt-in GitHub v1.1.0
+**pre-release** VSIX. A separate automated workflow
+(`.github/workflows/release-preview.yml`) checks the package version, unit
+and integration tests, dependency audit, VSIX contents, and a clean VS Code CLI
+installation before creating the GitHub release with `--prerelease` and
+`--latest=false`. It uses `vsce package --pre-release` to distinguish the
+editor preview channel. No Marketplace/Open VSX credentials are used.
+
+Stable v1.0.0 in both registries remains unchanged. A future **stable** registry
+release must use a new package version (such as v1.1.1), not reuse the v1.1.0
+pre-release version. Future registry publishing,
+manual platform and real-model testing are tracked in
+[release gate #21](https://github.com/sanskarIN/LineLoom/issues/21).
+For preview download/installation instructions, see
+[release notes](releases/v1.1.0.md). Do not present v1.1.0 as available in
+the registries until their *public* versions confirm it.
 
 ## Stable release package safety and required checks
 
