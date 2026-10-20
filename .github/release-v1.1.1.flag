@@ -1,0 +1,12 @@
+# LineLoom v1.1.1: one-time GitHub pre-release trigger
+
+Channel: GitHub pre-release ONLY (stable v1.0.0 unchanged).
+Expected version: 1.1.1; publisher: SanskarCodes.
+Release preparation: PR #25 (20 commits; Windows/macOS/Linux, mocked Ollama,
+dependency audit, pre-release VSIX packaging and isolated CLI install passed).
+Next planned stable: v1.2.0, after manual acceptance and independent registries.
+
+Release workflow .github/workflows/release-v1.1.1.yml MUST run full validation,
+reject duplicate tags/releases, build an actual pre-release-marked VSIX plus
+SHA-256, and publish --prerelease --latest=false.
+This flag must not trigger Marketplace or Open VSX publishing.
