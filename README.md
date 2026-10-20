@@ -13,17 +13,16 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 ## v1.1.1 Active Editor sidebar pre-release (GitHub)
 
-**v1.1.1 is an opt-in GitHub pre-release** containing the native Activity Bar
+**Published v1.1.1 is an opt-in GitHub pre-release** containing the native Activity Bar
 Control Center from v1.1.0, plus the new **Active Editor** section with
 language detection, default/per-language effective model, and a provisional
 settings-level completion status. The UI uses only the language ID and
 non-identifying document scheme, never source text, paths or endpoint URLs.
 Untitled or virtual editors do not incorrectly appear eligible for completion.
 
-Once the preview release is published, install
-`LineLoom-1.1.1.vsix` from the
-[GitHub Releases page](https://github.com/sanskarIN/LineLoom/releases)
-using **VS Code → Extensions → … → Install from VSIX…**, or
+Download the published [LineLoom v1.1.1 VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.1.1/LineLoom-1.1.1.vsix)
+from the [GitHub v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1)
+and install using **VS Code → Extensions → … → Install from VSIX…**, or
 `code --install-extension LineLoom-1.1.1.vsix`.
 The [v1.1.1 release notes](docs/releases/v1.1.1.md) describe the changes,
 known limitations and checksum. Earlier
