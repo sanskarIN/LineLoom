@@ -6,8 +6,8 @@ LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub reposi
 
 ## v1.1.0 GitHub-only pre-release (separate from stable registries)
 
-The native LineLoom sidebar is being distributed as an opt-in GitHub v1.1.0
-**pre-release** VSIX. A separate automated workflow
+The native LineLoom sidebar is distributed as an opt-in [GitHub v1.1.0
+**pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0) VSIX, with its SHA-256 checksum published alongside it. A separate automated workflow
 (`.github/workflows/release-preview.yml`) checks the package version, unit
 and integration tests, dependency audit, VSIX contents, and a clean VS Code CLI
 installation before creating the GitHub release with `--prerelease` and
