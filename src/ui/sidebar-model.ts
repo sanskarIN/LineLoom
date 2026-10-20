@@ -1,4 +1,5 @@
 import type { EditorContextSummary } from "./editor-context";
+import type { CompletionState } from "../completion/engine";
 
 /** Sidebar labels and actions are computed locally. This module never contacts Ollama. */
 export type SidebarEndpointState =
@@ -17,9 +18,15 @@ export interface SidebarSnapshot {
   workspaceTrusted: boolean;
   endpointState: SidebarEndpointState;
   activeEditor: EditorContextSummary;
+  completionState: CompletionState;
   requests: number;
   completions: number;
+  cancelled: number;
   failed: number;
+  cacheHits: number;
+  continuationHits: number;
+  emptySuggestions: number;
+  averageLatencyMs?: number;
 }
 
 export interface SidebarEntry {
@@ -58,6 +65,18 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
   return [
     {
       id: "status", label: "Completion", icon: "sparkle", items: [
+        {
+          id: "state", label: "Engine Status",
+          description: !snapshot.enabled ? "Disabled" :
+            snapshot.completionState === "ready" ? "Ready (model not automatically verified)" :
+            snapshot.completionState === "generating" ? "Generating" :
+            snapshot.completionState === "disabled" ? "Disabled" :
+            snapshot.completionState === "unavailable" ? "Unavailable — check Ollama" :
+            "Error — open diagnostics",
+          icon: snapshot.completionState === "generating" ? "sync" :
+            snapshot.completionState === "error" ? "error" :
+            snapshot.completionState === "unavailable" ? "warning" : "info"
+        },
         {
           id: "enabled", label: snapshot.enabled ? "Autocomplete On" : "Autocomplete Off",
           description: "Click to " + (snapshot.enabled ? "disable" : "enable"),
@@ -132,6 +151,15 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         { id: "requests", label: "Requests", description: String(snapshot.requests), icon: "arrow-up" },
         { id: "completions", label: "Suggestions", description: String(snapshot.completions), icon: "check" },
         { id: "failed", label: "Failed", description: String(snapshot.failed), icon: "warning" },
+        { id: "cancelled", label: "Cancelled", description: String(snapshot.cancelled), icon: "circle-slash" },
+        { id: "cache-hits", label: "Cache Hits", description: String(snapshot.cacheHits), icon: "database" },
+        { id: "continuations", label: "Continuation Reuses", description: String(snapshot.continuationHits), icon: "history" },
+        { id: "empty-results", label: "Empty Results", description: String(snapshot.emptySuggestions), icon: "circle" },
+        ...(snapshot.averageLatencyMs === undefined ? [] : [
+          { id: "latency", label: "Average Measured Latency",
+            description: Math.round(snapshot.averageLatencyMs) + " ms",
+            icon: "clock" }
+        ]),
         { id: "diagnostics", label: "Open Diagnostics", icon: "output", command: "lineloom.diagnostics" },
         { id: "refresh", label: "Refresh Sidebar", icon: "refresh", command: "lineloom.refreshSidebar" }
       ]
