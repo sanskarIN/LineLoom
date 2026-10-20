@@ -1,0 +1,112 @@
+name: Publish LineLoom v1.2.0 to Open VSX
+
+# Only the owner-approved, version-specific flag can trigger automatic publishing.
+# Manual retries are possible from Actions if a registry/network error occurs.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/openvsx-v1.2.0.flag'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lineloom-openvsx-v1.2.0
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    name: Publish verified v1.2.0 stable VSIX to Open VSX
+    runs-on: ubuntu-latest
+    steps:
+      # Verify against the released source tree, not a future development build.
+      - uses: actions/checkout@v4
+        with:
+          ref: v1.2.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Download exact public v1.2.0 release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release download v1.2.0 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'LineLoom-1.2.0.*' --dir release-vsix
+          test -s release-vsix/LineLoom-1.2.0.vsix
+          test -s release-vsix/LineLoom-1.2.0.sha256
+
+      - name: Verify SHA-256, identity and stable VSIX metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd release-vsix && sha256sum -c LineLoom-1.2.0.sha256)
+          node -e 'const p=require("./package.json");if(p.name!=="lineloom"||p.publisher!=="SanskarCodes"||p.version!=="1.2.0")process.exit(1)'
+          LINELOOM_EXPECT_STABLE=1 node scripts/verify-vsix.mjs release-vsix/LineLoom-1.2.0.vsix
+
+      - name: Ensure token is configured without displaying its value
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${OVSX_PAT}" ]]; then
+            echo "::error::OVSX_PAT repository secret is missing or empty."
+            exit 1
+          fi
+
+      - name: Check whether v1.2.0 is already published
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://open-vsx.org/api/SanskarCodes/lineloom/1.2.0'
+          status="$(curl --retry 3 --retry-all-errors -sSL -o openvsx-before.json -w '%{http_code}' "$url")"
+          case "$status" in
+            200)
+              node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("openvsx-before.json","utf8"));if(p.namespace!=="SanskarCodes"||p.name!=="lineloom"||p.version!=="1.2.0"||p.preRelease!==false||p.downloadable!==true)process.exit(1)'
+              echo "Version 1.2.0 is already public and stable. No duplicate upload."
+              echo "exists=true" >> "$GITHUB_OUTPUT"
+              ;;
+            404)
+              echo "Open VSX v1.2.0 does not exist yet."
+              echo "exists=false" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "::error::Unexpected Open VSX API status: $status"
+              exit 1
+              ;;
+          esac
+
+      - name: Publish release VSIX (never print the token)
+        if: steps.check.outputs.exists == 'false'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes ovsx@1.2.0 publish release-vsix/LineLoom-1.2.0.vsix \
+            --registryUrl https://open-vsx.org
+
+      - name: Confirm public v1.2.0 stable listing
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://open-vsx.org/api/SanskarCodes/lineloom/1.2.0'
+          for attempt in {1..12}; do
+            code="$(curl -sSL -o openvsx-after.json -w '%{http_code}' "$url")"
+            if [[ "$code" == '200' ]]; then
+              node -e 'const fs=require("fs");const p=JSON.parse(fs.readFileSync("openvsx-after.json","utf8"));if(p.namespace!=="SanskarCodes"||p.name!=="lineloom"||p.version!=="1.2.0"||p.preRelease!==false||p.downloadable!==true)process.exit(1)'
+              echo "PASS: SanskarCodes.lineloom@1.2.0 stable is publicly downloadable from Open VSX."
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Open VSX has not confirmed publicly downloadable v1.2.0."
+          exit 1
