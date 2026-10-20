@@ -6,9 +6,10 @@ describe("native sidebar privacy and accessibility contract", () => {
   const provider = readFileSync("src/ui/sidebar.ts", "utf8");
   const extension = readFileSync("src/extension.ts", "utf8");
 
-  it("uses only languageId and never reads source text or file names", () => {
+  it("uses only languageId and URI scheme, never source text or file names", () => {
     expect(provider).toContain("activeTextEditor?.document.languageId");
-    expect(provider).not.toMatch(/\.getText\s*\(|\.fileName\b|\.fsPath\b|\.uri\b/);
+    expect(provider).toContain("activeTextEditor?.document.uri.scheme");
+    expect(provider).not.toMatch(/\.getText\s*\(|\.fileName\b|\.fsPath\b|\.uri\.path\b|\.uri\.toString\s*\(/);
     expect(provider).not.toMatch(/\bfetch\s*\(|\bhttps?\.request\s*\(/);
   });
   it("provides accessibility descriptions for both sections and actions", () => {
