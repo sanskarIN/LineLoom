@@ -14,7 +14,8 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  assert.ok(page.includes("v" + pkg.version + " stable"));
+  assert.ok(page.includes("v" + pkg.version + " pre-release"));
+  assert.ok(page.includes("v1.0.0 stable"), "Stable registry version must remain visible");
   assert.ok(page.includes("LineLoom-" + pkg.version + ".vsix"));
   assert.ok(page.includes("v" + pkg.version));
   assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
@@ -87,6 +88,7 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
   assert.ok(guide.includes("LineLoom-" + pkg.version + ".vsix"));
+  assert.match(guide, /v1\.1\.0 pre-release/);
   assert.match(guide, /SanskarCodes/);
   assert.ok(guide.includes("v" + pkg.version));
   for (const [, ref] of guide.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
