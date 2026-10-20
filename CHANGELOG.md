@@ -10,6 +10,7 @@ All notable changes follow Semantic Versioning.
 - Added in-memory cancellation counts, cache hits, typed-continuation reuses,
   empty results, and an optional measured average latency display.
 - Improved local Ollama error recovery messaging with bounded error categories and no raw server output.
+- Hardened Ollama model discovery against duplicate, overlong or control-character-bearing names; cap picker entries and reject unusable catalogs. A changed endpoint or revoked consent now invalidates a late Select Model list before showing results.
 - Preserved no-request sidebar rendering, workspace trust, file-only scheme
   and remote endpoint approval boundaries.
 - Advanced package and lockfile to 1.2.0 for a **stable-channel VSIX candidate**.
