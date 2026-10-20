@@ -3,6 +3,7 @@ import { LANGUAGES } from "./languages/registry";
 import { normalizeLanguageModels } from "./settings/language-models";
 import { CompletionEngine } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
+import { LineLoomSidebar } from "./ui/sidebar";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache } from "./privacy/exclusions";
 import { readConfig, validateEndpoint } from "./settings/config";
@@ -211,11 +212,19 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
   const status = new LineLoomStatus();
-  engine = new CompletionEngine(
-    (state) => status.set(state, readConfig().autoTrigger),
+  const sidebar = new LineLoomSidebar(
+    () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint
   );
-  context.subscriptions.push(output, status, engine);
+  engine = new CompletionEngine(
+    (state) => {
+      status.set(state, readConfig().autoTrigger);
+      sidebar.refresh();
+    },
+    (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint
+  );
+  context.subscriptions.push(output, status, sidebar, engine);
+  context.subscriptions.push(vscode.window.registerTreeDataProvider("lineloom.dashboard", sidebar));
   const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
   function command(id: string, fn: () => unknown): void {
@@ -232,6 +241,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command("lineloom.trigger", () => vscode.commands.executeCommand("editor.action.inlineSuggest.trigger"));
   command("lineloom.quickActions", () => openQuickActions());
+  command("lineloom.refreshSidebar", () => sidebar.refresh());
   command("lineloom.toggleAutomatic", async () => {
     const config = readConfig();
     await vscode.workspace.getConfiguration("lineloom").update(
@@ -257,6 +267,7 @@ export function activate(context: vscode.ExtensionContext): void {
       clearIgnoreCache();
       const config = readConfig();
       status.set(config.enabled ? "ready" : "disabled", config.autoTrigger);
+      sidebar.refresh();
     }
   }));
   context.subscriptions.push(
@@ -267,7 +278,10 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeTextDocument((event) => engine?.onDocumentChanged(event)),
     vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
   );
-  context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => clearIgnoreCache()));
+  context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
+    clearIgnoreCache();
+    sidebar.refresh();
+  }));
   for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
     context.subscriptions.push(
