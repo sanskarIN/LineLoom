@@ -16,6 +16,7 @@ export async function run(): Promise<void> {
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
+    "lineloom.cancel",
     "lineloom.refreshSidebar", "lineloom.openSidebar"
   ];
   const commands = await vscode.commands.getCommands(true);
@@ -41,6 +42,9 @@ export async function run(): Promise<void> {
   sidebarSubscription.dispose();
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
+  let holdGeneration = false;
+  let heldGenerationStarted: (() => void) | undefined;
+  let releaseHeldGeneration: (() => void) | undefined;
   let generationCalls = 0;
   let lastModelSent = "";
   const server = http.createServer(async (request, response) => {
@@ -55,6 +59,12 @@ export async function run(): Promise<void> {
       const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string };
       lastModelSent = payload.model ?? "";
       generationCalls++;
+      if (holdGeneration) {
+        heldGenerationStarted?.();
+        await new Promise<void>((resolve) => { releaseHeldGeneration = resolve; });
+        if (!response.destroyed) response.end(JSON.stringify({ response: "obsolete", done: true }) + "\n");
+        return;
+      }
       if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
       } else {
@@ -144,6 +154,39 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Explicit cancellation must abort an in-flight model request, reject
+        // its late completion and retain the enabled/auto-trigger preferences.
+        engine.cancel(); // Flush exact-key cache so the next invocation hits Ollama.
+        const cancelStart = new Promise<void>((resolve) => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const cancelledRequest = engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        try {
+          await Promise.race([
+            cancelStart,
+            new Promise<never>((_resolve, reject) => setTimeout(
+              () => reject(new Error("Mock generation did not begin")), 8_000
+            ))
+          ]);
+          engine.cancel();
+          releaseHeldGeneration?.();
+          assert.equal(await cancelledRequest, undefined, "Explicitly stopped model output must never be offered");
+          assert.ok(engine.getStats().cancelled >= 1, "Stopped request must count as cancelled");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          heldGenerationStarted = undefined;
+          releaseHeldGeneration = undefined;
+        }
+        assert.equal(configuration.get("enabled", true), true, "Cancel must not disable autocomplete");
+        assert.equal(configuration.get("autoTrigger", true), true, "Cancel must not pause future suggestions");
+        // Cancellation must not prevent a subsequent independent request.
+        const resumed = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.equal(resumed?.[0]?.insertText, "42", "Manual completion must recover after cancellation");
         await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
         const fallback = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(fallback?.length, "Expected fallback to global Ollama model");
@@ -359,6 +402,11 @@ export async function run(): Promise<void> {
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);
     await vscode.commands.executeCommand("lineloom.enable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), true);
+    await vscode.commands.executeCommand("lineloom.cancel");
+    assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), true,
+      "Stop command must not disable future suggestions");
+    assert.equal(vscode.workspace.getConfiguration("lineloom").get("autoTrigger"), true,
+      "Stop command must not change persistent automatic inference mode");
   } finally {
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
