@@ -44,6 +44,30 @@ GitHub, Visual Studio Marketplace and Open VSX after authorization. Neither
 registry should be represented as distributing v1.1.1 just because the
 GitHub pre-release exists. Stable v1.0.0 remains unchanged.
 
+## v1.2.0 stable-channel candidate and manual publication gate
+
+The `1.2.0` source package is prepared for stable-channel packaging:
+`.github/workflows/ci.yml` builds a VSIX **without** `--pre-release`,
+asserts the pre-release manifest marker is absent, creates SHA-256 and tests
+installation in an isolated VS Code CLI profile. Once CI passes, the
+`lineloom-v1.2.0-stable-candidate` artifact can be downloaded from
+[CI runs](https://github.com/sanskarIN/LineLoom/actions/workflows/ci.yml).
+
+**This candidate is not a published stable GitHub release** and is not
+automatically submitted to either registry. The versioned
+[stable release workflow](../.github/workflows/release-v1.2.0.yml)
+can only be started with an explicit manual acceptance affirmation and
+HTTPS QA evidence URL on the main branch. The required physical-editor,
+actual Ollama and accessibility results must be recorded genuinely first.
+See [v1.2.0 notes](releases/v1.2.0.md) and
+[QA matrix](qa/v1.2.0-acceptance.md).
+
+After a stable GitHub release exists, independently submit its stable VSIX
+under `SanskarCodes.lineloom` to the
+[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
+and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom).
+Do not represent the current public v1.0.0 listing as v1.2.0.
+
 ## Stable release package safety and required checks
 
 - The default v1.0.0 VSIX is a **stable channel** package and must **not** include `--pre-release`. Use `npm run package:preview` only for future explicitly marked experimental updates.

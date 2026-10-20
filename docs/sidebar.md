@@ -23,8 +23,13 @@ published v1.0.0 stable extension does not include this view.
 - **Privacy & Connection:** report workspace trust, and whether the inference
   endpoint is loopback, remote approved, remote blocked/pending approval, or invalid.
   Use Check Ollama Connection for an explicit user-initiated model-list request.
-- **Session Activity:** request, suggestion and failure totals from in-memory
-  aggregate counters, plus existing diagnostics.
+- **Session Activity:** request, suggestion, cancellation, failure, cache-hit,
+  continuation reuse and empty-response totals from in-memory aggregates,
+  plus optional measured average latency when performance diagnostics are
+  enabled. Nothing is persisted or sent to a telemetry service.
+- **Completion (v1.2.0 candidate):** a local-only runtime status describing
+  ready, generating, unavailable, disabled or error. "Ready" means the UI is
+  ready, **not** that a configured model is installed or Ollama is reachable.
 - **More Actions:** settings, setup instructions, and Quick Actions.
 
 The title-bar refresh icon refreshes the tree without querying Ollama. Sidebar

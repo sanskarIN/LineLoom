@@ -7,7 +7,8 @@ const snapshot: SidebarSnapshot = {
   endpointState: "loopback",
   activeEditor: { language: "Rust", model: "rust-local", modelSource: "Language override",
     eligibility: "Allowed by settings; file rules checked on request" },
-  requests: 3, completions: 2, failed: 0
+  completionState: "ready", requests: 3, completions: 2, cancelled: 1,
+  failed: 0, cacheHits: 2, continuationHits: 1, emptySuggestions: 4
 };
 describe("LineLoom local sidebar model", () => {
   it("exposes fixed command actions and useful offline state", () => {
@@ -18,6 +19,12 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "enabled")?.command).toBe("lineloom.disable");
     expect(entries.find(item => item.id === "model")?.description).toBe("qwen2.5-coder:1.5b");
     expect(entries.find(item => item.id === "requests")?.description).toBe("3");
+    expect(entries.find(item => item.id === "state")?.description).toBe("Ready (model not automatically verified)");
+    expect(entries.find(item => item.id === "cancelled")?.description).toBe("1");
+    expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");
+    expect(entries.find(item => item.id === "continuations")?.description).toBe("1");
+    expect(entries.find(item => item.id === "empty-results")?.description).toBe("4");
+    expect(entries.find(item => item.id === "latency")).toBeUndefined();
     expect(entries.find(item => item.id === "editor-language")?.description).toBe("Rust");
     expect(entries.find(item => item.id === "editor-model")?.description).toBe("rust-local (Language override)");
     expect(entries.find(item => item.id === "editor-eligibility")?.description).toMatch(/file rules checked on request/);
@@ -28,6 +35,19 @@ describe("LineLoom local sidebar model", () => {
       .flatMap(group => group.items);
     expect(items.find(item => item.id === "enabled")?.command).toBe("lineloom.enable");
     expect(items.find(item => item.id === "automatic")?.label).toBe("Manual Suggestions Only");
+  });
+  it("shows explicit runtime states and optional measured performance", () => {
+    const entries = sidebarSections({
+      ...snapshot, completionState: "generating", averageLatencyMs: 12.6
+    }).flatMap(group => group.items);
+    expect(entries.find(item => item.id === "state")?.description).toBe("Generating");
+    expect(entries.find(item => item.id === "latency")?.description).toBe("13 ms");
+    const unavailable = sidebarSections({ ...snapshot, completionState: "unavailable" })
+      .flatMap(group => group.items);
+    expect(unavailable.find(item => item.id === "state")?.description).toContain("Unavailable");
+    const off = sidebarSections({ ...snapshot, enabled: false, completionState: "generating" })
+      .flatMap(group => group.items);
+    expect(off.find(item => item.id === "state")?.description).toBe("Disabled");
   });
   it("never displays endpoint origin or remote credentials", () => {
     for (const state of ["loopback", "remote-approved", "remote-needs-approval", "remote-blocked", "invalid"] as const) {

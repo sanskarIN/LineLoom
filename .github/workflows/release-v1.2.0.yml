@@ -1,0 +1,91 @@
+name: Publish LineLoom v1.2.0 stable (manual approval only)
+on:
+  workflow_dispatch:
+    inputs:
+      manual_acceptance_complete:
+        description: "Type VERIFIED after completing and recording all v1.2.0 manual release gates in issue #21"
+        required: true
+        type: string
+      acceptance_evidence_url:
+        description: "Public or maintainer-accessible URL to real Ollama / OS / accessibility QA evidence (no secrets)"
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-stable-v1.2.0
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    name: Explicitly approved stable GitHub release (not registries)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Reject missing manual acceptance
+        env:
+          ACCEPTANCE: ${{ inputs.manual_acceptance_complete }}
+          EVIDENCE: ${{ inputs.acceptance_evidence_url }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$ACCEPTANCE" != "VERIFIED" ]]; then
+            echo "Stable release blocked: manual acceptance must be VERIFIED."
+            exit 1
+          fi
+          if [[ ! "$EVIDENCE" =~ ^https:// ]]; then
+            echo "Stable release blocked: provide an HTTPS evidence URL, without secrets."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Check stable identity and npm lockfile
+        shell: bash
+        run: |
+          set -euo pipefail
+          node -e "const p=require('./package.json');const l=require('./package-lock.json');if(p.name!=='lineloom'||p.version!=='1.2.0'||p.publisher!=='SanskarCodes'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Incorrect stable package identity')}"
+      - name: Install exact dependencies
+        run: npm ci
+      - name: Verify TypeScript, lint, unit/site tests and bundle
+        run: npm run check
+      - name: Run mocked Ollama VS Code integration
+        run: xvfb-run -a npm run test:integration
+      - name: Reject high-severity dependency vulnerabilities
+        run: npm audit --audit-level=high
+      - name: Build and verify real stable-channel VSIX
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vsce package --no-dependencies -o LineLoom-1.2.0.vsix
+          LINELOOM_EXPECT_STABLE=1 npm run verify:vsix -- LineLoom-1.2.0.vsix
+          sha256sum LineLoom-1.2.0.vsix > LineLoom-1.2.0.sha256
+      - name: Install VSIX in isolated VS Code profile
+        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.2.0.vsix
+      - name: Reject duplicate stable release and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.2.0 >/dev/null 2>&1; then
+            echo "v1.2.0 release already exists; refusing to overwrite."
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v1.2.0 >/dev/null; then
+            echo "v1.2.0 tag already exists; refusing to overwrite."
+            exit 1
+          fi
+      - name: Publish GitHub stable only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v1.2.0 \
+            LineLoom-1.2.0.vsix LineLoom-1.2.0.sha256 \
+            --target "${GITHUB_SHA}" --latest \
+            --title "LineLoom v1.2.0 — Stable Control Center and Local Completion" \
+            --notes-file docs/releases/v1.2.0.md

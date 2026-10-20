@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { LANGUAGES } from "./languages/registry";
 import { normalizeLanguageModels } from "./settings/language-models";
-import { CompletionEngine } from "./completion/engine";
+import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
 import { quickActions } from "./ui/actions";
@@ -9,6 +9,7 @@ import { clearIgnoreCache } from "./privacy/exclusions";
 import { readConfig, validateEndpoint } from "./settings/config";
 import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
+import { ollamaFailureMessage } from "./models/errors";
 
 const SETTINGS_FILTER = "@ext:SanskarCodes.lineloom";
 let engine: CompletionEngine | undefined;
@@ -61,8 +62,8 @@ async function checkConnection(context: vscode.ExtensionContext): Promise<void> 
       "LineLoom: Ollama reachable; " + models.length + " installed model(s). " +
       (present ? "Selected model is available." : "Selected model is not installed. Use LineLoom: Select Model.")
     );
-  } catch {
-    vscode.window.showWarningMessage("LineLoom cannot connect to Ollama. Ensure the server is running and the endpoint is correct.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 async function selectModel(context: vscode.ExtensionContext): Promise<void> {
@@ -85,8 +86,8 @@ async function selectModel(context: vscode.ExtensionContext): Promise<void> {
     await vscode.workspace.getConfiguration("lineloom").update("model", picked.label, vscode.ConfigurationTarget.Global);
     engine?.cancel();
     vscode.window.showInformationMessage("LineLoom model selected: " + picked.label);
-  } catch {
-    vscode.window.showWarningMessage("Could not retrieve installed Ollama models. Check your inference endpoint.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 async function selectLanguageModel(context: vscode.ExtensionContext): Promise<void> {
@@ -136,8 +137,8 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
     vscode.window.showInformationMessage(
       "LineLoom " + language.label + ": " + (selected.model || "default model") + "."
     );
-  } catch {
-    vscode.window.showWarningMessage("Could not assign a language model. Check the selected Ollama endpoint and installed models.");
+  } catch (error) {
+    vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
 
@@ -213,12 +214,15 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
   const status = new LineLoomStatus();
+  let currentState: CompletionState = "ready";
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
-    (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint
+    (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
+    () => currentState
   );
   engine = new CompletionEngine(
     (state) => {
+      currentState = state;
       status.set(state, readConfig().autoTrigger);
       sidebar.refresh();
     },
@@ -268,7 +272,8 @@ export function activate(context: vscode.ExtensionContext): void {
       engine?.cancel();
       clearIgnoreCache();
       const config = readConfig();
-      status.set(config.enabled ? "ready" : "disabled", config.autoTrigger);
+      currentState = config.enabled ? "ready" : "disabled";
+      status.set(currentState, config.autoTrigger);
       sidebar.refresh();
     }
   }));
@@ -295,7 +300,8 @@ export function activate(context: vscode.ExtensionContext): void {
     );
   }
   const current = readConfig();
-  status.set(current.enabled ? "ready" : "disabled", current.autoTrigger);
+  currentState = current.enabled ? "ready" : "disabled";
+  status.set(currentState, current.autoTrigger);
   // The first-run message is intentionally user-initiated: no unsolicited onboarding modal.
 }
 export function deactivate(): void { engine?.cancel(); engine = undefined; }

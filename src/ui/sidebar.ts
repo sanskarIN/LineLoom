@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import type { CompletionStats } from "../completion/engine";
+import type { CompletionState, CompletionStats } from "../completion/engine";
 import { summarizeActiveEditor } from "./editor-context";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { sidebarSections, type SidebarEndpointState, type SidebarEntry, type SidebarSection } from "./sidebar-model";
@@ -27,7 +27,8 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
 
   constructor(
     private readonly getStats: () => Readonly<CompletionStats> | undefined,
-    private readonly isApproved: (origin: string) => boolean
+    private readonly isApproved: (origin: string) => boolean,
+    private readonly getState: () => CompletionState = () => "ready"
   ) {}
 
   refresh(): void { this.changes.fire(undefined); }
@@ -61,9 +62,16 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       workspaceTrusted: vscode.workspace.isTrusted,
       endpointState: originState,
       activeEditor,
+      completionState: this.getState(),
       requests: stats?.requests ?? 0,
       completions: stats?.completions ?? 0,
-      failed: stats?.failed ?? 0
+      cancelled: stats?.cancelled ?? 0,
+      failed: stats?.failed ?? 0,
+      cacheHits: stats?.cacheHits ?? 0,
+      continuationHits: stats?.continuationHits ?? 0,
+      emptySuggestions: stats?.emptySuggestions ?? 0,
+      averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
+        ? stats.totalLatencyMs / stats.measuredRequests : undefined
     }).map((section): SidebarNode => ({ kind: "section", section }));
   }
 
