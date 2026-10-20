@@ -36,6 +36,16 @@ The older [v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/ta
 and [v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
 remain accessible.
 
+## v1.2.1 patch development (not released)
+
+The next maintenance update adds **Stop Current Generation** in the Command
+Palette, native Control Center and Quick Actions. It cancels current or queued
+Ollama inference without disabling future completions, and includes mocked
+editor-host tests for cancellation and resuming work. The source manifest
+is staged at 1.2.1, but **there is no v1.2.1 public release yet**.
+See the [maintenance plan](docs/releases/v1.2.1-plan.md).
+GitHub stable v1.2.0 and existing external registry versions are unaffected.
+
 ## Install LineLoom
 
 Install the stable v1.0.0 from your editor's supported registry:
