@@ -4,7 +4,8 @@ LineLoom's next-release control center is a **native VS Code Activity Bar Tree V
 Open the LineLoom icon in the Activity Bar and select **Control Center**, or run
 **LineLoom: Open Control Center** from the Command Palette/status-bar Quick Actions. The feature
 was introduced in [v1.1.0 GitHub **pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0),
-with an extended Active Editor section in the v1.1.1 GitHub preview. The
+with an extended Active Editor section in the published
+[v1.1.1 GitHub preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1). The
 published v1.0.0 stable extension does not include this view.
 
 ## What is visible
