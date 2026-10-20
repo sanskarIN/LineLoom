@@ -2,63 +2,39 @@
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/SanskarCodes.lineloom?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
 [![Open VSX Registry](https://img.shields.io/open-vsx/v/SanskarCodes/lineloom?label=Open%20VSX)](https://open-vsx.org/extension/SanskarCodes/lineloom)
-[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
+[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0)
 [![MIT license](https://img.shields.io/badge/license-MIT-70d6ce)](LICENSE)
 
 **Write less. Build more. Stay in control.**
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Stable GitHub release:** v1.0.0 is the first major release. Automated tests verify packaging and mocked-model behavior; actual model quality, interactive editor acceptance and hardware latency are not independently certified. See [v1.0.0 release notes](docs/releases/v1.0.0.md) for verified tests and known limitations.
+> **Latest stable GitHub release: v1.2.0.** Cross-platform automated checks, mocked-Ollama integration and isolated VSIX install passed; real-model and hands-on OS/accessibility QA remain outstanding. Both external registries require a separate v1.2.0 publication.
 
-## v1.1.1 Active Editor sidebar pre-release (GitHub)
+## v1.2.0 stable on GitHub (released 2026-10-20)
 
-**Published v1.1.1 is an opt-in GitHub pre-release** containing the native Activity Bar
-Control Center from v1.1.0, plus the new **Active Editor** section with
-language detection, default/per-language effective model, and a provisional
-settings-level completion status. The UI uses only the language ID and
-non-identifying document scheme, never source text, paths or endpoint URLs.
-Untitled or virtual editors do not incorrectly appear eligible for completion.
+**[GitHub v1.2.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0)** is published with [`LineLoom-1.2.0.vsix`](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix) and the [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.sha256).
 
-Download the published [LineLoom v1.1.1 VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.1.1/LineLoom-1.1.1.vsix)
-from the [GitHub v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1)
-and install using **VS Code → Extensions → … → Install from VSIX…**, or
-`code --install-extension LineLoom-1.1.1.vsix`.
-The [v1.1.1 release notes](docs/releases/v1.1.1.md) describe the changes,
-known limitations and checksum. Earlier
-[v1.1.0 preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0)
-remains available.
+The native Activity Bar Control Center now includes active-editor eligibility,
+default/per-language model routing, model-connection guidance, and additional
+privacy-safe, in-memory session counters. The stable VSIX has **no pre-release
+marker**. Install it using **VS Code → Extensions → … → Install from VSIX…**
+or `code --install-extension LineLoom-1.2.0.vsix`.
 
-The next target is **v1.2.0 stable**. See the
-[stable release plan](docs/releases/v1.2.0-plan.md) and
-[manual test matrix](docs/qa/v1.1.1-sidebar-acceptance.md).
-Neither v1.1.1 nor v1.2.0 should be called stable until appropriate release
-gates pass.
+**Manual QA disclosure:** Real local Ollama model usefulness/latency,
+interactive Windows/macOS/Linux editor and accessibility checks, real privacy
+acceptance and upgrades from older installations are **not yet verified**.
+The owner authorized GitHub stable publication after passing automated CI;
+unperformed manual checks are not represented as passed.
+[Release notes](docs/releases/v1.2.0.md) · [Acceptance matrix](docs/qa/v1.2.0-acceptance.md) ·
+[Follow-up issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
 
-**Registry versions:** Visual Studio Marketplace and Open VSX continue to
-distribute stable v1.0.0 until their public versions change. GitHub preview
-assets do not automatically update either registry.
-
-## v1.2.0 stable release candidate (not yet published)
-
-The **v1.2.0 source/build candidate** is being checked for a future stable
-release. It improves the native sidebar with live completion status, session
-cancellations, cache hits, continuation reuses, empty-result counts and
-opt-in measured latency. It also includes a stable-channel VSIX packaging
-check that rejects VS Code pre-release metadata.
-
-**Do not use an invented v1.2.0 release download link:** until real Ollama
-quality, manual Windows/macOS/Linux/editor accessibility and privacy acceptance
-have been recorded, the public stable release remains **v1.0.0** and the latest
-opt-in GitHub preview is [v1.1.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1).
-For verified, **downloadable candidate archives**, use the successful
-[GitHub Actions CI artifacts](https://github.com/sanskarIN/LineLoom/actions/workflows/ci.yml)
-named `lineloom-v1.2.0-stable-candidate`. The VS Code installable package
-is a `.vsix`, not an OS `.exe`.
-
-See [candidate notes](docs/releases/v1.2.0.md),
-[acceptance checklist](docs/qa/v1.2.0-acceptance.md) and
-[release issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
+**External registry distribution is separate:** Visual Studio Marketplace and
+Open VSX still carry their previously published **v1.0.0** at last verification.
+Publishing v1.2.0 on GitHub does **not** update either registry.
+The older [v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1)
+and [v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
+remain accessible.
 
 ## Install LineLoom
 
@@ -78,7 +54,7 @@ If your editor obtains extensions from Open VSX, open its Extensions view, searc
 
 ### Alternative: install the GitHub stable VSIX
 
-The [GitHub v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0) includes `LineLoom-1.0.0.vsix` for offline/manual installation. Download the VSIX and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.0.0.vsix`).
+The [GitHub v1.2.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) includes `LineLoom-1.2.0.vsix` for offline/manual installation. Download the VSIX and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.2.0.vsix`).
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
@@ -92,7 +68,7 @@ Website content is excluded from the extension VSIX package. This does not add h
 
 ## Release verification status
 
-The v1.0.0 stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace and Open VSX are live; hands-on real-model QA remains ongoing.**
+The v1.2.0 GitHub stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace and Open VSX are live; hands-on real-model QA remains ongoing.**
 
 ## Features
 

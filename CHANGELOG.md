@@ -2,7 +2,7 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.2.0 stable candidate
+## [1.2.0] — 2026-10-20 — GitHub Stable Release
 
 - Added native sidebar completion engine state with explicit ready/generating,
   unavailable, disabled and error feedback. A configured model name does not
@@ -13,15 +13,12 @@ All notable changes follow Semantic Versioning.
 - Hardened Ollama model discovery against duplicate, overlong or control-character-bearing names; cap picker entries and reject unusable catalogs. A changed endpoint or revoked consent now invalidates a late Select Model list before showing results.
 - Preserved no-request sidebar rendering, workspace trust, file-only scheme
   and remote endpoint approval boundaries.
-- Advanced package and lockfile to 1.2.0 for a **stable-channel VSIX candidate**.
+- Advanced package and lockfile to 1.2.0 for a **stable-channel VSIX**.
   CI packages without `--pre-release` and rejects preview markers, risky
   archive contents, wrong publisher/version and missing sidebar icons.
-- Added a manually authorized GitHub v1.2.0 stable-release workflow, candidate
-  release notes and explicit cross-OS real-Ollama acceptance matrix.
-- **Not published as stable:** real-model, hardware latency, upgrade and
-  interactive cross-platform/accessibility gates still lack evidence. Marketplace
-  and Open VSX remain independently published stable v1.0.0.
-- C# and Dart are not implemented in v1.2.0 candidate.
+- Published [GitHub v1.2.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) through a one-time owner-authorized workflow with verified VSIX, checksum and install smoke test. Manual real-Ollama and cross-OS QA acceptance remains documented and open.
+- **GitHub stable is published; manual QA is outstanding:** real-model, hardware latency, upgrade and interactive cross-platform/accessibility gates still lack evidence. Marketplace and Open VSX retain independently published v1.0.0 until separately updated.
+- C# and Dart are not implemented in v1.2.0.
 
 ## [1.1.1] — 2026-10-20 — GitHub Pre-release
 
