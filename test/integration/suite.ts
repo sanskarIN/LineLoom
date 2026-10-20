@@ -155,6 +155,21 @@ export async function run(): Promise<void> {
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
 
+        // Stopping during automatic debounce must prevent the Ollama
+        // request from being sent at all. Explicit stopping does not
+        // change the user's persistent automatic suggestion preference.
+        engine.cancel();
+        await configuration.update("debounceMs", 100, vscode.ConfigurationTarget.Global);
+        const callsBeforeQueuedCancel = generationCalls;
+        const queuedBeforeNetwork = engine.provideInlineCompletionItems(document, position, {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        }, cancellation.token);
+        engine.cancel();
+        assert.equal(await queuedBeforeNetwork, undefined, "Queued generation must stop before HTTP");
+        assert.equal(generationCalls, callsBeforeQueuedCancel, "Stop during debounce must not contact Ollama");
+        await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
+
         // Explicit cancellation must abort an in-flight model request, reject
         // its late completion and retain the enabled/auto-trigger preferences.
         engine.cancel(); // Flush exact-key cache so the next invocation hits Ollama.
