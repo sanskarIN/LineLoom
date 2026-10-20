@@ -50,7 +50,7 @@
 
 **v1.0.0 scope:** native editor completion, local Ollama integration, user-controlled models, privacy gate, automated tests and verified stable-channel VSIX. Experimental languages and incomplete hands-on model QA remain disclosed in the release notes.
 
-**v1.1.0:** expand language-aware model quality checks, improve request timing and cached context.
+**v1.1.0 (in development):** native Activity Bar sidebar for model, language, privacy and completion controls. Continue language-aware model quality checks, request timing and context-cache tuning as release gates; do not call it shipped until the stable tag and both registries are updated.
 
 **v1.2.0:** add C# and Dart, richer language-aware suggestions and partial acceptance if stable VS Code APIs support it.
 
