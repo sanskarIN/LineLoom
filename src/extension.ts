@@ -242,6 +242,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.trigger", () => vscode.commands.executeCommand("editor.action.inlineSuggest.trigger"));
   command("lineloom.quickActions", () => openQuickActions());
   command("lineloom.refreshSidebar", () => sidebar.refresh());
+  command("lineloom.openSidebar", () => vscode.commands.executeCommand("workbench.view.extension.lineloom"));
   command("lineloom.toggleAutomatic", async () => {
     const config = readConfig();
     await vscode.workspace.getConfiguration("lineloom").update(
