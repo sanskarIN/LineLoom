@@ -40,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           npx vsce package --pre-release --no-dependencies -o LineLoom-1.1.0.vsix
-          npm run verify:vsix -- LineLoom-1.1.0.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.1.0.vsix
           sha256sum LineLoom-1.1.0.vsix > LineLoom-1.1.0.sha256
           cat LineLoom-1.1.0.sha256
       - name: Install candidate VSIX in isolated VS Code CLI profile
