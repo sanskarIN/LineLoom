@@ -315,7 +315,7 @@
     "test:integration": "node scripts/integration.mjs",
     "benchmark": "node scripts/benchmark.mjs",
     "qa:ollama": "node scripts/qa-local-ollama.mjs",
-    "test:qa": "node --test scripts/qa-local-ollama.test.mjs",
+    "test:qa": "node --test scripts/check-qa-local-ollama.mjs",
     "package:preview": "npm run check && vsce package --pre-release --no-dependencies",
     "test:site": "node --test scripts/verify-site.mjs",
     "verify:vsix": "node scripts/verify-vsix.mjs",
