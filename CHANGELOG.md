@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.1 maintenance candidate
 
+- Added an explicitly opt-in `npm run qa:ollama -- --run --model <installed-tag>` loopback-only real-model smoke test using a fixed public fixture. Its output contains bounded metrics only, not generated code; remote endpoints and automatic model downloads are refused. Mocked CLI/network safety tests run in CI; real desktop acceptance remains pending.
+
 - Hardened non-overridable local-file exclusions for direnv, Terraform state and variable files, cloud credential directories, SQLite/KeePass files and additional key formats. These paths remain ineligible for inline inference, including when a remote HTTPS endpoint was approved; added cross-platform unit regression tests.
 
 - Added a dedicated **Stop Current Generation** command to the Command Palette,
