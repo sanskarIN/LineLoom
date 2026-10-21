@@ -2,6 +2,8 @@
 
 All notable changes follow Semantic Versioning.
 
+
+- Expanded VS Code extension-host privacy regression coverage: call the actual completion provider on synthetic hard-excluded and ignored files, asserting that no Ollama generation request is sent.
 ## Unreleased — v1.2.1 maintenance candidate
 
 - Added an explicitly opt-in `npm run qa:ollama -- --run --model <installed-tag>` loopback-only real-model smoke test using a fixed public fixture. Its output contains bounded metrics only, not generated code; remote endpoints and automatic model downloads are refused. Mocked CLI/network safety tests run in CI; real desktop acceptance remains pending.
