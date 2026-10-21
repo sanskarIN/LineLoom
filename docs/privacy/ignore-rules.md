@@ -2,6 +2,8 @@
 
 LineLoom only completes local files within a **trusted VS Code workspace**. Files outside the workspace, symlinks escaping the workspace, and known sensitive filename/directory patterns (e.g., `.env`, `.ssh`, `.git`, `node_modules`, `build`) are excluded unconditionally. Configure additional workspace-relative patterns using `lineloom.excludedPaths`.
 
+The unreleased v1.2.1 maintenance branch also blocks additional high-risk names and extensions, including `.envrc`, `.dev.vars*`, `.secrets*`, `.pgpass`, `.my.cnf`, Terraform `*.tfvars`, `*.tfvars.json`, `*.tfstate` and `*.tfstate.backup`, KeePass `*.kdbx`, SQLite `*.sqlite3`, SSH identity variants, and the `.direnv`, `.terraform`, `.pulumi`, `.serverless`, `.aws-sam`, and Python virtual-environment directories. These default exclusions are intentionally non-overridable. Some harmless example files with matching names may also be excluded. This is a conservative privacy tradeoff, not a general-purpose secret scanner.
+
 ## Root and nested ignore files (v0.3.0)
 
 Create a `.gitignore` or `.lineloomignore` at the workspace root **or within any ancestor directory of a source file**. For example:
