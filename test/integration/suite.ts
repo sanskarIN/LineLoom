@@ -98,6 +98,17 @@ export async function run(): Promise<void> {
     assert.equal(await mayComplete(deniedByApp, []), false, "Nested .lineloomignore must deny blocked.ts");
     assert.equal(await mayComplete(deniedByGit, []), false, "Nested .gitignore must deny blocked-by-git.ts");
     assert.equal(await mayComplete(permitted, []), true, "Sibling source file should remain eligible");
+    // Hard exclusions must hold in the actual editor host, not just unit
+    // tests of filenames. These files contain public synthetic fixture text.
+    const sensitiveDocuments = await Promise.all([
+      ["src", "credentials.ts"], ["src", ".terraform", "state.ts"],
+      ["src", ".direnv", "cached.ts"], ["src", ".dev.vars"],
+      ["src", "production.tfvars.json"]
+    ].map((parts) => vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...parts))));
+    for (const sensitive of sensitiveDocuments) {
+      assert.equal(await mayComplete(sensitive, []), false,
+        "Hard-excluded fixture must fail closed in the VS Code editor host");
+    }
     const configuration = vscode.workspace.getConfiguration("lineloom");
     const oldValues = {
       endpoint: configuration.get<string>("endpoint"),
@@ -154,6 +165,32 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Exercise the real inline provider with supported-language sensitive
+        // fixtures. Merely checking the standalone privacy matcher is not
+        // sufficient: no Ollama HTTP generation may start for any such file.
+        const beforeProtectedRequests = generationCalls;
+        const protectedSourceFiles = [
+          deniedByApp, deniedByGit,
+          sensitiveDocuments[0], // credentials.ts (known risky basename)
+          sensitiveDocuments[1], // .terraform/state.ts
+          sensitiveDocuments[2]  // .direnv/cached.ts
+        ];
+        for (const protectedDoc of protectedSourceFiles) {
+          assert.equal(protectedDoc.languageId, "typescript",
+            "Protected completion fixture must use a registered language");
+          const protectedEditor = await vscode.window.showTextDocument(protectedDoc);
+          const protectedPosition = protectedDoc.positionAt(protectedDoc.getText().length);
+          protectedEditor.selection = new vscode.Selection(protectedPosition, protectedPosition);
+          const refused = await engine.provideInlineCompletionItems(
+            protectedDoc, protectedPosition, trigger, cancellation.token
+          );
+          assert.equal(refused, undefined, "Provider must refuse protected files before inference");
+          assert.equal(generationCalls, beforeProtectedRequests,
+            "Protected file caused an unexpected /api/generate request");
+        }
+        const restoredEditor = await vscode.window.showTextDocument(document);
+        restoredEditor.selection = new vscode.Selection(position, position);
 
         // Stopping during automatic debounce must prevent the Ollama
         // request from being sent at all. Explicit stopping does not
