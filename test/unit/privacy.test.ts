@@ -33,7 +33,7 @@ describe("sensitive file exclusions", () => {
   it("permits ordinary source paths and similarly named non-secret files", () => {
     for (const path of [
       "src/index.ts", "src/main.rs", "app/Main.kt", "hello.py",
-      "src/environment.ts", "src/private_key_helpers.ts",
+      "src/environment.ts", "src/key_parser.ts",
       "terraform/main.tf", "docs/terraform-guide.md",
       "src/directory.ts", "src/database.ts"
     ]) expect(isSensitivePath(path), path).toBe(false);
