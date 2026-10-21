@@ -20,6 +20,15 @@ try {
   await writeFile(path.join(fixture, "src", "blocked.ts"), "const hidden = 1;\n", "utf8");
   await writeFile(path.join(fixture, "src", "blocked-by-git.ts"), "const hidden = 2;\n", "utf8");
   await writeFile(path.join(fixture, "src", "allowed.ts"), "const visible = 3;\n", "utf8");
+  // Synthetic protected files used by the actual VS Code extension-host
+  // test. Never put real credentials or private code into test fixtures.
+  await writeFile(path.join(fixture, "src", "credentials.ts"), "const synthetic = 4;\n", "utf8");
+  await writeFile(path.join(fixture, "src", ".dev.vars"), "SYNTHETIC_ONLY=1\n", "utf8");
+  await writeFile(path.join(fixture, "src", "production.tfvars.json"), "{}\n", "utf8");
+  await mkdir(path.join(fixture, "src", ".terraform"));
+  await writeFile(path.join(fixture, "src", ".terraform", "state.ts"), "const synthetic = 5;\n", "utf8");
+  await mkdir(path.join(fixture, "src", ".direnv"));
+  await writeFile(path.join(fixture, "src", ".direnv", "cached.ts"), "const synthetic = 6;\n", "utf8");
   await writeFile(path.join(fixture, "editor-test.go"), "package main\nfunc answer() int { return ", "utf8");
   await writeFile(path.join(fixture, "editor-test.java"), "class Example { int answer() { return ", "utf8");
   await writeFile(path.join(fixture, "editor-test.c"), "int answer(void) { return ", "utf8");
