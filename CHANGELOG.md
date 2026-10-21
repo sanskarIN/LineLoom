@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.1 maintenance candidate
 
+- Hardened non-overridable local-file exclusions for direnv, Terraform state and variable files, cloud credential directories, SQLite/KeePass files and additional key formats. These paths remain ineligible for inline inference, including when a remote HTTPS endpoint was approved; added cross-platform unit regression tests.
+
 - Added a dedicated **Stop Current Generation** command to the Command Palette,
   Quick Actions and the native Activity Bar sidebar. Cancels queued/debounced
   and in-flight requests while preserving enable/auto-trigger settings.
