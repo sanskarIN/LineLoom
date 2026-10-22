@@ -7,6 +7,26 @@ function rule(directory: string, source: ScopedIgnoreRule["source"], patterns: s
 }
 
 describe("nested privacy ignore files", () => {
+  it("keeps independent root ignore sources from negating each other", () => {
+    expect(ignoredByScopedRules("private/token.ts", [
+      rule("", ".gitignore", ["private/"]),
+      rule("", ".lineloomignore", ["!private/token.ts"])
+    ])).toBe(true);
+    expect(ignoredByScopedRules("x.secret", [
+      rule("", ".gitignore", ["*.secret"]),
+      rule("", ".lineloomignore", ["!*.secret"])
+    ])).toBe(true);
+  });
+
+  it("allows explicit negation within the same root rule group", () => {
+    expect(ignoredByScopedRules("main.ts", [
+      rule("", ".gitignore", ["*.ts", "!main.ts"])
+    ])).toBe(false);
+    expect(ignoredByScopedRules("other.ts", [
+      rule("", ".gitignore", ["*.ts", "!main.ts"])
+    ])).toBe(true);
+  });
+
   it("uses paths relative to each matching directory", () => {
     expect(ignoreScopes("src/components/widget.ts")).toEqual([
       { directory: "", childPath: "src/components/widget.ts" },

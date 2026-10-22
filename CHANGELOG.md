@@ -2,9 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.2.1 — GitHub pre-release candidate
 
 - Expanded VS Code extension-host privacy regression coverage: call the actual completion provider on synthetic hard-excluded and ignored files, asserting that no Ollama generation request is sent.
-## Unreleased — v1.2.1 maintenance candidate
+- Added a verified source-tree/import inventory gate and GitHub-only, owner-flagged v1.2.1 preview release workflow with a genuine VS Code pre-release VSIX marker. Automated acceptance does not substitute for real-model and desktop QA.
+- Verified a synthetic isolated VS Code CLI upgrade from pinned published v1.2.0 to a v1.2.1 candidate, including settings retention, without modifying a real user profile.
+- Hardened ignore-file change cancellation and sensitive ancestor-directory exclusions, with unit and mocked editor-host regressions.
+
+### Earlier v1.2.1 maintenance development
 
 - Added an explicitly opt-in `npm run qa:ollama -- --run --model <installed-tag>` loopback-only real-model smoke test using a fixed public fixture. Its output contains bounded metrics only, not generated code; remote endpoints and automatic model downloads are refused. Mocked CLI/network safety tests run in CI; real desktop acceptance remains pending.
 
@@ -15,7 +20,7 @@ All notable changes follow Semantic Versioning.
   and in-flight requests while preserving enable/auto-trigger settings.
 - Extended command, manifest, sidebar and mocked extension-host test coverage.
 - Advanced development package/lockfile to 1.2.1 and isolated CI patch-candidate
-  VSIX uploads. **v1.2.1 is not yet a GitHub or registry release.**
+  VSIX uploads. **The development package is not a stable registry release.**
 - Public GitHub stable remains v1.2.0; external Marketplace/Open VSX
   publication and hands-on Ollama/accessibility acceptance are separate tasks.
 
