@@ -70,9 +70,7 @@ jobs:
             https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix
           # Pin the GitHub release asset's verified SHA-256, not an
           # untrusted checksum fetched from the same source at test time.
-          printf '%s  %s\\n' \
-            a968f88faa2515db024cc10cf439213070ac596a9f1eb823263cbd4461951cbd \
-            LineLoom-1.2.0.vsix | sha256sum --check
+          echo "a968f88faa2515db024cc10cf439213070ac596a9f1eb823263cbd4461951cbd  LineLoom-1.2.0.vsix" | sha256sum --check
       - name: Upgrade published stable to candidate in an isolated VS Code CLI profile
         shell: bash
         run: |
