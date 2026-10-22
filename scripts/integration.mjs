@@ -20,6 +20,11 @@ try {
   await writeFile(path.join(fixture, "src", "blocked.ts"), "const hidden = 1;\n", "utf8");
   await writeFile(path.join(fixture, "src", "blocked-by-git.ts"), "const hidden = 2;\n", "utf8");
   await writeFile(path.join(fixture, "src", "allowed.ts"), "const visible = 3;\n", "utf8");
+  // A safe disposable directory for testing real VS Code ignore-file watcher
+  // create/change/delete events (rather than calling clearIgnoreCache()).
+  await mkdir(path.join(fixture, "src", "watch-probe"));
+  await writeFile(path.join(fixture, "src", "watch-probe", "sample.ts"),
+    "const syntheticWatcher = 1;\n", "utf8");
   // Synthetic protected files used by the actual VS Code extension-host
   // test. Never put real credentials or private code into test fixtures.
   await writeFile(path.join(fixture, "src", "credentials.ts"), "const synthetic = 4;\n", "utf8");
