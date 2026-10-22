@@ -9,7 +9,7 @@
  * correctly on a physical Windows/macOS/Linux desktop.
  *
  * Usage:
- *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.2.vsix
+ *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.3.vsix
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
