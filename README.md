@@ -38,15 +38,25 @@ The older [v1.1.1 pre-release](https://github.com/sanskarIN/LineLoom/releases/ta
 and [v1.0.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.0.0)
 remain accessible.
 
-## v1.2.1 patch development (not released)
+## v1.2.1 GitHub pre-release (published 2026-10-22)
 
-The next maintenance update adds **Stop Current Generation** in the Command
-Palette, native Control Center and Quick Actions. It cancels current or queued
-Ollama inference without disabling future completions, and includes mocked
-editor-host tests for cancellation and resuming work. The source manifest
-is staged at 1.2.1, but **there is no v1.2.1 public release yet**.
-See the [maintenance plan](docs/releases/v1.2.1-plan.md).
-GitHub stable v1.2.0 and existing external registry versions are unaffected.
+The [v1.2.1 maintenance pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.1)
+includes **Stop Current Generation**, hardened sensitive-directory exclusions,
+ignore-policy invalidation, more regression tests and a complete TypeScript
+source-inventory gate. The attached [VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.1/LineLoom-1.2.1.vsix)
+is marked for the actual **VS Code pre-release channel** and includes a
+[SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.1/LineLoom-1.2.1.sha256).
+Real-model/editor hardware acceptance remains outstanding, so this is not a
+manually verified stable update. GitHub stable v1.2.0 and independently
+published registry versions are unchanged.
+
+## v1.2.2 development (not released)
+
+The next maintenance candidate normalizes malformed model/endpoint/keep-alive
+preferences and fails closed for invalid path exclusion settings. The project
+source version may advance to 1.2.2 during development; this does not create
+a public release or publish an extension registry update. See the
+[development plan](docs/releases/v1.2.2-plan.md).
 
 ## Install LineLoom
 
