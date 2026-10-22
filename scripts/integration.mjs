@@ -23,6 +23,13 @@ try {
   // Synthetic protected files used by the actual VS Code extension-host
   // test. Never put real credentials or private code into test fixtures.
   await writeFile(path.join(fixture, "src", "credentials.ts"), "const synthetic = 4;\n", "utf8");
+  // These innocent-looking TypeScript files live below sensitive directory
+  // names. The provider must fail closed before posting any model request.
+  for (const folderName of ["credentials", ".env.local", "secrets", ".dev.vars.preview"]) {
+    await mkdir(path.join(fixture, "src", folderName));
+    await writeFile(path.join(fixture, "src", folderName, "example.ts"),
+      "const synthetic = 7;\n", "utf8");
+  }
   await writeFile(path.join(fixture, "src", ".dev.vars"), "SYNTHETIC_ONLY=1\n", "utf8");
   await writeFile(path.join(fixture, "src", "production.tfvars.json"), "{}\n", "utf8");
   await mkdir(path.join(fixture, "src", ".terraform"));

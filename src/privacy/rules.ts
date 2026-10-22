@@ -15,15 +15,22 @@ const sensitiveNames = new Set([
 ]);
 const riskyExtensions = /\.(?:pem|p12|pfx|p8|key|asc|keystore|jks|sqlite|sqlite3|db|db3|lockb|kdbx|mobileprovision|agekey|tfvars(?:\.json)?|tfstate(?:\.backup)?)$/i;
 
+/**
+ * Every ancestor is part of the privacy boundary, not just the basename.
+ * For example, src/credentials/example.ts must be excluded just as
+ * src/credentials.ts is. Do not resolve globs or inspect file contents here:
+ * canonical/named paths and user ignores are evaluated by exclusions.ts.
+ */
 export function isSensitivePath(relativePath: string): boolean {
-  const normalized = relativePath.replace(/\\/g, "/");
-  const pieces = normalized.split("/").filter(Boolean);
-  if (pieces.some((segment) => sensitiveSegments.has(segment.toLowerCase()))) return true;
-  const base = pieces.at(-1)?.toLowerCase() ?? "";
-  return /^\.env(?:\.|$)/.test(base) ||
-    /^\.dev\.vars(?:\.|$)/.test(base) ||
-    /^\.secrets?(?:\.|$)/.test(base) ||
-    sensitiveNames.has(base) ||
-    /^(?:id_rsa|id_ed25519|id_ecdsa|id_dsa|credentials|secrets?|private_key|service-account)(?:[._-]|$)/.test(base) ||
-    riskyExtensions.test(base);
+  const pieces = relativePath.replace(/\\/g, "/").split("/").filter(Boolean);
+  return pieces.some((part) => {
+    const name = part.toLowerCase();
+    return sensitiveSegments.has(name) ||
+      /^\.env(?:\.|$)/.test(name) ||
+      /^\.dev\.vars(?:\.|$)/.test(name) ||
+      /^\.secrets?(?:\.|$)/.test(name) ||
+      sensitiveNames.has(name) ||
+      /^(?:id_rsa|id_ed25519|id_ecdsa|id_dsa|credentials|secrets?|private_key|service-account)(?:[._-]|$)/.test(name) ||
+      riskyExtensions.test(name);
+  });
 }
