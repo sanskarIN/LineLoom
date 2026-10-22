@@ -37,7 +37,7 @@ jobs:
       - name: Run VS Code extension-host integration
         run: xvfb-run -a npm run test:integration
   package:
-    name: v1.2.1 patch VSIX candidate
+    name: v1.2.2 patch VSIX candidate
     runs-on: ubuntu-latest
     needs: [check, integration]
     steps:
@@ -79,9 +79,9 @@ jobs:
           xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.0.vsix" "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
-          name: lineloom-v1.2.1-patch-candidate
+          name: lineloom-v1.2.2-patch-candidate
           # Never ship the downloaded v1.2.0 baseline as a candidate asset.
           path: |
-            LineLoom-1.2.1.vsix
-            LineLoom-1.2.1.sha256
+            LineLoom-1.2.2.vsix
+            LineLoom-1.2.2.sha256
           if-no-files-found: error
