@@ -383,9 +383,12 @@ export async function run(): Promise<void> {
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
         activeEditor.selection = new vscode.Selection(position, position);
 
-        // Delayed configuration notifications must not permit an old request
-        // to reach Ollama after its model or privacy exclusions change.
-        await configuration.update("debounceMs", 275, vscode.ConfigurationTarget.Global);
+        // Give real CI editor settings writes enough time to commit before
+        // the queued debounce expires. A short 275ms window raced the VS Code
+        // configuration service on loaded runners and occasionally let a
+        // legitimate completion finish before the setting was changed.
+        // This tests the superseded-request guard, not settings IO speed.
+        await configuration.update("debounceMs", 2000, vscode.ConfigurationTarget.Global);
         const beforeConfigChange = generationCalls;
         const pendingOldModel = engine.provideInlineCompletionItems(
           document, position, automatic, cancellation.token
