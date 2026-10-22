@@ -7,6 +7,9 @@ export { isSensitivePath } from "./rules";
 
 interface CachedIgnore { rules: ScopedIgnoreRule[]; expires: number }
 const cache = new Map<string, CachedIgnore>();
+// Invalidate scans already in flight, not only entries already in the cache.
+// A file watcher can fire while vscode.workspace.fs.readFile is suspended.
+let ignoreRevision = 0;
 const MAX_DEPTH = 24;
 const MAX_CACHED_RULE_SETS = 128;
 
@@ -21,6 +24,7 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
   const key = folder.uri.toString() + ":" + JSON.stringify(patterns) + ":" + relative;
   const existing = cache.get(key);
   if (existing && existing.expires > Date.now()) return existing.rules;
+  const startedAtRevision = ignoreRevision;
 
   const rules: ScopedIgnoreRule[] = [];
   for (const scope of scopes) {
@@ -41,13 +45,17 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
   }
   const custom = userPatterns(patterns);
   if (custom.length) rules.push({ directory: "", source: "user", matcher: ignore().add(custom) });
-  cache.set(key, { rules, expires: Date.now() + 20_000 });
-  if (cache.size > MAX_CACHED_RULE_SETS) cache.clear();
+  // A superseded async read must not restore stale rules after an edit.
+  if (startedAtRevision === ignoreRevision) {
+    cache.set(key, { rules, expires: Date.now() + 20_000 });
+    if (cache.size > MAX_CACHED_RULE_SETS) cache.clear();
+  }
   return rules;
 }
 
 export async function mayComplete(document: vscode.TextDocument, patterns: readonly string[]): Promise<boolean> {
   if (!vscode.workspace.isTrusted || document.uri.scheme !== "file" || document.isClosed) return false;
+  const startedAtRevision = ignoreRevision;
   const folder = vscode.workspace.getWorkspaceFolder(document.uri);
   if (!folder) return false;
   try {
@@ -57,10 +65,15 @@ export async function mayComplete(document: vscode.TextDocument, patterns: reado
     for (const relative of relatives) {
       if (ignoredByScopedRules(relative, await loadIgnore(folder, relative, patterns))) return false;
     }
-    return true;
+    // Ignore rules may have changed during an async filesystem read. Fail
+    // closed rather than approving a document using an obsolete scan.
+    return startedAtRevision === ignoreRevision;
   } catch {
     // Fail closed when ignore files, canonical paths or rules cannot be trusted.
     return false;
   }
 }
-export function clearIgnoreCache(): void { cache.clear(); }
+export function clearIgnoreCache(): void {
+  ignoreRevision++;
+  cache.clear();
+}
