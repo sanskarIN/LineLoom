@@ -50,13 +50,24 @@ Real-model/editor hardware acceptance remains outstanding, so this is not a
 manually verified stable update. GitHub stable v1.2.0 and independently
 published registry versions are unchanged.
 
-## v1.2.2 development (not released)
+## v1.2.2 GitHub pre-release (published 2026-10-22)
 
-The next maintenance candidate normalizes malformed model/endpoint/keep-alive
-preferences and fails closed for invalid path exclusion settings. The project
-source version may advance to 1.2.2 during development; this does not create
-a public release or publish an extension registry update. See the
-[development plan](docs/releases/v1.2.2-plan.md).
+The [GitHub v1.2.2 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.2)
+adds stricter Ollama settings validation, fail-closed malformed path exclusions,
+and a preview-channel VSIX. [Download the preview VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.2/LineLoom-1.2.2.vsix)
+and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.2/LineLoom-1.2.2.sha256).
+This is a GitHub-only preview. **v1.2.0 remains the stable GitHub release**,
+with Open VSX and VS Code Marketplace on independently managed channels.
+Real model performance, full manual desktop acceptance and accessibility remain unverified.
+
+## v1.2.3 development (not released)
+
+The next preview cycle strengthens cached ignore-policy validation against
+missed VS Code filesystem-watcher notifications. Cached allow decisions now
+check metadata for existing and previously missing ignore files, and fail closed
+when a policy changes while being scanned. Source code version **1.2.3** on
+`main` is a development candidate, not a published package. See the
+[development plan](docs/releases/v1.2.3-plan.md).
 
 ## Install LineLoom
 
