@@ -18,7 +18,7 @@ test("static site identity follows the release manifest", () => {
   // download. v1.2.1 is a GitHub preview; v1.2.2 is a source-only candidate.
   // Keep the website's v1.2.0 stable links fixed until an actual new stable
   // release is verified, rather than equating package.json with deployment.
-  assert.match(pkg.version, /^1\\.2\\.[1-9]\\d*$/);
+  assert.match(pkg.version, /^1\.2\.[1-9]\d*$/);
   assert.ok(page.includes("v1.2.1 GitHub pre-release"),
     "Published GitHub preview must be discoverable alongside stable.");
   assert.ok(page.includes("v1.1.1 pre-release"));
