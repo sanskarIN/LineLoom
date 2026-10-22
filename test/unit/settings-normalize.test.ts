@@ -29,7 +29,7 @@ describe("fail-closed settings normalization", () => {
     expect(normalizeExcludedPaths(undefined)).toEqual([]);
     expect(normalizeExcludedPaths([])).toEqual([]);
     expect(normalizeExcludedPaths(["src/private/**", "*.secret"])).toEqual(["src/private/**", "*.secret"]);
-    for (const input of [42, "private/**", null, ["private/**", 42], {}]) {
+    for (const input of [42, "private/**", null, ["private/**", 42], {},\n      [""], ["    "], ["src/private/**", ""], ["src/private/**", "\\0"],\n      ["src/private/**", "\\n"], ["x".repeat(4097)],\n      Array.from({ length: 257 }, (_, index) => `private/${index}/`)]) {
       expect(normalizeExcludedPaths(input)).toEqual(["**"]);
     }
   });
