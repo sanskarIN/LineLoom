@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.2.2 development
+
+- Hardened default Ollama model and per-language override names using one bounded, control-character-free tag normalizer. Malformed default model settings become unavailable rather than crashing.
+- Malformed endpoint values remain invalid, `keepAlive` falls back to a safe duration, and corrupt path-exclusion arrays fail closed instead of dropping exclusions.
+- Added focused pure preference tests and retained source-tree verification. Advanced development package and lockfile to 1.2.2; **no v1.2.2 release or registry publication has occurred**.
+
 ## v1.2.1 — GitHub pre-release candidate
 
 - Expanded VS Code extension-host privacy regression coverage: call the actual completion provider on synthetic hard-excluded and ignored files, asserting that no Ollama generation request is sent.
