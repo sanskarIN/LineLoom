@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 /**
- * Check that every project-owned src/**/*.ts module is reachable from the
+ * Check that every project-owned src/ TypeScript module is reachable from the
  * extension entry point and that all relative TS imports resolve.
  *
  * This is a source-inventory/packaging guard, not evidence of runtime QA.
  * Do not inspect user workspaces or emit source snippets.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import ts from "typescript";
 
 const START = "src/extension.ts";
@@ -79,7 +80,6 @@ function main() {
     result.importCount + " relative imports reachable from " + START);
 }
 
-if (process.argv[1] && isAbsolute(process.argv[1]) &&
-    resolve(process.argv[1]) === resolve(new URL(import.meta.url).pathname)) {
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main();
 }
