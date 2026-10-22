@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive, normalizeExcludedPaths } from "./normalize";
 import { normalizeLanguageModels, type LanguageModels } from "./language-models";
 import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
 export interface LineLoomConfig {
@@ -36,9 +37,9 @@ export function readConfig(): LineLoomConfig {
 
     minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
     suppressMidTokenAuto: c.get("suppressMidTokenAuto", true),
-    model: c.get("model", "qwen2.5-coder:1.5b").trim(),
+    model: normalizeModelTag(c.get<unknown>("model", "qwen2.5-coder:1.5b")),
     languageModels: normalizeLanguageModels(c.get<unknown>("languageModels")),
-    endpoint: c.get("endpoint", "http://127.0.0.1:11434").trim(),
+    endpoint: normalizeEndpointSetting(c.get<unknown>("endpoint", "http://127.0.0.1:11434")),
     allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),
     debounceMs: clamp(c.get("debounceMs", 250), 0, 3000),
     timeoutMs: clamp(c.get("timeoutMs", 12000), 1000, 120000),
@@ -48,8 +49,8 @@ export function readConfig(): LineLoomConfig {
     maxSuggestionLines: clamp(c.get("maxSuggestionLines", 8), 1, 20),
     temperature: clamp(c.get("temperature", 0.1), 0, 1),
     contextSize: clamp(c.get("contextSize", 4096), 512, 32768),
-    keepAlive: c.get("keepAlive", "5m"),
-    excludedPaths: c.get("excludedPaths", []),
+    keepAlive: normalizeKeepAlive(c.get<unknown>("keepAlive", "5m")),
+    excludedPaths: normalizeExcludedPaths(c.get<unknown>("excludedPaths", [])),
     crossFileContext: c.get("crossFileContext", false),
     performanceDiagnostics: c.get("performanceDiagnostics", false)
   };
