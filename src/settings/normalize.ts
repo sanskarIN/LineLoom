@@ -23,6 +23,15 @@ export function normalizeKeepAlive(input: unknown): string {
     ? value : "5m";
 }
 
+function unsafePattern(value: string): boolean {
+  if (!value.trim() || value.length > 4096) return true;
+  for (let index = 0; index < value.length; index++) {
+    const code = value.charCodeAt(index);
+    if (code < 32 || code === 127) return true;
+  }
+  return false;
+}
+
 /**
  * Missing/invalid exclusion settings are never interpreted as 'include all'.
  * Unknown array elements are rejected as a whole: the wildcard fails closed
@@ -34,8 +43,7 @@ export function normalizeExcludedPaths(input: unknown): string[] {
   // Refuse the whole setting here instead: silently omitting one malformed
   // entry could expose files the developer intended to exclude.
   if (!Array.isArray(input) || input.length > 256 ||
-      input.some((value) => typeof value !== "string" ||
-        !value.trim() || value.length > 4096 || /[\x00-\x1f\x7f]/.test(value)))
+      input.some((value) => typeof value !== "string" || unsafePattern(value)))
     return ["**"];
   return input;
 }
