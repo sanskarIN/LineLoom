@@ -2,12 +2,18 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.2.2 development
+## Unreleased — v1.2.3 development
+
+- Recheck existence/type/size/mtime of every applicable .gitignore and .lineloomignore file before reusing cached permission decisions. If watcher delivery is delayed or missing, changed policy metadata forces a new scan; files changed during scanning fail closed.
+- Add a real VS Code editor-host regression for nested ignore-file create/change/delete events in a synthetic workspace.
+- Advance the development manifest and CI preview artifact to v1.2.3. **No v1.2.3 tag or release exists.**
+
+## [1.2.2] — 2026-10-22 — GitHub Pre-release
 
 - Hardened default Ollama model and per-language override names using one bounded, control-character-free tag normalizer. Malformed default model settings become unavailable rather than crashing.
-- Malformed endpoint values remain invalid, `keepAlive` falls back to a safe duration, and corrupt path-exclusion arrays fail closed instead of dropping exclusions.
-- Added focused pure preference tests and retained source-tree verification. Advanced development package and lockfile to 1.2.2; **no v1.2.2 release or registry publication has occurred**.
-
+- Invalid endpoint settings remain invalid; keep-alive falls back safely; malformed exclusions fail closed, including blank and control-character-bearing entries.
+- Added pure preference tests, source-tree verification, and isolated v1.2.0-to-preview CLI upgrade checks.
+- Published [v1.2.2 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.2) with a genuine VS Code preview VSIX and checksum; real-model/manual QA and external registries remain separate.
 ## v1.2.1 — GitHub pre-release candidate
 
 - Expanded VS Code extension-host privacy regression coverage: call the actual completion provider on synthetic hard-excluded and ignored files, asserting that no Ollama generation request is sent.
