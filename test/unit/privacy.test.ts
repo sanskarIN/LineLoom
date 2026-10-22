@@ -23,6 +23,23 @@ describe("sensitive file exclusions", () => {
     ]) expect(isSensitivePath(path), path).toBe(true);
   });
 
+  it("blocks files nested under sensitive directories at any depth", () => {
+    for (const path of [
+      "credentials/example.ts", "src/credentials/config.ts", "config/CREDENTIALS/helper.rs",
+      ".env.local/ordinary.ts", "src/.env/notes.py", "src/.dev.vars.preview/index.js",
+      "src/.secrets/example.go", "src/secrets/internal.ts", "src/service-account/test.java",
+      "src/private_key/helper.kt", "src/.pgpass/utility.c", "src/staging.tfvars/helper.ts",
+      "nested/CACHE.SQLITE3/utils.cpp"
+    ]) expect(isSensitivePath(path), path).toBe(true);
+  });
+
+  it("rejects protected ancestors using Windows separators and casing", () => {
+    for (const path of [
+      "src\\\\CREDENTIALS\\\\extra.ts", "src\\\\.ENV.production\\\\safe-looking.py",
+      "nested\\\\SECRETS\\\\go.rs", "src\\\\.Dev.Vars.local\\\\index.ts"
+    ]) expect(isSensitivePath(path), path).toBe(true);
+  });
+
   it("applies exclusions on Windows paths and mixed-case extensions", () => {
     for (const path of [
       "src\\.DEV.VARS", "config\\PROD.TFVARS.JSON",
