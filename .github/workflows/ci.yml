@@ -61,10 +61,27 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}.vsix"
+      - name: Download and verify published v1.2.0 stable VSIX
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.2.0.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix
+          # Pin the GitHub release asset's verified SHA-256, not an
+          # untrusted checksum fetched from the same source at test time.
+          echo "a968f88faa2515db024cc10cf439213070ac596a9f1eb823263cbd4461951cbd  LineLoom-1.2.0.vsix" | sha256sum --check
+      - name: Upgrade published stable to candidate in an isolated VS Code CLI profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.0.vsix" "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
           name: lineloom-v1.2.1-patch-candidate
+          # Never ship the downloaded v1.2.0 baseline as a candidate asset.
           path: |
-            LineLoom-*.vsix
-            LineLoom-*.sha256
+            LineLoom-1.2.1.vsix
+            LineLoom-1.2.1.sha256
           if-no-files-found: error
