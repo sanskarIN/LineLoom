@@ -202,7 +202,7 @@ export async function run(): Promise<void> {
         // inline provider. A newly excluded file must neither receive a
         // previously cached suggestion nor contact Ollama.
         const ignoreUri = vscode.Uri.joinPath(folder.uri, "src", ".lineloomignore");
-        const originalIgnore = Buffer.from("blocked.ts\\n", "utf8");
+        const originalIgnore = Buffer.from("blocked.ts\n", "utf8");
         try {
           const allowedEditor = await vscode.window.showTextDocument(permitted);
           const allowedCursor = permitted.positionAt(permitted.getText().length);
@@ -215,7 +215,7 @@ export async function run(): Promise<void> {
             "Ordinary source file should receive an inline suggestion before it is excluded");
           const callsBeforeIgnoreEdit = generationCalls;
           await vscode.workspace.fs.writeFile(ignoreUri,
-            Buffer.from("blocked.ts\\nallowed.ts\\n", "utf8"));
+            Buffer.from("blocked.ts\nallowed.ts\n", "utf8"));
           // Same invalidation order used by the production ignore watcher.
           clearIgnoreCache();
           engine.cancel();
