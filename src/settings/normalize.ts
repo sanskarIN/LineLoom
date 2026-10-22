@@ -30,7 +30,12 @@ export function normalizeKeepAlive(input: unknown): string {
  */
 export function normalizeExcludedPaths(input: unknown): string[] {
   if (input === undefined) return [];
-  if (!Array.isArray(input) || input.some((value) => typeof value !== "string"))
+  // Downstream ignore-rule loading deliberately omits blank/NUL patterns.
+  // Refuse the whole setting here instead: silently omitting one malformed
+  // entry could expose files the developer intended to exclude.
+  if (!Array.isArray(input) || input.length > 256 ||
+      input.some((value) => typeof value !== "string" ||
+        !value.trim() || value.length > 4096 || /[\x00-\x1f\x7f]/.test(value)))
     return ["**"];
   return input;
 }
