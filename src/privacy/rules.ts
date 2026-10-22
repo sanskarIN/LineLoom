@@ -26,9 +26,9 @@ export function isSensitivePath(relativePath: string): boolean {
   return pieces.some((part) => {
     const name = part.toLowerCase();
     return sensitiveSegments.has(name) ||
-      /^\\.env(?:\\.|$)/.test(name) ||
-      /^\\.dev\\.vars(?:\\.|$)/.test(name) ||
-      /^\\.secrets?(?:\\.|$)/.test(name) ||
+      /^\.env(?:\.|$)/.test(name) ||
+      /^\.dev\.vars(?:\.|$)/.test(name) ||
+      /^\.secrets?(?:\.|$)/.test(name) ||
       sensitiveNames.has(name) ||
       /^(?:id_rsa|id_ed25519|id_ecdsa|id_dsa|credentials|secrets?|private_key|service-account)(?:[._-]|$)/.test(name) ||
       riskyExtensions.test(name);
