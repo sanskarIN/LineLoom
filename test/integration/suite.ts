@@ -98,6 +98,32 @@ export async function run(): Promise<void> {
     assert.equal(await mayComplete(deniedByApp, []), false, "Nested .lineloomignore must deny blocked.ts");
     assert.equal(await mayComplete(deniedByGit, []), false, "Nested .gitignore must deny blocked-by-git.ts");
     assert.equal(await mayComplete(permitted, []), true, "Sibling source file should remain eligible");
+    // Exercise the *real* extension-registered VS Code filesystem watchers,
+    // without calling clearIgnoreCache manually. Cache invalidation must
+    // take effect before the 20-second privacy-rule TTL expires.
+    const watchTarget = await vscode.workspace.openTextDocument(
+      vscode.Uri.joinPath(folder.uri, "src", "watch-probe", "sample.ts")
+    );
+    const watchPolicy = vscode.Uri.joinPath(folder.uri, "src", "watch-probe", ".lineloomignore");
+    assert.equal(await mayComplete(watchTarget, []), true, "Watcher fixture starts permitted");
+    const assertWatcherEligibility = async (expected: boolean, phase: string): Promise<void> => {
+      const deadline = Date.now() + 8_000;
+      while (Date.now() < deadline) {
+        if (await mayComplete(watchTarget, []) === expected) return;
+        await new Promise<void>((resolve) => setTimeout(resolve, 100));
+      }
+      assert.equal(await mayComplete(watchTarget, []), expected,
+        "Live policy watcher did not apply " + phase + " before timeout");
+    };
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("sample.ts\n"));
+    await assertWatcherEligibility(false, "created .lineloomignore");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("other.ts\n"));
+    await assertWatcherEligibility(true, "changed .lineloomignore");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("sample.ts\n"));
+    await assertWatcherEligibility(false, "restored exclusion");
+    await vscode.workspace.fs.delete(watchPolicy);
+    await assertWatcherEligibility(true, "deleted .lineloomignore");
+
     // Hard exclusions must hold in the actual editor host, not just unit
     // tests of filenames. These files contain public synthetic fixture text.
     const sensitiveDocuments = await Promise.all([
