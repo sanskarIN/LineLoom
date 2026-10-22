@@ -29,7 +29,7 @@ describe("Marketplace release manifest", () => {
   });
 
   it("keeps lockfile and extension version synchronized", () => {
-    expect(pkg.version).toBe("1.2.2");
+    expect(pkg.version).toBe("1.2.3");
     expect(pkg.version.split(".")).toHaveLength(3);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
