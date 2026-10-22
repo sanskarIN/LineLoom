@@ -1,4 +1,4 @@
-# LineLoom privacy policy (v0.9.1 preview)
+# LineLoom privacy policy
 
 LineLoom runs as an extension inside the VS Code extension host. It does not require an account. It does not include telemetry, advertising, analytics, or automated uploads to a LineLoom-operated server.
 
@@ -7,6 +7,8 @@ LineLoom runs as an extension inside the VS Code extension host. It does not req
 **Local by default:** `http://127.0.0.1:11434`. Remote servers may receive snippets and retain data according to their operators' policies. A non-loopback endpoint must use HTTPS and requires both an explicit setting and interactive per-origin approval. LineLoom explicitly rejects HTTP redirects for model discovery, model lookup and generation to prevent a configured server from forwarding requests (including editor snippets) to a different destination without fresh approval. This blocks HTTP redirect forwarding but cannot control proxies, DNS configuration or how an approved server itself handles received snippets.
 
 **Exclusions:** untrusted workspaces, virtual/non-file editors, files outside opened workspace folders, high-risk filenames, and configured ignore patterns are ineligible. Both root and nested `.gitignore` and `.lineloomignore` files on the document's directory path are checked (up to 24 scopes); unreadable policy files or excessively deep paths are denied. Negation rules cannot override exclusions from other sources. Canonical symlink targets within a workspace are checked independently. Comprehensive content-level secret detection is **not** implemented; never place sensitive source code in an allowed file without checking your settings.
+
+**Unreleased v1.2.1 maintenance hardening:** high-risk basename rules also apply to ancestor directory segments. For example, `src/credentials/example.ts` and `src/.env.local/example.ts` are ineligible even when the file itself has a harmless name. This is path-based protection, not content-based secret detection. 
 
 **Storage:** the remote origin approval is stored in VS Code global state. User settings and the chosen model are stored by VS Code. Metrics are optional aggregate counters/timing values held in memory, not persisted. The extension keeps a bounded, short-lived in-process cache of completion text (up to eight entries for roughly 15 seconds) and hashed cache keys, but does not intentionally write editor context or suggestions to disk. Version 0.7.0 adds a single-entry, 12-second **typed continuation cache** containing the already-generated suggestion, the current file identity and version, cursor offset, settings digest and SHA-256 hashes of preceding and following code. It does not retain unencrypted prefix or suffix strings in this cache. Matching a typed continuation occurs only after the usual trusted-workspace and path-exclusion checks.
 
