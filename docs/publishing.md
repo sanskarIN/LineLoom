@@ -4,6 +4,21 @@ LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub reposi
 
 **Current publication status (2026-10-20):** [GitHub v1.2.0 Stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) and [Open VSX v1.2.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) are public under extension ID **SanskarCodes.lineloom**. The Open VSX API independently confirms `version: 1.2.0`, `preRelease: false`, `downloadable: true`, and `verified: true`. The [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) is a separate distribution and its v1.2.0 rollout is not verified here. Store credentials only in protected publisher environments such as GitHub Actions secrets; never commit credentials.
 
+## v1.2.1 GitHub-only pre-release (published 2026-10-22)
+
+The [v1.2.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.1)
+includes the [VS Code preview VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.1/LineLoom-1.2.1.vsix)
+and a [SHA-256 file](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.1/LineLoom-1.2.1.sha256).
+The [owner-gated release workflow](../.github/workflows/release-v1.2.1.yml)
+ran the required source/module audit, unit and mocked editor-host checks, dependency
+audit, genuine VS Code preview manifest verification and clean installation. It
+created a **GitHub pre-release**, not a stable-channel release and not a VS Code
+Marketplace or Open VSX update. GitHub **v1.2.0 remains stable**. Hands-on
+Ollama and cross-platform usability acceptance is still outstanding.
+
+The next v1.2.2 codebase is an unreleased development candidate; updating the
+source package version is not a registry publication.
+
 ## v1.1.0 GitHub-only pre-release (separate from stable registries)
 
 The native LineLoom sidebar is distributed as an opt-in [GitHub v1.1.0

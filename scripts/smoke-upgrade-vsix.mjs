@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Isolated, non-interactive VS Code CLI upgrade smoke: published v1.2.0
- * stable VSIX -> locally packaged v1.2.1 maintenance candidate.
+ * stable VSIX -> locally packaged maintenance candidate matching package.json.
  *
  * Checks that the CLI replaces the listed extension version while preserving
  * a synthetic user settings.json byte-for-byte. It does NOT verify that an
@@ -9,7 +9,7 @@
  * correctly on a physical Windows/macOS/Linux desktop.
  *
  * Usage:
- *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.1.vsix
+ *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.2.vsix
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "@vscode/test-electron";
 
-function inspectVsix(archive) {
+function inspectVsix(archive, expectsPreview) {
   assert.ok(statSync(archive).isFile(), "Expected a VSIX file");
   // The CI job runs on Linux (where unzip is installed) and checks the
   // published v1.2.0 SHA-256 before running this script.
@@ -27,7 +27,8 @@ function inspectVsix(archive) {
   const manifest = execFileSync("unzip", ["-p", archive, "extension.vsixmanifest"], options);
   assert.equal(metadata.publisher, "SanskarCodes");
   assert.equal(metadata.name, "lineloom");
-  assert.ok(!manifest.includes("Microsoft.VisualStudio.Code.PreRelease"), "Expected stable-channel VSIX");
+  assert.equal(manifest.includes("Microsoft.VisualStudio.Code.PreRelease"), expectsPreview,
+    "Unexpected VS Code pre-release channel metadata");
   return metadata;
 }
 
@@ -42,7 +43,7 @@ function installedVersion(run, expectedVersion) {
 async function main() {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args.some((arg) => !arg.toLowerCase().endsWith(".vsix"))) {
-    console.error("Usage: node scripts/smoke-upgrade-vsix.mjs <v1.2.0.vsix> <v1.2.1.vsix>");
+    console.error("Usage: node scripts/smoke-upgrade-vsix.mjs <v1.2.0.vsix> <preview-candidate.vsix>");
     process.exitCode = 2;
     return;
   }
@@ -50,11 +51,11 @@ async function main() {
   try {
     const previousArchive = resolve(args[0]);
     const candidateArchive = resolve(args[1]);
-    const previous = inspectVsix(previousArchive);
-    const candidate = inspectVsix(candidateArchive);
+    const previous = inspectVsix(previousArchive, false);
+    const candidate = inspectVsix(candidateArchive, true);
     const source = JSON.parse(readFileSync("package.json", "utf8"));
     assert.equal(previous.version, "1.2.0", "Base must be published LineLoom v1.2.0");
-    assert.equal(candidate.version, "1.2.1", "Candidate must be v1.2.1");
+    assert.notEqual(candidate.version, previous.version, "Candidate must be a different version");
     assert.equal(candidate.version, source.version, "Candidate and source version must match");
 
     temporary = mkdtempSync(join(tmpdir(), "lineloom-upgrade-smoke-"));
@@ -96,7 +97,7 @@ async function main() {
     assert.equal(readFileSync(settingsFile, "utf8"), fixture,
       "Synthetic profile settings changed during upgrade");
 
-    console.log("PASS: isolated CLI upgrade SanskarCodes.lineloom@1.2.0 -> @1.2.1");
+    console.log("PASS: isolated CLI upgrade SanskarCodes.lineloom@1.2.0 -> @" + candidate.version);
     console.log("PASS: synthetic user settings preserved byte-for-byte");
     console.log("NOTE: interactive settings behavior, real Ollama and cross-platform desktop upgrades remain unverified.");
   } catch (error) {

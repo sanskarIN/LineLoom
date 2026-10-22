@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ignore from "ignore";
 import { ignoredByScopedRules, ignoreScopes, type ScopedIgnoreRule } from "../../src/privacy/scoped";
+import { normalizeExcludedPaths } from "../../src/settings/normalize";
 
 function rule(directory: string, source: ScopedIgnoreRule["source"], patterns: string[]): ScopedIgnoreRule {
   return { directory, source, matcher: ignore().add(patterns) };
@@ -24,6 +25,16 @@ describe("nested privacy ignore files", () => {
     ])).toBe(false);
     expect(ignoredByScopedRules("other.ts", [
       rule("", ".gitignore", ["*.ts", "!main.ts"])
+    ])).toBe(true);
+  });
+
+  it("enforces deny-all for malformed custom exclusion arrays", () => {
+    const malformed = normalizeExcludedPaths(["src/protected/**", null]);
+    expect(ignoredByScopedRules("src/ordinary.ts", [
+      rule("", "user", malformed)
+    ])).toBe(true);
+    expect(ignoredByScopedRules("src/another.rs", [
+      rule("", "user", normalizeExcludedPaths("invalid-patterns"))
     ])).toBe(true);
   });
 
