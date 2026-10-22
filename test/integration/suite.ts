@@ -103,7 +103,9 @@ export async function run(): Promise<void> {
     const sensitiveDocuments = await Promise.all([
       ["src", "credentials.ts"], ["src", ".terraform", "state.ts"],
       ["src", ".direnv", "cached.ts"], ["src", ".dev.vars"],
-      ["src", "production.tfvars.json"]
+      ["src", "production.tfvars.json"],
+      ["src", "credentials", "example.ts"], ["src", ".env.local", "example.ts"],
+      ["src", "secrets", "example.ts"], ["src", ".dev.vars.preview", "example.ts"]
     ].map((parts) => vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, ...parts))));
     for (const sensitive of sensitiveDocuments) {
       assert.equal(await mayComplete(sensitive, []), false,
@@ -174,7 +176,11 @@ export async function run(): Promise<void> {
           deniedByApp, deniedByGit,
           sensitiveDocuments[0], // credentials.ts (known risky basename)
           sensitiveDocuments[1], // .terraform/state.ts
-          sensitiveDocuments[2]  // .direnv/cached.ts
+          sensitiveDocuments[2], // .direnv/cached.ts
+          sensitiveDocuments[5], // credentials/example.ts — sensitive parent
+          sensitiveDocuments[6], // .env.local/example.ts — sensitive parent
+          sensitiveDocuments[7], // secrets/example.ts — sensitive parent
+          sensitiveDocuments[8]  // .dev.vars.preview/example.ts — sensitive parent
         ];
         for (const protectedDoc of protectedSourceFiles) {
           assert.equal(protectedDoc.languageId, "typescript",
