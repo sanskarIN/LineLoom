@@ -36,6 +36,9 @@ describe("nested privacy ignore files", () => {
     expect(ignoredByScopedRules("src/another.rs", [
       rule("", "user", normalizeExcludedPaths("invalid-patterns"))
     ])).toBe(true);
+    expect(ignoredByScopedRules("src/not-private.ts", [
+      rule("", "user", normalizeExcludedPaths(["src/private/**", String.fromCharCode(0)]))
+    ])).toBe(true);
   });
 
   it("uses paths relative to each matching directory", () => {
