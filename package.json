@@ -320,6 +320,7 @@
     "test:site": "node --test scripts/verify-site.mjs",
     "verify:vsix": "node scripts/verify-vsix.mjs",
     "test:install-vsix": "node scripts/smoke-install-vsix.mjs",
+    "test:upgrade-vsix": "node scripts/smoke-upgrade-vsix.mjs",
     "package:stable": "npm run package"
   },
   "dependencies": {
