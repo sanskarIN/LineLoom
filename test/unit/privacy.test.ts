@@ -35,8 +35,8 @@ describe("sensitive file exclusions", () => {
 
   it("rejects protected ancestors using Windows separators and casing", () => {
     for (const path of [
-      "src\\\\CREDENTIALS\\\\extra.ts", "src\\\\.ENV.production\\\\safe-looking.py",
-      "nested\\\\SECRETS\\\\go.rs", "src\\\\.Dev.Vars.local\\\\index.ts"
+      "src\\CREDENTIALS\\extra.ts", "src\\.ENV.production\\safe-looking.py",
+      "nested\\SECRETS\\go.rs", "src\\.Dev.Vars.local\\index.ts"
     ]) expect(isSensitivePath(path), path).toBe(true);
   });
 
