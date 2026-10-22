@@ -16,8 +16,7 @@ created a **GitHub pre-release**, not a stable-channel release and not a VS Code
 Marketplace or Open VSX update. GitHub **v1.2.0 remains stable**. Hands-on
 Ollama and cross-platform usability acceptance is still outstanding.
 
-The next v1.2.2 codebase is an unreleased development candidate; updating the
-source package version is not a registry publication.
+The v1.2.2 [GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.2) is now published with the verified VS Code preview VSIX and SHA-256 checksum. It is not a registry update. The following v1.2.3 source version remains unreleased.
 
 ## v1.1.0 GitHub-only pre-release (separate from stable registries)
 
