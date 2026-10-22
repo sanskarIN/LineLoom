@@ -4,7 +4,7 @@ import * as http from "node:http";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
-import { mayComplete } from "../../src/privacy/exclusions";
+import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 
 
 export async function run(): Promise<void> {
@@ -189,6 +189,53 @@ export async function run(): Promise<void> {
           assert.equal(generationCalls, beforeProtectedRequests,
             "Protected file caused an unexpected /api/generate request");
         }
+        // An invalidated ignore scan must never approve a file based on a
+        // filesystem snapshot that started before the policy changed.
+        const obsoleteEligibility = mayComplete(permitted, []);
+        clearIgnoreCache();
+        assert.equal(await obsoleteEligibility, false,
+          "An in-progress ignore scan must fail closed after invalidation");
+        assert.equal(await mayComplete(permitted, []), true,
+          "A fresh scan should still allow the originally permitted fixture");
+
+        // Rewrite the real .lineloomignore fixture while using the actual
+        // inline provider. A newly excluded file must neither receive a
+        // previously cached suggestion nor contact Ollama.
+        const ignoreUri = vscode.Uri.joinPath(folder.uri, "src", ".lineloomignore");
+        const originalIgnore = Buffer.from("blocked.ts\n", "utf8");
+        try {
+          const allowedEditor = await vscode.window.showTextDocument(permitted);
+          const allowedCursor = permitted.positionAt(permitted.getText().length);
+          allowedEditor.selection = new vscode.Selection(allowedCursor, allowedCursor);
+          engine.cancel();
+          const allowedBeforePolicyEdit = await engine.provideInlineCompletionItems(
+            permitted, allowedCursor, trigger, cancellation.token
+          );
+          assert.ok(allowedBeforePolicyEdit?.length,
+            "Ordinary source file should receive an inline suggestion before it is excluded");
+          const callsBeforeIgnoreEdit = generationCalls;
+          await vscode.workspace.fs.writeFile(ignoreUri,
+            Buffer.from("blocked.ts\nallowed.ts\n", "utf8"));
+          // Same invalidation order used by the production ignore watcher.
+          clearIgnoreCache();
+          engine.cancel();
+          assert.equal(await mayComplete(permitted, []), false,
+            "Edited .lineloomignore must deny a previously permitted source");
+          const refusedAfterPolicyEdit = await engine.provideInlineCompletionItems(
+            permitted, allowedCursor, trigger, cancellation.token
+          );
+          assert.equal(refusedAfterPolicyEdit, undefined,
+            "A newly excluded source must not receive stale cached model output");
+          assert.equal(generationCalls, callsBeforeIgnoreEdit,
+            "Newly excluded source must not dispatch an Ollama generation");
+        } finally {
+          await vscode.workspace.fs.writeFile(ignoreUri, originalIgnore);
+          clearIgnoreCache();
+          engine.cancel();
+        }
+        assert.equal(await mayComplete(permitted, []), true,
+          "Restoring the ignore rules must restore source eligibility");
+
         const restoredEditor = await vscode.window.showTextDocument(document);
         restoredEditor.selection = new vscode.Selection(position, position);
 

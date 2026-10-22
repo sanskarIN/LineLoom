@@ -23,7 +23,7 @@ Each ignore source is checked independently. **A negation in any other file or d
 
 The named path and canonical target of an in-workspace symlink must both pass exclusion rules. A symlink pointing outside the trusted workspace is denied.
 
-**Safety limits:** ignore files must be smaller than 128 KB each; directory traversal is capped at 24 scopes and fails closed for deeper paths. Ignored rules are cached up to 20 seconds and cleared when VS Code notices ignore file changes. Missing optional ignore files are allowed; unreadable existing files and invalid patterns prevent completion for the affected path.
+**Safety limits:** ignore files must be smaller than 128 KB each; directory traversal is capped at 24 scopes and fails closed for deeper paths. Ignored rules are cached up to 20 seconds and cleared when VS Code notices ignore file changes. A newly created, edited, or deleted `.gitignore` / `.lineloomignore` also cancels queued or in-flight completions, clears in-memory suggestions and invalidates permission checks already reading the old rules. New requests recheck the current policy; this does not change your enabled or automatic-completion preferences. **File watchers are asynchronous:** a request already sent to an endpoint cannot be unsent, so exclude sensitive files before triggering inference rather than relying on a watcher to prevent initial disclosure. Missing optional ignore files are allowed; unreadable existing files and invalid patterns prevent completion for the affected path.
 
 ## What the exclusion system does not do
 

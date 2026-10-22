@@ -302,11 +302,22 @@ export function activate(context: vscode.ExtensionContext): void {
     clearIgnoreCache();
     sidebar.refresh();
   }));
+  // Ignore-file edits are a live privacy policy change. Invalidate both
+  // async rule scans and any queued/in-flight generation, so suggestions
+  // authorized under the old policy cannot be surfaced after the change.
+  const onIgnoreRulesChanged = (): void => {
+    clearIgnoreCache();
+    engine?.cancel();
+    const latest = readConfig();
+    currentState = latest.enabled ? "ready" : "disabled";
+    status.set(currentState, latest.autoTrigger);
+    sidebar.refresh();
+  };
   for (const pattern of ["**/.gitignore", "**/.lineloomignore"]) {
     const watcher = vscode.workspace.createFileSystemWatcher(pattern);
     context.subscriptions.push(
-      watcher, watcher.onDidChange(clearIgnoreCache),
-      watcher.onDidCreate(clearIgnoreCache), watcher.onDidDelete(clearIgnoreCache)
+      watcher, watcher.onDidChange(onIgnoreRulesChanged),
+      watcher.onDidCreate(onIgnoreRulesChanged), watcher.onDidDelete(onIgnoreRulesChanged)
     );
   }
   const current = readConfig();
