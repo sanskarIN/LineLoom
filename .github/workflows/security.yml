@@ -6,6 +6,13 @@ on:
     branches: [main]
   schedule:
     - cron: '25 4 * * 1'
+# Superseded PR checks are not release evidence. Keep the newest commit's
+# verification, while retaining every main-branch, scheduled and manual run.
+# This group is workflow-specific: CI cannot cancel dependency audit or the
+# separately authorized GitHub release publisher.
+concurrency:
+  group: lineloom-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
