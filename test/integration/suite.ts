@@ -343,8 +343,9 @@ export async function run(): Promise<void> {
         } finally {
           holdGeneration = false;
           releaseHeldGeneration?.();
-          heldGenerationStarted = undefined;
-          releaseHeldGeneration = undefined;
+          // The next mock-server request replaces these callbacks before use.
+          // Assigning undefined here narrows the later fixture's optional
+          // callback to `never` in TypeScript's synchronous control flow.
           await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
           engine.clearLatencyMeasurements();
         }
