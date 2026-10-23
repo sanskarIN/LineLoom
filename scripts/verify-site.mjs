@@ -101,6 +101,12 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
   assert.ok(guide.includes("LineLoom-1.2.0.vsix"));
+  assert.ok(guide.includes("GitHub v1.2.4 pre-release"),
+    "Current GitHub preview must appear in the install guide");
+  assert.ok(guide.includes("LineLoom-1.2.4.vsix"),
+    "Install guide must link the current preview VSIX");
+  assert.ok(guide.includes("LineLoom-1.2.4.sha256"),
+    "Install guide must link the current preview checksum");
   assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
   assert.ok(guide.includes("v1.2.0"));
