@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { createHash } from "node:crypto";
+import { policyContentDigest } from "./fingerprint";
 import { safeWorkspaceRelativePaths } from "./paths";
 import ignore from "ignore";
 import { isSensitivePath } from "./rules";
@@ -33,10 +33,6 @@ async function policySignature(uri: vscode.Uri): Promise<string> {
     throw error;
   }
 }
-function digestPolicy(bytes: Uint8Array): string {
-  // In-memory only. Even an unchanged size/mtime must not authorize rewritten rules.
-  return createHash("sha256").update(bytes).digest("hex");
-}
 async function readPolicyBytes(uri: vscode.Uri): Promise<Uint8Array> {
   const bytes = await vscode.workspace.fs.readFile(uri);
   if (bytes.byteLength >= MAX_POLICY_BYTES) throw new Error("Ignore file too large; refusing completion.");
@@ -51,7 +47,7 @@ async function signaturesMatch(stamps: readonly PolicyStamp[]): Promise<boolean>
     // Compare actual rule bytes before reusing any cached allow decision.
     const bytes = await readPolicyBytes(stamp.uri);
     const after = await policySignature(stamp.uri);
-    return before === after && stamp.digest === digestPolicy(bytes);
+    return before === after && stamp.digest === policyContentDigest(bytes);
   }));
   return matches.every(Boolean);
 }
@@ -87,7 +83,7 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
       }
       // Unreadable, oversized or disappearing rule sources fail closed.
       const bytes = await readPolicyBytes(uri);
-      stamps.push({ uri, signature, digest: digestPolicy(bytes) });
+      stamps.push({ uri, signature, digest: policyContentDigest(bytes) });
       rules.push({ directory: scope.directory, source: file, matcher: ignore().add(Buffer.from(bytes).toString("utf8")) });
     }
   }
