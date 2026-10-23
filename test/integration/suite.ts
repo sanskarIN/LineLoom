@@ -16,7 +16,7 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
+    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel",
     "lineloom.refreshSidebar", "lineloom.openSidebar"
@@ -25,6 +25,9 @@ export async function run(): Promise<void> {
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
   // Refreshing the native sidebar is safe before a model server exists.
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
+  // The active extension (a separate loaded module instance) must register a
+  // privacy-only reset command usable even when Ollama is not configured.
+  await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
   const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
