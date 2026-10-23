@@ -1,0 +1,89 @@
+name: Publish LineLoom v1.2.3 GitHub pre-release (owner authorized)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/release-v1.2.3.flag
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-preview-v1.2.3
+  cancel-in-progress: false
+jobs:
+  publish:
+    name: Verify, package and publish v1.2.3 preview (not registries)
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check explicit owner authorization for pre-release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/release-v1.2.3.flag)" = "OWNER_AUTHORIZED_GITHUB_PRE_RELEASE_V1.2.3_MANUAL_QA_OUTSTANDING"
+          grep -q 'Manual QA outstanding' docs/releases/v1.2.3.md
+          node -e "const p=require('./package.json'), l=require('./package-lock.json');if(p.name!=='lineloom'||p.publisher!=='SanskarCodes'||p.version!=='1.2.3'||l.version!==p.version||l.packages[''].version!==p.version){throw Error('Unexpected publisher/version/lockfile')}"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Verify TypeScript source inventory, unit tests, QA and build
+        run: npm run check
+      - name: Mocked Ollama VS Code extension-host integration
+        run: xvfb-run -a npm run test:integration
+      - name: Dependency security
+        run: npm audit --audit-level=high
+      - name: Package genuine VS Code pre-release VSIX and checksum
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vsce package --pre-release --no-dependencies -o LineLoom-1.2.3.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.2.3.vsix
+          sha256sum LineLoom-1.2.3.vsix > LineLoom-1.2.3.sha256
+          sha256sum --check LineLoom-1.2.3.sha256
+      - name: Install pre-release package in isolated VS Code CLI profile
+        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.2.3.vsix
+      - name: Verify pinned published v1.2.0 VSIX as an upgrade baseline
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.2.0.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix
+          echo "a968f88faa2515db024cc10cf439213070ac596a9f1eb823263cbd4461951cbd  LineLoom-1.2.0.vsix" | sha256sum --check
+      - name: Verify isolated stable-to-pre-release upgrade and synthetic settings preservation
+        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.2.0.vsix LineLoom-1.2.3.vsix
+      - name: Reject duplicate release AND tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.2.3 >/dev/null 2>&1; then
+            echo "Refusing to overwrite existing v1.2.3 release"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v1.2.3 >/dev/null; then
+            echo "Refusing to overwrite existing v1.2.3 tag"
+            exit 1
+          fi
+      - name: Publish GitHub pre-release only, never either marketplace
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v1.2.3 LineLoom-1.2.3.vsix LineLoom-1.2.3.sha256 \
+            --target "$GITHUB_SHA" --prerelease --latest=false \
+            --title "LineLoom v1.2.3 — Live Ignore Policy Safety Preview" \
+            --notes-file docs/releases/v1.2.3.md
+      - name: Verify pre-release classification and asset names
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/sanskarIN/LineLoom/releases/tags/v1.2.3 \
+            --jq 'if (.prerelease == true and (.assets | map(.name) | sort) == ["LineLoom-1.2.3.sha256","LineLoom-1.2.3.vsix"]) then "PASS: pre-release and both assets" else error("Unexpected release metadata or assets") end'
