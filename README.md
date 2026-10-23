@@ -103,8 +103,8 @@ The latest GitHub stable release remains **v1.2.0**.
 [Draft PR #56](https://github.com/sanskarIN/LineLoom/pull/56) develops
 privacy timing reset actions and late-async-sample protection. The branch
 is under test and is not a public GitHub release, stable VSIX or marketplace
-update. See the [next development plan](docs/releases/v1.2.5-plan.md) after
-the draft is merged.
+update. See the [v1.2.5 draft development plan](https://github.com/sanskarIN/LineLoom/blob/feat/v1.2.5-reset-privacy-timing-command/docs/releases/v1.2.5-plan.md)
+on its feature branch; the plan is not yet on `main`.
 
 ## Install LineLoom
 
