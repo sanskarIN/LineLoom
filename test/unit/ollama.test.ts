@@ -72,6 +72,28 @@ describe("Ollama streaming NDJSON", () => {
     expect(await parseNdjson(stream(['{"response":"ok","done":true}\n']))).toBe("ok");
   });
 
+  it("rejects malformed UTF-8 inside generated source instead of inserting replacement characters", async () => {
+    const prefix = new TextEncoder().encode('{"response":"');
+    const suffix = new TextEncoder().encode('","done":true}\\n'.replace('\\n', '\n'));
+    const corrupt = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(prefix);
+      controller.enqueue(Uint8Array.from([0xff]));
+      controller.enqueue(suffix);
+      controller.close();
+    } });
+    await expect(parseNdjson(corrupt)).rejects.toThrow("Invalid Ollama UTF-8 response.");
+  });
+
+  it("rejects truncated multi-byte UTF-8 even when the stream ends", async () => {
+    const bytes = new TextEncoder().encode('{"response":"');
+    const truncated = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(bytes);
+      controller.enqueue(Uint8Array.from([0xf0, 0x9f]));
+      controller.close();
+    } });
+    await expect(parseNdjson(truncated)).rejects.toThrow("Invalid Ollama UTF-8 response.");
+  });
+
   it("stops processing after the terminal done event in a single chunk", async () => {
     const payload = '{"response":"ok","done":true}\n{"error":"ignored after completion"}\n';
     expect(await parseNdjson(stream([payload]))).toBe("ok");
