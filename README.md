@@ -100,13 +100,32 @@ to record reproducible, sanitized evidence before considering a stable rollout.
 This **GitHub-only pre-release** did not update either extension registry.
 The latest GitHub stable release remains **v1.2.0**.
 
-## v1.2.5 development (not released)
+## v1.2.5 source ready for manual acceptance (not released)
 
-[Draft PR #56](https://github.com/sanskarIN/LineLoom/pull/56) develops
-privacy timing reset actions and late-async-sample protection. The branch
-is under test and is not a public GitHub release, stable VSIX or marketplace
-update. See the [v1.2.5 draft development plan](https://github.com/sanskarIN/LineLoom/blob/feat/v1.2.5-reset-privacy-timing-command/docs/releases/v1.2.5-plan.md)
-on its feature branch; the plan is not yet on `main`.
+The [v1.2.5 implementation PR #56](https://github.com/sanskarIN/LineLoom/pull/56)
+has been **merged into `main`**, alongside
+[privacy-hardening PR #59](https://github.com/sanskarIN/LineLoom/pull/59)
+and [CI-safety PR #58](https://github.com/sanskarIN/LineLoom/pull/58).
+The source includes **LineLoom: Reset Privacy Timing Statistics**
+(`lineloom.resetPrivacyTimings`), an opt-in-only sidebar / Quick Actions entry,
+and protection against asynchronous statistics being restored after a reset.
+Malformed UTF-8 or NUL-containing `.gitignore` / `.lineloomignore` files
+fail closed before inference.
+
+[Combined candidate CI](https://github.com/sanskarIN/LineLoom/actions/runs/39921379282)
+passed Windows/macOS/Ubuntu builds and tests, mocked VS Code editor-host
+integration, preview-channel VSIX validation, isolated install and
+checksum-pinned upgrades from v1.2.0, v1.2.3 and v1.2.4. This is **not**
+real-model or physical-device acceptance. The
+[v1.2.5 development plan](docs/releases/v1.2.5-plan.md),
+[manual acceptance checklist](docs/qa/v1.2.5-manual-acceptance.md)
+and [release readiness tracker #60](https://github.com/sanskarIN/LineLoom/issues/60)
+track the remaining gates.
+
+**v1.2.5 is not publicly released:** no GitHub v1.2.5 tag, public VSIX,
+Visual Studio Marketplace or Open VSX update has been published. The
+latest stable GitHub release remains **v1.2.0** and latest public GitHub
+pre-release remains **v1.2.4**.
 
 ## Install LineLoom
 
