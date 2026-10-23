@@ -4,7 +4,7 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
-- **Under review:** protect bounded UTF-16 source context windows from splitting a Unicode surrogate pair at prefix/suffix edges or at a caret inside an astral character. Drop only incomplete boundary code units, preserve intact emoji and international identifiers, and keep the original context-size limit; include deterministic unit regressions.
+- **Merged but unreleased ([PR #76](https://github.com/sanskarIN/LineLoom/pull/76)):** protect bounded UTF-16 source context windows from splitting a Unicode surrogate pair at prefix/suffix edges or at a caret inside an astral character. Drop only incomplete boundary code units, preserve intact emoji and international identifiers, and keep the original context-size limit; include deterministic unit regressions.
 
 - **Source merged, still unreleased — diagnostics opt-out hygiene ([PR #74](https://github.com/sanskarIN/LineLoom/pull/74)):** erase opt-in inference-latency aggregates (last, total and measured request count) when the user disables performance diagnostics, while preserving source-free request/completion counts and autocomplete settings. Reject late model-response measurements started before opt-out, including when diagnostics are later reenabled; verify with mocked VS Code editor-host tests.
 
