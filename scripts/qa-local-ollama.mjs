@@ -40,11 +40,36 @@ export function parseOptions(args) {
   return result;
 }
 
+/**
+ * Both the release smoke test and the extension must refuse lossy decoding.
+ * Never include untrusted response bytes or generated text in error messages.
+ */
+function decodeStrict(decoder, bytes) {
+  try {
+    return bytes === undefined ? decoder.decode() : decoder.decode(bytes, { stream: true });
+  } catch {
+    throw new Error("Invalid local Ollama UTF-8 response.");
+  }
+}
+
+function validGeneratedText(value) {
+  for (const character of value) {
+    const point = character.codePointAt(0);
+    if (point === undefined ||
+        (point <= 0x1f && point !== 0x09 && point !== 0x0a && point !== 0x0d) ||
+        (point >= 0x7f && point <= 0x9f) ||
+        (point >= 0x202a && point <= 0x202e) ||
+        (point >= 0x2066 && point <= 0x2069) ||
+        (point >= 0xd800 && point <= 0xdfff)) return false;
+  }
+  return true;
+}
+
 async function boundedText(response, maxBytes, label) {
   if (!response.ok) throw new Error("Local Ollama " + label + " returned HTTP " + response.status + ".");
   if (!response.body) throw new Error("Local Ollama response has no body.");
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   let bytes = 0;
   let text = "";
   try {
@@ -53,9 +78,9 @@ async function boundedText(response, maxBytes, label) {
       if (done) break;
       bytes += value.byteLength;
       if (bytes > maxBytes) throw new Error("Local Ollama response exceeded safety limit.");
-      text += decoder.decode(value, { stream: true });
+      text += decodeStrict(decoder, value);
     }
-    return text + decoder.decode();
+    return text + decodeStrict(decoder);
   } finally {
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();
@@ -66,10 +91,11 @@ async function countStreamingCompletion(response) {
   if (!response.ok) throw new Error("Local Ollama generation returned HTTP " + response.status + ".");
   if (!response.body) throw new Error("Local Ollama generation returned no stream.");
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   let bytes = 0;
   let carry = "";
   let characters = 0;
+  let sawNonWhitespace = false;
   let done = false;
   let events = 0;
   function accept(line) {
@@ -82,6 +108,10 @@ async function countStreamingCompletion(response) {
     }
     if ("response" in event) {
       if (typeof event.response !== "string") throw new Error("Invalid local Ollama response event.");
+      // Count without retaining response content; reject characters the
+      // extension would refuse rather than reporting a misleading QA pass.
+      if (!validGeneratedText(event.response)) throw new Error("Invalid local Ollama generated text.");
+      if (event.response.trim()) sawNonWhitespace = true;
       characters += event.response.length;
       if (characters > 10_000) throw new Error("Local Ollama output exceeded safety limit.");
     }
@@ -96,7 +126,7 @@ async function countStreamingCompletion(response) {
       if (chunk.done) break;
       bytes += chunk.value.byteLength;
       if (bytes > MAX_STREAM_BYTES) throw new Error("Local Ollama stream exceeded safety limit.");
-      carry += decoder.decode(chunk.value, { stream: true });
+      carry += decodeStrict(decoder, chunk.value);
       let newline = carry.indexOf("\n");
       while (newline >= 0 && !done) {
         if (newline > 50_000) throw new Error("Local Ollama event exceeded safety limit.");
@@ -106,8 +136,11 @@ async function countStreamingCompletion(response) {
       }
       if (!done && carry.length > 50_000) throw new Error("Local Ollama event exceeded safety limit.");
     }
-    if (!done && carry.trim()) accept(carry + decoder.decode());
-    if (!done || characters === 0) throw new Error("Local Ollama did not produce a complete nonempty suggestion.");
+    // Flush even after a terminal event: partial UTF-8 tails cannot count as
+    // successful quality evidence. Like production, ignore later JSON events.
+    carry += decodeStrict(decoder);
+    if (!done && carry.trim()) accept(carry.trim());
+    if (!done || !sawNonWhitespace) throw new Error("Local Ollama did not produce a complete nonempty suggestion.");
     return characters;
   } finally {
     await reader.cancel().catch(() => undefined);
