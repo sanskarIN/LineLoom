@@ -5,6 +5,14 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+# Superseded PR checks are not release evidence. Keep the newest commit's
+# verification. Non-PR runs use their own run ID so a pending main/scheduled
+# or manually dispatched run cannot be silently replaced in the same group.
+# This group is workflow-specific: CI cannot cancel dependency audit or the
+# separately authorized GitHub release publisher.
+concurrency:
+  group: lineloom-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 permissions:
   contents: read
 jobs:
