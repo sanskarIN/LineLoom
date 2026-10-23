@@ -103,6 +103,25 @@ export async function run(): Promise<void> {
     assert.equal(await mayComplete(deniedByApp, []), false, "Nested .lineloomignore must deny blocked.ts");
     assert.equal(await mayComplete(deniedByGit, []), false, "Nested .gitignore must deny blocked-by-git.ts");
     assert.equal(await mayComplete(permitted, []), true, "Sibling source file should remain eligible");
+
+    // Privacy rule files are control inputs, never prompt sources—even when
+    // no ignore rule excludes their own filename. Exercise the real VS Code
+    // filesystem with disposable root/nested policy fixtures.
+    for (const policyName of [".gitignore", ".lineloomignore", ".dockerignore", ".npmignore"] as const) {
+      const policyUri = vscode.Uri.joinPath(folder.uri, "src", "watch-probe", policyName);
+      try {
+        await vscode.workspace.fs.writeFile(policyUri, Buffer.from("private-segment/\\n"));
+        const policyDocument = await vscode.workspace.openTextDocument(policyUri);
+        assert.equal(await mayComplete(policyDocument, []), false,
+          "Policy document " + policyName + " must never be eligible for inference");
+        assert.equal(await inspectFilePrivacy(policyDocument, [], () => true), "blocked",
+          "Active file preflight must also deny " + policyName);
+      } finally {
+        await vscode.workspace.fs.delete(policyUri);
+        clearIgnoreCache();
+      }
+    }
+
     // User-initiated privacy inspection must reuse the complete local path
     // gate without contacting Ollama, exposing paths or storing diagnostics.
     const inspectionCallsBefore = generationCalls;
