@@ -15,8 +15,37 @@ describe("completion filtering", () => {
     expect(cleanCompletion("a\nb\nc\nd", "", "", true, 2)).toBe("a\nb"));
   it("keeps one line if multi-line mode is off", () =>
     expect(cleanCompletion("a\nb\nc", "", "", false, 20)).toBe("a"));
-  it("removes null characters and normalises old-style line endings", () =>
-    expect(cleanCompletion("foo\0\rbar", "", "", true)).toBe("foo\nbar"));
+  it("normalises old-style line endings without removing indentation", () =>
+    expect(cleanCompletion("foo\rbar\r\nbaz", "", "", true)).toBe("foo\nbar\nbaz"));
+  it("rejects control bytes rather than silently transforming generated source", () => {
+    for (const codePoint of [0, 1, 8, 11, 12, 27, 31, 127, 133, 159]) {
+      const raw = 'const value = "a' + String.fromCharCode(codePoint) + 'b";';
+      expect(cleanCompletion(raw, "", "", true), String(codePoint)).toBe("");
+    }
+  });
+  it("rejects bidi override and isolate controls even inside code comments or strings", () => {
+    for (const codePoint of [0x202a, 0x202b, 0x202c, 0x202d, 0x202e,
+      0x2066, 0x2067, 0x2068, 0x2069]) {
+      expect(cleanCompletion("const x = 1; // " + String.fromCharCode(codePoint), "", "", true),
+        codePoint.toString(16)).toBe("");
+    }
+  });
+  it("allows ordinary newline, tabs and valid non-ASCII characters", () => {
+    expect(cleanCompletion("    return 😀\r\n\tvalue", "", "", true)).toBe("    return 😀\n\tvalue");
+    expect(cleanCompletion("const 日本語 = 'ok';", "", "", true)).toBe("const 日本語 = 'ok';");
+  });
+  it("rejects isolated UTF-16 surrogates without rejecting complete astral characters", () => {
+    expect(cleanCompletion("x" + String.fromCharCode(0xd800), "", "", true)).toBe("");
+    expect(cleanCompletion("x" + String.fromCharCode(0xdc00), "", "", true)).toBe("");
+    expect(cleanCompletion("const rocket = '🚀';", "", "", true)).toBe("const rocket = '🚀';");
+  });
+  it("does not split an astral character at the 6000 UTF-16 code-unit cap", () => {
+    const completion = "x".repeat(5999) + "🚀" + "tail";
+    const result = cleanCompletion(completion, "", "", true);
+    expect(result).toBe("x".repeat(5999));
+    expect(result.length).toBe(5999);
+    expect(result).not.toContain("�");
+  });
   it("rejects only-overlap completions", () =>
     expect(cleanCompletion("after", "", "after", true)).toBe(""));
   it("keeps only the leading fenced code block, not follow-up prose", () =>

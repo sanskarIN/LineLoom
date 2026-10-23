@@ -1,7 +1,30 @@
+/**
+ * Reject unsafe/invisible control characters in model-generated ghost text
+ * rather than silently deleting bytes and accidentally changing source code.
+ * CR/LF and tab are valid in source and are handled separately below.
+ */
+function containsUnsafeUnicode(value: string): boolean {
+  // Code-point iteration preserves legitimate Unicode surrogate pairs. Check
+  // numeric ranges to avoid a regex with literal-control escapes in source.
+  for (const character of value) {
+    const point = character.codePointAt(0);
+    if (point === undefined) continue;
+    if ((point <= 0x1f && point !== 0x09 && point !== 0x0a && point !== 0x0d) ||
+        (point >= 0x7f && point <= 0x9f) ||
+        (point >= 0x202a && point <= 0x202e) ||
+        (point >= 0x2066 && point <= 0x2069) ||
+        (point >= 0xd800 && point <= 0xdfff)) return true;
+  }
+  return false;
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
 export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
+  // Even a loopback model can return malformed or direction-spoofing text.
+  // Never "repair" such output into different executable source.
+  if (containsUnsafeUnicode(raw)) return "";
   // Normalise line endings without trimming meaningful leading Python indentation.
-  let value = raw.replace(/\r\n?/g, "\n").replace(/\0/g, "");
+  let value = raw.replace(/\r\n?/g, "\n");
   // Remove boundary-only control tokens without touching tokens inside code literals.
   value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
   value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
@@ -37,7 +60,10 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
       break;
     }
   }
-  value = value.slice(0, 6000).replace(/[\t ]+$/gm, "");
+  // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
+  value = value.slice(0, 6000);
+  if (/[\uD800-\uDBFF]$/.test(value)) value = value.slice(0, -1);
+  value = value.replace(/[\t ]+$/gm, "");
   if (!value.trim()) return "";
   return value;
 }
