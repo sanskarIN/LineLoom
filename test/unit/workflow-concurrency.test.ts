@@ -5,8 +5,12 @@ describe("GitHub Actions pull request concurrency safety", () => {
   for (const workflow of ["ci.yml", "security.yml"]) {
     it(`${workflow} cancels obsolete PR runs without cancelling main/schedules`, () => {
       const source = readFileSync(`.github/workflows/${workflow}`, "utf8");
-      expect(source).toContain("group: lineloom-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}");
+      expect(source).toContain("group: lineloom-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}");
       expect(source).toContain("cancel-in-progress: ${{ github.event_name == 'pull_request' }}");
+      // Non-PR event groups must use a unique run ID, not a shared main ref:
+      // even cancel-in-progress:false does not retain multiple pending runs.
+      expect(source).toContain("github.run_id");
+      expect(source).not.toContain("github.event.pull_request.number || github.ref");
       expect(source).toContain("pull_request:");
       expect(source).toContain("branches: [main]");
     });
