@@ -4,7 +4,7 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
-- **Proposed completion-text integrity fix:** discard Ollama output containing unsafe terminal/control bytes, Unicode bidi formatting controls or unpaired UTF-16 surrogates, rather than silently rewriting generated source. Preserve ordinary indentation/newlines/Unicode and avoid splitting an astral character at the 6,000-code-unit suggestion cap; cover with unit and mocked VS Code integration regressions.
+- **Merged but unreleased completion-text integrity fix ([PR #68](https://github.com/sanskarIN/LineLoom/pull/68)):** discard Ollama output containing unsafe terminal/control bytes, Unicode bidi formatting controls or unpaired UTF-16 surrogates, rather than silently rewriting generated source. Preserve ordinary indentation/newlines/Unicode and avoid splitting an astral character at the 6,000-code-unit suggestion cap; cover with unit and mocked VS Code integration regressions.
 
 - **Unreleased candidate:** user-initiated **Check Active File Privacy** action in Command Palette, Quick Actions and the sidebar, calling the existing local exclusion gate without reading source text, contacting Ollama or adding timing metrics. Warn on stale checks and distinguish file policy from model readiness; covered by editor-host regression tests.
 
