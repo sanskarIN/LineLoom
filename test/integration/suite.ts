@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import * as assert from "node:assert/strict";
 import * as http from "node:http";
+import { utimes } from "node:fs/promises";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
@@ -267,6 +268,40 @@ export async function run(): Promise<void> {
         }
         assert.equal(await mayComplete(permitted, []), true,
           "Restoring the ignore rules must restore source eligibility");
+
+        // Equal-size/equal-mtime rewrites must not inherit a cached allow result
+        // if a filesystem watcher is delayed or never delivered. Use a real
+        // local file so both the content hash and editor privacy gate are tested.
+        const oldPolicyStat = await vscode.workspace.fs.stat(ignoreUri);
+        try {
+          await vscode.workspace.fs.writeFile(ignoreUri, Buffer.from("allowed.ts\n", "utf8"));
+          await utimes(ignoreUri.fsPath, new Date(oldPolicyStat.mtime), new Date(oldPolicyStat.mtime));
+          const rewrittenStat = await vscode.workspace.fs.stat(ignoreUri);
+          assert.equal(rewrittenStat.size, oldPolicyStat.size,
+            "Fingerprint fixture must retain the policy file size");
+          assert.equal(rewrittenStat.mtime, oldPolicyStat.mtime,
+            "Fingerprint fixture must retain the policy modification time");
+          assert.equal(await mayComplete(permitted, []), false,
+            "Policy content changes must invalidate a metadata-identical cached permission");
+          const beforeHashGuardRequest = generationCalls;
+          const fingerprintEditor = await vscode.window.showTextDocument(permitted);
+          const fingerprintCursor = permitted.positionAt(permitted.getText().length);
+          fingerprintEditor.selection = new vscode.Selection(fingerprintCursor, fingerprintCursor);
+          engine.cancel();
+          const fingerprintDenied = await engine.provideInlineCompletionItems(
+            permitted, fingerprintCursor, trigger, cancellation.token
+          );
+          assert.equal(fingerprintDenied, undefined,
+            "Fingerprint-changed ignore rules must block native inline suggestions");
+          assert.equal(generationCalls, beforeHashGuardRequest,
+            "Fingerprint-changed ignore rules must not send workspace text to Ollama");
+        } finally {
+          await vscode.workspace.fs.writeFile(ignoreUri, originalIgnore);
+          clearIgnoreCache();
+          engine.cancel();
+        }
+        assert.equal(await mayComplete(permitted, []), true,
+          "Restored file content must allow a new privacy decision");
 
         const restoredEditor = await vscode.window.showTextDocument(document);
         restoredEditor.selection = new vscode.Selection(position, position);
