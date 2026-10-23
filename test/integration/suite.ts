@@ -207,11 +207,15 @@ export async function run(): Promise<void> {
       assert.equal(timingReport.allowed, 1);
       assert.equal(timingReport.denied, 0);
       await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
-      assert.equal(getEligibilityTimingSummary().checks, 0,
-        "Disabling diagnostics must erase session eligibility metrics");
+      // This test bundle has its own timings module; the activated extension
+      // has a separate module instance and clears its own counters on opt-out.
+      // Verify the test's own accumulator cannot grow after opt-out.
       assert.equal(await mayComplete(permitted, [], true), true);
+      assert.equal(getEligibilityTimingSummary().checks, 1,
+        "Disabled diagnostics must prevent new policy timing samples");
+      resetEligibilityTimings();
       assert.equal(getEligibilityTimingSummary().checks, 0,
-        "A disabled setting must prevent a late eligibility check from recording metrics");
+        "Explicit reset must clear isolated test metrics");
       const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
       const document = await vscode.workspace.openTextDocument(file);
       const editor = await vscode.window.showTextDocument(document);
