@@ -15,11 +15,11 @@ test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
   // Development version changes independently of the latest stable GitHub
-  // download. v1.2.2 is the latest GitHub preview; v1.2.3 is a source-only candidate.
+  // download. v1.2.3 is the latest public GitHub preview; v1.2.4 is in development.
   // Keep the website's v1.2.0 stable links fixed until an actual new stable
   // release is verified, rather than equating package.json with deployment.
   assert.match(pkg.version, /^1\.2\.[1-9]\d*$/);
-  assert.ok(page.includes("v1.2.2 GitHub pre-release"),
+  assert.ok(page.includes("v1.2.3 GitHub pre-release"),
     "Published GitHub preview must be discoverable alongside stable.");
   assert.ok(page.includes("v1.1.1 pre-release"));
   assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");

@@ -2,11 +2,19 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.2.3 development
+## Unreleased — v1.2.4 development (draft PR #50)
 
-- Recheck existence/type/size/mtime of every applicable .gitignore and .lineloomignore file before reusing cached permission decisions. If watcher delivery is delayed or missing, changed policy metadata forces a new scan; files changed during scanning fail closed.
-- Add a real VS Code editor-host regression for nested ignore-file create/change/delete events in a synthetic workspace.
-- Advance the development manifest and CI preview artifact to v1.2.3. **No v1.2.3 tag or release exists.**
+- Build opt-in, in-memory, source/path-free privacy eligibility timing diagnostics (recent-sample p95 and session aggregates).
+- Keep diagnostics disabled by default, clear counters on opt-out and test the setting with synthetic fixtures.
+- No v1.2.4 package or registry release has been published.
+
+## [1.2.3] — 2026-10-23 — GitHub Pre-release
+
+- Recheck the existence, type, size and mtime of all applicable root/nested .gitignore and .lineloomignore sources before reusing cached allow decisions; include previously absent sources.
+- Fingerprint raw ignore-policy bytes with in-memory SHA-256 to detect same-size/same-timestamp rule edits even when VS Code watcher events are missing.
+- Use bounded eight-way concurrent policy reads, retaining root-to-leaf rule order, fail-closed errors and deterministic deep-scope tests.
+- Verify protected files never trigger model requests in mocked VS Code editor-host integration; package genuine preview-channel VSIX, checksum and synthetic stable-to-preview upgrade smoke.
+- Publish [GitHub v1.2.3 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.3) with VSIX and SHA-256; manual real-model, physical OS, accessibility and latency acceptance remain unverified. Marketplace and Open VSX unchanged.
 
 ## [1.2.2] — 2026-10-22 — GitHub Pre-release
 

@@ -44,7 +44,7 @@
 
 **v1.0.0 (released 2026-10-19):** Stable GitHub VSIX, [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) publication. Independently measured Ollama model quality and manual cross-platform acceptance remain ongoing; do not claim these unperformed tests have passed.
 
-**Next distribution milestone:** maintain both published registries, pursue Open VSX publisher verification if eligible (registry currently reports `verified: false`), and coordinate future version updates across GitHub, Visual Studio Marketplace and Open VSX.
+**Next distribution milestone:** maintain both published registries, pursue Open VSX publisher verification if eligible (registry verification status should be checked independently), and coordinate future version updates across GitHub, Visual Studio Marketplace and Open VSX.
 
 **Next maintenance:** user-reported completion-quality fixes, more editor behavior checks and real-model verification.
 
@@ -66,4 +66,6 @@ No roadmap feature should be marketed as shipped before implementation and verif
 
 **v1.2.2 (GitHub pre-release, published 2026-10-22):** harden malformed VS Code configuration values for default/per-language model tags, endpoint and keep-alive values, and custom privacy exclusions. Cover all required TypeScript sources via the automated source-tree gate and continue isolated candidate verification. Do not mark manual Ollama/physical-device gates as passed without evidence.
 
-**v1.2.3 (unreleased development):** protect cached ignore permissions when VS Code watcher events are delayed or dropped by checking policy-file metadata, including previously absent rules. Test create/change/delete in the real Linux VS Code editor host. This adds filesystem metadata overhead, not a guarantee of atomic privacy or a substitute for hands-on QA.
+**v1.2.3 (GitHub pre-release, published 2026-10-23):** [GitHub preview VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.3) ship metadata and SHA-256 revalidation of root/nested ignore policies, including previously absent files, plus eight-way bounded policy checks. Cross-platform CI, Linux mocked editor host, dependency audit and isolated install/upgrade passed. Real-model, desktop/accessibility/privacy timing validation remains outstanding in [issue #46](https://github.com/sanskarIN/LineLoom/issues/46). No registry update.
+
+**v1.2.4 (development, not released):** opt-in, privacy-safe eligibility latency diagnostics are in [draft PR #50](https://github.com/sanskarIN/LineLoom/pull/50). Scope and acceptance gates are recorded in the [development plan](releases/v1.2.4-plan.md); no stable or registry publication is implied.
