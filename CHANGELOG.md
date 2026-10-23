@@ -2,12 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — v1.2.4 development (draft PR #50)
+## [1.2.4] — 2026-10-23 — GitHub Pre-release
 
-- Build opt-in, in-memory, source/path-free privacy eligibility timing diagnostics (recent-sample p95 and session aggregates).
-- Keep diagnostics disabled by default, clear counters on opt-out and test the setting with synthetic fixtures.
-- Extend preview candidate checks to verify checksum-pinned upgrades from both published v1.2.0 stable and v1.2.3 GitHub preview packages in isolated synthetic VS Code profiles.
-- No v1.2.4 package or registry release has been published.
+- Published [GitHub v1.2.4 preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4) with a genuine VS Code pre-release VSIX and SHA-256 checksum.
+- Added opt-in, in-memory, source/path-free eligibility timing diagnostics (64-sample rolling p95 and session aggregates). Collection is disabled by default and resets on opt-out.
+- Verified pinned v1.2.0 stable and v1.2.3 preview → v1.2.4 candidate upgrades with synthetic preferences preserved, alongside cross-platform CI, mocked editor integration and dependency audit. [Publishing CI passed](https://github.com/sanskarIN/LineLoom/actions/runs/39903006652).
+- Physical Windows/macOS/Linux, real Ollama, watcher and accessibility QA remain unverified. v1.2.0 stays stable; Marketplace and Open VSX not updated.
 
 ## [1.2.3] — 2026-10-23 — GitHub Pre-release
 
