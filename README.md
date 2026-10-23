@@ -101,8 +101,11 @@ The next source-only iteration is tracked in
 native Command Palette action **LineLoom: Reset Privacy Timing Statistics**
 (`lineloom.resetPrivacyTimings`), which clears only aggregate, in-memory
 privacy-eligibility latency data without changing the user's diagnostics
-opt-in, model, exclusions, or autocomplete settings. Synthetic tests cover
-reset and continued recording. The PR must remain isolated until v1.2.4
+opt-in, model, exclusions, or autocomplete settings. The action is also
+available from **Quick Actions** and the native **Session Activity** sidebar
+when performance diagnostics are enabled. Timing checks started before a
+reset cannot refill cleared counters. Synthetic regression tests cover
+reset, resumed measurement, and opt-in-only action visibility. The PR must remain isolated until v1.2.4
 GitHub preview publication is verified. See the
 [development plan](docs/releases/v1.2.5-plan.md).
 
