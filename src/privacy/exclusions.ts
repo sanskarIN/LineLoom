@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { policyContentDigest } from "./fingerprint";
+import { recordEligibilityTiming } from "./timings";
 import { mapBounded } from "./bounded";
 import { safeWorkspaceRelativePaths } from "./paths";
 import ignore from "ignore";
@@ -106,7 +107,7 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
   return rules;
 }
 
-export async function mayComplete(document: vscode.TextDocument, patterns: readonly string[]): Promise<boolean> {
+async function checkEligibility(document: vscode.TextDocument, patterns: readonly string[]): Promise<boolean> {
   if (!vscode.workspace.isTrusted || document.uri.scheme !== "file" || document.isClosed) return false;
   const startedAtRevision = ignoreRevision;
   const folder = vscode.workspace.getWorkspaceFolder(document.uri);
@@ -129,4 +130,23 @@ export async function mayComplete(document: vscode.TextDocument, patterns: reado
 export function clearIgnoreCache(): void {
   ignoreRevision++;
   cache.clear();
+}
+
+/** Collect only aggregate timings when the user explicitly opts into diagnostics. */
+export async function mayComplete(
+  document: vscode.TextDocument,
+  patterns: readonly string[],
+  collectTiming = false
+): Promise<boolean> {
+  if (!collectTiming) return checkEligibility(document, patterns);
+  const started = performance.now();
+  try {
+    const permitted = await checkEligibility(document, patterns);
+    recordEligibilityTiming(performance.now() - started, permitted);
+    return permitted;
+  } catch {
+    // Eligibility checks fail closed, including any unexpected thrown error.
+    recordEligibilityTiming(performance.now() - started, false);
+    return false;
+  }
 }
