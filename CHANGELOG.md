@@ -4,7 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (draft PR #56)
 
-- Add **LineLoom: Reset Privacy Timing Statistics** to the native Command Palette, clearing only in-memory eligibility check latency counters on demand while keeping the diagnostics preference and model/ignore settings unchanged.
+- Add **LineLoom: Reset Privacy Timing Statistics** to the native Command Palette and opt-in-only sidebar / Quick Actions, clearing only in-memory eligibility check latency counters on demand while keeping the diagnostics preference and model/ignore settings unchanged.
+- Discard late asynchronous timing measurements that began before a manual reset, preventing old policy reads from refilling cleared counters.
 - Cover command registration and real VS Code editor-host invocation, plus reset-and-resume statistics in unit tests.
 - Advance the draft's development manifest/lockfile and private preview CI candidate to v1.2.5; no tag or GitHub/registry publication exists. Do not merge ahead of v1.2.4 release acceptance.
 
