@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { policyContentDigest } from "./fingerprint";
+import { decodeIgnorePolicy } from "./policy-text";
 import { currentEligibilityTimingEpoch, recordEligibilityTiming } from "./timings";
 import { mapBounded } from "./bounded";
 import { safeWorkspaceRelativePaths } from "./paths";
@@ -90,7 +91,7 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
     stamp.digest = policyContentDigest(bytes);
     const rule: ScopedIgnoreRule = {
       directory: scope.directory, source: file,
-      matcher: ignore().add(Buffer.from(bytes).toString("utf8"))
+      matcher: ignore().add(decodeIgnorePolicy(bytes))
     };
     return { stamp, rule };
   });

@@ -25,8 +25,7 @@ export async function run(): Promise<void> {
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
   // Refreshing the native sidebar is safe before a model server exists.
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
-  // The active extension (a separate loaded module instance) must register a
-  // privacy-only reset command usable even when Ollama is not configured.
+  // Test the actual extension command even with no Ollama server running.
   await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
@@ -129,6 +128,20 @@ export async function run(): Promise<void> {
     await vscode.workspace.fs.delete(watchPolicy);
     await assertWatcherEligibility(true, "deleted .lineloomignore");
 
+    // Malformed policy bytes must NEVER become permissive replacement-text
+    // patterns. Exercise the production VS Code filesystem/privacy gate.
+    await vscode.workspace.fs.writeFile(watchPolicy, Uint8Array.from([0xff]));
+    assert.equal(await mayComplete(watchTarget, []), false,
+      "Invalid UTF-8 ignore policy must fail closed in the editor host");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("other.ts\n"));
+    await assertWatcherEligibility(true, "repaired UTF-8 ignore source");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("sample.ts\0other.ts\n"));
+    assert.equal(await mayComplete(watchTarget, []), false,
+      "NUL-containing ignore policy must fail closed in the editor host");
+    await vscode.workspace.fs.delete(watchPolicy);
+    await assertWatcherEligibility(true, "deleted malformed ignore source");
+
+
     // Deeply nested policies must preserve the same fail-closed semantics
     // when many ancestor files are scanned concurrently in bounded batches.
     const deepSegments = Array.from({ length: 12 }, (_unused, index) => "level" + index);
@@ -211,9 +224,7 @@ export async function run(): Promise<void> {
       assert.equal(timingReport.denied, 0);
       await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
       assert.equal(vscode.workspace.getConfiguration("lineloom").get<boolean>("performanceDiagnostics"), true,
-        "Resetting timing statistics must not toggle the user's opt-in");
-      // The test bundle has a different module instance from the activated
-      // extension, so inspect the configuration here, not its private counters.
+        "Manual timing reset must preserve diagnostics opt-in");
       await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
       // This test bundle has its own timings module; the activated extension
       // has a separate module instance and clears its own counters on opt-out.
