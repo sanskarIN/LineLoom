@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.2.5 development (draft PR #56)
+
+- Add **LineLoom: Reset Privacy Timing Statistics** to the native Command Palette and opt-in-only sidebar / Quick Actions, clearing only in-memory eligibility check latency counters on demand while keeping the diagnostics preference and model/ignore settings unchanged.
+- Discard late asynchronous timing measurements that began before a manual reset, preventing old policy reads from refilling cleared counters.
+- Cover command registration and real VS Code editor-host invocation, plus reset-and-resume statistics in unit tests.
+- Advance the draft's development manifest/lockfile and private preview CI candidate to v1.2.5; no tag or GitHub/registry publication exists. v1.2.4 is already published as a GitHub-only preview; publication of v1.2.5 still requires separate authorization.
+
+- Reject malformed UTF-8 and NUL-containing `.gitignore` / `.lineloomignore` policy files before local model inference, preserving the merged fail-closed hardening from PR #59.
+
 ## [1.2.4] — 2026-10-23 — GitHub Pre-release
 
 - Published [GitHub v1.2.4 preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4) with a genuine VS Code pre-release VSIX and SHA-256 checksum.

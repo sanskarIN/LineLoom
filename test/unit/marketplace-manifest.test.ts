@@ -29,11 +29,22 @@ describe("Marketplace release manifest", () => {
   });
 
   it("keeps lockfile and extension version synchronized", () => {
-    expect(pkg.version).toBe("1.2.4");
+    expect(pkg.version).toBe("1.2.5");
     expect(pkg.version.split(".")).toHaveLength(3);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
     expect(lock.packages[""].version).toBe(pkg.version);
+  });
+
+  it("advertises user-initiated privacy timing reset as a native command", () => {
+    const manifest = pkg as typeof pkg & {
+      contributes: { commands: Array<{ command: string; title: string; category: string }> };
+    };
+    const command = manifest.contributes.commands.find((item) => item.command === "lineloom.resetPrivacyTimings");
+    expect(command).toMatchObject({
+      category: "LineLoom",
+      title: "Reset Privacy Timing Statistics"
+    });
   });
 
   it("packages stable by default and keeps preview packaging explicit", () => {

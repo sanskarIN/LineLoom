@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import { policyContentDigest } from "./fingerprint";
 import { decodeIgnorePolicy } from "./policy-text";
-import { recordEligibilityTiming } from "./timings";
+import { currentEligibilityTimingEpoch, recordEligibilityTiming } from "./timings";
 import { mapBounded } from "./bounded";
 import { safeWorkspaceRelativePaths } from "./paths";
 import ignore from "ignore";
@@ -141,17 +141,18 @@ export async function mayComplete(
 ): Promise<boolean> {
   if (!collectTiming) return checkEligibility(document, patterns);
   const started = performance.now();
+  const timingEpoch = currentEligibilityTimingEpoch();
   try {
     const permitted = await checkEligibility(document, patterns);
     // Configuration can be disabled while async policy I/O is pending.
     // Do not repopulate cleared metrics after the user opts out.
     if (vscode.workspace.getConfiguration("lineloom").get<unknown>("performanceDiagnostics") === true)
-      recordEligibilityTiming(performance.now() - started, permitted);
+      recordEligibilityTiming(performance.now() - started, permitted, timingEpoch);
     return permitted;
   } catch {
     // Eligibility checks fail closed, including any unexpected thrown error.
     if (vscode.workspace.getConfiguration("lineloom").get<unknown>("performanceDiagnostics") === true)
-      recordEligibilityTiming(performance.now() - started, false);
+      recordEligibilityTiming(performance.now() - started, false, timingEpoch);
     return false;
   }
 }

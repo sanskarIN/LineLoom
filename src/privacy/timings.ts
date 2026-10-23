@@ -10,6 +10,12 @@ let allowed = 0;
 let totalMs = 0;
 let lastMs = 0;
 let maxMs = 0;
+// Reset invalidates policy-check timing samples that were started before it.
+let timingEpoch = 0;
+
+export function currentEligibilityTimingEpoch(): number {
+  return timingEpoch;
+}
 
 export interface EligibilityTimingSummary {
   checks: number;
@@ -22,8 +28,10 @@ export interface EligibilityTimingSummary {
   maxMs: number;
 }
 
-export function recordEligibilityTiming(durationMs: number, permitted: boolean): void {
-  if (!Number.isFinite(durationMs) || durationMs < 0) return;
+export function recordEligibilityTiming(
+  durationMs: number, permitted: boolean, expectedEpoch = timingEpoch
+): void {
+  if (expectedEpoch !== timingEpoch || !Number.isFinite(durationMs) || durationMs < 0) return;
   checks++;
   if (permitted) allowed++;
   totalMs += durationMs;
@@ -46,6 +54,7 @@ export function getEligibilityTimingSummary(): EligibilityTimingSummary {
 }
 
 export function resetEligibilityTimings(): void {
+  timingEpoch++;
   samples.length = 0;
   sampleCursor = 0;
   checks = 0;

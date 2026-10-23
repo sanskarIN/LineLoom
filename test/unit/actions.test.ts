@@ -15,6 +15,21 @@ describe("LineLoom Quick Actions", () => {
     expect(quickActions(true, false)[1].label).toMatch(/Resume Automatic/);
     expect(quickActions(true, false).some(action => action.command === "lineloom.trigger")).toBe(true);
   });
+  it("shows privacy timing reset in Quick Actions only after diagnostics opt-in", () => {
+    for (const off of [quickActions(true, false), quickActions(true, true, false)]) {
+      expect(off.some(item => item.command === "lineloom.resetPrivacyTimings")).toBe(false);
+      expect(off).toHaveLength(11);
+    }
+    const on = quickActions(true, true, true);
+    const reset = on.find(item => item.command === "lineloom.resetPrivacyTimings");
+    expect(on).toHaveLength(12);
+    expect(reset).toMatchObject({
+      id: "resetPrivacyTimings",
+      label: "$(trash) Reset Privacy Timing Statistics"
+    });
+    expect(reset?.description).not.toMatch(/path|prompt|source/i);
+    expect(new Set(on.map(item => item.id)).size).toBe(12);
+  });
   it("has only known LineLoom commands, with no implicit network side effects", () => {
     const actions = quickActions(false, false);
     expect(actions.every(action => /^lineloom\.[a-zA-Z]+$/.test(action.command))).toBe(true);

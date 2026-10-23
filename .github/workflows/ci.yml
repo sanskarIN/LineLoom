@@ -45,7 +45,7 @@ jobs:
       - name: Run VS Code extension-host integration
         run: xvfb-run -a npm run test:integration
   package:
-    name: v1.2.4 preview VSIX candidate
+    name: v1.2.5 preview VSIX candidate
     runs-on: ubuntu-latest
     needs: [check, integration]
     steps:
@@ -100,11 +100,26 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.3.vsix" "LineLoom-${VERSION}.vsix"
+      - name: Download and verify published v1.2.4 preview VSIX
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.2.4.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.vsix
+          # Pin the independently verified public release asset digest.
+          echo "05a715f49fe332ec53c63de80f3ebdabedc8a55c07ce2aa8b000c69ddee2ccec  LineLoom-1.2.4.vsix" | sha256sum --check
+      - name: Upgrade published v1.2.4 preview to candidate in a separate isolated profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.4.vsix" "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
-          name: lineloom-v1.2.4-preview-candidate
+          name: lineloom-v1.2.5-preview-candidate
           # Never ship the downloaded v1.2.0 baseline as a candidate asset.
           path: |
-            LineLoom-1.2.4.vsix
-            LineLoom-1.2.4.sha256
+            LineLoom-1.2.5.vsix
+            LineLoom-1.2.5.sha256
           if-no-files-found: error

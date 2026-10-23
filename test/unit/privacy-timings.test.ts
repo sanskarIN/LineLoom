@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  getEligibilityTimingSummary, recordEligibilityTiming, resetEligibilityTimings
+  currentEligibilityTimingEpoch, getEligibilityTimingSummary, recordEligibilityTiming, resetEligibilityTimings
 } from "../../src/privacy/timings";
 
 afterEach(() => resetEligibilityTimings());
@@ -33,6 +33,20 @@ describe("session-only privacy eligibility timing statistics", () => {
     expect(result.denied).toBe(1);
   });
 
+  it("drops late asynchronous samples from before a manual reset", () => {
+    const beforeReset = currentEligibilityTimingEpoch();
+    recordEligibilityTiming(25, true, beforeReset);
+    resetEligibilityTimings();
+    expect(currentEligibilityTimingEpoch()).not.toBe(beforeReset);
+    recordEligibilityTiming(500, false, beforeReset);
+    expect(getEligibilityTimingSummary().checks).toBe(0);
+    const afterReset = currentEligibilityTimingEpoch();
+    recordEligibilityTiming(3, true, afterReset);
+    expect(getEligibilityTimingSummary()).toMatchObject({
+      checks: 1, allowed: 1, denied: 0, lastMs: 3, maxMs: 3
+    });
+  });
+
   it("rejects malformed negative and non-finite timings", () => {
     for (const bad of [-1, Number.NaN, Number.POSITIVE_INFINITY]) {
       recordEligibilityTiming(bad, true);
@@ -40,10 +54,18 @@ describe("session-only privacy eligibility timing statistics", () => {
     expect(getEligibilityTimingSummary().checks).toBe(0);
   });
 
-  it("clears all counters and samples when diagnostics are disabled", () => {
+  it("resets statistics on demand and accepts fresh samples afterwards", () => {
     recordEligibilityTiming(25, false);
+    recordEligibilityTiming(40, true);
     resetEligibilityTimings();
-    expect(getEligibilityTimingSummary().checks).toBe(0);
-    expect(getEligibilityTimingSummary().samples).toBe(0);
+    expect(getEligibilityTimingSummary()).toEqual({
+      checks: 0, allowed: 0, denied: 0, samples: 0,
+      lastMs: 0, averageMs: 0, p95Ms: 0, maxMs: 0
+    });
+    recordEligibilityTiming(2.5, true);
+    expect(getEligibilityTimingSummary()).toEqual({
+      checks: 1, allowed: 1, denied: 0, samples: 1,
+      lastMs: 2.5, averageMs: 2.5, p95Ms: 2.5, maxMs: 2.5
+    });
   });
 });

@@ -70,6 +70,7 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       cacheHits: stats?.cacheHits ?? 0,
       continuationHits: stats?.continuationHits ?? 0,
       emptySuggestions: stats?.emptySuggestions ?? 0,
+      performanceDiagnosticsEnabled: config.performanceDiagnostics,
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
         ? stats.totalLatencyMs / stats.measuredRequests : undefined
     }).map((section): SidebarNode => ({ kind: "section", section }));

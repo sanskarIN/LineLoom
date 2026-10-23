@@ -16,7 +16,7 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.setup", "lineloom.performance",
+    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel",
     "lineloom.refreshSidebar", "lineloom.openSidebar"
@@ -25,6 +25,8 @@ export async function run(): Promise<void> {
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
   // Refreshing the native sidebar is safe before a model server exists.
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
+  // Test the actual extension command even with no Ollama server running.
+  await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
   const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
@@ -220,6 +222,9 @@ export async function run(): Promise<void> {
       assert.equal(timingReport.checks, 1);
       assert.equal(timingReport.allowed, 1);
       assert.equal(timingReport.denied, 0);
+      await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
+      assert.equal(vscode.workspace.getConfiguration("lineloom").get<boolean>("performanceDiagnostics"), true,
+        "Manual timing reset must preserve diagnostics opt-in");
       await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
       // This test bundle has its own timings module; the activated extension
       // has a separate module instance and clears its own counters on opt-out.
