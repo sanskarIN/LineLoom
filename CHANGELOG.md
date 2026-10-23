@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v1.2.5 development (draft PR #56)
+
+- Add **LineLoom: Reset Privacy Timing Statistics** to the native Command Palette, clearing only in-memory eligibility check latency counters on demand while keeping the diagnostics preference and model/ignore settings unchanged.
+- Cover command registration and real VS Code editor-host invocation, plus reset-and-resume statistics in unit tests.
+- Advance the draft's development manifest/lockfile and private preview CI candidate to v1.2.5; no tag or GitHub/registry publication exists. Do not merge ahead of v1.2.4 release acceptance.
+
 ## Unreleased — v1.2.4 development (draft PR #50)
 
 - Build opt-in, in-memory, source/path-free privacy eligibility timing diagnostics (recent-sample p95 and session aggregates).
