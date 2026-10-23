@@ -9,6 +9,34 @@ describe("Ollama endpoint requests", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: ["x".repeat(260_000)] }))));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/safety limit/);
   });
+  it("rejects malformed UTF-8 in a model discovery response without displaying server bytes", async () => {
+    const prefix = new TextEncoder().encode('{"models":[{"name":"model:');
+    const suffix = new TextEncoder().encode('"}]}');
+    const raw = new Uint8Array(prefix.length + 1 + suffix.length);
+    raw.set(prefix);
+    raw[prefix.length] = 0xff;
+    raw.set(suffix, prefix.length + 1);
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(raw)));
+    await expect(listModels("http://127.0.0.1:11434")).rejects
+      .toThrow("Invalid Ollama UTF-8 response.");
+  });
+
+  it("accepts valid UTF-8 split in the model catalog across transport chunks", async () => {
+    const json = new TextEncoder().encode(
+      JSON.stringify({ models: [{ name: "test:latest", details: "日本語" }] })
+    );
+    const marker = new TextEncoder().encode("日");
+    const at = json.findIndex((b, i) => b === marker[0] && json[i + 1] === marker[1]);
+    expect(at).toBeGreaterThan(0);
+    const parts = new ReadableStream<Uint8Array>({ start(controller) {
+      controller.enqueue(json.slice(0, at + 1));
+      controller.enqueue(json.slice(at + 1));
+      controller.close();
+    } });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(parts)));
+    expect(await listModels("http://127.0.0.1:11434")).toEqual([{ name: "test:latest" }]);
+  });
+
   it("lists models from a valid response", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(
       JSON.stringify({ models: [{ name: "qwen2.5-coder:1.5b" }, { broken: true }] }),
