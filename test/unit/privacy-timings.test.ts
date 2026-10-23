@@ -40,10 +40,18 @@ describe("session-only privacy eligibility timing statistics", () => {
     expect(getEligibilityTimingSummary().checks).toBe(0);
   });
 
-  it("clears all counters and samples when diagnostics are disabled", () => {
+  it("resets statistics on demand and accepts fresh samples afterwards", () => {
     recordEligibilityTiming(25, false);
+    recordEligibilityTiming(40, true);
     resetEligibilityTimings();
-    expect(getEligibilityTimingSummary().checks).toBe(0);
-    expect(getEligibilityTimingSummary().samples).toBe(0);
+    expect(getEligibilityTimingSummary()).toEqual({
+      checks: 0, allowed: 0, denied: 0, samples: 0,
+      lastMs: 0, averageMs: 0, p95Ms: 0, maxMs: 0
+    });
+    recordEligibilityTiming(2.5, true);
+    expect(getEligibilityTimingSummary()).toEqual({
+      checks: 1, allowed: 1, denied: 0, samples: 1,
+      lastMs: 2.5, averageMs: 2.5, p95Ms: 2.5, maxMs: 2.5
+    });
   });
 });
