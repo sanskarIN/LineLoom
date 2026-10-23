@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Isolated, non-interactive VS Code CLI upgrade smoke: published v1.2.0
- * stable or v1.2.3 GitHub preview -> local preview candidate matching package.json.
+ * stable or v1.2.3/v1.2.4 previews -> local candidate matching package.json.
  *
  * Checks that the CLI replaces the listed extension version while preserving
  * a synthetic user settings.json byte-for-byte. It does NOT verify that an
@@ -9,8 +9,9 @@
  * correctly on a physical Windows/macOS/Linux desktop.
  *
  * Usage:
- *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.4.vsix
- *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.3.vsix LineLoom-1.2.4.vsix
+ *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.2.5.vsix
+ *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.3.vsix LineLoom-1.2.5.vsix
+ *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.4.vsix LineLoom-1.2.5.vsix
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -21,8 +22,8 @@ import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "
 
 function inspectVsix(archive, expectsPreview) {
   assert.ok(statSync(archive).isFile(), "Expected a VSIX file");
-  // The CI job runs on Linux (where unzip is installed) and checks the
-  // each published baseline SHA-256 before running this script.
+  // CI checks each published baseline SHA-256 before running this script;
+  // unzip is available on the Linux packaging runner.
   const options = { encoding: "utf8", timeout: 20_000, maxBuffer: 2 * 1024 * 1024 };
   const metadata = JSON.parse(execFileSync("unzip", ["-p", archive, "extension/package.json"], options));
   const manifest = execFileSync("unzip", ["-p", archive, "extension.vsixmanifest"], options);
@@ -58,9 +59,9 @@ async function main() {
     const previous = inspectVsix(previousArchive);
     const candidate = inspectVsix(candidateArchive, true);
     const source = JSON.parse(readFileSync("package.json", "utf8"));
-    assert.ok(["1.2.0", "1.2.3"].includes(previous.version),
-      "Baseline must be published stable v1.2.0 or GitHub preview v1.2.3");
-    assert.equal(previous.preRelease, previous.version === "1.2.3",
+    assert.ok(["1.2.0", "1.2.3", "1.2.4"].includes(previous.version),
+      "Baseline must be published stable v1.2.0 or GitHub preview v1.2.3/v1.2.4");
+    assert.equal(previous.preRelease, previous.version !== "1.2.0",
       "Published baseline must have correct stable/preview VSIX metadata");
     assert.notEqual(candidate.version, previous.version, "Candidate must be a different version");
     assert.equal(candidate.version, source.version, "Candidate and source version must match");
