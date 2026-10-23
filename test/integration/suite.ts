@@ -6,6 +6,7 @@ import { generateCompletion, listModels, showModel } from "../../src/models/olla
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
+import { inspectFilePrivacy } from "../../src/privacy/inspect";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "../../src/privacy/timings";
 
 
@@ -15,7 +16,7 @@ export async function run(): Promise<void> {
   await extension.activate();
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
-    "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.openSettings",
+    "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel",
@@ -102,6 +103,21 @@ export async function run(): Promise<void> {
     assert.equal(await mayComplete(deniedByApp, []), false, "Nested .lineloomignore must deny blocked.ts");
     assert.equal(await mayComplete(deniedByGit, []), false, "Nested .gitignore must deny blocked-by-git.ts");
     assert.equal(await mayComplete(permitted, []), true, "Sibling source file should remain eligible");
+    // User-initiated privacy inspection must reuse the complete local path
+    // gate without contacting Ollama, exposing paths or storing diagnostics.
+    const inspectionCallsBefore = generationCalls;
+    assert.equal(await inspectFilePrivacy(undefined, [], () => true), "no-editor");
+    assert.equal(await inspectFilePrivacy(permitted, [], () => true), "allowed");
+    assert.equal(await inspectFilePrivacy(deniedByApp, [], () => true), "blocked");
+    assert.equal(await inspectFilePrivacy(deniedByGit, [], () => true), "blocked");
+    assert.equal(await inspectFilePrivacy(permitted, [], () => false), "stale",
+      "A changed editor or setting must invalidate an older allow result");
+    const checkedEditor = await vscode.window.showTextDocument(permitted);
+    assert.ok(checkedEditor);
+    await vscode.commands.executeCommand("lineloom.checkActiveFilePrivacy");
+    assert.equal(generationCalls, inspectionCallsBefore,
+      "Inspecting file privacy must not trigger an Ollama generation");
+
     // Exercise the *real* extension-registered VS Code filesystem watchers,
     // without calling clearIgnoreCache manually. Cache invalidation must
     // take effect before the 20-second privacy-rule TTL expires.
