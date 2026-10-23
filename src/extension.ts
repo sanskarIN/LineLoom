@@ -6,6 +6,7 @@ import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache } from "./privacy/exclusions";
+import { getEligibilityTimingSummary, resetEligibilityTimings } from "./privacy/timings";
 import { readConfig, validateEndpoint } from "./settings/config";
 import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
@@ -209,6 +210,13 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
     output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");
+    const eligibility = getEligibilityTimingSummary();
+    output.appendLine("Privacy eligibility checks: " + eligibility.checks +
+      "; allowed: " + eligibility.allowed + "; denied: " + eligibility.denied);
+    output.appendLine("Privacy check latency (ms): last " + eligibility.lastMs.toFixed(1) +
+      "; average " + eligibility.averageMs.toFixed(1) +
+      "; recent p95 " + eligibility.p95Ms.toFixed(1) +
+      " (" + eligibility.samples + " recent samples); session max " + eligibility.maxMs.toFixed(1));
   }
   output.show(true);
 }
@@ -282,6 +290,7 @@ export function activate(context: vscode.ExtensionContext): void {
       engine?.cancel();
       clearIgnoreCache();
       const config = readConfig();
+      if (!config.performanceDiagnostics) resetEligibilityTimings();
       currentState = config.enabled ? "ready" : "disabled";
       status.set(currentState, config.autoTrigger);
       sidebar.refresh();
