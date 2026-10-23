@@ -282,6 +282,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // user-initiated reset without changing the diagnostics opt-in preference.
   command("lineloom.resetPrivacyTimings", () => {
     resetEligibilityTimings();
+    sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom privacy eligibility timing counters cleared for this session.");
   });
   command("lineloom.setup", () => setupGuide(context));
