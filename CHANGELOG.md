@@ -10,6 +10,7 @@ All notable changes follow Semantic Versioning.
 - Advance the development manifest/lockfile and private preview CI candidate to v1.2.5. PR #56 is merged into main and combined candidate CI passed; no v1.2.5 tag or GitHub/registry publication exists. v1.2.4 is already published as a GitHub-only preview; publication of v1.2.5 still requires separate authorization.
 
 - Reject malformed UTF-8 and NUL-containing `.gitignore` / `.lineloomignore` policy files before local model inference, preserving the merged fail-closed hardening from PR #59.
+- Reject corrupted or incomplete UTF-8 from Ollama's model-list JSON and streamed generated code instead of silently inserting replacement characters; retain strict byte limits and safe error wording, with split-Unicode and malformed-byte regressions.
 
 ## [1.2.4] — 2026-10-23 — GitHub Pre-release
 
