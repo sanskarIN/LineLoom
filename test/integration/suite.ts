@@ -209,6 +209,11 @@ export async function run(): Promise<void> {
       assert.equal(timingReport.checks, 1);
       assert.equal(timingReport.allowed, 1);
       assert.equal(timingReport.denied, 0);
+      await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
+      assert.equal(configuration.get<boolean>("performanceDiagnostics"), true,
+        "Resetting timing statistics must not toggle the user's opt-in");
+      // The test bundle has a different module instance from the activated
+      // extension, so inspect the configuration here, not its private counters.
       await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
       // This test bundle has its own timings module; the activated extension
       // has a separate module instance and clears its own counters on opt-out.
