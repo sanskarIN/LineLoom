@@ -278,6 +278,12 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.checkConnection", () => checkConnection(context));
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
+  // Privacy eligibility measurements are in memory only. Permit an immediate
+  // user-initiated reset without changing the diagnostics opt-in preference.
+  command("lineloom.resetPrivacyTimings", () => {
+    resetEligibilityTimings();
+    vscode.window.showInformationMessage("LineLoom privacy eligibility timing counters cleared for this session.");
+  });
   command("lineloom.setup", () => setupGuide(context));
   command("lineloom.performance", () => {
     const stats = engine?.getStats();
