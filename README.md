@@ -95,6 +95,8 @@ passed the real preview VSIX/channel/checksum and isolated installs/upgrades
 from SHA-256-pinned v1.2.0 stable and v1.2.3 preview VSIX packages.
 Manual real-model, physical Windows/macOS/Linux performance and accessibility
 QA remain unverified in [issue #54](https://github.com/sanskarIN/LineLoom/issues/54).
+Use the [v1.2.4 manual acceptance checklist](docs/qa/v1.2.4-manual-acceptance.md)
+to record reproducible, sanitized evidence before considering a stable rollout.
 This **GitHub-only pre-release** did not update either extension registry.
 The latest GitHub stable release remains **v1.2.0**.
 
