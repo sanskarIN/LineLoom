@@ -30,3 +30,25 @@ export function isRequestConfigurationCurrent(
     initial.suppressMidTokenAuto === latest.suppressMidTokenAuto &&
     initial.minAutoTriggerChars === latest.minAutoTriggerChars;
 }
+
+/**
+ * Asynchronous filesystem inspection is not atomic with a VS Code settings
+ * update. Recheck settings, editor/trust state and remote consent both before
+ * and AFTER the policy read: a queued settings-change handler may not yet have
+ * cancelled the request. Never return approval from a stale policy snapshot.
+ */
+export async function isResponseStillEligible(
+  initial: LineLoomConfig,
+  language: LanguageSpec,
+  manual: boolean,
+  readLatest: () => LineLoomConfig,
+  environmentCurrent: () => boolean,
+  checkFile: (patterns: readonly string[], collectTiming: boolean) => Promise<boolean>
+): Promise<boolean> {
+  const before = readLatest();
+  if (!isRequestConfigurationCurrent(initial, before, language, manual) ||
+      !environmentCurrent()) return false;
+  if (!await checkFile(before.excludedPaths, before.performanceDiagnostics)) return false;
+  return environmentCurrent() &&
+    isRequestConfigurationCurrent(initial, readLatest(), language, manual);
+}
