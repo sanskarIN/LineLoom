@@ -6,6 +6,7 @@ All notable changes follow Semantic Versioning.
 
 - Build opt-in, in-memory, source/path-free privacy eligibility timing diagnostics (recent-sample p95 and session aggregates).
 - Keep diagnostics disabled by default, clear counters on opt-out and test the setting with synthetic fixtures.
+- Extend preview candidate checks to verify checksum-pinned upgrades from both published v1.2.0 stable and v1.2.3 GitHub preview packages in isolated synthetic VS Code profiles.
 - No v1.2.4 package or registry release has been published.
 
 ## [1.2.3] — 2026-10-23 — GitHub Pre-release
