@@ -3,13 +3,17 @@
  * rather than silently deleting bytes and accidentally changing source code.
  * CR/LF and tab are valid in source and are handled separately below.
  */
-const UNSAFE_CODEPOINTS = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/u;
-function hasUnpairedSurrogate(value: string): boolean {
-  // for...of visits each valid UTF-16 surrogate pair as one two-unit string.
+function containsUnsafeUnicode(value: string): boolean {
+  // Code-point iteration preserves legitimate Unicode surrogate pairs. Check
+  // numeric ranges to avoid a regex with literal-control escapes in source.
   for (const character of value) {
-    if (character.length !== 1) continue;
-    const unit = character.charCodeAt(0);
-    if (unit >= 0xd800 && unit <= 0xdfff) return true;
+    const point = character.codePointAt(0);
+    if (point === undefined) continue;
+    if ((point <= 0x1f && point !== 0x09 && point !== 0x0a && point !== 0x0d) ||
+        (point >= 0x7f && point <= 0x9f) ||
+        (point >= 0x202a && point <= 0x202e) ||
+        (point >= 0x2066 && point <= 0x2069) ||
+        (point >= 0xd800 && point <= 0xdfff)) return true;
   }
   return false;
 }
@@ -18,7 +22,7 @@ function hasUnpairedSurrogate(value: string): boolean {
 export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
   // Even a loopback model can return malformed or direction-spoofing text.
   // Never "repair" such output into different executable source.
-  if (UNSAFE_CODEPOINTS.test(raw) || hasUnpairedSurrogate(raw)) return "";
+  if (containsUnsafeUnicode(raw)) return "";
   // Normalise line endings without trimming meaningful leading Python indentation.
   let value = raw.replace(/\r\n?/g, "\n");
   // Remove boundary-only control tokens without touching tokens inside code literals.
