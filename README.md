@@ -60,23 +60,31 @@ This is a GitHub-only preview. **v1.2.0 remains the stable GitHub release**,
 with Open VSX and VS Code Marketplace on independently managed channels.
 Real model performance, full manual desktop acceptance and accessibility remain unverified.
 
-## v1.2.3 development (not released)
+## v1.2.3 GitHub pre-release (published 2026-10-23)
 
-The next preview cycle strengthens cached ignore-policy validation against
-missed VS Code filesystem-watcher notifications. Cached allow decisions verify
-file metadata and SHA-256 fingerprints of existing ignore-file contents, plus
-the existence of previously absent ignore files. The privacy gate fails closed
-when a policy changes during validation. This adds local filesystem I/O;
-neither watcher notifications nor fingerprints are an atomic guarantee.
+**[GitHub v1.2.3 — Live Ignore Policy Safety Preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.3)**
+is publicly available with a genuine preview-channel
+[VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.3/LineLoom-1.2.3.vsix)
+and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.3/LineLoom-1.2.3.sha256).
+It improves privacy against delayed/dropped ignore-file watcher notifications:
+existing and previously missing ignore sources are revalidated, cached source
+rules use in-memory SHA-256 fingerprints of rule bytes, and up to eight
+concurrent policy read tasks preserve root-to-leaf rule ordering.
 
-[Privacy hardening PR #45](https://github.com/sanskarIN/LineLoom/pull/45)
-is merged, and [post-merge CI](https://github.com/sanskarIN/LineLoom/actions/runs/39886669923)
-passed the cross-platform checks, Linux editor-host tests, preview candidate
-package validation and isolated install/upgrade smoke. Source version
-**1.2.3** on `main` is **unreleased development**; the private Actions VSIX
-artifact is not a public release or registry update. Real-model/physical-device
-acceptance is still open in [issue #46](https://github.com/sanskarIN/LineLoom/issues/46).
-See the [development plan](docs/releases/v1.2.3-plan.md).
+[Publishing CI](https://github.com/sanskarIN/LineLoom/actions/runs/39891839514)
+passed automated tests, mocked VS Code host integration, preview VSIX
+verification and isolated stable-to-preview upgrade. This **does not prove**
+real-model quality, physical workstation performance, actual watcher timing
+or accessibility; those remain tracked in [issue #46](https://github.com/sanskarIN/LineLoom/issues/46).
+The GitHub stable release remains **v1.2.0**; registry distributions are
+separate and were not changed by this publication.
+
+## v1.2.4 development (not released)
+
+Work on opt-in, path-free privacy eligibility timing diagnostics is underway in
+[draft PR #50](https://github.com/sanskarIN/LineLoom/pull/50).
+No v1.2.4 GitHub tag, stable package, marketplace release or Open VSX
+publication exists. See the [development plan](docs/releases/v1.2.4-plan.md).
 
 ## Install LineLoom
 
