@@ -162,18 +162,18 @@ async function checkActiveFilePrivacy(): Promise<void> {
   const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
   switch (result) {
     case "no-editor":
-      await vscode.window.showInformationMessage("LineLoom: Open a local file to check its privacy exclusions.");
+      void vscode.window.showInformationMessage("LineLoom: Open a local file to check its privacy exclusions.");
       return;
     case "stale":
-      await vscode.window.showWarningMessage("LineLoom: Editor or privacy settings changed during the check. Run it again.");
+      void vscode.window.showWarningMessage("LineLoom: Editor or privacy settings changed during the check. Run it again.");
       return;
     case "blocked":
-      await vscode.window.showWarningMessage(
+      void vscode.window.showWarningMessage(
         "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
       );
       return;
     case "allowed":
-      await vscode.window.showInformationMessage(
+      void vscode.window.showInformationMessage(
         "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
       );
       return;
