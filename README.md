@@ -79,20 +79,32 @@ or accessibility; those remain tracked in [issue #46](https://github.com/sanskar
 The GitHub stable release remains **v1.2.0**; registry distributions are
 separate and were not changed by this publication.
 
-## v1.2.4 development (not released)
+## v1.2.4 GitHub pre-release (published 2026-10-23)
 
-[PR #50](https://github.com/sanskarIN/LineLoom/pull/50) is merged into
-`main` with opt-in, path-free privacy eligibility latency measurements,
-session counters, rolling 64-sample p95, and opt-out reset safeguards.
-[PR CI](https://github.com/sanskarIN/LineLoom/actions/runs/39892427165)
-and [dependency security](https://github.com/sanskarIN/LineLoom/actions/runs/39892427147)
-passed. CI also builds an **unpublished** v1.2.4 preview-channel VSIX
-candidate. Continued acceptance work adds checksum-pinned **v1.2.3 preview
-→ v1.2.4 candidate** upgrade testing alongside the stable v1.2.0 upgrade.
+**[GitHub v1.2.4 — Privacy Eligibility Diagnostics Preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4)** is published with
+the genuine preview-channel [VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.vsix) and
+[SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.sha256).
+It adds opt-in, in-memory **privacy eligibility check** timing counters
+(allowed/denied, last, session average and max, rolling 64-sample p95).
+Collection is disabled by default and contains no file paths, prompts,
+source code, rule text or response bodies. These measurements are **not**
+end-to-end Ollama/model latencies.
 
-No v1.2.4 GitHub tag, stable package, Marketplace release or Open VSX
-publication exists. Real workstation/model and accessibility QA are still
-needed. See the [development plan](docs/releases/v1.2.4-plan.md).
+[Publisher CI](https://github.com/sanskarIN/LineLoom/actions/runs/39903006652)
+passed the real preview VSIX/channel/checksum and isolated installs/upgrades
+from SHA-256-pinned v1.2.0 stable and v1.2.3 preview VSIX packages.
+Manual real-model, physical Windows/macOS/Linux performance and accessibility
+QA remain unverified in [issue #54](https://github.com/sanskarIN/LineLoom/issues/54).
+This **GitHub-only pre-release** did not update either extension registry.
+The latest GitHub stable release remains **v1.2.0**.
+
+## v1.2.5 development (not released)
+
+[Draft PR #56](https://github.com/sanskarIN/LineLoom/pull/56) develops
+privacy timing reset actions and late-async-sample protection. The branch
+is under test and is not a public GitHub release, stable VSIX or marketplace
+update. See the [next development plan](docs/releases/v1.2.5-plan.md) after
+the draft is merged.
 
 ## Install LineLoom
 
