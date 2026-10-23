@@ -81,10 +81,18 @@ separate and were not changed by this publication.
 
 ## v1.2.4 development (not released)
 
-Work on opt-in, path-free privacy eligibility timing diagnostics is underway in
-[draft PR #50](https://github.com/sanskarIN/LineLoom/pull/50).
-No v1.2.4 GitHub tag, stable package, marketplace release or Open VSX
-publication exists. See the [development plan](docs/releases/v1.2.4-plan.md).
+[PR #50](https://github.com/sanskarIN/LineLoom/pull/50) is merged into
+`main` with opt-in, path-free privacy eligibility latency measurements,
+session counters, rolling 64-sample p95, and opt-out reset safeguards.
+[PR CI](https://github.com/sanskarIN/LineLoom/actions/runs/39892427165)
+and [dependency security](https://github.com/sanskarIN/LineLoom/actions/runs/39892427147)
+passed. CI also builds an **unpublished** v1.2.4 preview-channel VSIX
+candidate. Continued acceptance work adds checksum-pinned **v1.2.3 preview
+→ v1.2.4 candidate** upgrade testing alongside the stable v1.2.0 upgrade.
+
+No v1.2.4 GitHub tag, stable package, Marketplace release or Open VSX
+publication exists. Real workstation/model and accessibility QA are still
+needed. See the [development plan](docs/releases/v1.2.4-plan.md).
 
 ## Install LineLoom
 
