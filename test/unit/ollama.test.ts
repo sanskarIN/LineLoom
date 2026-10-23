@@ -74,7 +74,7 @@ describe("Ollama streaming NDJSON", () => {
 
   it("rejects malformed UTF-8 inside generated source instead of inserting replacement characters", async () => {
     const prefix = new TextEncoder().encode('{"response":"');
-    const suffix = new TextEncoder().encode('","done":true}\\n'.replace('\\n', '\n'));
+    const suffix = new TextEncoder().encode('","done":true}' + "\n");
     const corrupt = new ReadableStream<Uint8Array>({ start(controller) {
       controller.enqueue(prefix);
       controller.enqueue(Uint8Array.from([0xff]));
