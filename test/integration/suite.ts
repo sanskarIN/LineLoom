@@ -47,6 +47,7 @@ export async function run(): Promise<void> {
   sidebarSubscription.dispose();
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
+  let mockUnsafeOutput = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
   let releaseHeldGeneration: (() => void) | undefined;
@@ -70,7 +71,9 @@ export async function run(): Promise<void> {
         if (!response.destroyed) response.end(JSON.stringify({ response: "obsolete", done: true }) + "\n");
         return;
       }
-      if (mockEmptyResponses) {
+      if (mockUnsafeOutput) {
+        response.end(JSON.stringify({ response: "42" + String.fromCharCode(0x202e), done: true }) + "\n");
+      } else if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
       } else {
         response.write(JSON.stringify({ response: "42", done: false }) + "\n");
@@ -290,6 +293,22 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // A mocked Ollama response can contain Unicode bidi controls that
+        // visually reorder code. Never offer or cache that ghost text.
+        mockUnsafeOutput = true;
+        engine.cancel();
+        const callsBeforeUnsafe = generationCalls;
+        const unsafe = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.equal(unsafe, undefined, "Unsafe model text must not be inserted as a suggestion");
+        assert.equal(generationCalls, callsBeforeUnsafe + 1,
+          "The unsafe response should exercise the genuine model request path");
+        mockUnsafeOutput = false;
+        engine.cancel();
+        const recovered = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.equal(recovered?.[0]?.insertText, "42",
+          "A subsequent clean response must still work after rejection");
+
 
         // Exercise the real inline provider with supported-language sensitive
         // fixtures. Merely checking the standalone privacy matcher is not
