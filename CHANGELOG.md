@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
+- **Under review:** protect bounded UTF-16 source context windows from splitting a Unicode surrogate pair at prefix/suffix edges or at a caret inside an astral character. Drop only incomplete boundary code units, preserve intact emoji and international identifiers, and keep the original context-size limit; include deterministic unit regressions.
+
 - **Source merged, still unreleased — diagnostics opt-out hygiene ([PR #74](https://github.com/sanskarIN/LineLoom/pull/74)):** erase opt-in inference-latency aggregates (last, total and measured request count) when the user disables performance diagnostics, while preserving source-free request/completion counts and autocomplete settings. Reject late model-response measurements started before opt-out, including when diagnostics are later reenabled; verify with mocked VS Code editor-host tests.
 
 - **Source-merged but unreleased post-response race fix ([PR #72](https://github.com/sanskarIN/LineLoom/pull/72)):** revalidate excluded paths, model settings, workspace trust, editor focus and remote endpoint approval *after* the asynchronous final ignore-file scan, not just before it. Reject an Ollama result if permission changes while local policy I/O is pending, even before VS Code dispatches cancellation events; add deterministic deferred-I/O regression tests.
