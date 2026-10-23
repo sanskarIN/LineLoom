@@ -8,7 +8,8 @@ const snapshot: SidebarSnapshot = {
   activeEditor: { language: "Rust", model: "rust-local", modelSource: "Language override",
     eligibility: "Allowed by settings; file rules checked on request" },
   completionState: "ready", requests: 3, completions: 2, cancelled: 1,
-  failed: 0, cacheHits: 2, continuationHits: 1, emptySuggestions: 4
+  failed: 0, cacheHits: 2, continuationHits: 1, emptySuggestions: 4,
+  performanceDiagnosticsEnabled: false
 };
 describe("LineLoom local sidebar model", () => {
   it("exposes fixed command actions and useful offline state", () => {
@@ -30,6 +31,19 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "editor-model")?.description).toBe("rust-local (Language override)");
     expect(entries.find(item => item.id === "editor-eligibility")?.description).toMatch(/file rules checked on request/);
     expect(entries.filter(item => item.command).every(item => /^lineloom\.[a-zA-Z]+$/.test(item.command!))).toBe(true);
+  });
+  it("offers an accessible privacy reset action only when diagnostics are enabled", () => {
+    const disabled = sidebarSections(snapshot).flatMap(group => group.items);
+    expect(disabled.find(item => item.id === "reset-privacy-timings")).toBeUndefined();
+    const enabled = sidebarSections({ ...snapshot, performanceDiagnosticsEnabled: true })
+      .flatMap(group => group.items);
+    const reset = enabled.find(item => item.id === "reset-privacy-timings");
+    expect(reset).toMatchObject({
+      label: "Reset Privacy Timing Statistics",
+      command: "lineloom.resetPrivacyTimings",
+      description: "Clear in-memory privacy eligibility timing data"
+    });
+    expect(enabled.filter(item => item.command).every(item => /^lineloom\.[a-zA-Z]+$/.test(item.command!))).toBe(true);
   });
   it("uses enable and resume actions when completion is paused", () => {
     const items = sidebarSections({ ...snapshot, enabled: false, autoTrigger: false })
