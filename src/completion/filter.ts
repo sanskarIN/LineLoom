@@ -1,7 +1,26 @@
+/**
+ * Reject unsafe/invisible control characters in model-generated ghost text
+ * rather than silently deleting bytes and accidentally changing source code.
+ * CR/LF and tab are valid in source and are handled separately below.
+ */
+const UNSAFE_CODEPOINTS = /[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f\u202a-\u202e\u2066-\u2069]/u;
+function hasUnpairedSurrogate(value: string): boolean {
+  // for...of visits each valid UTF-16 surrogate pair as one two-unit string.
+  for (const character of value) {
+    if (character.length !== 1) continue;
+    const unit = character.charCodeAt(0);
+    if (unit >= 0xd800 && unit <= 0xdfff) return true;
+  }
+  return false;
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
 export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
+  // Even a loopback model can return malformed or direction-spoofing text.
+  // Never "repair" such output into different executable source.
+  if (UNSAFE_CODEPOINTS.test(raw) || hasUnpairedSurrogate(raw)) return "";
   // Normalise line endings without trimming meaningful leading Python indentation.
-  let value = raw.replace(/\r\n?/g, "\n").replace(/\0/g, "");
+  let value = raw.replace(/\r\n?/g, "\n");
   // Remove boundary-only control tokens without touching tokens inside code literals.
   value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
   value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
@@ -37,7 +56,10 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
       break;
     }
   }
-  value = value.slice(0, 6000).replace(/[\t ]+$/gm, "");
+  // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
+  value = value.slice(0, 6000);
+  if (/[\uD800-\uDBFF]$/.test(value)) value = value.slice(0, -1);
+  value = value.replace(/[\t ]+$/gm, "");
   if (!value.trim()) return "";
   return value;
 }
