@@ -52,7 +52,7 @@ export function readConfig(): LineLoomConfig {
     keepAlive: normalizeKeepAlive(c.get<unknown>("keepAlive", "5m")),
     excludedPaths: normalizeExcludedPaths(c.get<unknown>("excludedPaths", [])),
     crossFileContext: c.get("crossFileContext", false),
-    performanceDiagnostics: c.get("performanceDiagnostics", false)
+    performanceDiagnostics: c.get<unknown>("performanceDiagnostics", false) === true
   };
 }
 export { validateEndpoint } from "./endpoint";
