@@ -10,6 +10,21 @@ describe("sensitive file exclusions", () => {
     ]) expect(isSensitivePath(path), path).toBe(true);
   });
 
+  it("hard-blocks ignore policies themselves at root and nested paths", () => {
+    for (const relativePath of [
+      ".gitignore", ".lineloomignore", ".dockerignore", ".npmignore",
+      "src/.gitignore", "src/nested/.lineloomignore",
+      "nested\\\\.GITIGNORE", "src\\\\.LINELOOMIGNORE", "config/.DockerIgnore",
+      "packages/pkg/.NPMIGNORE"
+    ]) expect(isSensitivePath(relativePath), relativePath).toBe(true);
+    // Only exact policy filenames are hard-denied: similarly named normal
+    // source files must remain subject to the existing eligibility rules.
+    for (const relativePath of [
+      "src/gitignore.ts", "docs/lineloomignore.md", "src/.gitignore-parser.ts",
+      "docs/dockerignore-guide.md", "src/app.ts"
+    ]) expect(isSensitivePath(relativePath), relativePath).toBe(false);
+  });
+
   it("blocks common cloud, database, environment and deployment secrets before inference", () => {
     for (const path of [
       ".envrc", ".dev.vars", ".dev.vars.production", ".secrets", ".secrets.local",
