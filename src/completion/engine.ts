@@ -11,7 +11,7 @@ import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { generateCompletion } from "../models/ollama";
-import { isRequestConfigurationCurrent } from "./request-state";
+import { isRequestConfigurationCurrent, isResponseStillEligible } from "./request-state";
 import { resolveLanguageModel } from "../settings/language-models";
 
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
@@ -211,14 +211,16 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           numPredict: config.maxOutputTokens, contextSize: config.contextSize,
           temperature: config.temperature, keepAlive: config.keepAlive
         }, controller.signal);
-        // Privacy and cursor state may have changed while the model was responding.
-        const latest = readConfig();
-        // Configuration changes can race an HTTP response and the extension's
-        // onDidChangeConfiguration callback. Fail closed for superseded settings.
-        const settingsCurrent = isRequestConfigurationCurrent(config, latest, language, manual) &&
-          (!url.remote || (latest.allowRemoteEndpoints && this.remoteApproved(url.origin)));
-        const stillAllowed = settingsCurrent && isTargetCurrent() &&
-          await mayComplete(document, latest.excludedPaths, latest.performanceDiagnostics);
+        // Privacy policies are checked again after the model responds. These
+        // filesystem reads await I/O; settings, trust or endpoint consent can
+        // change while they run, before VS Code dispatches a cancellation event.
+        // Revalidate those conditions after the final await as well.
+        const stillAllowed = await isResponseStillEligible(
+          config, language, manual, readConfig,
+          () => isTargetCurrent() && vscode.workspace.isTrusted &&
+            (!url.remote || this.remoteApproved(url.origin)),
+          (patterns, collectTiming) => mayComplete(document, patterns, collectTiming)
+        );
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
             document.version !== version || !isTargetCurrent() || !stillAllowed) {
           this.metrics.cancelled++;
