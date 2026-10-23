@@ -12,7 +12,7 @@ contents to Ollama, even if no ignore rule matches the filename. The
 **Check Active File Privacy** action reports these files as blocked. Only
 the first two formats supply inference exclusion rules; Docker/npm ignore
 files are additionally protected as sensitive policy/configuration inputs.
-This change is pending PR review and is not part of any public v1.2.5 release.
+This hardening was merged in [PR #65](https://github.com/sanskarIN/LineLoom/pull/65) after cross-platform and mocked VS Code extension-host regression checks. It is still **unreleased**: no public v1.2.5 tag, VSIX, or registry update exists.
 
 ## Root and nested ignore files (v0.3.0)
 
