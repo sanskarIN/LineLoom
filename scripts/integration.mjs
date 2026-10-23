@@ -25,6 +25,12 @@ try {
   await mkdir(path.join(fixture, "src", "watch-probe"));
   await writeFile(path.join(fixture, "src", "watch-probe", "sample.ts"),
     "const syntheticWatcher = 1;\n", "utf8");
+  // A deeply nested synthetic source exercises cold/warm privacy checks for
+  // many applicable policy-file paths without relying on real workspace data.
+  const deepSegments = Array.from({ length: 12 }, (_unused, index) => "level" + index);
+  const deepFolder = path.join(fixture, "src", "deep-probe", ...deepSegments);
+  await mkdir(deepFolder, { recursive: true });
+  await writeFile(path.join(deepFolder, "sample.ts"), "const syntheticDeep = 1;\n", "utf8");
   // Synthetic protected files used by the actual VS Code extension-host
   // test. Never put real credentials or private code into test fixtures.
   await writeFile(path.join(fixture, "src", "credentials.ts"), "const synthetic = 4;\n", "utf8");

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { policyContentDigest } from "./fingerprint";
+import { mapBounded } from "./bounded";
 import { safeWorkspaceRelativePaths } from "./paths";
 import ignore from "ignore";
 import { isSensitivePath } from "./rules";
@@ -15,6 +16,7 @@ let ignoreRevision = 0;
 const MAX_DEPTH = 24;
 const MAX_CACHED_RULE_SETS = 128;
 const MAX_POLICY_BYTES = 128_000;
+const MAX_POLICY_READ_CONCURRENCY = 8;
 
 /**
  * File watchers may drop events or be excluded by VS Code's watcher settings.
@@ -39,7 +41,7 @@ async function readPolicyBytes(uri: vscode.Uri): Promise<Uint8Array> {
   return bytes;
 }
 async function signaturesMatch(stamps: readonly PolicyStamp[]): Promise<boolean> {
-  const matches = await Promise.all(stamps.map(async (stamp) => {
+  const matches = await mapBounded(stamps, MAX_POLICY_READ_CONCURRENCY, async (stamp) => {
     const before = await policySignature(stamp.uri);
     if (before !== stamp.signature) return false;
     if (before === "missing") return stamp.digest === undefined;
@@ -48,7 +50,7 @@ async function signaturesMatch(stamps: readonly PolicyStamp[]): Promise<boolean>
     const bytes = await readPolicyBytes(stamp.uri);
     const after = await policySignature(stamp.uri);
     return before === after && stamp.digest === policyContentDigest(bytes);
-  }));
+  });
   return matches.every(Boolean);
 }
 
@@ -69,24 +71,30 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
     if (matches) return existing.rules;
   }
 
-  const rules: ScopedIgnoreRule[] = [];
-  const stamps: PolicyStamp[] = [];
-  for (const scope of scopes) {
-    for (const file of [".gitignore", ".lineloomignore"] as const) {
-      const uri = scope.directory
-        ? vscode.Uri.joinPath(folder.uri, scope.directory, file)
-        : vscode.Uri.joinPath(folder.uri, file);
-      const signature = await policySignature(uri);
-      if (signature === "missing") {
-        stamps.push({ uri, signature });
-        continue;
-      }
-      // Unreadable, oversized or disappearing rule sources fail closed.
-      const bytes = await readPolicyBytes(uri);
-      stamps.push({ uri, signature, digest: policyContentDigest(bytes) });
-      rules.push({ directory: scope.directory, source: file, matcher: ignore().add(Buffer.from(bytes).toString("utf8")) });
-    }
-  }
+  // Each ancestor source is independent. Fetch a small bounded batch at a
+  // time instead of serializing up to 48 local stat/read operations. Preserve
+  // root-to-leaf order for repeatable policy snapshots and diagnostics.
+  const sources = scopes.flatMap((scope) =>
+    ([".gitignore", ".lineloomignore"] as const).map((file) => ({ scope, file }))
+  );
+  const snapshots = await mapBounded(sources, MAX_POLICY_READ_CONCURRENCY, async ({ scope, file }) => {
+    const uri = scope.directory
+      ? vscode.Uri.joinPath(folder.uri, scope.directory, file)
+      : vscode.Uri.joinPath(folder.uri, file);
+    const signature = await policySignature(uri);
+    const stamp: PolicyStamp = { uri, signature };
+    if (signature === "missing") return { stamp, rule: undefined };
+    // Unreadable, oversized or disappearing rule sources fail closed.
+    const bytes = await readPolicyBytes(uri);
+    stamp.digest = policyContentDigest(bytes);
+    const rule: ScopedIgnoreRule = {
+      directory: scope.directory, source: file,
+      matcher: ignore().add(Buffer.from(bytes).toString("utf8"))
+    };
+    return { stamp, rule };
+  });
+  const rules: ScopedIgnoreRule[] = snapshots.flatMap(({ rule }) => rule ? [rule] : []);
+  const stamps = snapshots.map(({ stamp }) => stamp);
   const custom = userPatterns(patterns);
   if (custom.length) rules.push({ directory: "", source: "user", matcher: ignore().add(custom) });
   // Confirm no policy changed *during* the scan, including a file created

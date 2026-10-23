@@ -125,6 +125,28 @@ export async function run(): Promise<void> {
     await vscode.workspace.fs.delete(watchPolicy);
     await assertWatcherEligibility(true, "deleted .lineloomignore");
 
+    // Deeply nested policies must preserve the same fail-closed semantics
+    // when many ancestor files are scanned concurrently in bounded batches.
+    const deepSegments = Array.from({ length: 12 }, (_unused, index) => "level" + index);
+    const deepDocument = await vscode.workspace.openTextDocument(
+      vscode.Uri.joinPath(folder.uri, "src", "deep-probe", ...deepSegments, "sample.ts")
+    );
+    assert.equal(await mayComplete(deepDocument, []), true,
+      "A deeply nested source without matching policies should remain eligible");
+    for (const file of [".gitignore", ".lineloomignore"] as const) {
+      const deepPolicy = vscode.Uri.joinPath(folder.uri, "src", "deep-probe", "level0", file);
+      try {
+        await vscode.workspace.fs.writeFile(deepPolicy, Buffer.from("**/sample.ts\n", "utf8"));
+        assert.equal(await mayComplete(deepDocument, []), false,
+          "New ancestor " + file + " must deny a deep source before inference");
+      } finally {
+        await vscode.workspace.fs.delete(deepPolicy);
+        clearIgnoreCache();
+      }
+      assert.equal(await mayComplete(deepDocument, []), true,
+        "Removing nested " + file + " must restore the allowed source");
+    }
+
     // Hard exclusions must hold in the actual editor host, not just unit
     // tests of filenames. These files contain public synthetic fixture text.
     const sensitiveDocuments = await Promise.all([
