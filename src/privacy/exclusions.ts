@@ -142,11 +142,15 @@ export async function mayComplete(
   const started = performance.now();
   try {
     const permitted = await checkEligibility(document, patterns);
-    recordEligibilityTiming(performance.now() - started, permitted);
+    // Configuration can be disabled while async policy I/O is pending.
+    // Do not repopulate cleared metrics after the user opts out.
+    if (vscode.workspace.getConfiguration("lineloom").get<unknown>("performanceDiagnostics") === true)
+      recordEligibilityTiming(performance.now() - started, permitted);
     return permitted;
   } catch {
     // Eligibility checks fail closed, including any unexpected thrown error.
-    recordEligibilityTiming(performance.now() - started, false);
+    if (vscode.workspace.getConfiguration("lineloom").get<unknown>("performanceDiagnostics") === true)
+      recordEligibilityTiming(performance.now() - started, false);
     return false;
   }
 }
