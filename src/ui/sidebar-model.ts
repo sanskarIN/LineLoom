@@ -27,6 +27,7 @@ export interface SidebarSnapshot {
   continuationHits: number;
   emptySuggestions: number;
   averageLatencyMs?: number;
+  performanceDiagnosticsEnabled?: boolean;
 }
 
 export interface SidebarEntry {
@@ -167,6 +168,11 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             icon: "clock" }
         ]),
         { id: "diagnostics", label: "Open Diagnostics", icon: "output", command: "lineloom.diagnostics" },
+        ...(snapshot.performanceDiagnosticsEnabled ? [{
+          id: "reset-privacy-timings", label: "Reset Privacy Timing Statistics",
+          description: "Clear in-memory privacy eligibility timing data",
+          icon: "trash", command: "lineloom.resetPrivacyTimings"
+        }] : []),
         { id: "refresh", label: "Refresh Sidebar", icon: "refresh", command: "lineloom.refreshSidebar" }
       ]
     },
