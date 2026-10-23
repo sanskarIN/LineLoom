@@ -77,6 +77,21 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.0.vsix" "LineLoom-${VERSION}.vsix"
+      - name: Download and verify published v1.2.3 preview VSIX
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.2.3.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.2.3/LineLoom-1.2.3.vsix
+          # SHA-256 independently verified from the public v1.2.3 release asset.
+          echo "a940b479f615bfc166a1ba1357f0f2d076532ffac220dbc0194f71fac51d4019  LineLoom-1.2.3.vsix" | sha256sum --check
+      - name: Upgrade published v1.2.3 preview to candidate in a separate isolated VS Code CLI profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.3.vsix" "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
           name: lineloom-v1.2.4-preview-candidate
