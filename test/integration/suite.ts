@@ -6,6 +6,7 @@ import { generateCompletion, listModels, showModel } from "../../src/models/olla
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
+import { getEligibilityTimingSummary, resetEligibilityTimings } from "../../src/privacy/timings";
 
 
 export async function run(): Promise<void> {
@@ -169,7 +170,8 @@ export async function run(): Promise<void> {
       excludedPaths: configuration.get<string[]>("excludedPaths"),
       autoTrigger: configuration.get<boolean>("autoTrigger"),
       suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
-      enabledLanguages: configuration.get<string[]>("enabledLanguages")
+      enabledLanguages: configuration.get<string[]>("enabledLanguages"),
+      performanceDiagnostics: configuration.get<boolean>("performanceDiagnostics")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
     // Subscribe to VS Code's genuine change events, matching production wiring.
@@ -196,6 +198,20 @@ export async function run(): Promise<void> {
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
+      // Diagnostics must capture only aggregate timings after explicit opt-in.
+      resetEligibilityTimings();
+      await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+      assert.equal(await mayComplete(permitted, [], true), true);
+      const timingReport = getEligibilityTimingSummary();
+      assert.equal(timingReport.checks, 1);
+      assert.equal(timingReport.allowed, 1);
+      assert.equal(timingReport.denied, 0);
+      await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
+      assert.equal(getEligibilityTimingSummary().checks, 0,
+        "Disabling diagnostics must erase session eligibility metrics");
+      assert.equal(await mayComplete(permitted, [], true), true);
+      assert.equal(getEligibilityTimingSummary().checks, 0,
+        "A disabled setting must prevent a late eligibility check from recording metrics");
       const file = vscode.Uri.joinPath(folder.uri, "editor-test.ts");
       const document = await vscode.workspace.openTextDocument(file);
       const editor = await vscode.window.showTextDocument(document);
@@ -588,6 +604,7 @@ export async function run(): Promise<void> {
       await configuration.update("autoTrigger", oldValues.autoTrigger, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
+      await configuration.update("performanceDiagnostics", oldValues.performanceDiagnostics, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);
