@@ -6,6 +6,7 @@ import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache } from "./privacy/exclusions";
+import { inspectFilePrivacy } from "./privacy/inspect";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "./privacy/timings";
 import { readConfig, validateEndpoint } from "./settings/config";
 import { isEndpointSelectionCurrent } from "./settings/selection-state";
@@ -144,6 +145,41 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
   }
 }
 
+/**
+ * Inspect the current editor's existing path and ignore policies on demand.
+ * This never constructs prompts, sends requests, logs files or changes settings.
+ */
+async function checkActiveFilePrivacy(): Promise<void> {
+  const document = vscode.window.activeTextEditor?.document;
+  const version = document?.version;
+  const config = readConfig();
+  const patternSnapshot = JSON.stringify(config.excludedPaths);
+  const isCurrent = (): boolean =>
+    Boolean(document && !document.isClosed && vscode.workspace.isTrusted &&
+      vscode.window.activeTextEditor?.document === document &&
+      document.version === version &&
+      JSON.stringify(readConfig().excludedPaths) === patternSnapshot);
+  const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
+  switch (result) {
+    case "no-editor":
+      void vscode.window.showInformationMessage("LineLoom: Open a local file to check its privacy exclusions.");
+      return;
+    case "stale":
+      void vscode.window.showWarningMessage("LineLoom: Editor or privacy settings changed during the check. Run it again.");
+      return;
+    case "blocked":
+      void vscode.window.showWarningMessage(
+        "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
+      );
+      return;
+    case "allowed":
+      void vscode.window.showInformationMessage(
+        "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
+      );
+      return;
+  }
+}
+
 async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
   const action = await vscode.window.showInformationMessage(
     "Welcome to LineLoom. Install and start Ollama, run 'ollama pull qwen2.5-coder:1.5b', then check your connection.",
@@ -276,6 +312,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context));
+  command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   // Privacy eligibility measurements are in memory only. Permit an immediate

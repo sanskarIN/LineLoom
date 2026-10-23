@@ -21,6 +21,10 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "model")?.description).toBe("qwen2.5-coder:1.5b");
     expect(entries.find(item => item.id === "requests")?.description).toBe("3");
     expect(entries.find(item => item.id === "cancel")?.command).toBe("lineloom.cancel");
+    expect(entries.find(item => item.id === "check-file-privacy")).toMatchObject({
+      command: "lineloom.checkActiveFilePrivacy",
+      description: "Check current workspace and ignore rules locally; no model request"
+    });
     expect(entries.find(item => item.id === "state")?.description).toBe("Ready (model not automatically verified)");
     expect(entries.find(item => item.id === "cancelled")?.description).toBe("1");
     expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");

@@ -106,6 +106,14 @@ The [v1.2.5 implementation PR #56](https://github.com/sanskarIN/LineLoom/pull/56
 has been **merged into `main`**, alongside
 [privacy-hardening PR #59](https://github.com/sanskarIN/LineLoom/pull/59)
 and [CI-safety PR #58](https://github.com/sanskarIN/LineLoom/pull/58).
+The unreleased v1.2.5 candidate also includes **LineLoom: Check Active File Privacy**
+(`lineloom.checkActiveFilePrivacy`): a user-triggered local inspection of
+workspace, sensitive-path and root/nested ignore policies. It is available
+from the Command Palette, Quick Actions and the Privacy & Connection sidebar,
+and does not read source content or contact Ollama. Results only describe
+path/ignore eligibility at the time checked, **not** full completion or model
+readiness. No filenames or policy contents are shown.
+
 The source includes **LineLoom: Reset Privacy Timing Statistics**
 (`lineloom.resetPrivacyTimings`), an opt-in-only sidebar / Quick Actions entry,
 and protection against asynchronous statistics being restored after a reset.

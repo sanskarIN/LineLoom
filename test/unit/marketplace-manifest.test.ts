@@ -47,6 +47,15 @@ describe("Marketplace release manifest", () => {
     });
   });
 
+  it("contributes a separate, user-triggered file privacy check", () => {
+    const manifest = pkg as typeof pkg & {
+      contributes: { commands: Array<{ command: string; title: string; category: string }> };
+    };
+    expect(manifest.contributes.commands.find(item =>
+      item.command === "lineloom.checkActiveFilePrivacy"
+    )).toMatchObject({ title: "Check Active File Privacy", category: "LineLoom" });
+  });
+
   it("packages stable by default and keeps preview packaging explicit", () => {
     expect(pkg.scripts.package).toContain("--no-dependencies");
     expect(pkg.scripts.package).not.toContain("--pre-release");

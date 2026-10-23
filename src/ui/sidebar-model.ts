@@ -148,6 +148,11 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
           icon: snapshot.endpointState === "loopback" ? "home" : "lock"
         },
         {
+          id: "check-file-privacy", label: "Check Active File Privacy",
+          description: "Check current workspace and ignore rules locally; no model request",
+          icon: "shield", command: "lineloom.checkActiveFilePrivacy"
+        },
+        {
           id: "check", label: "Check Ollama Connection", icon: "plug",
           command: "lineloom.checkConnection"
         }

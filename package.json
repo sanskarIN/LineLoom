@@ -83,6 +83,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.checkActiveFilePrivacy",
+        "title": "Check Active File Privacy",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.checkConnection",
         "title": "Check Ollama Connection",
         "category": "LineLoom"

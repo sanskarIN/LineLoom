@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
+- **Unreleased candidate:** user-initiated **Check Active File Privacy** action in Command Palette, Quick Actions and the sidebar, calling the existing local exclusion gate without reading source text, contacting Ollama or adding timing metrics. Warn on stale checks and distinguish file policy from model readiness; covered by editor-host regression tests.
+
 - Add **LineLoom: Reset Privacy Timing Statistics** to the native Command Palette and opt-in-only sidebar / Quick Actions, clearing only in-memory eligibility check latency counters on demand while keeping the diagnostics preference and model/ignore settings unchanged.
 - Discard late asynchronous timing measurements that began before a manual reset, preventing old policy reads from refilling cleared counters.
 - Cover command registration and real VS Code editor-host invocation, plus reset-and-resume statistics in unit tests.
