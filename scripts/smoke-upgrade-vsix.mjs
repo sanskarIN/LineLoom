@@ -22,7 +22,7 @@ import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "
 function inspectVsix(archive, expectsPreview) {
   assert.ok(statSync(archive).isFile(), "Expected a VSIX file");
   // The CI job runs on Linux (where unzip is installed) and checks the
-  // published v1.2.0 SHA-256 before running this script.
+  // each published baseline SHA-256 before running this script.
   const options = { encoding: "utf8", timeout: 20_000, maxBuffer: 2 * 1024 * 1024 };
   const metadata = JSON.parse(execFileSync("unzip", ["-p", archive, "extension/package.json"], options));
   const manifest = execFileSync("unzip", ["-p", archive, "extension.vsixmanifest"], options);
@@ -47,7 +47,7 @@ function installedVersion(run, expectedVersion) {
 async function main() {
   const args = process.argv.slice(2);
   if (args.length !== 2 || args.some((arg) => !arg.toLowerCase().endsWith(".vsix"))) {
-    console.error("Usage: node scripts/smoke-upgrade-vsix.mjs <v1.2.0.vsix> <preview-candidate.vsix>");
+    console.error("Usage: node scripts/smoke-upgrade-vsix.mjs <published-stable-or-preview.vsix> <preview-candidate.vsix>");
     process.exitCode = 2;
     return;
   }
