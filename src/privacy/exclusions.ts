@@ -1,11 +1,12 @@
 import * as vscode from "vscode";
+import { createHash } from "node:crypto";
 import { safeWorkspaceRelativePaths } from "./paths";
 import ignore from "ignore";
 import { isSensitivePath } from "./rules";
 import { ignoreScopes, ignoredByScopedRules, type ScopedIgnoreRule } from "./scoped";
 export { isSensitivePath } from "./rules";
 
-interface PolicyStamp { uri: vscode.Uri; signature: string }
+interface PolicyStamp { uri: vscode.Uri; signature: string; digest?: string }
 interface CachedIgnore { rules: ScopedIgnoreRule[]; expires: number; stamps: PolicyStamp[] }
 const cache = new Map<string, CachedIgnore>();
 // Invalidate scans already in flight, not only entries already in the cache.
@@ -13,6 +14,7 @@ const cache = new Map<string, CachedIgnore>();
 let ignoreRevision = 0;
 const MAX_DEPTH = 24;
 const MAX_CACHED_RULE_SETS = 128;
+const MAX_POLICY_BYTES = 128_000;
 
 /**
  * File watchers may drop events or be excluded by VS Code's watcher settings.
@@ -23,15 +25,35 @@ const MAX_CACHED_RULE_SETS = 128;
 async function policySignature(uri: vscode.Uri): Promise<string> {
   try {
     const info = await vscode.workspace.fs.stat(uri);
+    // Check size before readFile to avoid allocating unexpectedly large policies.
+    if (info.size >= MAX_POLICY_BYTES) throw new Error("Ignore file too large; refusing completion.");
     return info.type + ":" + info.size + ":" + info.mtime;
   } catch (error) {
     if (error instanceof vscode.FileSystemError && error.code === "FileNotFound") return "missing";
     throw error;
   }
 }
+function digestPolicy(bytes: Uint8Array): string {
+  // In-memory only. Even an unchanged size/mtime must not authorize rewritten rules.
+  return createHash("sha256").update(bytes).digest("hex");
+}
+async function readPolicyBytes(uri: vscode.Uri): Promise<Uint8Array> {
+  const bytes = await vscode.workspace.fs.readFile(uri);
+  if (bytes.byteLength >= MAX_POLICY_BYTES) throw new Error("Ignore file too large; refusing completion.");
+  return bytes;
+}
 async function signaturesMatch(stamps: readonly PolicyStamp[]): Promise<boolean> {
-  const current = await Promise.all(stamps.map((stamp) => policySignature(stamp.uri)));
-  return current.every((value, index) => value === stamps[index].signature);
+  const matches = await Promise.all(stamps.map(async (stamp) => {
+    const before = await policySignature(stamp.uri);
+    if (before !== stamp.signature) return false;
+    if (before === "missing") return stamp.digest === undefined;
+    // Watchers and metadata can both miss a same-size/same-mtime rewrite.
+    // Compare actual rule bytes before reusing any cached allow decision.
+    const bytes = await readPolicyBytes(stamp.uri);
+    const after = await policySignature(stamp.uri);
+    return before === after && stamp.digest === digestPolicy(bytes);
+  }));
+  return matches.every(Boolean);
 }
 
 function userPatterns(patterns: readonly string[]): string[] {
@@ -59,12 +81,13 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
         ? vscode.Uri.joinPath(folder.uri, scope.directory, file)
         : vscode.Uri.joinPath(folder.uri, file);
       const signature = await policySignature(uri);
-      stamps.push({ uri, signature });
-      if (signature === "missing") continue;
-      // An unreadable file or one removed during this scan must deny
-      // completion, rather than treating it as an optional absent file.
-      const bytes = await vscode.workspace.fs.readFile(uri);
-      if (bytes.byteLength >= 128_000) throw new Error("Ignore file too large; refusing completion.");
+      if (signature === "missing") {
+        stamps.push({ uri, signature });
+        continue;
+      }
+      // Unreadable, oversized or disappearing rule sources fail closed.
+      const bytes = await readPolicyBytes(uri);
+      stamps.push({ uri, signature, digest: digestPolicy(bytes) });
       rules.push({ directory: scope.directory, source: file, matcher: ignore().add(Buffer.from(bytes).toString("utf8")) });
     }
   }
