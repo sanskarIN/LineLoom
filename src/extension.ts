@@ -159,7 +159,7 @@ async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
 async function openQuickActions(): Promise<void> {
   const config = readConfig();
   const choice = await vscode.window.showQuickPick(
-    quickActions(config.enabled, config.autoTrigger).map((action) => ({
+    quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics).map((action) => ({
       label: action.label, description: action.description, command: action.command
     })),
     { placeHolder: "LineLoom Quick Actions — choose an action" }
