@@ -126,6 +126,20 @@ export async function run(): Promise<void> {
     await vscode.workspace.fs.delete(watchPolicy);
     await assertWatcherEligibility(true, "deleted .lineloomignore");
 
+    // Malformed policy bytes must NEVER become permissive replacement-text
+    // patterns. Exercise the production VS Code filesystem/privacy gate.
+    await vscode.workspace.fs.writeFile(watchPolicy, Uint8Array.from([0xff]));
+    assert.equal(await mayComplete(watchTarget, []), false,
+      "Invalid UTF-8 ignore policy must fail closed in the editor host");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("other.ts\n"));
+    await assertWatcherEligibility(true, "repaired UTF-8 ignore source");
+    await vscode.workspace.fs.writeFile(watchPolicy, Buffer.from("sample.ts\0other.ts\n"));
+    assert.equal(await mayComplete(watchTarget, []), false,
+      "NUL-containing ignore policy must fail closed in the editor host");
+    await vscode.workspace.fs.delete(watchPolicy);
+    await assertWatcherEligibility(true, "deleted malformed ignore source");
+
+
     // Deeply nested policies must preserve the same fail-closed semantics
     // when many ancestor files are scanned concurrently in bounded batches.
     const deepSegments = Array.from({ length: 12 }, (_unused, index) => "level" + index);
