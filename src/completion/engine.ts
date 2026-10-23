@@ -116,7 +116,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       if (requestId === this.generation) this.onState("ready");
       return;
     }
-    if (!await mayComplete(document, config.excludedPaths) || token.isCancellationRequested ||
+    if (!await mayComplete(document, config.excludedPaths, config.performanceDiagnostics) || token.isCancellationRequested ||
         requestId !== this.generation || !isTargetCurrent()) {
       if (requestId === this.generation) this.onState("ready");
       return;
@@ -218,7 +218,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         const settingsCurrent = isRequestConfigurationCurrent(config, latest, language, manual) &&
           (!url.remote || (latest.allowRemoteEndpoints && this.remoteApproved(url.origin)));
         const stillAllowed = settingsCurrent && isTargetCurrent() &&
-          await mayComplete(document, latest.excludedPaths);
+          await mayComplete(document, latest.excludedPaths, latest.performanceDiagnostics);
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
             document.version !== version || !isTargetCurrent() || !stillAllowed) {
           this.metrics.cancelled++;
