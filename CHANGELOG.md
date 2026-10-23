@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
+- **Proposed diagnostics opt-out hygiene:** erase opt-in inference-latency aggregates (last, total and measured request count) when the user disables performance diagnostics, while preserving source-free request/completion counts and autocomplete settings. Reject late model-response measurements started before opt-out, including when diagnostics are later reenabled; verify with mocked VS Code editor-host tests.
+
 - **Source-merged but unreleased post-response race fix ([PR #72](https://github.com/sanskarIN/LineLoom/pull/72)):** revalidate excluded paths, model settings, workspace trust, editor focus and remote endpoint approval *after* the asynchronous final ignore-file scan, not just before it. Reject an Ollama result if permission changes while local policy I/O is pending, even before VS Code dispatches cancellation events; add deterministic deferred-I/O regression tests.
 
 - **Merged but unreleased QA reliability improvement ([PR #70](https://github.com/sanskarIN/LineLoom/pull/70)):** the explicitly user-run local Ollama smoke test now rejects malformed or truncated UTF-8, whitespace-only completions, unsafe control/bidi characters and invalid surrogate fragments before reporting PASS, using bounded character counts without revealing generated code. Include mocked Unicode-boundary and invalid-output tests; this does not establish manual desktop or real-model acceptance.

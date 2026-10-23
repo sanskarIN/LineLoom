@@ -22,6 +22,8 @@ export interface CompletionStats {
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  // Increment on opt-out to reject measurements from already-running requests.
+  private latencyEpoch = 0;
   private readonly suggestions = new SuggestionCache();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
   private readonly continuations = new ContinuationCache();
@@ -37,6 +39,13 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
   getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
+  /** An opt-out erases only inference durations, retaining non-sensitive counts. */
+  clearLatencyMeasurements(): void {
+    this.latencyEpoch++;
+    this.metrics.totalLatencyMs = 0;
+    this.metrics.lastLatencyMs = 0;
+    this.metrics.measuredRequests = 0;
+  }
   cancel(preserveContinuation = false): void {
     this.generation++;
     this.controller?.abort();
@@ -203,6 +212,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       let timedOut = false;
       const timeout = setTimeout(() => { timedOut = true; controller.abort(); }, config.timeoutMs);
       const start = performance.now();
+      const recordingEpoch = this.latencyEpoch;
       this.metrics.requests++;
       this.onState("generating");
       try {
@@ -229,7 +239,11 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         }
         const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines);
         const latency = performance.now() - start;
-        if (config.performanceDiagnostics) {
+        // Diagnostics consent may have been revoked while Ollama responded.
+        // Preserve neither a late sample nor an old session's measurements
+        // after the user opts out, even if they opted back in meanwhile.
+        if (config.performanceDiagnostics && readConfig().performanceDiagnostics &&
+            recordingEpoch === this.latencyEpoch) {
           this.metrics.totalLatencyMs += latency;
           this.metrics.lastLatencyMs = latency;
           this.metrics.measuredRequests++;

@@ -334,7 +334,10 @@ export function activate(context: vscode.ExtensionContext): void {
       engine?.cancel();
       clearIgnoreCache();
       const config = readConfig();
-      if (!config.performanceDiagnostics) resetEligibilityTimings();
+      if (!config.performanceDiagnostics) {
+        resetEligibilityTimings();
+        engine?.clearLatencyMeasurements();
+      }
       currentState = config.enabled ? "ready" : "disabled";
       status.set(currentState, config.autoTrigger);
       sidebar.refresh();

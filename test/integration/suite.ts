@@ -294,6 +294,63 @@ export async function run(): Promise<void> {
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
 
+        // Inference duration diagnostics are opt-in, unlike source-free
+        // request counters. Opt-out must clear measurements without disabling
+        // completion or erasing request / success counts.
+        assert.equal(engine.getStats().measuredRequests, 0,
+          "No inference duration must be recorded while diagnostics are disabled");
+        await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const measured = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(measured?.length, "Opted-in completion should remain available");
+        assert.equal(engine.getStats().measuredRequests, 1);
+        const requestsBeforeOptOut = engine.getStats().requests;
+        const completedBeforeOptOut = engine.getStats().completions;
+        await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
+        // This test engine is separate from the activated extension and does
+        // not subscribe to configuration changes; simulate the same opt-out.
+        engine.clearLatencyMeasurements();
+        assert.equal(engine.getStats().measuredRequests, 0);
+        assert.equal(engine.getStats().lastLatencyMs, 0);
+        assert.equal(engine.getStats().totalLatencyMs, 0);
+        assert.equal(engine.getStats().requests, requestsBeforeOptOut);
+        assert.equal(engine.getStats().completions, completedBeforeOptOut);
+        engine.cancel();
+        const unmeasured = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        assert.ok(unmeasured?.length, "Opting out must not disable ordinary inference");
+        assert.equal(engine.getStats().measuredRequests, 0,
+          "Opted-out inference must not restore erased latency samples");
+        // Simulate a late response started under an earlier opt-in session.
+        await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const lateStarted = new Promise<void>((resolve) => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const lateSample = engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
+        try {
+          await Promise.race([
+            lateStarted,
+            new Promise<never>((_resolve, reject) => setTimeout(
+              () => reject(new Error("Latency sample mock did not begin")), 8_000
+            ))
+          ]);
+          await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
+          engine.clearLatencyMeasurements();
+          await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+          releaseHeldGeneration?.();
+          await lateSample;
+          assert.equal(engine.getStats().measuredRequests, 0,
+            "A response started before opt-out must not repopulate a new opt-in session");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          // The next mock-server request replaces these callbacks before use.
+          // Assigning undefined here narrows the later fixture's optional
+          // callback to `never` in TypeScript's synchronous control flow.
+          await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
+          engine.clearLatencyMeasurements();
+        }
+
+
         // A mocked Ollama response can contain Unicode bidi controls that
         // visually reorder code. Never offer or cache that ghost text.
         mockUnsafeOutput = true;
