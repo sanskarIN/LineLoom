@@ -106,7 +106,7 @@ The [v1.2.5 implementation PR #56](https://github.com/sanskarIN/LineLoom/pull/56
 has been **merged into `main`**, alongside
 [privacy-hardening PR #59](https://github.com/sanskarIN/LineLoom/pull/59)
 and [CI-safety PR #58](https://github.com/sanskarIN/LineLoom/pull/58).
-The unreleased development branch also proposes **LineLoom: Check Active File Privacy**
+The unreleased v1.2.5 candidate also includes **LineLoom: Check Active File Privacy**
 (`lineloom.checkActiveFilePrivacy`): a user-triggered local inspection of
 workspace, sensitive-path and root/nested ignore policies. It is available
 from the Command Palette, Quick Actions and the Privacy & Connection sidebar,
