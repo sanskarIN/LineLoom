@@ -63,11 +63,20 @@ Real model performance, full manual desktop acceptance and accessibility remain 
 ## v1.2.3 development (not released)
 
 The next preview cycle strengthens cached ignore-policy validation against
-missed VS Code filesystem-watcher notifications. Cached allow decisions now
-check metadata for existing and previously missing ignore files, and fail closed
-when a policy changes while being scanned. Source code version **1.2.3** on
-`main` is a development candidate, not a published package. See the
-[development plan](docs/releases/v1.2.3-plan.md).
+missed VS Code filesystem-watcher notifications. Cached allow decisions verify
+file metadata and SHA-256 fingerprints of existing ignore-file contents, plus
+the existence of previously absent ignore files. The privacy gate fails closed
+when a policy changes during validation. This adds local filesystem I/O;
+neither watcher notifications nor fingerprints are an atomic guarantee.
+
+[Privacy hardening PR #45](https://github.com/sanskarIN/LineLoom/pull/45)
+is merged, and [post-merge CI](https://github.com/sanskarIN/LineLoom/actions/runs/39886669923)
+passed the cross-platform checks, Linux editor-host tests, preview candidate
+package validation and isolated install/upgrade smoke. Source version
+**1.2.3** on `main` is **unreleased development**; the private Actions VSIX
+artifact is not a public release or registry update. Real-model/physical-device
+acceptance is still open in [issue #46](https://github.com/sanskarIN/LineLoom/issues/46).
+See the [development plan](docs/releases/v1.2.3-plan.md).
 
 ## Install LineLoom
 
