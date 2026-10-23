@@ -94,6 +94,21 @@ No v1.2.4 GitHub tag, stable package, Marketplace release or Open VSX
 publication exists. Real workstation/model and accessibility QA are still
 needed. See the [development plan](docs/releases/v1.2.4-plan.md).
 
+## v1.2.5 development (draft, not released)
+
+The next source-only iteration is tracked in
+[draft PR #56](https://github.com/sanskarIN/LineLoom/pull/56). It adds the
+native Command Palette action **LineLoom: Reset Privacy Timing Statistics**
+(`lineloom.resetPrivacyTimings`), which clears only aggregate, in-memory
+privacy-eligibility latency data without changing the user's diagnostics
+opt-in, model, exclusions, or autocomplete settings. Synthetic tests cover
+reset and continued recording. The PR must remain isolated until v1.2.4
+GitHub preview publication is verified. See the
+[development plan](docs/releases/v1.2.5-plan.md).
+
+**No v1.2.5 tag, public VSIX, Visual Studio Marketplace or Open VSX
+publication exists.**
+
 ## Install LineLoom
 
 Install the currently published version from your editor's supported registry:
