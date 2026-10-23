@@ -4,6 +4,16 @@ LineLoom only completes local files within a **trusted VS Code workspace**. File
 
 Since v1.2.1, previews also block additional high-risk names and extensions, including `.envrc`, `.dev.vars*`, `.secrets*`, `.pgpass`, `.my.cnf`, Terraform `*.tfvars`, `*.tfvars.json`, `*.tfstate` and `*.tfstate.backup`, KeePass `*.kdbx`, SQLite `*.sqlite3`, SSH identity variants, and the `.direnv`, `.terraform`, `.pulumi`, `.serverless`, `.aws-sam`, and Python virtual-environment directories. Each component of the relative path is checked: a source file in `src/credentials/`, `.env.local/`, `.dev.vars.preview/`, or `secrets/` is refused even when its own basename looks harmless. The same checks apply to canonical symlink targets and to Windows separators/case. These default exclusions are intentionally non-overridable. Some harmless example files with matching names may also be excluded. This is a conservative privacy tradeoff, not a general-purpose secret scanner.
 
+**Unreleased v1.2.5 privacy hardening:** LineLoom now hard-excludes
+the *policy files themselves*: `.gitignore`, `.lineloomignore`,
+`.dockerignore`, and `.npmignore` at any directory depth (case-insensitive).
+Opening or manually triggering completion in these files must not send their
+contents to Ollama, even if no ignore rule matches the filename. The
+**Check Active File Privacy** action reports these files as blocked. Only
+the first two formats supply inference exclusion rules; Docker/npm ignore
+files are additionally protected as sensitive policy/configuration inputs.
+This change is pending PR review and is not part of any public v1.2.5 release.
+
 ## Root and nested ignore files (v0.3.0)
 
 Create a `.gitignore` or `.lineloomignore` at the workspace root **or within any ancestor directory of a source file**. For example:

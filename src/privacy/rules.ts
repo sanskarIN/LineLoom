@@ -11,6 +11,9 @@ const sensitiveSegments = new Set([
 ]);
 const sensitiveNames = new Set([
   ".npmrc", ".pypirc", ".netrc", ".git-credentials", "authorized_keys",
+  // Policy/configuration files may reveal sensitive path layouts and should
+  // never become an inference prompt, even if their own rules would allow it.
+  ".gitignore", ".lineloomignore", ".dockerignore", ".npmignore",
   ".envrc", ".pgpass", ".my.cnf", ".s3cfg", "known_hosts"
 ]);
 const riskyExtensions = /\.(?:pem|p12|pfx|p8|key|asc|keystore|jks|sqlite|sqlite3|db|db3|lockb|kdbx|mobileprovision|agekey|tfvars(?:\.json)?|tfstate(?:\.backup)?)$/i;
