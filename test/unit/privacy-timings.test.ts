@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  getEligibilityTimingSummary, recordEligibilityTiming, resetEligibilityTimings
+  currentEligibilityTimingEpoch, getEligibilityTimingSummary, recordEligibilityTiming, resetEligibilityTimings
 } from "../../src/privacy/timings";
 
 afterEach(() => resetEligibilityTimings());
@@ -31,6 +31,20 @@ describe("session-only privacy eligibility timing statistics", () => {
     expect(result.maxMs).toBe(5000);
     expect(result.allowed).toBe(64);
     expect(result.denied).toBe(1);
+  });
+
+  it("drops late asynchronous samples from before a manual reset", () => {
+    const beforeReset = currentEligibilityTimingEpoch();
+    recordEligibilityTiming(25, true, beforeReset);
+    resetEligibilityTimings();
+    expect(currentEligibilityTimingEpoch()).not.toBe(beforeReset);
+    recordEligibilityTiming(500, false, beforeReset);
+    expect(getEligibilityTimingSummary().checks).toBe(0);
+    const afterReset = currentEligibilityTimingEpoch();
+    recordEligibilityTiming(3, true, afterReset);
+    expect(getEligibilityTimingSummary()).toMatchObject({
+      checks: 1, allowed: 1, denied: 0, lastMs: 3, maxMs: 3
+    });
   });
 
   it("rejects malformed negative and non-finite timings", () => {
