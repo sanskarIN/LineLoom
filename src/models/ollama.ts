@@ -57,11 +57,24 @@ export async function showModel(origin: string, model: string, signal?: AbortSig
   await response.body?.cancel().catch(() => undefined);
   return true;
 }
+/**
+ * Decode response bodies losslessly. The default TextDecoder replaces bad UTF-8
+ * with U+FFFD, potentially altering model identifiers or generated source.
+ * Refuse corrupt streams instead; never include response bytes in the error.
+ */
+function decodeResponseChunk(decoder: TextDecoder, bytes?: Uint8Array): string {
+  try {
+    return bytes === undefined ? decoder.decode() : decoder.decode(bytes, { stream: true });
+  } catch {
+    throw new Error("Invalid Ollama UTF-8 response.");
+  }
+}
+
 /** Limit model discovery responses before parsing JSON from an untrusted endpoint. */
 async function readBoundedJson(response: Response): Promise<unknown> {
   if (!response.body) throw new Error("Ollama returned an empty model list response.");
   const reader = response.body.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   let bytes = 0;
   let json = "";
   try {
@@ -70,9 +83,9 @@ async function readBoundedJson(response: Response): Promise<unknown> {
       if (done) break;
       bytes += value.byteLength;
       if (bytes > 256_000) throw new Error("Ollama model list exceeded safety limit.");
-      json += decoder.decode(value, { stream: true });
+      json += decodeResponseChunk(decoder, value);
     }
-    return JSON.parse(json + decoder.decode()) as unknown;
+    return JSON.parse(json + decodeResponseChunk(decoder)) as unknown;
   } finally {
     await reader.cancel().catch(() => undefined);
     reader.releaseLock();
@@ -84,7 +97,7 @@ export async function parseNdjson(
   signal?: AbortSignal
 ): Promise<string> {
   const reader = stream.getReader();
-  const decoder = new TextDecoder();
+  const decoder = new TextDecoder("utf-8", { fatal: true });
   const onAbort = (): void => { void reader.cancel().catch(() => undefined); };
   signal?.addEventListener("abort", onAbort, { once: true });
   let carry = ""; let result = ""; let sawDone = false;
@@ -118,7 +131,7 @@ export async function parseNdjson(
       if (done) break;
       streamedBytes += value.byteLength;
       if (streamedBytes > MAX_STREAM_BYTES) throw new Error("Ollama stream exceeded safety limit.");
-      carry += decoder.decode(value, { stream: true });
+      carry += decodeResponseChunk(decoder, value);
       let newline = carry.indexOf("\n");
       while (newline >= 0 && !sawDone) {
         // A transport chunk may contain many small events; limit each event,
@@ -130,7 +143,7 @@ export async function parseNdjson(
       }
       if (!sawDone && carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
     }
-    carry += decoder.decode();
+    carry += decodeResponseChunk(decoder);
     if (!sawDone && carry.trim()) handle(carry.trim());
     if (!sawDone) throw new Error("Incomplete Ollama response stream.");
     return result;
