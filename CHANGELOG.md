@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
+- **GitHub Packages installer candidate (not published):** add a separately versioned, zero-dependency `@sanskarin/lineloom-cli` npm package, pinned stable/preview checksum-verified VSIX installation, cross-platform CLI test workflow and an owner-gated GitHub Packages publisher. GitHub npm package availability and npmjs.com publication are separate from extension releases.
+
 - **Unreleased context-boundary hardening ([PR #80](https://github.com/sanskarIN/LineLoom/pull/80)):** refuse invalid NaN/Infinity cursor/document/budget metadata before any source window read and cap direct context-extraction budgets to the configured 30,000 UTF-16-unit maximum; add deterministic regressions. This does not perform real-model or desktop acceptance.
 
 - **Merged but unreleased ([PR #76](https://github.com/sanskarIN/LineLoom/pull/76)):** protect bounded UTF-16 source context windows from splitting a Unicode surrogate pair at prefix/suffix edges or at a caret inside an astral character. Drop only incomplete boundary code units, preserve intact emoji and international identifiers, and keep the original context-size limit; include deterministic unit regressions.
