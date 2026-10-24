@@ -11,7 +11,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 - No dependencies or automatic installation lifecycle scripts.
 - Downloads only **pinned published** GitHub VSIX artifacts: stable v1.2.0 or opt-in preview v1.2.4. A new CLI release must explicitly review/version the pinned artifact digests.
 
-**Availability:** The workflow and source are prepared; don't claim the GitHub package is available until [the publishing workflow](../.github/workflows/package-publish.yml) succeeds and the package actually appears under the repository's Packages section. npmjs.com is **not** automatically updated.
+**Published on GitHub Packages (2026-10-24):** [The package publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40085599452) completed successfully with `npm publish` reporting `+ @sanskarin/lineloom-cli@0.1.0` on `https://npm.pkg.github.com` and an independent audit reporting **0 vulnerabilities**. The package metadata links to this repository so GitHub can associate it with the repository's **Packages** section. Public visibility in the GitHub UI and an authenticated end-user install have **not** been independently verified. This package was **not** published on npmjs.com.
 
 ## Install or execute with npm
 
@@ -34,9 +34,9 @@ With the same authenticated scope configuration, `npm exec --package=@sanskarin/
 
 1. PR and main-branch changes to `packages/lineloom-cli/**` trigger [package CI](../.github/workflows/package-check.yml) on Windows, macOS and Linux. It checks unit tests, offline behavior, a dry-run and the actual npm tarball contents.
 2. Before the first GitHub Packages release, review package version, pinned extension SHA-256 digests, package security tests, and registry identity. Package CI is **not** a substitute for real desktop installation acceptance.
-3. A separate, **explicitly owner-authorized** file ` .github/package-publish-v0.1.0.flag ` on `main` triggers [the one-time GitHub Packages publishing workflow](../.github/workflows/package-publish.yml). It validates identity/version and reruns package tests and an independent dependency audit before invoking npm publish.
+3. A separate, **explicitly owner-authorized** file `.github/package-publish-v0.1.0.flag` on `main` triggers [the one-time GitHub Packages publishing workflow](../.github/workflows/package-publish.yml). It validates identity/version and reruns package tests and an independent dependency audit before invoking npm publish.
 4. Only that publisher job receives `packages: write` and the repository `GITHUB_TOKEN`. It cannot publish the VS Code extension to either registry and cannot publish on npmjs.com.
-5. Verify the workflow **success**, expected package version, repository association, visibility and a real authenticated install before marking availability in docs or on the website.
+5. The first publisher workflow succeeded on 2026-10-24 and verified the package name/version, package-only audit and upload. Confirm the repository Packages link, public visibility and a real authenticated install separately; these manual checks remain outstanding.
 6. Keep the extension v1.2.5 pre-release blocked on [security issue #79](https://github.com/sanskarIN/LineLoom/issues/79) and outstanding physical/manual Ollama and accessibility QA. Independent package publication doesn't waive those gates.
 
 ## Optional npmjs.com publication (separate action)
