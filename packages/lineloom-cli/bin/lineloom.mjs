@@ -47,8 +47,8 @@ const help = "LineLoom VS Code installer (only SHA-256-pinned official releases)
   "  lineloom install --editor codium     Use VSCodium CLI (or code-insiders)\n" +
   "  lineloom install --dry-run           Print details without installing\n" +
   "  lineloom version                     Display pinned versions\n" +
-  "  lineloom verify ./LineLoom-1.2.0.vsix           Verify stable VSIX offline\\n" +
-  "  lineloom verify ./LineLoom-1.2.4.vsix --preview Verify preview VSIX offline\\n" +
+  "  lineloom verify ./LineLoom-1.2.0.vsix           Verify stable VSIX offline\n" +
+  "  lineloom verify ./LineLoom-1.2.4.vsix --preview Verify preview VSIX offline\n" +
   "  lineloom --help                       Show help\n\n" +
   "Requires Node 22+ and a supported editor CLI on PATH. No npm install hooks.\n";
 
