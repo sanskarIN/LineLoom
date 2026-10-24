@@ -2,10 +2,26 @@
 import { pathToFileURL } from "node:url";
 import { getRelease } from "../lib/releases.mjs";
 import { installRelease } from "../lib/install.mjs";
+import { verifyLocalVSIX } from "../lib/verify.mjs";
 
 export function parseArgs(args) {
   if (args.length === 0 || args[0] === "help" || args[0] === "--help") return { command: "help" };
   if (args[0] === "version" && args.length === 1) return { command: "version" };
+  if (args[0] === "verify") {
+    let path, channel = "stable";
+    for (const arg of args.slice(1)) {
+      if (arg === "--preview") {
+        if (channel === "preview") throw new Error("Duplicate --preview option");
+        channel = "preview";
+      } else if (arg.startsWith("--") || path !== undefined) {
+        throw new Error("Unexpected verify argument: " + arg);
+      } else {
+        path = arg;
+      }
+    }
+    if (!path) throw new Error("Specify a local .vsix file to verify");
+    return { command: "verify", channel, path };
+  }
   if (args[0] !== "install") throw new Error("Unknown command. Run lineloom --help");
   let channel = "stable", editor = "code", dryRun = false;
   const seen = new Set();
@@ -31,6 +47,8 @@ const help = "LineLoom VS Code installer (only SHA-256-pinned official releases)
   "  lineloom install --editor codium     Use VSCodium CLI (or code-insiders)\n" +
   "  lineloom install --dry-run           Print details without installing\n" +
   "  lineloom version                     Display pinned versions\n" +
+  "  lineloom verify ./LineLoom-1.2.0.vsix           Verify stable VSIX offline\n" +
+  "  lineloom verify ./LineLoom-1.2.4.vsix --preview Verify preview VSIX offline\n" +
   "  lineloom --help                       Show help\n\n" +
   "Requires Node 22+ and a supported editor CLI on PATH. No npm install hooks.\n";
 
@@ -46,6 +64,12 @@ export async function run(args = process.argv.slice(2), io = console, deps = {})
       return 0;
     }
     const spec = getRelease(command.channel);
+    if (command.command === "verify") {
+      const bytes = await verifyLocalVSIX(command.path, spec.sha256);
+      io.log("Verified " + bytes + " bytes against pinned " + spec.channel +
+        " LineLoom v" + spec.version + " SHA-256; no installation performed.");
+      return 0;
+    }
     io.log("Official " + spec.channel + " release: v" + spec.version);
     io.log("Source: " + spec.url);
     io.log("Expected SHA-256: " + spec.sha256);
