@@ -117,6 +117,29 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
 });
 
 
+test("public maintainer links use the website without X or LinkedIn", () => {
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  const install = readFileSync(resolve(dir, "install.html"), "utf8");
+  const pagesGuide = readFileSync(resolve(root, "docs/github-pages.md"), "utf8");
+
+  for (const [label, contents] of [
+    ["README", readme],
+    ["homepage", page],
+    ["installation guide", install],
+    ["Pages guide", pagesGuide],
+  ]) {
+    assert.doesNotMatch(contents, /https?:\/\/(?:www\.)?(?:x\.com|twitter\.com|linkedin\.com)(?:\/|[?#]|$)/i,
+      label + " should not advertise personal X, Twitter or LinkedIn links");
+  }
+
+  assert.match(readme, /Website: \[sanskarin\.github\.io\]\(https:\/\/sanskarin\.github\.io\/\)/);
+  assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
+  assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
+  assert.match(pagesGuide, /GitHub v1\.2\.0 stable remains the stable download/);
+  assert.match(pagesGuide, /GitHub .*v1\.2\.4.*latest published pre-release/);
+  assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
+});
+
 test("official Marketplace and Open VSX listings are visible throughout published resources", () => {
   const marketplaceUrl = "https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom";
   const openVsxUrl = "https://open-vsx.org/extension/SanskarCodes/lineloom";
