@@ -5,7 +5,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 ## GitHub Packages npm installer
 
 - GitHub scope/name: `@sanskarin/lineloom-cli`.
-- Package version: `0.1.0` (independent of extension version).
+- Published package version: `0.1.0`; next CLI development candidate: `0.2.0` (independent of extension version).
 - Source: `packages/lineloom-cli/`.
 - Target: GitHub's npm registry, `https://npm.pkg.github.com`; GitHub Packages attaches it to this repository via package metadata after a successful publish.
 - No dependencies or automatic installation lifecycle scripts.
@@ -29,6 +29,17 @@ lineloom install --editor codium
 With the same authenticated scope configuration, `npm exec --package=@sanskarin/lineloom-cli -- lineloom install --dry-run` avoids global installation. Other npm-compatible clients such as pnpm can resolve the same registry package if correctly authenticated; no independent pnpm registry publish is necessary.
 
 **Security controls:** Explicit command invocation only; release manifests are version-pinned; all redirects are restricted to GitHub asset hosts; downloads are size-limited and SHA-256-verified before editor installation; editor commands use an allowlist and no shell; temporary files are removed. The CLI sends no project data to an inference provider and never downloads a model.
+
+## Next CLI candidate: v0.2.0 (not published)
+
+CLI v0.2.0 adds a manual **offline verify** subcommand for downloaded release assets:
+
+```sh
+lineloom verify ./LineLoom-1.2.0.vsix
+lineloom verify ./LineLoom-1.2.4.vsix --preview
+```
+
+It reads only a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with the pinned stable/preview digest. It cannot download, install or contact the Ollama service. **The current published v0.1.0 GitHub Packages CLI does not contain this feature.** A future v0.2.0 publication requires fresh owner authorization and a version-specific workflow; the existing v0.1.0 authorization cannot publish v0.2.0.
 
 ## CI and release process
 

@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 import { parseArgs, run } from "../bin/lineloom.mjs";
 import { getRelease } from "../lib/releases.mjs";
 import { assertTrustedUrl, fetchVerifiedVSIX, installRelease } from "../lib/install.mjs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { verifyLocalVSIX } from "../lib/verify.mjs";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -103,4 +104,40 @@ test("follow an allowed redirect to a matching fixture", async () => {
     assert.equal(calls, 2);
     assert.deepEqual(await readFile(path), fixture);
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("offline verify reads a bounded local file and enforces a pinned digest", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-verify-"));
+  const path = join(dir, "candidate.vsix");
+  try {
+    await writeFile(path, fixture);
+    assert.equal(await verifyLocalVSIX(path, digest), fixture.length);
+    await assert.rejects(verifyLocalVSIX(path, "0".repeat(64)), /SHA-256/);
+    await assert.rejects(verifyLocalVSIX(path, "bad-digest"), /pinned SHA-256/);
+    await assert.rejects(verifyLocalVSIX(join(dir, "missing.vsix"), digest));
+    await assert.rejects(verifyLocalVSIX(join(dir, "wrong.zip"), digest), /\.vsix/);
+    await writeFile(path, Buffer.alloc(20));
+    await assert.rejects(verifyLocalVSIX(path, digest), /size/);
+    await writeFile(path, Buffer.alloc(10 * 1024 * 1024 + 1));
+    await assert.rejects(verifyLocalVSIX(path, digest), /size/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("verify command parses stable and preview and does not install on failure", async () => {
+  assert.deepEqual(parseArgs(["verify", "download.vsix", "--preview"]), {
+    command: "verify", channel: "preview", path: "download.vsix"
+  });
+  assert.deepEqual(parseArgs(["verify", "--preview", "download.vsix"]), {
+    command: "verify", channel: "preview", path: "download.vsix"
+  });
+  for (const args of [
+    ["verify"], ["verify", "--preview"], ["verify", "a.vsix", "b.vsix"],
+    ["verify", "a.vsix", "--preview", "--preview"], ["verify", "--unknown", "a.vsix"]
+  ]) assert.throws(() => parseArgs(args));
+  const io = logger();
+  assert.equal(await run(["verify", "missing.vsix"], io, {
+    fetchImpl: () => { throw Error("Download invoked"); },
+    runner: () => { throw Error("Editor invoked"); }
+  }), 1);
+  assert.match(io.messages.join("\n"), /LineLoom installer:/);
 });

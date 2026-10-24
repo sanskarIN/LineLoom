@@ -4,6 +4,8 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — v1.2.5 development (merged source, not published)
 
+- **CLI v0.2.0 candidate (not published):** add opt-in offline SHA-256 verification for user-downloaded pinned stable/preview VSIX files with local size/file-type checks. This verifies only; it does not install, download, contact Ollama or publish the npm package. GitHub Packages currently serves v0.1.0.
+
 - **GitHub Packages installer candidate (not published):** add a separately versioned, zero-dependency `@sanskarin/lineloom-cli` npm package, pinned stable/preview checksum-verified VSIX installation, cross-platform CLI test workflow and an owner-gated GitHub Packages publisher. GitHub npm package availability and npmjs.com publication are separate from extension releases.
 
 - **Unreleased context-boundary hardening ([PR #80](https://github.com/sanskarIN/LineLoom/pull/80)):** refuse invalid NaN/Infinity cursor/document/budget metadata before any source window read and cap direct context-extraction budgets to the configured 30,000 UTF-16-unit maximum; add deterministic regressions. This does not perform real-model or desktop acceptance.
