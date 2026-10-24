@@ -14,7 +14,7 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header"><div class="shell nav">
     <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
-    <nav aria-label="Help navigation" class="nav-links"><a href="./">Home</a><a href="#windows">Windows</a><a href="#mac-linux">macOS / Linux</a><a href="#diagnostics">Troubleshooting</a></nav>
+    <nav aria-label="Help navigation" class="nav-links"><a href="./">Home</a><a href="#windows">Windows</a><a href="#mac-linux">macOS / Linux</a><a href="#package-manager">npm installer</a><a href="#diagnostics">Troubleshooting</a></nav>
     <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">GitHub stable v1.2.0 ↗</a>
   </div></header>
   <main class="shell install-doc" id="main">
@@ -42,6 +42,15 @@
         <li>Run <strong>LineLoom: Quick Actions</strong> to select a locally installed Ollama coding model after installation.</li>
       </ol>
       <p>The Open VSX v1.2.0 Stable package is publicly downloadable; the public registry API reports <code>verified: true</code> for the namespace (checked 2026-10-20). The extension uses the same identifier <code>SanskarCodes.lineloom</code>.</p>
+    </section>
+    <section class="doc-block" id="package-manager">
+      <h2>Optional package manager installer — GitHub Packages</h2>
+      <p><strong>Published separately:</strong> <code>@sanskarin/lineloom-cli@0.1.0</code> is an npm-format command-line installer. It verifies the SHA-256 of published GitHub VSIX files, choosing stable v1.2.0 by default or v1.2.4 only when <code>--preview</code> is given. It is <strong>not</strong> a new extension release and is <strong>not</strong> published to npmjs.com.</p>
+      <p>Requires Node.js 22+, a supported editor command on PATH and authenticated read access to <code>npm.pkg.github.com</code>. Configure your npm package credentials privately; never paste tokens into public files or shell history. See the <a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/packages.md">package manager installation guide</a> for GitHub registry authentication.</p>
+      <div class="command doc-command"><code>npm config set @sanskarin:registry https://npm.pkg.github.com</code><button class="copy" type="button" data-copy="npm config set @sanskarin:registry https://npm.pkg.github.com" aria-label="Copy npm scope registry command">Copy</button></div>
+      <div class="command doc-command"><code>npm install --global @sanskarin/lineloom-cli</code><button class="copy" type="button" data-copy="npm install --global @sanskarin/lineloom-cli" aria-label="Copy npm installer command">Copy</button></div>
+      <div class="command doc-command"><code>lineloom install --dry-run</code><button class="copy" type="button" data-copy="lineloom install --dry-run" aria-label="Copy safe dry-run command">Copy</button></div>
+      <p>The CLI never automatically installs an extension when the npm package is installed. To install after verifying a dry run, explicitly run <code>lineloom install</code>. Hands-on installation on real Windows, macOS and Linux editors remains a separate QA step.</p>
     </section>
     <aside class="install-warning" aria-label="Important installer warning"><strong>Got “One or more extensions are for Visual Studio Code”?</strong><p>You opened LineLoom using the <em>Visual Studio VSIX Installer</em> (for the full Visual Studio IDE), rather than VS Code. This error usually means the download already succeeded; it does not prove the archive is broken. Close that installer and follow the VS Code steps below.</p></aside>
     <section class="doc-block" id="windows">

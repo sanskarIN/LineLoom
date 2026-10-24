@@ -140,6 +140,20 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });
 
+test("published GitHub Packages CLI is correctly distinguished from editor registry and npmjs", () => {
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  const packagesDoc = readFileSync(resolve(root, "docs/packages.md"), "utf8");
+  assert.match(readme, /Published on GitHub Packages \(2026-10-24\)/);
+  assert.match(packagesDoc, /npm publish/);
+  assert.match(packagesDoc, /not.*published on npmjs\.com/i);
+  assert.match(guide, /id="package-manager"/);
+  assert.match(guide, /@sanskarin\/lineloom-cli@0\.1\.0/);
+  assert.match(guide, /authenticated read access/);
+  assert.match(guide, /not.*published to npmjs\.com/i);
+  assert.ok(page.includes("GitHub Packages"));
+});
+
 test("official Marketplace and Open VSX listings are visible throughout published resources", () => {
   const marketplaceUrl = "https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom";
   const openVsxUrl = "https://open-vsx.org/extension/SanskarCodes/lineloom";
