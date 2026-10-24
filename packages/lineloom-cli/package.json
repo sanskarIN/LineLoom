@@ -1,0 +1,41 @@
+{
+  "name": "@sanskarin/lineloom-cli",
+  "version": "0.1.0",
+  "description": "Checksum-verified installer for official LineLoom VS Code extension releases",
+  "type": "module",
+  "bin": {
+    "lineloom": "./bin/lineloom.mjs"
+  },
+  "files": [
+    "bin/",
+    "lib/",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "check:pack": "node test/verify-pack.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sanskarIN/LineLoom",
+    "directory": "packages/lineloom-cli"
+  },
+  "homepage": "https://sanskarin.github.io/LineLoom/",
+  "bugs": "https://github.com/sanskarIN/LineLoom/issues",
+  "license": "MIT",
+  "keywords": [
+    "vscode",
+    "extension",
+    "ollama",
+    "autocomplete",
+    "lineloom",
+    "installer"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

@@ -212,6 +212,10 @@ The extension transmits a bounded snippet **from the current document** to the c
 - [Troubleshooting](docs/troubleshooting/README.md)
 - [v1.0.0 stable release notes](docs/releases/v1.0.0.md) and [ongoing manual QA checklist](docs/qa/v0.9.5-readiness.md)
 
+## npm and GitHub Packages installer (optional)
+
+A separate dependency-free `@sanskarin/lineloom-cli` package is being prepared for this repository's **GitHub Packages** section. Its `lineloom install` command downloads and SHA-256 verifies the published **v1.2.0 stable** VSIX; `--preview` explicitly selects published **v1.2.4**. Installing the npm package alone does not install the VS Code extension; it has no install-time hooks. GitHub's npm registry requires read authentication and publication must be verified before using the package. This is not yet a verified npmjs.com listing. See [package installation, security and publishing guide](docs/packages.md).
+
 ## Development
 
 ```sh
