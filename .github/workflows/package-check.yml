@@ -1,0 +1,45 @@
+name: Verify LineLoom npm installer
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/lineloom-cli/**'
+      - '.github/workflows/package-check.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'packages/lineloom-cli/**'
+      - '.github/workflows/package-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-package-check-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+jobs:
+  installer:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: packages/lineloom-cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - name: Install exact zero-dependency CLI lockfile
+        run: npm ci --ignore-scripts --no-audit
+      - name: Test offline CLI safety and correctness
+        run: npm test
+      - name: Check executable/help and dry-run
+        run: |
+          node bin/lineloom.mjs --help
+          node bin/lineloom.mjs install --dry-run
+      - name: Verify published tarball contents
+        if: matrix.os == 'ubuntu-latest'
+        run: npm run check:pack

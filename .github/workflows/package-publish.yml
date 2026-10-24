@@ -1,0 +1,58 @@
+name: Publish LineLoom installer to GitHub Packages
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/package-publish-v0.1.0.flag'
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-cli-github-packages-0.1.0
+  cancel-in-progress: false
+jobs:
+  publish:
+    name: Verify and publish only @sanskarin/lineloom-cli 0.1.0
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    defaults:
+      run:
+        working-directory: packages/lineloom-cli
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          package-manager-cache: false
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@sanskarin'
+      - name: Require exact owner-authorization marker and pinned package metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat ../../.github/package-publish-v0.1.0.flag)" = 'OWNER_AUTHORIZED_GITHUB_NPM_PACKAGE_LINELOOM_0.1.0'
+          node - <<'NODE'
+          const p = require('./package.json'), l = require('./package-lock.json');
+          if (p.name !== '@sanskarin/lineloom-cli' || p.version !== '0.1.0' ||
+              l.version !== p.version || l.packages[''].version !== p.version ||
+              p.repository.url !== 'https://github.com/sanskarIN/LineLoom' ||
+              p.publishConfig.registry !== 'https://npm.pkg.github.com' ||
+              p.dependencies || p.optionalDependencies || p.scripts.postinstall || p.scripts.preinstall) {
+            throw Error('Package publish identity, pin or install lifecycle is unsafe');
+          }
+          NODE
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit
+      - name: Validate installer behavior and package contents
+        run: |
+          npm test
+          npm run check:pack
+          node bin/lineloom.mjs install --dry-run
+      - name: Audit package dependencies independently
+        run: npm audit --audit-level=high --registry=https://registry.npmjs.org
+      - name: Publish standalone GitHub npm package, not VS Code extension
+        run: npm publish --ignore-scripts --registry=https://npm.pkg.github.com
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
