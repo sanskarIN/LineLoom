@@ -14,6 +14,40 @@ describe("active-document context", () => {
     expect(extractContext("abc", -3, 128).prefix).toBe("");
     expect(extractContext("abc", 900, 128).suffix).toBe("");
   });
+  it("fails closed for non-finite editor offsets, document lengths and budgets", () => {
+    for (const [offset, length, budget] of [
+      [Number.NaN, 200, 512],
+      [Number.POSITIVE_INFINITY, 200, 512],
+      [Number.NEGATIVE_INFINITY, 200, 512],
+      [50, Number.NaN, 512],
+      [50, Number.POSITIVE_INFINITY, 512],
+      [50, 200, Number.NaN],
+      [50, 200, Number.POSITIVE_INFINITY],
+      [50, 200, Number.NEGATIVE_INFINITY]
+    ]) {
+      let reads = 0;
+      const value = extractContextWindow(() => {
+        reads++;
+        return "should not read";
+      }, offset, length, budget);
+      expect(value).toEqual({ prefix: "", suffix: "", indentation: "", cursorOffset: 0 });
+      expect(reads).toBe(0);
+    }
+  });
+
+  it("clamps oversized direct caller budgets to the 30,000-unit setting maximum", () => {
+    const text = "p".repeat(80_000);
+    const reads: Array<[number, number]> = [];
+    const value = extractContextWindow((start, end) => {
+      reads.push([start, end]);
+      return text.slice(start, end);
+    }, 40_000, text.length, Number.MAX_SAFE_INTEGER);
+    expect(value.cursorOffset).toBe(40_000);
+    expect(value.prefix.length + value.suffix.length).toBe(30_000);
+    expect(reads).toHaveLength(2);
+    expect(reads.every(([start, end]) => end >= start && end - start <= 30_000)).toBe(true);
+  });
+
   it("extracts indentation without importing another file", () => {
     expect(extractContext("fn main() {\n    let value", 25, 256).indentation).toBe("    ");
   });

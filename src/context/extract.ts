@@ -12,9 +12,16 @@ export function extractContextWindow(
   length: number,
   budget: number
 ): DocumentContext {
+  // Unexpected non-finite metadata must not propagate NaN/Infinity into
+  // editor range reads or accidentally request an unbounded source window.
+  if (!Number.isFinite(length) || !Number.isFinite(offset) || !Number.isFinite(budget)) {
+    return { prefix: "", suffix: "", indentation: "", cursorOffset: 0 };
+  }
   const total = Math.max(0, Math.trunc(length));
   const cursorOffset = Math.max(0, Math.min(total, Math.trunc(offset)));
-  const cap = Math.max(128, Math.trunc(budget));
+  // Match the published maxContextChars setting even for direct API callers
+  // (including synthetic tests), without changing the normal 128-unit floor.
+  const cap = Math.min(30_000, Math.max(128, Math.trunc(budget)));
   const after = total - cursorOffset;
   const suffixCap = Math.min(after, Math.floor(cap * 0.3));
   const prefixCap = Math.min(cursorOffset, cap - suffixCap);
