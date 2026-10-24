@@ -4,7 +4,7 @@ Website source: `site/` (standalone HTML, CSS, SVG and small JavaScript, with no
 
 https://sanskarin.github.io/LineLoom/
 
-**Official install destinations:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) for VS Code and [Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom) for compatible editors. Stable v1.0.0 is public on both. The [GitHub VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.0.0/LineLoom-1.0.0.vsix) remains an alternate/manual installation path.
+**Official install destinations:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) for VS Code and [Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom) for compatible editors. GitHub [v1.2.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) and Open VSX v1.2.0 stable are published; the Marketplace version is managed separately and must be checked on its listing. The [v1.2.0 GitHub VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix) remains an alternate/manual installation path.
 
 ## First-time GitHub Pages activation
 
@@ -29,6 +29,6 @@ npm run test:site
 
 Use a local server (for example `npx serve site` if you already have that utility) and inspect keyboard tab navigation, contrast, 320px/768px/desktop layout, copy-button behavior and actual outbound links. The editor illustration is explicitly labeled an illustrative mockup, **not** a VS Code screenshot or measured output.
 
-**Versioning:** Website links target the release version declared in `package.json` and tested in `npm run test:site`. The current stable version is v1.0.0. The homepage links to both public registries, with Marketplace as the primary VS Code install action. The installation page also retains the original GitHub release fallback. A Page deployment can finish before the tagged GitHub release exists; the download URL only works after the release workflow succeeds. The site is intentionally independent from the binary packaging and is excluded from VSIX contents.
+**Versioning:** Website download links must target a **verified published GitHub release**, not the in-development version in `package.json`. GitHub v1.2.0 stable remains the stable download and GitHub [v1.2.4](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4) is the latest published pre-release; source version 1.2.5 is still unreleased. `npm run test:site` checks the explicitly labeled stable and preview links. The homepage links to both registries, with Marketplace as the primary VS Code install action, and the installation page retains the stable GitHub VSIX fallback. Publishing a Pages deployment does **not** publish a VSIX or update either registry. The website is excluded from VSIX contents.
 
-**Not provided by this deployment:** Marketplace or Open VSX publication, model downloads, hosted Ollama inference, stable v1.0.0 verification, or editor testing with real local models. See [publishing guide](publishing.md) and [stable gate](releases/v1.0.0.md).
+**Not provided by this deployment:** Marketplace or Open VSX publication, model downloads, hosted Ollama inference, or editor testing with real local models. Those require independent publication or manual verification. See the [publishing guide](publishing.md), [v1.2.0 stable notes](releases/v1.2.0.md), and [v1.2.5 manual QA plan](releases/v1.2.5-plan.md).

@@ -224,7 +224,7 @@ The GitHub v1.0.0 stable release ships an installable VSIX for community testing
 
 ## Maintainer
 
-GitHub: [sanskarIN](https://github.com/sanskarIN) · [X](https://x.com/SanskarCodes) · [LinkedIn](https://linkedin.com/in/SanskarCodes)
+GitHub: [sanskarIN](https://github.com/sanskarIN) · Website: [sanskarin.github.io](https://sanskarin.github.io/)
 
 ## Voluntary support
 
