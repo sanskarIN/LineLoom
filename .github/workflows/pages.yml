@@ -23,7 +23,7 @@ jobs:
       - name: Test static website
         run: npm run test:site
       - name: Configure Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
       - name: Upload site
         uses: actions/upload-pages-artifact@v4
         with:
