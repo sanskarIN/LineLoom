@@ -192,3 +192,47 @@ describe("native sidebar suggested next step", () => {
       .toBe("lineloom.clearRelatedFiles");
   });
 });
+
+describe("last user-invoked Ollama model readiness", () => {
+  const entries = (state: NonNullable<SidebarSnapshot["modelReadiness"]>) =>
+    sidebarSections({ ...snapshot, modelReadiness: state }).flatMap(section => section.items);
+
+  it("does not claim availability before a manual check and never exposes an endpoint", () => {
+    const unknown = entries("not-checked").find(item => item.id === "model-readiness");
+    expect(unknown).toMatchObject({ command: "lineloom.checkConnection" });
+    expect(unknown?.description).toContain("Not checked this session");
+    for (const state of ["checking", "available", "missing", "unreachable"] as const) {
+      const readiness = entries(state).find(item => item.id === "model-readiness");
+      expect(readiness?.description).toContain(state === "checking" ? "in progress" : "last manual check");
+      expect(JSON.stringify(readiness)).not.toContain("http");
+      expect(JSON.stringify(readiness)).not.toContain("/private");
+    }
+  });
+
+  it("distinguishes default model validation from active editor language overrides", () => {
+    const missingDefault = sidebarSections({
+      ...snapshot, modelReadiness: "missing",
+      activeEditor: { ...snapshot.activeEditor, modelSource: "Default model" }
+    }).flatMap(section => section.items);
+    expect(missingDefault.find(item => item.id === "next-step")).toMatchObject({
+      label: "Next: Choose Installed Model", command: "lineloom.selectModel"
+    });
+    const overridden = entries("missing");
+    expect(overridden.find(item => item.id === "next-step")?.command).toBe("lineloom.trigger");
+  });
+
+  it("prioritizes failed manual check recovery after editor and trust restrictions", () => {
+    const failed = entries("unreachable");
+    expect(failed.find(item => item.id === "next-step")).toMatchObject({
+      label: "Next: Recheck Ollama", command: "lineloom.checkConnection"
+    });
+    const blocked = sidebarSections({
+      ...snapshot, workspaceTrusted: false, modelReadiness: "unreachable"
+    }).flatMap(section => section.items);
+    expect(blocked.find(item => item.id === "next-step")?.command).toBeUndefined();
+    const generating = sidebarSections({
+      ...snapshot, completionState: "generating", modelReadiness: "missing"
+    }).flatMap(section => section.items);
+    expect(generating.find(item => item.id === "next-step")?.command).toBe("lineloom.cancel");
+  });
+});
