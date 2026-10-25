@@ -1,6 +1,7 @@
 import type { EditorContextSummary } from "./editor-context";
 import type { CompletionState } from "../completion/engine";
 import type { ModelReadiness } from "./model-readiness";
+import type { ManualFilePrivacy } from "./file-privacy-session";
 
 /** Sidebar labels and actions are computed locally. This module never contacts Ollama. */
 export type SidebarEndpointState =
@@ -30,6 +31,7 @@ export interface SidebarSnapshot {
   averageLatencyMs?: number;
   performanceDiagnosticsEnabled?: boolean;
   modelReadiness?: ModelReadiness;
+  filePrivacy?: ManualFilePrivacy;
   crossFileContextEnabled?: boolean;
   relatedFileCount?: number;
 }
@@ -62,6 +64,16 @@ function readinessDescription(state: ModelReadiness | undefined): string {
     case "missing": return "Default model missing at last manual check";
     case "unreachable": return "Connection failed at last manual check";
     default: return "Not checked this session — click Check Ollama Connection";
+  }
+}
+
+function manualFilePrivacyDescription(state: ManualFilePrivacy | undefined): string {
+  switch (state) {
+    case "checking": return "Checking local path and ignore rules (on demand)";
+    case "allowed": return "Last manual check passed path/ignore rules; rechecked before inference";
+    case "blocked": return "Last manual check blocked this file; no inference requested";
+    case "no-editor": return "No active local file to inspect";
+    default: return "Not checked for this editor — click to inspect locally";
   }
 }
 
@@ -110,6 +122,9 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
       return entry("Next: Review Remote Approval",
         "An explicit connection check may ask you to approve this HTTPS origin.", "lock", "lineloom.checkConnection");
   }
+  if (snapshot.filePrivacy === "blocked") return entry("Next: Review File Exclusions",
+    "The last manual path/ignore check blocked the active file; inspect exclusions or open another file.",
+    "shield");
   if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
     "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
   if (snapshot.modelReadiness === "missing" && snapshot.activeEditor.modelSource === "Default model")
@@ -223,6 +238,13 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
           id: "check-file-privacy", label: "Check Active File Privacy",
           description: "Check current workspace and ignore rules locally; no model request",
           icon: "shield", command: "lineloom.checkActiveFilePrivacy"
+        },
+        {
+          id: "last-file-privacy", label: "Last Manual File Check",
+          description: manualFilePrivacyDescription(snapshot.filePrivacy),
+          icon: snapshot.filePrivacy === "blocked" ? "warning" :
+            snapshot.filePrivacy === "allowed" ? "check" : "shield",
+          command: "lineloom.checkActiveFilePrivacy"
         },
         {
           id: "related-context", label: "Related-File Context (Experimental)",
