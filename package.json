@@ -346,7 +346,7 @@
     "test:packager-security": "node --test scripts/check-packager-deps.test.mjs && node scripts/check-packager-deps.mjs"
   },
   "dependencies": {
-    "ignore": "^7.0.5"
+    "ignore": "^7.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
