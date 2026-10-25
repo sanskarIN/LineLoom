@@ -2,7 +2,13 @@
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
-**Publication status (2026-10-25):** [GitHub v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) and the newer [v1.3.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) are publicly available with independent SHA-256-verified VSIX assets. The v1.3.1 release is **pre-release only**, not latest stable. The last independently verified [Open VSX v1.2.0 stable](https://open-vsx.org/extension/SanskarCodes/lineloom) is separate, as is the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom); check each live registry for its actual version. GitHub releases never publish to either external registry or the npm CLI. Keep publisher credentials in protected environments and never commit them.
+**Publication status (2026-10-25):** [GitHub v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) and the newer [v1.3.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) are publicly available with independent SHA-256-verified VSIX assets. The v1.3.1 release is **pre-release only**, not latest stable. [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) was independently published and verified as public/latest on 2026-10-25 ([publisher run](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119)); the maintainer manually updated the separate [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) to v1.3.0. Check each live registry for its subsequent version. GitHub releases never publish to either external registry or the npm CLI. Keep publisher credentials in protected environments and never commit them.
+
+## Open VSX v1.3.0 stable — publication verified 2026-10-25
+
+The version-scoped [publisher workflow](../.github/workflows/publish-openvsx-v1.3.0.yml) completed successfully in [GitHub Actions](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119). It independently checked the exact GitHub v1.3.0 stable VSIX digest, release checksum, publisher/manifest and stable-channel metadata, then published using protected `OVSX_PAT`.
+
+The [version API](https://open-vsx.org/api/SanskarCodes/lineloom/1.3.0) and [latest API](https://open-vsx.org/api/SanskarCodes/lineloom) were independently checked after publication and returned `version: 1.3.0`, `preRelease: false`, `downloadable: true`, and `verified: true`; the root `latest` alias resolves to v1.3.0. The maintainer separately updated Microsoft's Marketplace to v1.3.0. Neither update published GitHub v1.3.1 preview or changed the npm CLI, and no real-model/hardware/accessibility manual QA was performed by registry publication.
 
 ## v1.3.1 GitHub pre-release (published 2026-10-25)
 
@@ -133,11 +139,11 @@ Future automation should prefer Microsoft's documented OIDC/Entra workload-feder
 
 ## Eclipse Open VSX — published
 
-The public [Open VSX listing](https://open-vsx.org/extension/SanskarCodes/lineloom) now serves **LineLoom 1.2.0 Stable** in the `SanskarCodes` namespace.
+The public [Open VSX listing](https://open-vsx.org/extension/SanskarCodes/lineloom) now serves **LineLoom 1.3.0 Stable** in the `SanskarCodes` namespace.
 
 - **Extension ID:** `SanskarCodes.lineloom`; **namespace:** `SanskarCodes`.
-- **Stable distribution:** version `1.2.0`, `preRelease: false`, `downloadable: true`; independently confirmed in the Open VSX API.
-- **Publisher verification:** the Open VSX API currently reports `verified: true` (checked 2026-10-20). Verification status may change separately from version availability.
+- **Stable distribution:** version `1.3.0`, `preRelease: false`, `downloadable: true`; independently confirmed in the Open VSX API.
+- **Publisher verification:** the Open VSX API currently reports `verified: true` (checked 2026-10-25). Verification status may change separately from version availability.
 - **Install:** in an editor configured to use Open VSX, search for LineLoom and select publisher `SanskarCodes`, or visit https://open-vsx.org/extension/SanskarCodes/lineloom.
 - **Future updates:** publish a newer versioned VSIX through the [official `ovsx` CLI](https://github.com/eclipse-openvsx/openvsx/tree/main/cli) or a versioned GitHub Actions workflow. Do **not** re-upload either v1.0.0 or v1.2.0, and never display personal access tokens.
 - **Trusted publishing:** consider Open VSX's documented OIDC/trusted publishing for future CI updates, with access controls and namespace authorization reviewed first.
@@ -149,4 +155,4 @@ For every subsequent version, publish to GitHub, Microsoft Marketplace, and Open
 
 ## Post-release verification and limitations
 
-GitHub v1.2.0 and [Open VSX v1.2.0](https://open-vsx.org/extension/SanskarCodes/lineloom) are public; Visual Studio Marketplace is independently managed. Manual editor acceptance, real CPU/GPU Ollama measurements, offline use, privacy controls, physical Windows/macOS/Linux sessions and accessibility testing remain unverified and must not be described as passed. See `docs/qa/v1.2.0-acceptance.md` and [issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
+GitHub v1.3.0 and [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) are public; the Marketplace was separately updated to v1.3.0 by the maintainer. Manual editor acceptance, real CPU/GPU Ollama measurements, offline use, privacy controls, physical Windows/macOS/Linux sessions and accessibility testing remain unverified and must not be described as passed. See `docs/qa/v1.2.0-acceptance.md` and [issue #21](https://github.com/sanskarIN/LineLoom/issues/21).
