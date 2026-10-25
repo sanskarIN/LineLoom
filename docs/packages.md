@@ -5,13 +5,25 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 ## GitHub Packages npm installer
 
 - GitHub scope/name: `@sanskarin/lineloom-cli`.
-- Published package version: `0.1.0`; next CLI development candidate: `0.2.0` (independent of extension version).
+- Published GitHub Packages version: **`0.1.0`**. Source-only CLI **`0.2.0`** (offline verify) is merged but unpublished; **`0.3.0`** (offline install) is an open [PR #92](https://github.com/sanskarIN/LineLoom/pull/92), not a published command. CLI versions are independent of the extension version.
 - Source: `packages/lineloom-cli/`.
 - Target: GitHub's npm registry, `https://npm.pkg.github.com`; GitHub Packages attaches it to this repository via package metadata after a successful publish.
 - No dependencies or automatic installation lifecycle scripts.
-- Downloads only **pinned published** GitHub VSIX artifacts: stable v1.2.0 or opt-in preview v1.2.4. A new CLI release must explicitly review/version the pinned artifact digests.
+- The **published v0.1.0 CLI** pins older, individually reviewed GitHub artifacts: stable v1.2.0 and opt-in preview v1.2.4. **The newer GitHub extension stable is v1.3.0**; do not assume `lineloom install` downloads it until the CLI's independently reviewed pinset and package version are updated.
 
 **Published on GitHub Packages (2026-10-24):** [The package publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40085599452) completed successfully with `npm publish` reporting `+ @sanskarin/lineloom-cli@0.1.0` on `https://npm.pkg.github.com` and an independent audit reporting **0 vulnerabilities**. The package metadata links to this repository so GitHub can associate it with the repository's **Packages** section. Public visibility in the GitHub UI and an authenticated end-user install have **not** been independently verified. This package was **not** published on npmjs.com.
+
+## Distribution and feature availability at a glance
+
+| Artifact | Public release status | What it supports |
+| --- | --- | --- |
+| GitHub extension VSIX | **v1.3.0 stable published** | Explicitly selected related-file context, native sidebar, privacy controls |
+| GitHub Packages `@sanskarin/lineloom-cli` | **v0.1.0 published** | Checksum-pinned download/install for older release VSIX versions; not automatically v1.3.0 |
+| CLI `verify` | **v0.2.0 source only, unpublished** | Verify a manually downloaded pinned VSIX |
+| CLI `install --file` | **v0.3.0 source proposal in PR #92** | Offline installation from a manually downloaded, checksum-verified official VSIX |
+| npmjs.com / Marketplace / Open VSX | **Independent registries** | Verify each live listing; no publication implied by GitHub release or GitHub Packages |
+
+The [future release roadmap](roadmap.md) tracks upgrades and acceptance; consult [PR #92 checks](https://github.com/sanskarIN/LineLoom/pull/92) for current integration status before merging.
 
 ## Install or execute with npm
 
@@ -30,7 +42,7 @@ With the same authenticated scope configuration, `npm exec --package=@sanskarin/
 
 **Security controls:** Explicit command invocation only; release manifests are version-pinned; all redirects are restricted to GitHub asset hosts; downloads are size-limited and SHA-256-verified before editor installation; editor commands use an allowlist and no shell; temporary files are removed. The CLI sends no project data to an inference provider and never downloads a model.
 
-## Next CLI candidate: v0.2.0 (not published)
+## Unpublished CLI v0.2.0 source and proposed v0.3.0 offline installer
 
 CLI v0.2.0 adds a manual **offline verify** subcommand for downloaded release assets:
 
@@ -39,7 +51,7 @@ lineloom verify ./LineLoom-1.2.0.vsix
 lineloom verify ./LineLoom-1.2.4.vsix --preview
 ```
 
-It reads only a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with the pinned stable/preview digest. It cannot download, install or contact the Ollama service. **The current published v0.1.0 GitHub Packages CLI does not contain this feature.** A future v0.2.0 publication requires fresh owner authorization and a version-specific workflow; the existing v0.1.0 authorization cannot publish v0.2.0.
+The v0.2.0 **source-only** verify command reads a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with an existing pinned stable/preview digest. It cannot download, install or contact Ollama. The proposed [v0.3.0 source PR #92](https://github.com/sanskarIN/LineLoom/pull/92) adds a separate offline `install --file ./LineLoom-1.2.0.vsix` operation using a bounded staged copy and checksum verification. **Neither CLI 0.2.0 nor 0.3.0 is available in the published v0.1.0 GitHub Packages artifact.** Do not copy or run the proposed commands using the published v0.1.0 package. Publication of either later CLI version requires independent package/security validation, real-editor installation evidence, a new authorization and a new version-specific publishing gate.
 
 ## CI and release process
 
@@ -48,7 +60,7 @@ It reads only a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-
 3. A separate, **explicitly owner-authorized** file `.github/package-publish-v0.1.0.flag` on `main` triggers [the one-time GitHub Packages publishing workflow](../.github/workflows/package-publish.yml). It validates identity/version and reruns package tests and an independent dependency audit before invoking npm publish.
 4. Only that publisher job receives `packages: write` and the repository `GITHUB_TOKEN`. It cannot publish the VS Code extension to either registry and cannot publish on npmjs.com.
 5. The first publisher workflow succeeded on 2026-10-24 and verified the package name/version, package-only audit and upload. Confirm the repository Packages link, public visibility and a real authenticated install separately; these manual checks remain outstanding.
-6. Keep the extension v1.2.5 pre-release blocked on [security issue #79](https://github.com/sanskarIN/LineLoom/issues/79) and outstanding physical/manual Ollama and accessibility QA. Independent package publication doesn't waive those gates.
+6. **Current extension stable is GitHub v1.3.0** (published with explicit QA limitations); v1.2.5 was an integrated source milestone, not a standalone public release. Continue [packager security follow-up #79](https://github.com/sanskarIN/LineLoom/issues/79), [v1.3.0 manual acceptance #66](https://github.com/sanskarIN/LineLoom/issues/66), and manual real-model/accessibility evidence. CLI publication never waives those separate gates.
 
 ## Optional npmjs.com publication (separate action)
 
