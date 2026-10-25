@@ -33,7 +33,7 @@ describe("LineLoom Quick Actions", () => {
       id: "resetInferenceTimings",
       label: "$(trash) Reset Inference Timing Samples"
     });
-    expect(off.every(action => action.command !== "lineloom.resetInferenceTimings")).toBe(true);
+    expect(quickActions(true, true, false).every(action => action.command !== "lineloom.resetInferenceTimings")).toBe(true);
   });
   it("has only known LineLoom commands, with no implicit network side effects", () => {
     const actions = quickActions(false, false);

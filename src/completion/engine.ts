@@ -38,7 +38,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   private readonly latencyWindow = new LatencyWindow();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
-  private readonly metrics: CompletionStats = {
+  private readonly metrics: Omit<CompletionStats, "recentLatencySamples" | "recentLatencyP50Ms" | "recentLatencyP95Ms"> = {
     requests: 0, completions: 0, accepted: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
     emptySuggestions: 0, suppressedEmptyRetries: 0, continuationHits: 0
