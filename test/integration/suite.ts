@@ -23,7 +23,7 @@ export async function run(): Promise<void> {
     "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
-    "lineloom.refreshSidebar", "lineloom.openSidebar"
+    "lineloom.refreshSidebar", "lineloom.openSidebar", "lineloom.checkActiveModel"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
@@ -36,9 +36,10 @@ export async function run(): Promise<void> {
   // editor source, and ensure keyboard/screen-reader names are populated.
   const readiness = new ModelReadinessSession();
   const privacyStatus = new FilePrivacySession();
+  const activeReadiness = new ModelReadinessSession();
   const offlineSidebar = new LineLoomSidebar(
     () => undefined, () => false, () => "ready", () => 0,
-    () => readiness.state, () => privacyStatus.state
+    () => readiness.state, () => privacyStatus.state, () => activeReadiness.state
   );
   const roots = offlineSidebar.getChildren();
   // The recommendation must be computed locally and exposed through a native
@@ -57,6 +58,11 @@ export async function run(): Promise<void> {
   assert.ok(activeSection && activeSection.kind === "section", "Missing active editor section");
   const activeItems = offlineSidebar.getChildren(activeSection);
   assert.ok(activeItems.some(node => node.kind === "item" && node.item.id === "editor-language"));
+  const activeReadinessNode = activeItems.find(node => node.kind === "item" &&
+    node.item.id === "active-model-readiness");
+  assert.ok(activeReadinessNode?.kind === "item" &&
+    activeReadinessNode.item.command === "lineloom.checkActiveModel");
+  assert.ok(offlineSidebar.getTreeItem(activeReadinessNode).accessibilityInformation?.label);
   for (const node of activeItems) {
     const item = offlineSidebar.getTreeItem(node);
     assert.ok(item.accessibilityInformation?.label, "Tree item needs a screen-reader label");
@@ -341,6 +347,17 @@ export async function run(): Promise<void> {
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
+      await configuration.update("languageModels", { typescript: "uninstalled-active-model:latest" }, vscode.ConfigurationTarget.Global);
+      await vscode.window.showTextDocument(permitted);
+      const activeCheckCalls = modelListCalls;
+      const beforeCheckGenerations = generationCalls;
+      await vscode.commands.executeCommand("lineloom.refreshSidebar");
+      assert.equal(modelListCalls, activeCheckCalls, "Sidebar rendering must not inspect active model remotely");
+      await vscode.commands.executeCommand("lineloom.checkActiveModel");
+      assert.equal(modelListCalls, activeCheckCalls + 1,
+        "The explicit active-model command must list models once, even with an override");
+      assert.equal(generationCalls, beforeCheckGenerations, "Checking the active model must not send source");
+      await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       // Diagnostics must capture only aggregate timings after explicit opt-in.
       resetEligibilityTimings();
       await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
