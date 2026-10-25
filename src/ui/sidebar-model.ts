@@ -63,6 +63,52 @@ function endpointDescription(state: SidebarEndpointState): string {
   }
 }
 
+/**
+ * One suggested next action, derived from settings and *provisional* editor
+ * eligibility only. This never tests the model, reads source or changes consent.
+ * Interactive checks are performed only when the developer clicks the action.
+ */
+export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntry {
+  const entry = (label: string, description: string, icon: string, command?: string): SidebarEntry =>
+    ({ id: "next-step", label, description, icon, ...(command ? { command } : {}) });
+
+  if (!snapshot.enabled) return entry("Next: Enable Autocomplete",
+    "Suggestions are off; enabling does not contact Ollama.", "play", "lineloom.enable");
+  if (!snapshot.workspaceTrusted) return entry("Next: Review Workspace Trust",
+    "Use VS Code's Workspace Trust controls; inference is blocked in restricted workspaces.", "shield");
+
+  // Match the deliberately bounded, settings-only messages from editor-context.ts.
+  // Never mistake "Allowed by settings" for a verified file privacy decision.
+  const eligibility = snapshot.activeEditor.eligibility;
+  switch (eligibility) {
+    case "Open a supported code file":
+      return entry("Next: Open a Source File", "Open a supported local source file to enable suggestions.", "symbol-file");
+    case "No inline provider for this language":
+      return entry("Next: Switch Language", "Choose a supported code language; unsupported editors cannot receive suggestions.", "code");
+    case "Only local file editors support completion":
+      return entry("Next: Open a Local File", "Virtual, untitled and remote URI editors are not eligible.", "symbol-file");
+    case "Language disabled in settings":
+      return entry("Next: Enable This Language", "Review the enabled language list.", "gear", "lineloom.manageLanguages");
+    case "No model configured":
+      return entry("Next: Select a Model", "Choose an installed model; discovery runs only after you click.", "symbol-method", "lineloom.selectModel");
+    case "Invalid inference endpoint":
+    case "Remote endpoint disabled":
+      return entry("Next: Review Endpoint Settings", "Check endpoint and remote-inference preferences.", "gear", "lineloom.openSettings");
+    case "Remote endpoint approval required":
+      return entry("Next: Review Remote Approval",
+        "An explicit connection check may ask you to approve this HTTPS origin.", "lock", "lineloom.checkConnection");
+  }
+  if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
+    "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
+  if (snapshot.completionState === "unavailable") return entry("Next: Check Ollama",
+    "Run a user-initiated connection check; this view does not ping models.", "plug", "lineloom.checkConnection");
+  if (snapshot.completionState === "error") return entry("Next: Open Diagnostics",
+    "Review source-free status details and troubleshoot the failed request.", "output", "lineloom.diagnostics");
+  return entry(snapshot.autoTrigger ? "Next: Trigger Completion" : "Next: Try Manual Completion",
+    "Manually request a suggestion; model availability and file privacy are not pre-verified here.",
+    "wand", "lineloom.trigger");
+}
+
 /** Deliberately omit endpoint URLs, file names, document contents and prompts. */
 export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
   return [
@@ -80,6 +126,7 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             snapshot.completionState === "error" ? "error" :
             snapshot.completionState === "unavailable" ? "warning" : "info"
         },
+        recommendedSidebarAction(snapshot),
         {
           id: "enabled", label: snapshot.enabled ? "Autocomplete On" : "Autocomplete Off",
           description: "Click to " + (snapshot.enabled ? "disable" : "enable"),
@@ -157,7 +204,9 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         {
           id: "related-context", label: "Related-File Context (Experimental)",
           description: snapshot.crossFileContextEnabled
-            ? (snapshot.relatedFileCount ?? 0) + " selected (session only; max two files)"
+            ? (snapshot.relatedFileCount ?? 0) > 0
+              ? (snapshot.relatedFileCount ?? 0) + " selected for this session (max two; rechecked before use)"
+              : "Enabled, but no files selected — choose up to two explicitly"
             : "Off — opt in under LineLoom settings",
           icon: "files",
           command: snapshot.crossFileContextEnabled ? "lineloom.selectRelatedFiles" : "lineloom.openSettings"
