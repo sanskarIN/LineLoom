@@ -6,6 +6,7 @@ import { ContinuationCache, type ContinuationPoint } from "./continuation";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { collectRelatedText } from "../context/related-editor";
+import { RELATED_FILE_LIMIT, validateRelatedSelection } from "../context/related";
 import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
@@ -45,7 +46,11 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   getRelatedFileCount(): number { return this.relatedFiles.length; }
   /** Explicit selection exists only for the current extension session. */
   setRelatedFiles(files: readonly vscode.Uri[]): void {
-    this.relatedFiles = files.slice(0, 2);
+    if (files.length > RELATED_FILE_LIMIT ||
+        (files.length > 0 && !validateRelatedSelection("", files.map(uri => uri.toString())))) {
+      throw new Error("Invalid related-file selection");
+    }
+    this.relatedFiles = [...files];
     this.relatedRevision++;
     this.cancel();
   }

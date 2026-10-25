@@ -1,9 +1,17 @@
 import * as vscode from "vscode";
 import { mayReadRelatedFile } from "../privacy/exclusions";
-import { planRelatedFiles, readBoundedRelatedFile } from "./related";
+import { planRelatedFiles, readBoundedRelatedFile, validateRelatedSelection } from "./related";
 
 // Deliberately limited to source-like files: never read arbitrary local documents.
 const SUPPORTED_SOURCE = /\.(?:py|js|jsx|ts|tsx|rs|kt|go|java|c|h|cpp|cc|hpp|hh)$/i;
+
+/** File-scheme, language and exact workspace-folder checks before any extra read. */
+export function isSupportedRelatedCandidate(active: vscode.Uri, uri: vscode.Uri): boolean {
+  const root = vscode.workspace.getWorkspaceFolder(active);
+  return active.scheme === "file" && uri.scheme === "file" &&
+    active.toString() !== uri.toString() && SUPPORTED_SOURCE.test(uri.path) &&
+    root !== undefined && vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() === root.uri.toString();
+}
 
 /**
  * Fail closed for the entire selected context set if anything is denied,
@@ -17,6 +25,7 @@ export async function collectRelatedText(
   stillCurrent: () => boolean
 ): Promise<string[] | undefined> {
   if (!selected.length) return [];
+  if (!validateRelatedSelection(active.uri.toString(), selected.map(uri => uri.toString()))) return;
   if (!vscode.workspace.isTrusted || !stillCurrent()) return;
   const root = vscode.workspace.getWorkspaceFolder(active.uri);
   if (!root || active.uri.scheme !== "file") return;
@@ -26,8 +35,7 @@ export async function collectRelatedText(
   for (const id of ids) {
     if (!stillCurrent() || !vscode.workspace.isTrusted) return;
     const uri = selectedById.get(id);
-    if (!uri || uri.scheme !== "file" || !SUPPORTED_SOURCE.test(uri.path) ||
-        vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() !== root.uri.toString()) return;
+    if (!uri || !isSupportedRelatedCandidate(active.uri, uri)) return;
     if (!await mayReadRelatedFile(uri, patterns) || !stillCurrent()) return;
     try {
       const text = await readBoundedRelatedFile(uri.fsPath);

@@ -8,9 +8,10 @@ Related files may contain source, private paths, credentials in comments, or ins
 
 1. `lineloom.crossFileContext` is **false by default**. Disabled mode never performs a related-file content read and uses the existing single-document prompt.
 2. In the Command Palette, choose **LineLoom: Select Related Files for Context**. You must choose specific files and confirm a modal explaining both local and remote transmission. Setting the toggle alone never selects files.
-3. At most **two selected files**, each at most **2,048 bytes**. Choices last only for the extension's running session; no paths or snippets are stored in globalState, logs, analytics, disk caches or background indexes. Changing any LineLoom setting, switching active editors, or editing ignore rules clears the selection.
-4. Use **LineLoom: Clear Selected Related Files** to discard consent instantly. The active request is invalidated; a request already sent to Ollama cannot be unsent.
-5. The current candidate accepts only explicitly selected supported source file extensions inside the **same workspace folder**. No recursive listing, parser, dependency tree, auto-discovery, binary, URL-backed or notebook scans.
+3. At most **two distinct selected files**, each at most **2,048 bytes**. The active file and repeated selections are rejected; neither a third file nor a different workspace folder is silently accepted. Choices last only for the extension's running session; no paths or snippets are stored in globalState, logs, analytics, disk caches or background indexes. Changing any LineLoom setting, switching active editors, or editing ignore rules clears the selection.
+4. The picker also rejects stale consent dialogs following a settings, ignore-policy or active-editor change. After confirming, a metadata and ignore-policy preflight rejects invalid selections **without reading their source**; the model request independently revalidates every selected file.
+5. Use **LineLoom: Clear Selected Related Files** to discard consent instantly. The active request is invalidated; a request already sent to Ollama cannot be unsent.
+6. The current candidate accepts only explicitly selected supported source file extensions inside the **same workspace folder**. No recursive listing, parser, dependency tree, auto-discovery, binary, URL-backed or notebook scans.
 
 ## Privacy and resource boundaries
 

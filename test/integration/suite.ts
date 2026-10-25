@@ -7,7 +7,7 @@ import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
-import { collectRelatedText } from "../../src/context/related-editor";
+import { collectRelatedText, isSupportedRelatedCandidate } from "../../src/context/related-editor";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "../../src/privacy/timings";
 
 
@@ -321,6 +321,46 @@ export async function run(): Promise<void> {
         assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), true,
           "Opted-in related file must be passed as untrusted reference text");
         assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
+        assert.equal(isSupportedRelatedCandidate(document.uri, permitted.uri), true);
+        assert.equal(isSupportedRelatedCandidate(document.uri, document.uri), false);
+        assert.equal(await collectRelatedText(document, [document.uri], [], () => true), undefined,
+          "Active source must not be duplicated as an extra reference");
+        assert.equal(await collectRelatedText(document, [permitted.uri, permitted.uri], [], () => true), undefined,
+          "Duplicate selected file must fail closed instead of repeating source");
+        assert.equal(await collectRelatedText(document,
+          [permitted.uri, deniedByApp.uri, deniedByGit.uri], [], () => true), undefined,
+          "Oversized selection must be refused before any selected file read");
+        assert.equal(await collectRelatedText(document, [permitted.uri], [], () => false), undefined,
+          "Cancelled selection must not read or send source");
+
+        // A related file may be edited while a genuine Ollama request is in
+        // flight. Re-read and discard the now-stale response before display.
+        const originalRelatedBytes = await vscode.workspace.fs.readFile(permitted.uri);
+        engine.setRelatedFiles([permitted.uri]);
+        const relatedRequestStarted = new Promise<void>(resolve => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const obsoleteRelatedRequest = engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        try {
+          await Promise.race([
+            relatedRequestStarted,
+            new Promise<never>((_resolve, reject) =>
+              setTimeout(() => reject(new Error("Selected-file mock request did not start")), 8000))
+          ]);
+          await vscode.workspace.fs.writeFile(permitted.uri, Buffer.from("export const changed = 7;\n"));
+          releaseHeldGeneration?.();
+          assert.equal(await obsoleteRelatedRequest, undefined,
+            "Model output using superseded related-file bytes must not be displayed");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          heldGenerationStarted = undefined;
+          releaseHeldGeneration = undefined;
+          await vscode.workspace.fs.writeFile(permitted.uri, originalRelatedBytes);
+          clearIgnoreCache();
+          engine.cancel();
+        }
 
         // An excluded related file must suppress the request, not silently
         // drop only that reference and still send a prompt.

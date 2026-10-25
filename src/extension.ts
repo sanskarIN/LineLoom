@@ -5,7 +5,9 @@ import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
 import { quickActions } from "./ui/actions";
-import { clearIgnoreCache } from "./privacy/exclusions";
+import { clearIgnoreCache, mayReadRelatedFile } from "./privacy/exclusions";
+import { isSupportedRelatedCandidate } from "./context/related-editor";
+import { hasBoundedRelatedMetadata, validateRelatedSelection } from "./context/related";
 import { inspectFilePrivacy } from "./privacy/inspect";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "./privacy/timings";
 import { readConfig, validateEndpoint } from "./settings/config";
@@ -262,6 +264,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
   const status = new LineLoomStatus();
   let currentState: CompletionState = "ready";
+  // Invalidate overlapping pickers when privacy, settings or editor state changes.
+  let relatedPickerRevision = 0;
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
@@ -317,43 +321,64 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.checkConnection", () => checkConnection(context));
   command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
   command("lineloom.clearRelatedFiles", () => {
+    relatedPickerRevision++;
     engine?.setRelatedFiles([]);
     sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom: session-only related file selection cleared.");
   });
   command("lineloom.selectRelatedFiles", async () => {
+    const revision = ++relatedPickerRevision;
     const config = readConfig();
+    const configurationSnapshot = JSON.stringify(config);
     const editor = vscode.window.activeTextEditor;
     if (!config.crossFileContext) {
       vscode.window.showWarningMessage("Enable lineloom.crossFileContext in Settings before choosing related files.");
       return;
     }
     if (!editor || editor.document.uri.scheme !== "file" || !vscode.workspace.isTrusted) return;
-    const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    const document = editor.document;
+    const version = document.version;
+    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
     if (!folder) return;
+    const isCurrent = (): boolean => revision === relatedPickerRevision &&
+      vscode.workspace.isTrusted && !document.isClosed && document.version === version &&
+      vscode.window.activeTextEditor?.document === document &&
+      JSON.stringify(readConfig()) === configurationSnapshot;
     const chosen = await vscode.window.showOpenDialog({
       canSelectMany: true, canSelectFiles: true, canSelectFolders: false, defaultUri: folder.uri,
       openLabel: "Select related source files"
     });
-    if (!chosen) return;
-    if (chosen.length > 2) {
-      vscode.window.showWarningMessage("Select at most two small related source files.");
+    if (!chosen || !isCurrent()) return;
+    if (!validateRelatedSelection(document.uri.toString(), chosen.map(uri => uri.toString())) ||
+        !chosen.every(uri => isSupportedRelatedCandidate(document.uri, uri))) {
+      vscode.window.showWarningMessage(
+        "Choose one or two distinct supported source files inside the active workspace folder, not the active file.");
       return;
     }
-    // No silent scanning. Confirm sending selected snippets to the configured
-    // Ollama endpoint, in addition to ordinary cursor context.
+    // No related-file content is read until the user accepts this disclosure.
     const agreed = await vscode.window.showWarningMessage(
       "LineLoom may include up to 2 KiB from each chosen file in completion prompts. " +
       "A separately approved remote Ollama endpoint could receive these snippets. " +
       "Selections stay in memory only for this editor session.",
       { modal: true }, "Use Selected Files"
     );
-    if (agreed !== "Use Selected Files" || !readConfig().crossFileContext ||
-        !vscode.workspace.isTrusted || vscode.window.activeTextEditor?.document !== editor.document) return;
+    if (agreed !== "Use Selected Files" || !isCurrent()) return;
+    // Preflight metadata/ignore checks without reading any chosen source.
+    // The engine rechecks all permissions before inference and after response.
+    for (const uri of chosen) {
+      if (!isCurrent()) return;
+      if (!await mayReadRelatedFile(uri, config.excludedPaths) ||
+          !await hasBoundedRelatedMetadata(uri.fsPath)) {
+        if (isCurrent()) vscode.window.showWarningMessage(
+          "LineLoom refused a selected file: it is excluded, unreadable, linked or outside the 2 KiB limit.");
+        return;
+      }
+    }
+    if (!isCurrent()) return;
     engine?.setRelatedFiles(chosen);
     sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
-      " related file(s). Privacy rules are checked before each model request.");
+      " related file(s). Privacy rules are rechecked before every model request.");
   });
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
@@ -373,6 +398,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
+      relatedPickerRevision++;
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.
       engine?.setRelatedFiles([]);
@@ -389,6 +415,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
+      relatedPickerRevision++;
       engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
       sidebar.refresh();
@@ -400,6 +427,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
+    relatedPickerRevision++;
     clearIgnoreCache();
     sidebar.refresh();
   }));
@@ -407,6 +435,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // async rule scans and any queued/in-flight generation, so suggestions
   // authorized under the old policy cannot be surfaced after the change.
   const onIgnoreRulesChanged = (): void => {
+    relatedPickerRevision++;
     clearIgnoreCache();
     engine?.setRelatedFiles([]);
     const latest = readConfig();

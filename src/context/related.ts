@@ -18,6 +18,27 @@ export function planRelatedFiles(activeId: string, selectedIds: readonly string[
   return result;
 }
 
+/** Fail closed rather than truncating or silently dropping invalid selections. */
+export function validateRelatedSelection(activeId: string, ids: readonly string[]): boolean {
+  if (!ids.length || ids.length > RELATED_FILE_LIMIT) return false;
+  const seen = new Set([activeId]);
+  for (const id of ids) {
+    if (typeof id !== "string" || !id || seen.has(id)) return false;
+    seen.add(id);
+  }
+  return true;
+}
+
+/** No source read: check metadata after consent so the UI can reject invalid files early. */
+export async function hasBoundedRelatedMetadata(path: string): Promise<boolean> {
+  try {
+    const info = await lstat(path);
+    return info.isFile() && info.size > 0 && info.size <= RELATED_FILE_MAX_BYTES;
+  } catch {
+    return false;
+  }
+}
+
 /** Read only a tiny regular local UTF-8 text file; never follow a final symlink. */
 export async function readBoundedRelatedFile(path: string): Promise<string> {
   const initial = await lstat(path);
