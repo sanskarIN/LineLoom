@@ -9,10 +9,17 @@ function containsUnsafeUnicode(value: string): boolean {
   for (const character of value) {
     const point = character.codePointAt(0);
     if (point === undefined) continue;
+    // Reject additional visually hidden format/direction markers in generated
+    // source. Keep ZWNJ (U+200C) and ZWJ (U+200D): they are meaningful in
+    // international identifiers and joined emoji sequences.
     if ((point <= 0x1f && point !== 0x09 && point !== 0x0a && point !== 0x0d) ||
         (point >= 0x7f && point <= 0x9f) ||
-        (point >= 0x202a && point <= 0x202e) ||
-        (point >= 0x2066 && point <= 0x2069) ||
+        point === 0x00ad || point === 0x061c || point === 0x180e ||
+        point === 0x200b || point === 0x200e || point === 0x200f ||
+        (point >= 0x2028 && point <= 0x202e) ||
+        (point >= 0x2060 && point <= 0x2064) ||
+        (point >= 0x2066 && point <= 0x206f) ||
+        point === 0xfeff ||
         (point >= 0xd800 && point <= 0xdfff)) return true;
   }
   return false;
