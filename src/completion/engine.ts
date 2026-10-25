@@ -5,6 +5,8 @@ import { EmptySuggestionBackoff } from "./backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
+import { collectRelatedText } from "../context/related-editor";
+import { RELATED_FILE_LIMIT, validateRelatedSelection } from "../context/related";
 import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
@@ -22,6 +24,8 @@ export interface CompletionStats {
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  private relatedRevision = 0;
+  private relatedFiles: vscode.Uri[] = [];
   // Increment on opt-out to reject measurements from already-running requests.
   private latencyEpoch = 0;
   private readonly suggestions = new SuggestionCache();
@@ -39,6 +43,17 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
   getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
+  getRelatedFileCount(): number { return this.relatedFiles.length; }
+  /** Explicit selection exists only for the current extension session. */
+  setRelatedFiles(files: readonly vscode.Uri[]): void {
+    if (files.length > RELATED_FILE_LIMIT ||
+        (files.length > 0 && !validateRelatedSelection("", files.map(uri => uri.toString())))) {
+      throw new Error("Invalid related-file selection");
+    }
+    this.relatedFiles = [...files];
+    this.relatedRevision++;
+    this.cancel();
+  }
   /** An opt-out erases only inference durations, retaining non-sensitive counts. */
   clearLatencyMeasurements(): void {
     this.latencyEpoch++;
@@ -160,10 +175,18 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         offset, totalLength, config.maxContextChars
       );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
+      const relatedRevision = this.relatedRevision;
+      const selected = config.crossFileContext ? [...this.relatedFiles] : [];
+      const relatedCurrent = (): boolean => requestId === this.generation &&
+        relatedRevision === this.relatedRevision && isTargetCurrent() && !token.isCancellationRequested &&
+        mayUseCurrentConfiguration();
+      const related = await collectRelatedText(document, selected, config.excludedPaths, relatedCurrent);
+      if (!related || !relatedCurrent()) return;
+      const relatedDigest = createHash("sha256").update(JSON.stringify(related)).digest("hex");
       const profileDigest = createHash("sha256").update(JSON.stringify([
         url.origin, model, config.temperature, config.contextSize,
         config.maxOutputTokens, config.multiLine, config.maxSuggestionLines,
-        config.maxContextChars
+        config.maxContextChars, relatedDigest, relatedRevision
       ])).digest("hex");
       const continuationPoint: ContinuationPoint = {
         documentId: document.uri.toString(), languageId: document.languageId,
@@ -184,7 +207,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       const key = createHash("sha256").update(JSON.stringify([
         document.uri.toString(), document.languageId, document.version, offset, url.origin, model,
         config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
-        config.maxSuggestionLines, extracted.prefix, extracted.suffix
+        config.maxSuggestionLines, extracted.prefix, extracted.suffix, relatedDigest, relatedRevision
       ])).digest("hex");
       const cached = this.suggestions.get(key);
       const active = vscode.window.activeTextEditor;
@@ -205,7 +228,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         return;
       }
-      const prompt = buildPrompt(language, extracted, model);
+      const prompt = buildPrompt(language, extracted, model, related);
       const controller = new AbortController();
       this.controller = controller;
       const cancelSubscription = token.onCancellationRequested(() => controller.abort());
@@ -231,8 +254,14 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
             (!url.remote || this.remoteApproved(url.origin)),
           (patterns, collectTiming) => mayComplete(document, patterns, collectTiming)
         );
+        // Selected sources must still be eligible and byte-identical after inference.
+        const relatedAfter = stillAllowed && relatedCurrent()
+          ? await collectRelatedText(document, selected, config.excludedPaths, relatedCurrent)
+          : undefined;
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
-            document.version !== version || !isTargetCurrent() || !stillAllowed) {
+            document.version !== version || !isTargetCurrent() || !stillAllowed ||
+            !relatedAfter || JSON.stringify(relatedAfter) !== JSON.stringify(related) ||
+            !relatedCurrent()) {
           this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;

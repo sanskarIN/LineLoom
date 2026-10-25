@@ -28,7 +28,8 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
   constructor(
     private readonly getStats: () => Readonly<CompletionStats> | undefined,
     private readonly isApproved: (origin: string) => boolean,
-    private readonly getState: () => CompletionState = () => "ready"
+    private readonly getState: () => CompletionState = () => "ready",
+    private readonly getRelatedFileCount: () => number = () => 0
   ) {}
 
   refresh(): void { this.changes.fire(undefined); }
@@ -71,6 +72,8 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       continuationHits: stats?.continuationHits ?? 0,
       emptySuggestions: stats?.emptySuggestions ?? 0,
       performanceDiagnosticsEnabled: config.performanceDiagnostics,
+      crossFileContextEnabled: config.crossFileContext,
+      relatedFileCount: this.getRelatedFileCount(),
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
         ? stats.totalLatencyMs / stats.measuredRequests : undefined
     }).map((section): SidebarNode => ({ kind: "section", section }));

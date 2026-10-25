@@ -46,3 +46,16 @@ describe("LineLoom Quick Actions", () => {
     expect(cancel?.label).toMatch(/Stop Current Generation/);
   });
 });
+
+describe("opt-in related-file Quick Actions", () => {
+  it("adds no actions when cross-file context is off, but exposes selective commands when enabled", () => {
+    expect(quickActions(true, true, false, false, 2).some(a =>
+      a.command === "lineloom.selectRelatedFiles")).toBe(false);
+    const enabled = quickActions(true, true, false, true, 2);
+    expect(enabled.some(a => a.command === "lineloom.selectRelatedFiles")).toBe(true);
+    expect(enabled.some(a => a.command === "lineloom.clearRelatedFiles")).toBe(true);
+    expect(new Set(enabled.map(a => a.id)).size).toBe(enabled.length);
+    expect(quickActions(true, true, false, true, 0).some(a =>
+      a.command === "lineloom.clearRelatedFiles")).toBe(false);
+  });
+});

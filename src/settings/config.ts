@@ -51,7 +51,7 @@ export function readConfig(): LineLoomConfig {
     contextSize: clamp(c.get("contextSize", 4096), 512, 32768),
     keepAlive: normalizeKeepAlive(c.get<unknown>("keepAlive", "5m")),
     excludedPaths: normalizeExcludedPaths(c.get<unknown>("excludedPaths", [])),
-    crossFileContext: c.get("crossFileContext", false),
+    crossFileContext: c.get<unknown>("crossFileContext", false) === true,
     performanceDiagnostics: c.get<unknown>("performanceDiagnostics", false) === true
   };
 }

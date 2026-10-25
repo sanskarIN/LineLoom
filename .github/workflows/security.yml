@@ -26,4 +26,11 @@ jobs:
           node-version: '22'
 
       - run: npm ci
-      - run: npm audit --audit-level=high
+      - run: npm run test:packager-security
+      # The packaged extension contains no development-only VSIX publisher graph.
+      # Check runtime dependencies separately and fail on moderate-or-worse risk.
+      - name: Audit dependencies that can ship at runtime
+        run: npm audit --omit=dev --audit-level=moderate
+      # Still enforce the full dependency graph for high/critical findings.
+      - name: Audit full build and publishing toolchain
+        run: npm audit --audit-level=high
