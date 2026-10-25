@@ -1,5 +1,6 @@
 import type { EditorContextSummary } from "./editor-context";
 import type { CompletionState } from "../completion/engine";
+import type { ModelReadiness } from "./model-readiness";
 
 /** Sidebar labels and actions are computed locally. This module never contacts Ollama. */
 export type SidebarEndpointState =
@@ -28,6 +29,7 @@ export interface SidebarSnapshot {
   emptySuggestions: number;
   averageLatencyMs?: number;
   performanceDiagnosticsEnabled?: boolean;
+  modelReadiness?: ModelReadiness;
   crossFileContextEnabled?: boolean;
   relatedFileCount?: number;
 }
@@ -51,6 +53,16 @@ function modelLabel(raw: string): string {
   const normalized = raw.replace(/[\r\n\t]/g, " ").trim();
   if (!normalized) return "No model selected";
   return normalized.length > 52 ? normalized.slice(0, 49) + "..." : normalized;
+}
+
+function readinessDescription(state: ModelReadiness | undefined): string {
+  switch (state) {
+    case "checking": return "Manual model check in progress";
+    case "available": return "Default model found at last manual check (not live monitoring)";
+    case "missing": return "Default model missing at last manual check";
+    case "unreachable": return "Connection failed at last manual check";
+    default: return "Not checked this session — click Check Ollama Connection";
+  }
 }
 
 function endpointDescription(state: SidebarEndpointState): string {
@@ -100,6 +112,12 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
   }
   if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
     "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
+  if (snapshot.modelReadiness === "missing" && snapshot.activeEditor.modelSource === "Default model")
+    return entry("Next: Choose Installed Model",
+      "The default model was not present at the last manual check.", "symbol-method", "lineloom.selectModel");
+  if (snapshot.modelReadiness === "unreachable")
+    return entry("Next: Recheck Ollama",
+      "The last manual connection check failed; retry explicitly.", "plug", "lineloom.checkConnection");
   if (snapshot.completionState === "unavailable") return entry("Next: Check Ollama",
     "Run a user-initiated connection check; this view does not ping models.", "plug", "lineloom.checkConnection");
   if (snapshot.completionState === "error") return entry("Next: Open Diagnostics",
@@ -157,6 +175,11 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
           id: "model", label: "Default Model",
           description: modelLabel(snapshot.model), icon: "symbol-method",
           command: "lineloom.selectModel"
+        },
+        {
+          id: "model-readiness", label: "Last Manual Model Check",
+          description: readinessDescription(snapshot.modelReadiness), icon: "plug",
+          command: "lineloom.checkConnection"
         },
         {
           id: "language-models", label: "Language Overrides",
