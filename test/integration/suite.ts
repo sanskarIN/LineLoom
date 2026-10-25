@@ -68,15 +68,24 @@ export async function run(): Promise<void> {
   const modelItems = offlineSidebar.getChildren(modelsSection);
   assert.ok(modelItems.some(node => node.kind === "item" &&
     node.item.id === "model-readiness" && node.item.description?.includes("Not checked")));
+  // Refresh rebuilds section nodes; a previously fetched section is a
+  // snapshot and must not be reused after the underlying readiness changes.
+  const readinessEntry = () => {
+    const modelSection = offlineSidebar.getChildren().find(
+      node => node.kind === "section" && node.section.id === "models"
+    );
+    assert.ok(modelSection && modelSection.kind === "section");
+    return offlineSidebar.getChildren(modelSection).find(
+      node => node.kind === "item" && node.item.id === "model-readiness"
+    );
+  };
   const checkToken = readiness.begin();
-  const checkingStatus = offlineSidebar.getChildren(modelsSection).find(
-    node => node.kind === "item" && node.item.id === "model-readiness"
-  );
+  offlineSidebar.refresh();
+  const checkingStatus = readinessEntry();
   assert.ok(checkingStatus?.kind === "item" && checkingStatus.item.description?.includes("in progress"));
   assert.equal(readiness.finish(checkToken, "available"), true);
-  const checkedStatus = offlineSidebar.getChildren(modelsSection).find(
-    node => node.kind === "item" && node.item.id === "model-readiness"
-  );
+  offlineSidebar.refresh();
+  const checkedStatus = readinessEntry();
   assert.ok(checkedStatus?.kind === "item" && checkedStatus.item.description?.includes("last manual check"));
   readiness.clear();
   offlineSidebar.dispose();
