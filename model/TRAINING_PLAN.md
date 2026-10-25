@@ -1,0 +1,49 @@
+# Dedicated LineLoom Code Model — staged proposal
+
+**Status: planned, not trained, not released.** Tentative research name: **LineLoom Code**. No pretrained checkpoint or training dataset is bundled with the extension.
+
+## Initial product contract
+
+- Task: **low-latency fill-in-the-middle (FIM) inline continuation**, not a chat assistant.
+- Languages: **Rust, C, C++, Python and TypeScript**. Differentiate C vs modern C++; no JavaScript-only training claim.
+- Inputs: bounded cursor prefix and optional suffix, plus the minimal language signal supported by the chosen base model.
+- Outputs: insertion-only text. Never produce fenced explanations, duplicate already-visible suffix or hidden Unicode control characters.
+- Runtime target: **optional local Ollama model**, with model assignment through existing `lineloom.languageModels`. Do not automatically pull weights or change users' defaults.
+- Model family/size: decide only after checking actual licenses and latency on target machines. A 0.5B–1.5B-class permissively reusable code base is a *candidate*, not a selected dependency. Prefer adapter fine-tuning over training a foundation model from scratch in the first milestone.
+
+## Milestone gates
+
+1. **M0 — Measurement foundation (this branch):** fixed MIT-original synthetic fixtures, local-only evaluator, pure tests, per-language exact-match counts and measured first-token / total p50-p95. No performance results invented.
+2. **M1 — Dataset review:** licensed provenance for each source (repository, revision, SPDX license, consent/opt-out status), duplicate and near-duplicate removal, secret/PII scanning, malware/poisoned training example filtering, holdout split by **repository**, not file, and an exclusion mechanism. Never train automatically on users' workspaces.
+3. **M2 — Baseline comparison:** record real Ollama results for the same fixtures using at least one known FIM baseline; include named model, prompt mode, hardware, quantization, run count and temperature. Expand beyond ten cases before making any quality claim.
+4. **M3 — Small adapter experiment:** with reviewed checkpoint and corpus, train completion-only/FIM on opted-in or appropriately licensed sources. Record full config, seeds, base model revision, data hashes, train/validation splits, loss curves and GPU compute use. No externally sourced or private data in this repository.
+5. **M4 — Test quality and safety:** code parse/typecheck/compile execution where appropriate in **isolated offline sandboxes**, human correctness/usefulness review, duplicate/unsafe completions, multilingual identifier safety, p50/p95 latency and cancellation. Include editor tests on Windows/macOS/Linux and accessibility results; all currently **NOT RUN**.
+6. **M5 — Optional packaging:** only if evaluation warrants it, export a license-compliant local quantized artifact, verify SHA-256 and document Ollama import/run commands. Ship model **separately** from the extension and do not change default Ollama tags silently.
+
+## Candidate training sample schema (design only)
+
+```json
+{
+  "language": "rust",
+  "prefix": "fn double(value: i32) -> i32 {\n    value * ",
+  "middle": "2",
+  "suffix": "\n}\n",
+  "source_repo": "example/consented-project",
+  "source_revision": "<verified commit SHA>",
+  "license_spdx": "<reviewed SPDX identifier>",
+  "split": "train",
+  "permission_record": "<reviewable provenance record>"
+}
+```
+
+Do not interpret this example as permission to collect the named repository or to use public source without reviewing its license. **Training samples and evaluation fixtures must never overlap**, including near-duplicate code across forks; this ten-fixture benchmark is insufficient for ranking production models.
+
+## Model-selection decision criteria
+
+1. Redistributable checkpoint and training rights reviewed for intended use; reliable provenance.
+2. Measurable local response under a declared target machine and quantization.
+3. Correct continuation behavior for **each** language; no single aggregate masking weak C/C++ behavior.
+4. Compatibility with Ollama's actual prompt/FIM protocol, cancellation, output length and suffix behavior.
+5. Privacy/security test outcomes and repeatable build artifacts.
+
+**No GPU training, checkpoint download, dataset scrape, synthetic real-model output collection, or model publication is performed by this plan.**
