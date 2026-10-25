@@ -107,9 +107,9 @@ export async function run(): Promise<void> {
     offlineSidebar.getTreeItem(notChecked).accessibilityInformation?.label);
   const privacyToken = privacyStatus.begin();
   offlineSidebar.refresh();
-  assert.ok(privacyEntry()?.kind === "item" &&
-    (privacyEntry() as Extract<ReturnType<typeof offlineSidebar.getChildren>[number], { kind: "item" }>)
-      .item.description?.includes("Checking"));
+  const checkingPrivacy = privacyEntry();
+  assert.ok(checkingPrivacy?.kind === "item" &&
+    checkingPrivacy.item.description?.includes("Checking"));
   assert.equal(privacyStatus.finish(privacyToken, "allowed"), true);
   offlineSidebar.refresh();
   const allowedPrivacy = privacyEntry();
