@@ -78,6 +78,14 @@ This feature ships in GitHub stable v1.3.0, but is **OFF by default**.
 
 Selected paths/snippets are kept only in current-session memory; hard exclusions and nested ignore policies are checked before and after use. No repository scan, automatic reference discovery or persistent code index occurs. **The tool cannot detect every secret in an otherwise allowed file**—choose only source you are comfortable sending to the configured Ollama endpoint. See [privacy and resource boundaries](privacy/selected-context.md).
 
+## Opt-in rolling inference p50/p95 (unreleased)
+
+When `lineloom.performanceDiagnostics` is **OFF** (default), the extension neither stores nor displays inference timing samples. After explicit opt-in, the native Session Activity sidebar and source-free Diagnostics include **nearest-rank p50/p95 of the last 64 completed, authorized Ollama requests**, alongside the existing session-wide average. The fixed-size rolling window stores **only finite elapsed milliseconds**—not source code, document paths, model names, prompts, responses, endpoint identities, or per-request timestamps. These measurements cover completion generation and privacy revalidation and **do not establish model accuracy, user acceptance rate, or hardware-quality benchmarks**.
+
+**Reset Inference Timing Samples**, accessible from the sidebar, Quick Actions and Command Palette when enabled, erases the rolling samples, current/average durations and sample count without clearing request, offered-suggestion or accepted-callback counters, changing settings, stopping current inference, or touching the separate privacy-rule timing statistics. Outstanding requests from the prior timing epoch cannot restore cleared measurements; disabling diagnostics also clears them. The reset command can be invoked from the Command Palette while diagnostics are disabled and still performs a safe erase.
+
+Pure unit tests cover bounds, invalid timings, nearest-rank math and reset. Mocked VS Code editor-host tests cover the opt-out boundary and late results. Manual actual Ollama local-model performance, Windows/macOS/Linux hardware and accessibility acceptance remain **NOT RUN**. The feature is development-only, not in the published v1.3.0 stable or v1.3.1 GitHub preview.
+
 ## Clearer status bar and pending check messages (unreleased)
 
 The native status bar no longer claims **Ready for local code completion** merely because autocomplete is enabled. Its tooltip explicitly says that the Ollama model and active-file rules are **not automatically verified**. Manual-only mode identifies paused automatic suggestions while allowing manual completion. Unavailable and error states direct users to manual checks and source-free diagnostics.

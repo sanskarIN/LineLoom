@@ -84,7 +84,10 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       crossFileContextEnabled: config.crossFileContext,
       relatedFileCount: this.getRelatedFileCount(),
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
-        ? stats.totalLatencyMs / stats.measuredRequests : undefined
+        ? stats.totalLatencyMs / stats.measuredRequests : undefined,
+      recentLatencySamples: config.performanceDiagnostics ? stats?.recentLatencySamples : undefined,
+      recentLatencyP50Ms: config.performanceDiagnostics ? stats?.recentLatencyP50Ms : undefined,
+      recentLatencyP95Ms: config.performanceDiagnostics ? stats?.recentLatencyP95Ms : undefined
     }).map((section): SidebarNode => ({ kind: "section", section }));
   }
 

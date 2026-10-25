@@ -380,6 +380,13 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
     output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");
+    output.appendLine("Recent completed Ollama duration: " +
+      (stats.recentLatencySamples && stats.recentLatencyP50Ms !== undefined &&
+        stats.recentLatencyP95Ms !== undefined
+        ? "p50 " + stats.recentLatencyP50Ms.toFixed(1) + "ms; p95 " +
+          stats.recentLatencyP95Ms.toFixed(1) + "ms (" + stats.recentLatencySamples +
+          " most recent sample(s); max 64)"
+        : "not measured (opt in and complete a request)"));
     const eligibility = getEligibilityTimingSummary();
     output.appendLine("Privacy eligibility checks: " + eligibility.checks +
       "; allowed: " + eligibility.allowed + "; denied: " + eligibility.denied);
@@ -525,6 +532,13 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   // Privacy eligibility measurements are in memory only. Permit an immediate
   // user-initiated reset without changing the diagnostics opt-in preference.
+  command("lineloom.resetInferenceTimings", () => {
+    engine?.clearLatencyMeasurements();
+    sidebar.refresh();
+    vscode.window.showInformationMessage(
+      "LineLoom: inference duration samples cleared for this session; suggestion counters retained."
+    );
+  });
   command("lineloom.resetPrivacyTimings", () => {
     resetEligibilityTimings();
     sidebar.refresh();
@@ -535,7 +549,13 @@ export function activate(context: vscode.ExtensionContext): void {
     const stats = engine?.getStats();
     if (!stats) return;
     vscode.window.showInformationMessage("LineLoom: " + stats.requests + " requests, " +
-      stats.completions + " nonempty suggestions, " + stats.cancelled + " cancelled, " + stats.failed + " failed.");
+      stats.completions + " suggestions offered, " + stats.accepted + " accepted callbacks, " +
+      stats.cancelled + " cancelled, " + stats.failed + " failed." +
+      (readConfig().performanceDiagnostics && stats.recentLatencySamples &&
+        stats.recentLatencyP50Ms !== undefined && stats.recentLatencyP95Ms !== undefined
+        ? " Recent Ollama p50/p95: " + Math.round(stats.recentLatencyP50Ms) +
+          "/" + Math.round(stats.recentLatencyP95Ms) + " ms (last " +
+          stats.recentLatencySamples + " samples)." : ""));
   });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {

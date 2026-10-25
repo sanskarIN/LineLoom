@@ -4,6 +4,7 @@ import { SuggestionCache } from "./cache";
 import { EmptySuggestionBackoff } from "./backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
 import { AcceptanceTracker } from "./acceptance";
+import { LatencyWindow } from "./latency-window";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { collectRelatedText } from "../context/related-editor";
@@ -22,6 +23,7 @@ export interface CompletionStats {
   requests: number; completions: number; accepted: number; cancelled: number; failed: number;
   totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
   emptySuggestions: number; suppressedEmptyRetries: number; continuationHits: number;
+  recentLatencySamples: number; recentLatencyP50Ms?: number; recentLatencyP95Ms?: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
@@ -33,9 +35,10 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   private readonly emptyBackoff = new EmptySuggestionBackoff();
   private readonly continuations = new ContinuationCache();
   private readonly acceptance = new AcceptanceTracker();
+  private readonly latencyWindow = new LatencyWindow();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
-  private readonly metrics: CompletionStats = {
+  private readonly metrics: Omit<CompletionStats, "recentLatencySamples" | "recentLatencyP50Ms" | "recentLatencyP95Ms"> = {
     requests: 0, completions: 0, accepted: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
     emptySuggestions: 0, suppressedEmptyRetries: 0, continuationHits: 0
@@ -44,7 +47,15 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     private readonly onState: (state: CompletionState) => void,
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
-  getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
+  getStats(): Readonly<CompletionStats> {
+    const recent = this.latencyWindow.summary();
+    return {
+      ...this.metrics,
+      recentLatencySamples: recent.samples,
+      recentLatencyP50Ms: recent.p50Ms,
+      recentLatencyP95Ms: recent.p95Ms
+    };
+  }
   /** Only the one-shot VS Code acceptance callback can increase this count. */
   recordAcceptance(token: unknown): boolean {
     if (!this.acceptance.acknowledge(token)) return false;
@@ -77,6 +88,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.metrics.totalLatencyMs = 0;
     this.metrics.lastLatencyMs = 0;
     this.metrics.measuredRequests = 0;
+    this.latencyWindow.clear();
   }
   cancel(preserveContinuation = false): void {
     this.generation++;
@@ -289,7 +301,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         // Preserve neither a late sample nor an old session's measurements
         // after the user opts out, even if they opted back in meanwhile.
         if (config.performanceDiagnostics && readConfig().performanceDiagnostics &&
-            recordingEpoch === this.latencyEpoch) {
+            recordingEpoch === this.latencyEpoch &&
+            this.latencyWindow.record(latency)) {
           this.metrics.totalLatencyMs += latency;
           this.metrics.lastLatencyMs = latency;
           this.metrics.measuredRequests++;

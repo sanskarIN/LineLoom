@@ -41,9 +41,14 @@ describe("LineLoom local sidebar model", () => {
   it("offers an accessible privacy reset action only when diagnostics are enabled", () => {
     const disabled = sidebarSections(snapshot).flatMap(group => group.items);
     expect(disabled.find(item => item.id === "reset-privacy-timings")).toBeUndefined();
+    expect(disabled.find(item => item.id === "reset-inference-timings")).toBeUndefined();
     const enabled = sidebarSections({ ...snapshot, performanceDiagnosticsEnabled: true })
       .flatMap(group => group.items);
     const reset = enabled.find(item => item.id === "reset-privacy-timings");
+    expect(enabled.find(item => item.id === "reset-inference-timings")).toMatchObject({
+      label: "Reset Inference Timing Samples",
+      command: "lineloom.resetInferenceTimings"
+    });
     expect(reset).toMatchObject({
       label: "Reset Privacy Timing Statistics",
       command: "lineloom.resetPrivacyTimings",
@@ -64,6 +69,24 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "state")?.description).toBe("Generating");
     expect(entries.find(item => item.id === "cancel")?.description).toContain("Stop the current Ollama request");
     expect(entries.find(item => item.id === "latency")?.description).toBe("13 ms");
+    const recent = sidebarSections({
+      ...snapshot,
+      performanceDiagnosticsEnabled: true,
+      averageLatencyMs: 12.6,
+      recentLatencySamples: 4,
+      recentLatencyP50Ms: 9.4,
+      recentLatencyP95Ms: 101.8
+    }).flatMap(group => group.items);
+    expect(recent.find(item => item.id === "latency-p50")?.description)
+      .toBe("9 ms (4 sample(s))");
+    expect(recent.find(item => item.id === "latency-p95")?.description)
+      .toBe("102 ms (last 64 max)");
+    const optedOut = sidebarSections({
+      ...snapshot, performanceDiagnosticsEnabled: false,
+      recentLatencySamples: 4, recentLatencyP50Ms: 9, recentLatencyP95Ms: 101
+    }).flatMap(group => group.items);
+    expect(optedOut.some(item => item.id === "latency-p95")).toBe(false);
+    expect(optedOut.some(item => item.id === "latency-p50")).toBe(false);
     const unavailable = sidebarSections({ ...snapshot, completionState: "unavailable" })
       .flatMap(group => group.items);
     expect(unavailable.find(item => item.id === "state")?.description).toContain("Unavailable");

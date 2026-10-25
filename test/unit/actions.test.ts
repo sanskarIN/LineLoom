@@ -22,13 +22,18 @@ describe("LineLoom Quick Actions", () => {
     }
     const on = quickActions(true, true, true);
     const reset = on.find(item => item.command === "lineloom.resetPrivacyTimings");
-    expect(on).toHaveLength(13);
+    expect(on).toHaveLength(14);
     expect(reset).toMatchObject({
       id: "resetPrivacyTimings",
       label: "$(trash) Reset Privacy Timing Statistics"
     });
     expect(reset?.description).not.toMatch(/path|prompt|source/i);
-    expect(new Set(on.map(item => item.id)).size).toBe(13);
+    expect(new Set(on.map(item => item.id)).size).toBe(14);
+    expect(on.find(item => item.command === "lineloom.resetInferenceTimings")).toMatchObject({
+      id: "resetInferenceTimings",
+      label: "$(trash) Reset Inference Timing Samples"
+    });
+    expect(quickActions(true, true, false).every(action => action.command !== "lineloom.resetInferenceTimings")).toBe(true);
   });
   it("has only known LineLoom commands, with no implicit network side effects", () => {
     const actions = quickActions(false, false);
