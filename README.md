@@ -21,6 +21,10 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
+## Inference latency percentiles — development only
+
+With `lineloom.performanceDiagnostics` enabled, LineLoom now computes **rolling p50/p95** from up to 64 successful Ollama request durations, exposes them in native Session Activity and Diagnostics, and offers **Reset Inference Timing Samples**. Values are source-free, never persisted, erased on opt-out and protected from stale in-flight results. Suggestion counters remain unchanged after a timing reset. **No real-model latency benchmark has been run**, and this work is not in the existing stable/preview/registry packages. See [sidebar timing/privacy documentation](docs/sidebar.md).
+
 ## Native readiness clarity — development only
 
 The status bar differentiates **autocomplete enabled** from **model availability actually checked**. While explicit local model or file-policy checks are running, the sidebar displays non-clickable progress wording. No passive Ollama calls, file reads or new endpoint consent are introduced. See [sidebar documentation](docs/sidebar.md). This work is not in the published stable/preview packages.
