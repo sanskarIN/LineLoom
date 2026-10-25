@@ -21,7 +21,7 @@
     <p class="section-kicker">LINELOOM HELP / GITHUB STABLE v1.3.0</p>
     <h1>Install the extension.<br><span class="brand-accent">In the right editor.</span></h1>
     <p class="doc-intro"><strong>Latest GitHub stable: v1.3.0.</strong> Download <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix"><code>LineLoom-1.3.0.vsix</code></a> and its <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256">SHA-256 checksum</a> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">public GitHub stable release</a>. This version adds default-off, explicitly selected related-file context. Cross-platform CI and isolated VSIX upgrade checks passed; real Ollama performance, physical desktop/privacy and accessibility acceptance remain NOT RUN. The older <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1">v1.1.1 pre-release</a> remains available. Open VSX serves v1.2.0 as last independently verified here, while Visual Studio Marketplace has a separate release schedule.</p>
-    <p class="doc-intro"><strong>Optional preview for testers:</strong> <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4">GitHub v1.2.4 pre-release</a> ships a distinct <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.vsix">preview-channel VSIX</a> and a <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.sha256">checksum</a>. It adds opt-in, path-free privacy-eligibility timing diagnostics. This is not the default stable installation or verified real-model/desktop QA. Test in a disposable VS Code profile with non-sensitive files.</p>
+    <p class="doc-intro"><strong>Latest GitHub testing preview: v1.3.1 (not stable).</strong> <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1">View the verified pre-release</a>, download <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix"><code>LineLoom-1.3.1.vsix</code></a> and the <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256">SHA-256 checksum</a>. This preview adds native sidebar contextual actions, explicit active-model/connection/file-privacy checks and completion safety hardening. Its true VS Code pre-release channel, checksum, mocked editor tests and pinned v1.3.0 stable-to-preview upgrade passed. Real-model performance, physical platform and screen-reader QA remain <strong>NOT RUN</strong>. Test with synthetic files in a disposable VS Code profile; Marketplace and Open VSX are not updated by GitHub.</p>
     <p class="doc-intro">LineLoom has a listing on <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a>, and v1.2.0 Stable is published on <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a>. Choose the registry your editor supports. The GitHub v1.3.0 <code>.vsix</code> download is an extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
     <section class="doc-block" id="marketplace">
       <h2>Recommended — Install from VS Code Marketplace</h2>
@@ -56,20 +56,20 @@
     <section class="doc-block" id="windows">
       <h2>Windows 11 — manual GitHub VSIX installation</h2>
       <ol>
-        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">Download <code>LineLoom-1.2.0.vsix</code></a> from GitHub release assets (save it normally).</li>
+        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">Download <code>LineLoom-1.3.0.vsix</code></a> from GitHub release assets (save it normally).</li>
         <li>Launch <a href="https://code.visualstudio.com/">Visual Studio Code</a>, not Visual Studio Community, Enterprise, or VSIX Installer.</li>
         <li>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> to open the Extensions view.</li>
         <li>Click the <strong>three dots (…)</strong> in the Extensions view, select <strong>Install from VSIX…</strong>, then choose the downloaded file.</li>
         <li>Confirm <strong>LineLoom</strong> appears under installed extensions. Start independently installed <a href="https://ollama.com/download">Ollama</a> and use <strong>LineLoom: Quick Actions</strong> to choose a model.</li>
       </ol>
       <h3>PowerShell alternative</h3><p>Run this command from your Downloads folder if the <code>code</code> command is available in your terminal:</p>
-      <div class="command doc-command"><code>code --install-extension .\LineLoom-1.2.0.vsix</code><button class="copy" type="button" data-copy="code --install-extension .\LineLoom-1.2.0.vsix" aria-label="Copy PowerShell installation command">Copy</button></div>
+      <div class="command doc-command"><code>code --install-extension .\LineLoom-1.3.0.vsix</code><button class="copy" type="button" data-copy="code --install-extension .\LineLoom-1.3.0.vsix" aria-label="Copy PowerShell installation command">Copy</button></div>
       <p>Otherwise, use the built-in Extensions menu described above. You do <strong>not</strong> need to change your Windows file associations.</p>
     </section>
     <section class="doc-block" id="mac-linux">
       <h2>macOS and Linux</h2>
-      <ol><li>Download <code>LineLoom-1.2.0.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">GitHub stable release</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
-      <div class="command doc-command"><code>code --install-extension ./LineLoom-1.2.0.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-1.2.0.vsix" aria-label="Copy installation command">Copy</button></div>
+      <ol><li>Download <code>LineLoom-1.3.0.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">GitHub stable release</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
+      <div class="command doc-command"><code>code --install-extension ./LineLoom-1.3.0.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-1.3.0.vsix" aria-label="Copy installation command">Copy</button></div>
     </section>
     <section class="doc-block" id="diagnostics">
       <h2>If installation still fails</h2>
