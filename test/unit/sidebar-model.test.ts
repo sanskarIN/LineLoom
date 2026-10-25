@@ -236,3 +236,52 @@ describe("last user-invoked Ollama model readiness", () => {
     expect(generating.find(item => item.id === "next-step")?.command).toBe("lineloom.cancel");
   });
 });
+
+describe("explicit active-file privacy check in native sidebar", () => {
+  const all = (filePrivacy: NonNullable<SidebarSnapshot["filePrivacy"]>) =>
+    sidebarSections({ ...snapshot, filePrivacy }).flatMap(section => section.items);
+
+  it("begins unverified and only invokes the existing manual inspection command when clicked", () => {
+    const entries = all("not-checked");
+    const status = entries.find(item => item.id === "last-file-privacy");
+    expect(status).toMatchObject({
+      command: "lineloom.checkActiveFilePrivacy",
+      label: "Last Manual File Check",
+      icon: "shield"
+    });
+    expect(status?.description).toContain("Not checked");
+    expect(entries.find(item => item.id === "check-file-privacy")?.command)
+      .toBe("lineloom.checkActiveFilePrivacy");
+    expect(entries.find(item => item.id === "next-step")?.command).toBe("lineloom.trigger");
+  });
+
+  it("reports only bounded generic statuses, not paths or permissions guaranteed forever", () => {
+    for (const state of ["checking", "allowed", "blocked", "no-editor"] as const) {
+      const status = all(state).find(item => item.id === "last-file-privacy");
+      expect(status?.description).toBeTruthy();
+      expect(JSON.stringify(status)).not.toContain("/home/");
+      expect(JSON.stringify(status)).not.toContain("https://");
+      expect(JSON.stringify(status)).not.toContain(".env");
+      expect(JSON.stringify(status)).not.toContain("user.ts");
+    }
+    expect(all("allowed").find(item => item.id === "last-file-privacy")?.description)
+      .toContain("rechecked before inference");
+    expect(all("blocked").find(item => item.id === "last-file-privacy")?.description)
+      .toContain("no inference requested");
+  });
+
+  it("prioritizes user-inspected exclusion but never bypasses blocked settings or trust", () => {
+    const blocked = all("blocked").find(item => item.id === "next-step");
+    expect(blocked?.label).toBe("Next: Review File Exclusions");
+    expect(blocked?.command).toBeUndefined();
+    expect(sidebarSections({ ...snapshot, filePrivacy: "blocked", workspaceTrusted: false })
+      .flatMap(s => s.items).find(x => x.id === "next-step")?.label)
+      .toBe("Next: Review Workspace Trust");
+    expect(sidebarSections({
+      ...snapshot, filePrivacy: "blocked", activeEditor: {
+        ...snapshot.activeEditor, eligibility: "Language disabled in settings"
+      }
+    }).flatMap(s => s.items).find(x => x.id === "next-step")?.command)
+      .toBe("lineloom.manageLanguages");
+  });
+});
