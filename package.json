@@ -319,7 +319,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:source-tree && npm run test:site && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -332,7 +332,8 @@
     "test:install-vsix": "node scripts/smoke-install-vsix.mjs",
     "test:upgrade-vsix": "node scripts/smoke-upgrade-vsix.mjs",
     "package:stable": "npm run package",
-    "test:source-tree": "node --test scripts/check-source-tree.mjs && node scripts/verify-source-tree.mjs"
+    "test:source-tree": "node --test scripts/check-source-tree.mjs && node scripts/verify-source-tree.mjs",
+    "test:packager-security": "node --test scripts/check-packager-deps.test.mjs && node scripts/check-packager-deps.mjs"
   },
   "dependencies": {
     "ignore": "^7.0.5"
@@ -342,7 +343,7 @@
     "@types/node": "^26.6.5",
     "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^4.0.0",
+    "@vscode/vsce": "3.9.2",
     "esbuild": "^0.28.0",
     "eslint": "^10.12.0",
     "prettier": "^3.5.0",
@@ -350,5 +351,8 @@
     "typescript-eslint": "^8.0.0",
     "vitest": "^5.0.5"
   },
-  "icon": "assets/icons/lineloom.png"
+  "icon": "assets/icons/lineloom.png",
+  "overrides": {
+    "@azure/identity": "4.2.1"
+  }
 }
