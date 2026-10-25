@@ -28,6 +28,8 @@ export interface SidebarSnapshot {
   emptySuggestions: number;
   averageLatencyMs?: number;
   performanceDiagnosticsEnabled?: boolean;
+  crossFileContextEnabled?: boolean;
+  relatedFileCount?: number;
 }
 
 export interface SidebarEntry {
@@ -152,6 +154,19 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
           description: "Check current workspace and ignore rules locally; no model request",
           icon: "shield", command: "lineloom.checkActiveFilePrivacy"
         },
+        {
+          id: "related-context", label: "Related-File Context (Experimental)",
+          description: snapshot.crossFileContextEnabled
+            ? (snapshot.relatedFileCount ?? 0) + " selected (session only; max two files)"
+            : "Off — opt in under LineLoom settings",
+          icon: "files",
+          command: snapshot.crossFileContextEnabled ? "lineloom.selectRelatedFiles" : "lineloom.openSettings"
+        },
+        ...(snapshot.crossFileContextEnabled && (snapshot.relatedFileCount ?? 0) > 0 ? [{
+          id: "clear-related-context", label: "Clear Related Files",
+          description: "Revoke additional source context selection immediately",
+          icon: "clear-all", command: "lineloom.clearRelatedFiles"
+        }] : []),
         {
           id: "check", label: "Check Ollama Connection", icon: "plug",
           command: "lineloom.checkConnection"

@@ -13,6 +13,7 @@ describe("prompt generation", () => {
     const result = buildPrompt(language, context, "qwen2.5-coder:1.5b", ["export const helper = 42;"]);
     expect(result.prompt).toContain("untrusted reference data");
     expect(result.prompt).toContain("export const helper = 42;");
+    expect(result.prompt).toContain(" (untrusted):\n<reference>\n");
     expect(result.suffix).toBeUndefined();
     expect(buildPrompt(language, context, "qwen2.5-coder:1.5b").prompt).toBe(context.prefix);
   });

@@ -195,7 +195,8 @@ async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
 async function openQuickActions(): Promise<void> {
   const config = readConfig();
   const choice = await vscode.window.showQuickPick(
-    quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics).map((action) => ({
+    quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics,
+      config.crossFileContext, engine?.getRelatedFileCount() ?? 0).map((action) => ({
       label: action.label, description: action.description, command: action.command
     })),
     { placeHolder: "LineLoom Quick Actions — choose an action" }
@@ -264,7 +265,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
-    () => currentState
+    () => currentState,
+    () => engine?.getRelatedFileCount() ?? 0
   );
   engine = new CompletionEngine(
     (state) => {
@@ -316,6 +318,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
   command("lineloom.clearRelatedFiles", () => {
     engine?.setRelatedFiles([]);
+    sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom: session-only related file selection cleared.");
   });
   command("lineloom.selectRelatedFiles", async () => {
@@ -348,6 +351,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (agreed !== "Use Selected Files" || !readConfig().crossFileContext ||
         !vscode.workspace.isTrusted || vscode.window.activeTextEditor?.document !== editor.document) return;
     engine?.setRelatedFiles(chosen);
+    sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
       " related file(s). Privacy rules are checked before each model request.");
   });

@@ -95,3 +95,17 @@ describe("LineLoom local sidebar model", () => {
     expect(entry.description).not.toContain("\n");
   });
 });
+
+describe("related context sidebar consent disclosure", () => {
+  it("shows opt-in status, never paths, and gives a clear command only for active selections", () => {
+    const off = sidebarSections({ ...snapshot, crossFileContextEnabled: false, relatedFileCount: 2 })
+      .flatMap(s => s.items);
+    expect(off.find(x => x.id === "related-context")?.description).toContain("Off");
+    expect(off.find(x => x.id === "clear-related-context")).toBeUndefined();
+    const on = sidebarSections({ ...snapshot, crossFileContextEnabled: true, relatedFileCount: 2 })
+      .flatMap(s => s.items);
+    expect(on.find(x => x.id === "related-context")?.command).toBe("lineloom.selectRelatedFiles");
+    expect(on.find(x => x.id === "clear-related-context")?.command).toBe("lineloom.clearRelatedFiles");
+    expect(JSON.stringify(on)).not.toContain("/private/");
+  });
+});
