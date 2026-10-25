@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
- * Isolated, non-interactive VS Code CLI upgrade smoke: published v1.2.0
- * stable or v1.2.3/v1.2.4 previews -> local candidate matching package.json.
+ * Isolated, non-interactive VS Code CLI upgrade smoke: pinned published
+ * stable (v1.2.0 or v1.3.0) or v1.2.3/v1.2.4 preview -> local candidate.
  *
  * Checks that the CLI replaces the listed extension version while preserving
  * a synthetic user settings.json byte-for-byte. It does NOT verify that an
@@ -11,7 +11,7 @@
  * Usage:
  *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.0.vsix LineLoom-1.3.0.vsix
  *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.3.vsix LineLoom-1.3.0.vsix
- *   node scripts/smoke-upgrade-vsix.mjs LineLoom-1.2.4.vsix LineLoom-1.3.0.vsix
+ *   LINELOOM_EXPECT_PRE_RELEASE=1 node scripts/smoke-upgrade-vsix.mjs LineLoom-1.3.0.vsix LineLoom-1.3.1.vsix
  */
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
@@ -59,9 +59,11 @@ async function main() {
     const previous = inspectVsix(previousArchive);
     const candidate = inspectVsix(candidateArchive, process.env.LINELOOM_EXPECT_PRE_RELEASE === "1");
     const source = JSON.parse(readFileSync("package.json", "utf8"));
-    assert.ok(["1.2.0", "1.2.3", "1.2.4"].includes(previous.version),
-      "Baseline must be published stable v1.2.0 or GitHub preview v1.2.3/v1.2.4");
-    assert.equal(previous.preRelease, previous.version !== "1.2.0",
+    const stableBaselines = new Set(["1.2.0", "1.3.0"]);
+    const previewBaselines = new Set(["1.2.3", "1.2.4"]);
+    assert.ok(stableBaselines.has(previous.version) || previewBaselines.has(previous.version),
+      "Baseline must be a pinned published stable or preview version");
+    assert.equal(previous.preRelease, previewBaselines.has(previous.version),
       "Published baseline must have correct stable/preview VSIX metadata");
     assert.notEqual(candidate.version, previous.version, "Candidate must be a different version");
     assert.equal(candidate.version, source.version, "Candidate and source version must match");
