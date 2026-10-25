@@ -63,13 +63,23 @@ export async function run(): Promise<void> {
   offlineSidebar.refresh();
   assert.equal(refreshEvents, 1, "Sidebar refresh should fire one tree change");
   sidebarSubscription.dispose();
-  offlineSidebar.dispose();
-  // A passive sidebar read must never produce a model-discovery request.
-  const modelItems = offlineSidebar.getChildren(
-    roots.find(node => node.kind === "section" && node.section.id === "models")
-  );
+  const modelsSection = roots.find(node => node.kind === "section" && node.section.id === "models");
+  assert.ok(modelsSection && modelsSection.kind === "section");
+  const modelItems = offlineSidebar.getChildren(modelsSection);
   assert.ok(modelItems.some(node => node.kind === "item" &&
     node.item.id === "model-readiness" && node.item.description?.includes("Not checked")));
+  const checkToken = readiness.begin();
+  const checkingStatus = offlineSidebar.getChildren(modelsSection).find(
+    node => node.kind === "item" && node.item.id === "model-readiness"
+  );
+  assert.ok(checkingStatus?.kind === "item" && checkingStatus.item.description?.includes("in progress"));
+  assert.equal(readiness.finish(checkToken, "available"), true);
+  const checkedStatus = offlineSidebar.getChildren(modelsSection).find(
+    node => node.kind === "item" && node.item.id === "model-readiness"
+  );
+  assert.ok(checkedStatus?.kind === "item" && checkedStatus.item.description?.includes("last manual check"));
+  readiness.clear();
+  offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
   let holdGeneration = false;
