@@ -38,13 +38,25 @@ This is **not continuous monitoring**, a file-content scanner, or a guarantee of
 - Active editor changes, active document edits/closures, extension configuration, workspace trust and ignore-file watcher changes clear the previous result. Late asynchronous results cannot restore an old approval after these events.
 - The change is **source-only** until a future version is explicitly tested and released; it is not in the published GitHub v1.3.0 VSIX or either extension marketplace.
 
+## Unreleased development: verify the **active editor's effective model**
+
+The default-model check introduced after v1.3.0 reports only the configured default tag. If a language-specific override is enabled (for example TypeScript using another local model), a successful default check **does not** verify the model used for suggestions in that editor.
+
+The **Last Active Model Check** entry in the **Active Editor** section now offers an explicit **Check Active Editor Model** action (Command Palette: `LineLoom: Check Active Editor Model`). It checks which model is resolved for the active supported local editor, including a configured language override. After an authorized user click, the existing Ollama approval boundary applies and the extension requests the bounded model listing. The result is **Not checked**, **Checking**, **Found**, **Missing**, or **Connection failed**. It is only a historical model-list snapshot, not a guarantee of generation quality or live availability.
+
+- Rendering or refreshing the sidebar performs no network request, prompts, source reads or path inspection.
+- Only a supported, enabled local file in a trusted workspace can be used. A command on another editor reports an action hint, not a network operation.
+- The status is session-only and stores no filenames, prompts, endpoint URLs or model tags. Switching editors, editing the active document, changing LineLoom settings or changing workspace trust clears the status. Obsolete concurrent network results are ignored.
+- When an override is missing at the last manual check, **Next: Change Language Model** opens the existing explicit model assignment dialog; when the default is missing, **Next: Choose Installed Model** is offered instead.
+- This is source development and has not been published into v1.3.0 or the editor marketplaces.
+
 ## What the Control Center shows
 
 | Section | Visible information and actions |
 | --- | --- |
 | **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation**. The future maintenance candidate adds one contextual **Next:** recommendation |
 | **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands; an unreleased enhancement adds the last user-triggered default-model check |
-| **Active Editor** | Language name, effective model and **provisional settings-level** eligibility; not a proof the file passes privacy checks |
+| **Active Editor** | Language, effective model and **provisional settings-level** eligibility; an upcoming preview adds explicit active-editor model verification (including overrides), never a passive model request |
 | **Privacy & Connection** | Workspace trust, endpoint *category*, **Check Active File Privacy**, selected related-file count, and manual **Check Ollama Connection**; a future source candidate adds the last explicit file-inspection status |
 | **Session Activity** | In-memory counts for requests, suggestions, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
 | **More Actions** | Settings, setup guide, Quick Actions |
