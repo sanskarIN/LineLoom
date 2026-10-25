@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
-import { LANGUAGES } from "./languages/registry";
-import { normalizeLanguageModels } from "./settings/language-models";
+import { LANGUAGES, getLanguage, isLanguageEnabled } from "./languages/registry";
+import { normalizeLanguageModels, resolveLanguageModel } from "./settings/language-models";
 import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
@@ -98,6 +98,74 @@ async function checkConnection(
     vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
+/**
+ * Inspect the actual effective (potentially language-overridden) model,
+ * exclusively after the user invokes the command. No source/path is read;
+ * /api/tags is called only after the existing endpoint approval boundary.
+ */
+async function checkActiveModel(
+  context: vscode.ExtensionContext, readiness: ModelReadinessSession, refresh: () => void
+): Promise<void> {
+  const token = readiness.begin();
+  refresh();
+  const editor = vscode.window.activeTextEditor;
+  const document = editor?.document;
+  const language = document && getLanguage(document.languageId);
+  const config = readConfig();
+  if (!document || !language || document.uri.scheme !== "file" ||
+      !vscode.workspace.isTrusted || !config.enabled ||
+      !isLanguageEnabled(language, config.enabledLanguages)) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    void vscode.window.showInformationMessage(
+      "LineLoom: Open a supported, enabled local code file in a trusted workspace first."
+    );
+    return;
+  }
+  const selected = resolveLanguageModel(config.model, language.id, config.languageModels);
+  if (!selected) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    void vscode.window.showInformationMessage("LineLoom: Configure a model before checking.");
+    return;
+  }
+  const origin = await approveEndpoint(context, true);
+  if (!readiness.isCurrent(token)) return;
+  if (!origin) { readiness.finish(token, "not-checked"); refresh(); return; }
+  const isCurrent = (): boolean => readiness.isCurrent(token) &&
+    vscode.window.activeTextEditor?.document === document &&
+    !document.isClosed && vscode.workspace.isTrusted &&
+    selectionOriginCurrent(context, origin) &&
+    (() => {
+      const latest = readConfig();
+      const currentLanguage = getLanguage(document.languageId);
+      return latest.enabled && currentLanguage?.id === language.id &&
+        isLanguageEnabled(language, latest.enabledLanguages) &&
+        resolveLanguageModel(latest.model, language.id, latest.languageModels) === selected;
+    })();
+  try {
+    const models = await listModels(origin);
+    if (!isCurrent()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    const present = models.some(model => model.name === selected);
+    readiness.finish(token, present ? "available" : "missing");
+    refresh();
+    void vscode.window.showInformationMessage(present
+      ? "LineLoom: Active editor model found at this manual check (not a generation test)."
+      : "LineLoom: Active editor model not installed on the approved Ollama endpoint.");
+  } catch (error) {
+    if (!isCurrent()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    readiness.finish(token, "unreachable");
+    refresh();
+    void vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
+  }
+}
+
 async function selectModel(context: vscode.ExtensionContext): Promise<void> {
   const origin = await approveEndpoint(context, true);
   if (!origin) return;
@@ -328,6 +396,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // Invalidate overlapping pickers when privacy, settings or editor state changes.
   let relatedPickerRevision = 0;
   const modelReadiness = new ModelReadinessSession();
+  const activeModelReadiness = new ModelReadinessSession();
   const filePrivacy = new FilePrivacySession();
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
@@ -335,7 +404,8 @@ export function activate(context: vscode.ExtensionContext): void {
     () => currentState,
     () => engine?.getRelatedFileCount() ?? 0,
     () => modelReadiness.state,
-    () => filePrivacy.state
+    () => filePrivacy.state,
+    () => activeModelReadiness.state
   );
   engine = new CompletionEngine(
     (state) => {
@@ -384,6 +454,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context, modelReadiness, () => sidebar.refresh()));
+  command("lineloom.checkActiveModel", () => checkActiveModel(context, activeModelReadiness, () => sidebar.refresh()));
   command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy(filePrivacy, () => sidebar.refresh()));
   command("lineloom.clearRelatedFiles", () => {
     relatedPickerRevision++;
@@ -464,7 +535,9 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
       modelReadiness.clear();
+      activeModelReadiness.clear();
       filePrivacy.clear();
+      activeModelReadiness.clear();
       relatedPickerRevision++;
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.
@@ -494,6 +567,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidChangeTextDocument((event) => {
       if (event.document === vscode.window.activeTextEditor?.document) {
         filePrivacy.clear();
+        activeModelReadiness.clear();
         sidebar.refresh();
       }
       engine?.onDocumentChanged(event);
@@ -506,6 +580,7 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
     modelReadiness.clear();
+    activeModelReadiness.clear();
     filePrivacy.clear();
     relatedPickerRevision++;
     clearIgnoreCache();
