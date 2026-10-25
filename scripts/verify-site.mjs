@@ -14,9 +14,8 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // Development source is v1.3.0; GitHub stable remains v1.2.0 until actual publication.
-  // Keep the website's v1.2.0 stable links fixed until an actual new stable
-  // release is verified, rather than equating package.json with deployment.
+  // Published GitHub stable v1.3.0 is verified separately from registry versions.
+  // Historical v1.2.0 and public v1.2.4 preview links remain discoverable.
   assert.match(pkg.version, /^1\.(?:2\.[1-9]\d*|3\.\d+)$/);
   assert.ok(page.includes("v1.2.4 GitHub pre-release"),
     "Current published GitHub preview must be discoverable alongside stable.");
@@ -25,10 +24,12 @@ test("static site identity follows the release manifest", () => {
   assert.ok(!page.includes("v1.2.4 development (not released)"),
     "Do not describe a published preview as unreleased.");
   assert.ok(page.includes("v1.1.1 pre-release"));
-  assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");
+  assert.ok(page.includes("v1.3.0 GitHub stable"), "Latest GitHub stable version must be visible");
   assert.ok(page.includes("v1.0.0"), "Historical v1.0.0 milestone should remain visible");
-  assert.ok(page.includes("LineLoom-1.2.0.vsix"));
-  assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix"));
+  assert.ok(page.includes("LineLoom-1.3.0.vsix"));
+  assert.ok(page.includes("LineLoom-1.3.0.sha256"));
+  assert.ok(page.includes("LineLoom-1.2.0.vsix") || page.includes("v1.2.0"), "Historical stable version must remain discoverable");
+  assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix"));
   assert.ok(page.includes("v1.2.0"));
   assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
@@ -52,7 +53,7 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     'GitHub stable release',
     "does <strong>not</strong> provide comprehensive content-level secret detection",
     "no built-in telemetry",
-    "not implemented in this release",
+    "lineloom.crossFileContext",
     "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);

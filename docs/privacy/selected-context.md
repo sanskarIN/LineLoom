@@ -1,6 +1,6 @@
 # Explicit related-file context (v1.3.0 development RFC)
 
-**Status: draft source candidate, NOT a published feature.** GitHub stable remains v1.2.0, and the v1.2.5 source work has its own security/manual gates. The current experiment is tracked in [PR #93](https://github.com/sanskarIN/LineLoom/pull/93) and [issue #66](https://github.com/sanskarIN/LineLoom/issues/66).
+**Status: shipped in GitHub stable v1.3.0 (2026-10-25), off by default.** The design originated in [PR #93](https://github.com/sanskarIN/LineLoom/pull/93) and [issue #66](https://github.com/sanskarIN/LineLoom/issues/66). Manual real-model quality, physical OS/privacy and accessibility acceptance remain NOT RUN; automated integration validation does not establish those results.
 
 ## Threat model and exact opt-in
 
