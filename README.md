@@ -237,3 +237,9 @@ LineLoom is free and has **no subscription or paywall**. If useful, you may supp
 ## License
 
 [MIT License](LICENSE). [Licensing history and third-party notices](docs/licensing.md). LineLoom is an independent project; no affiliation or endorsement by Microsoft, GitHub, Ollama or model providers is implied.
+
+## v1.3.0 design work (not released)
+
+[Draft PR #93](https://github.com/sanskarIN/LineLoom/pull/93) prepares a default-off, explicitly user-selected **related-file context** feature. It permits at most two small (2 KiB each), policy-eligible source files to be used as anonymous untrusted reference snippets in a completion prompt. There is no repository scanning, persistent index or hidden background file selection. The user must enable the setting, pick files and confirm the disclosure each session; a separately approved remote Ollama host could receive those extra snippets.
+
+**This is development source, not a stable or preview release.** See the [privacy/threat model RFC](docs/privacy/selected-context.md), [v1.3.0 candidate plan](docs/releases/v1.3.0-plan.md) and [manual QA matrix](docs/qa/v1.3.0-manual-acceptance.md). v1.2.0 remains the public stable; v1.2.4 is the latest published GitHub preview. Security issue [#79](https://github.com/sanskarIN/LineLoom/issues/79) still blocks new extension publishing.

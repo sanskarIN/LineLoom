@@ -7,6 +7,7 @@ import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
+import { collectRelatedText } from "../../src/context/related-editor";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "../../src/privacy/timings";
 
 
@@ -19,7 +20,7 @@ export async function run(): Promise<void> {
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
     "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
-    "lineloom.cancel",
+    "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
     "lineloom.refreshSidebar", "lineloom.openSidebar"
   ];
   const commands = await vscode.commands.getCommands(true);
@@ -28,6 +29,7 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
   // Test the actual extension command even with no Ollama server running.
   await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
+  await vscode.commands.executeCommand("lineloom.clearRelatedFiles");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
   const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
@@ -53,6 +55,7 @@ export async function run(): Promise<void> {
   let releaseHeldGeneration: (() => void) | undefined;
   let generationCalls = 0;
   let lastModelSent = "";
+  let lastPromptSent = "";
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
@@ -62,8 +65,9 @@ export async function run(): Promise<void> {
     } else if (request.url === "/api/generate") {
       const parts: Buffer[] = [];
       for await (const chunk of request) parts.push(Buffer.from(chunk));
-      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string };
+      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string; prompt?: string };
       lastModelSent = payload.model ?? "";
+      lastPromptSent = payload.prompt ?? ""; // kept only inside synthetic test server; never logged
       generationCalls++;
       if (holdGeneration) {
         heldGenerationStarted?.();
@@ -225,7 +229,8 @@ export async function run(): Promise<void> {
       autoTrigger: configuration.get<boolean>("autoTrigger"),
       suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
       enabledLanguages: configuration.get<string[]>("enabledLanguages"),
-      performanceDiagnostics: configuration.get<boolean>("performanceDiagnostics")
+      performanceDiagnostics: configuration.get<boolean>("performanceDiagnostics"),
+      crossFileContext: configuration.get<boolean>("crossFileContext")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
     // Subscribe to VS Code's genuine change events, matching production wiring.
@@ -255,6 +260,7 @@ export async function run(): Promise<void> {
       // Diagnostics must capture only aggregate timings after explicit opt-in.
       resetEligibilityTimings();
       await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+      await configuration.update("crossFileContext", false, vscode.ConfigurationTarget.Global);
       assert.equal(await mayComplete(permitted, [], true), true);
       const timingReport = getEligibilityTimingSummary();
       assert.equal(timingReport.checks, 1);
@@ -293,6 +299,48 @@ export async function run(): Promise<void> {
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Real editor-host privacy regression: no cross-file source enters the
+        // request while the preference is disabled, even with a stored selection.
+        engine.setRelatedFiles([permitted.uri]);
+        const disabledContext = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(disabledContext?.length);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false,
+          "Opted-out completion must not include selected related source");
+
+        // The only additional source is the user's explicit, bounded,
+        // same-workspace selection, checked with the real editor privacy gate.
+        await configuration.update("crossFileContext", true, vscode.ConfigurationTarget.Global);
+        engine.setRelatedFiles([permitted.uri]);
+        const selectedContext = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(selectedContext?.length, "Allowed user-selected related file should complete");
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), true,
+          "Opted-in related file must be passed as untrusted reference text");
+        assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
+
+        // An excluded related file must suppress the request, not silently
+        // drop only that reference and still send a prompt.
+        engine.setRelatedFiles([deniedByApp.uri]);
+        const requestsBeforeRelatedDeny = generationCalls;
+        const refusedRelated = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.equal(refusedRelated, undefined);
+        assert.equal(generationCalls, requestsBeforeRelatedDeny,
+          "Excluded selected related file must not cause a model request");
+
+        // Clearing selection or opting out restores ordinary cursor-only context.
+        engine.setRelatedFiles([]);
+        await configuration.update("crossFileContext", false, vscode.ConfigurationTarget.Global);
+        const clearedRelated = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(clearedRelated?.length);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false);
 
         // Inference duration diagnostics are opt-in, unlike source-free
         // request counters. Opt-out must clear measurements without disabling
@@ -739,6 +787,7 @@ export async function run(): Promise<void> {
       await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
       await configuration.update("performanceDiagnostics", oldValues.performanceDiagnostics, vscode.ConfigurationTarget.Global);
+      await configuration.update("crossFileContext", oldValues.crossFileContext, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);
