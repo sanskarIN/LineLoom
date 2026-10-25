@@ -11,6 +11,14 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
+## v1.3.1 GitHub pre-release — native sidebar reliability (published 2026-10-25)
+
+The [**v1.3.1 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) is available with a genuine VS Code preview-channel [**LineLoom-1.3.1.vsix**](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256).
+
+It adds privacy-safe native Control Center **Next:** recommendations, a manual check for the active editor's actual configured Ollama model (including language overrides), explicit last-check states for default-model readiness and local file privacy, and Unicode completion filtering. Checks remain opt-in and session-only; no passive network polling or workspace scanning was introduced.
+
+**For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
+
 ## Dedicated code-completion model — development track (not released)
 
 A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and original synthetic fixtures for **Rust, C, C++, Python and TypeScript**. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).

@@ -1,6 +1,6 @@
 # LineLoom documentation
 
-**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. GitHub stable, older previews, Visual Studio Marketplace, Open VSX and GitHub Packages npm installers are **independent artifacts**. Always check the selected distribution's own version.
+**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1), published the same day; it is not a stable or registry release. GitHub stable, older previews, Visual Studio Marketplace, Open VSX and GitHub Packages npm installers are **independent artifacts**. Always check the selected distribution's own version.
 
 This is a documentation index for users, maintainers and contributors. Proposed plans are labeled separately from implemented features.
 
@@ -9,7 +9,8 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | Guide | Contents |
 | --- | --- |
 | [Main README](../README.md) | What LineLoom is, install methods, settings, supported languages and general setup |
-| [GitHub v1.3.0 stable release](releases/v1.3.0.md) | Downloadable VSIX, checksum, shipped features and known limitations |
+| [GitHub v1.3.0 stable release](releases/v1.3.0.md) | Downloadable stable VSIX, checksum and shipped features |
+| [GitHub v1.3.1 pre-release](releases/v1.3.1.md) | Preview VSIX and SHA-256, sidebar refinements, explicitly outstanding manual QA |
 | [Native sidebar](sidebar.md) | Control Center commands, model status, privacy and opt-in related-file selection |
 | [Quick Actions](quick-actions/README.md) | Status-bar actions and workflows |
 | [Troubleshooting](troubleshooting/README.md) | First-run, model and editor issues |
@@ -36,14 +37,14 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | [Development](development/README.md) | Build and test workflow |
 | [Source-tree checks](development/source-tree.md) | Required TypeScript module inventory |
 | [Performance](performance/README.md) | Benchmarks and measurement limits |
-| [Code model research](../model/README.md) | Five-language synthetic evaluation command; proposed training and privacy gates |
+| [Code model research](../model/README.md) | Five-language synthetic evaluation and future training/privacy gates |
 | [v1.3.0 human acceptance](qa/v1.3.0-manual-acceptance.md) | Unverified physical/model/accessibility scenarios |
 | [Release evidence procedure](qa/release-evidence.md) | Sanitized pass/fail/deferral and cross-channel release truthfulness |
 
 ## Planning and history
 
 - [Roadmap](roadmap.md): current state, proposed milestone sequencing and prioritization.
-- [v1.3.1 pre-release](releases/v1.3.1.md): GitHub preview is published with VSIX and checksum; independent registries are not automatically updated.
+- [v1.3.1 maintenance plan](releases/v1.3.1-plan.md): historical preview scope, automated gates and **uncompleted manual/stable QA**. The GitHub preview has shipped, but a stable/registry release has not.
 - [Upcoming feature proposals](feature-proposals.md): optional model readiness, sidebar polish, performance benchmarks, C#/Dart investigations and longer-term research. **Not shipped.**
 - [v1.3.0 release plan/history](releases/v1.3.0-plan.md): completed publishing vs deferred hands-on checks.
 - [Changelog](../CHANGELOG.md) and [GitHub Releases](https://github.com/sanskarIN/LineLoom/releases): historical source and public artifact status.
