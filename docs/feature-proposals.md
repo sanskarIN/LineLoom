@@ -15,7 +15,7 @@
 | Candidate | Earliest sensible target | User value | Privacy/compatibility conditions | Decision |
 | --- | --- | --- | --- | --- |
 | Clearer inline completion states and recovery | v1.3.1 patch | Explain model-not-found, timeout, blocked editor and cancelled requests | No filenames/prompts/endpoints in diagnostics; accessible native VS Code UI | P1 / scoped |
-| Quality and latency comparison harness | v1.3.1–v1.4.0 | Reproducible model choice and tuneable defaults | Synthetic source only; explicit user-run local Ollama; no uploaded benchmarks | P0 / define first |
+| Quality and latency comparison harness | v1.4.0 research | Reproducible model choice and tuneable defaults | Synthetic source only; explicit user-run local Ollama; no uploaded benchmarks | **Implementation proposed in development PR**; real results NOT RUN |
 | Sidebar navigation and keyboard accessibility | v1.4.0 | Easier model switching, per-language choices and privacy inspection | No background probes; maintain simple Tree View; actual screen-reader QA | P1 / research |
 | Opt-in model readiness panel | v1.4.0 | Distinguish server reachable, model installed and editor eligible | Trigger network only on explicit command; no periodic polling or remote probing | P1 / design |
 | Completion-acceptance and cancellation tuning | v1.4.0 | Reduce irrelevant suggestions and wasted requests | Optional local session counters only; raw code/paths never logged or stored | P1 / research |
@@ -23,6 +23,10 @@
 | Opt-in explicitly selected reference snippets with improved prompt strategy | v1.4.x or later | Better suggestions when referencing two chosen files | Keep hard bounds, per-file consent, post-response policy checks; compare Qwen FIM fallback quality | P2 / evaluate |
 | Project-aware symbols or imports | v1.5.x or later | Higher relevance in large codebases | **No indexing by default.** New security RFC, bounded opt-in parser, explicit I/O budget, cancellation and path exclusion audit | P3 / RFC only |
 | Provider abstraction / optional additional local backends | v2.0 exploration | Local choice without model lock-in | Preserve loopback defaults; explicit remote consent; bounded streaming, disabled providers by default | Research / no target |
+
+### Proposed dedicated completion model track
+
+Initial model evaluation targets **Rust, C, C++, Python and TypeScript** (separate C vs C++ cases); this **does not remove** existing extension language support. See [model research](../model/README.md), [training plan](../model/TRAINING_PLAN.md) and [data governance](../model/DATA_POLICY.md). There are no model weights or trained LineLoom checkpoint; no new provider, automatic model download or source collection is introduced.
 
 ### Suggested v1.4.0 scope
 
