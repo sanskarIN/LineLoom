@@ -31,6 +31,7 @@ export interface SidebarSnapshot {
   averageLatencyMs?: number;
   performanceDiagnosticsEnabled?: boolean;
   modelReadiness?: ModelReadiness;
+  activeModelReadiness?: ModelReadiness;
   filePrivacy?: ManualFilePrivacy;
   crossFileContextEnabled?: boolean;
   relatedFileCount?: number;
@@ -64,6 +65,16 @@ function readinessDescription(state: ModelReadiness | undefined): string {
     case "missing": return "Default model missing at last manual check";
     case "unreachable": return "Connection failed at last manual check";
     default: return "Not checked this session — click Check Ollama Connection";
+  }
+}
+
+function activeModelReadinessDescription(state: ModelReadiness | undefined): string {
+  switch (state) {
+    case "checking": return "Checking active editor model on explicit request";
+    case "available": return "Effective model found at last manual check; not monitored";
+    case "missing": return "Effective model missing at last manual check";
+    case "unreachable": return "Effective model check failed; try again manually";
+    default: return "Not checked for active editor — click to verify model";
   }
 }
 
@@ -124,6 +135,13 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
   }
   if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
     "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
+  if (snapshot.activeModelReadiness === "missing") return entry(
+    snapshot.activeEditor.modelSource === "Language override" ? "Next: Change Language Model" : "Next: Choose Installed Model",
+    "The effective model was missing during the last explicit active-model check.",
+    "symbol-method", snapshot.activeEditor.modelSource === "Language override" ?
+      "lineloom.selectLanguageModel" : "lineloom.selectModel");
+  if (snapshot.activeModelReadiness === "unreachable") return entry("Next: Recheck Active Model",
+    "The last active-model check failed. Try an explicit recheck.", "plug", "lineloom.checkActiveModel");
   if (snapshot.filePrivacy === "blocked") return entry("Next: Review File Exclusions",
     "The last manual path/ignore check blocked the active file; inspect exclusions or open another file.",
     "shield");
@@ -218,6 +236,11 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         { id: "editor-eligibility", label: "Completion Status",
           description: snapshot.activeEditor.eligibility,
           icon: snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+        { id: "active-model-readiness", label: "Last Active Model Check",
+          description: activeModelReadinessDescription(snapshot.activeModelReadiness),
+          icon: snapshot.activeModelReadiness === "available" ? "check" :
+            snapshot.activeModelReadiness === "missing" ? "warning" : "plug",
+          command: "lineloom.checkActiveModel" },
         { id: "editor-languages", label: "Manage Language Settings", icon: "gear",
           command: "lineloom.manageLanguages" }
       ]
