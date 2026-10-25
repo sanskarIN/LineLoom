@@ -103,6 +103,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.checkActiveModel",
+        "title": "Check Active Editor Model",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.openSettings",
         "title": "Open Settings",
         "category": "LineLoom"
