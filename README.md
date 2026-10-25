@@ -9,7 +9,11 @@
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Latest stable GitHub release: v1.2.0.** Cross-platform automated checks, mocked-Ollama integration and isolated VSIX install passed; real-model and hands-on OS/accessibility QA remain outstanding. Open VSX publicly serves v1.2.0 Stable; the Visual Studio Marketplace rollout is independent.
+> **Latest publicly verified GitHub stable: v1.2.0 (until a new release is verified).** v1.3.0 source is a candidate; changing the manifest version does not publish it. Automated checks are distinct from outstanding real-model, OS/accessibility and publisher-authentication QA. Marketplace/Open VSX versions remain independently managed.
+
+## v1.3.0 stable-channel candidate (not yet published)
+
+The proposed v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. See [candidate release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
 
 ## v1.2.0 stable on GitHub (released 2026-10-20)
 
