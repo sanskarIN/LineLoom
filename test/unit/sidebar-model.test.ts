@@ -132,9 +132,10 @@ describe("native sidebar suggested next step", () => {
   });
 
   it("prioritizes workspace trust and editor eligibility before model or network actions", () => {
-    expect(next({ workspaceTrusted: false, completionState: "unavailable" })).toMatchObject({
-      label: "Next: Review Workspace Trust", command: undefined
-    });
+    expect(next({ workspaceTrusted: false, completionState: "unavailable" }).label)
+      .toBe("Next: Review Workspace Trust");
+    expect(next({ workspaceTrusted: false, completionState: "unavailable" }).command)
+      .toBeUndefined();
     for (const [eligibility, label] of [
       ["Open a supported code file", "Next: Open a Source File"],
       ["No inline provider for this language", "Next: Switch Language"],
