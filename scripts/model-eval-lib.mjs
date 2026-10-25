@@ -4,6 +4,7 @@
  */
 export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "typescript"]);
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
+export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 const languageLabels = Object.freeze({
   rust: "Rust", c: "C", cpp: "C++", python: "Python", typescript: "TypeScript"
 });
@@ -18,19 +19,20 @@ export function resolveMode(model, mode = "auto") {
   return /^qwen2\.5-coder(?:[:-]|$)/i.test(model) ? "fim" : "instruction";
 }
 /**
- * Deliberately small fixtures. Fail closed if external content, unexpectedly
- * large strings or unsupported language IDs enter the benchmark manifest.
+ * Explicit, original synthetic fixtures only. Fail closed on unsupported
+ * categories, unexpectedly large strings or unknown language IDs.
  */
 export function validateFixtures(data) {
   if (!data || data.schemaVersion !== 1 || !Array.isArray(data.fixtures) ||
-      data.fixtures.length < EVAL_LANGUAGES.length || data.fixtures.length > 100) {
+      data.fixtures.length < EVAL_LANGUAGES.length * 6 || data.fixtures.length > 100) {
     throw new Error("Invalid fixture manifest");
   }
   const seen = new Set();
   const counts = new Map(EVAL_LANGUAGES.map(language => [language, 0]));
   for (const item of data.fixtures) {
     if (!item || typeof item.id !== "string" || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(item.id) ||
-        seen.has(item.id) || !counts.has(item.language)) throw new Error("Invalid fixture identity");
+        seen.has(item.id) || !counts.has(item.language) ||
+        !EVAL_CATEGORIES.includes(item.category)) throw new Error("Invalid fixture identity");
     seen.add(item.id);
     for (const key of ["prefix", "suffix", "expected"]) {
       if (typeof item[key] !== "string" || item[key].length > 4096 ||
@@ -41,7 +43,7 @@ export function validateFixtures(data) {
     }
     counts.set(item.language, counts.get(item.language) + 1);
   }
-  if ([...counts.values()].some(n => n < 1)) throw new Error("Every target language needs a fixture");
+  if ([...counts.values()].some(n => n < 6)) throw new Error("Every target language needs at least six fixtures");
   return data.fixtures;
 }
 export function createRequest(fixture, model, mode = "auto") {
@@ -74,21 +76,23 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
   const completed = results.filter(item => item.ok);
   const totalTimes = completed.map(item => item.totalMs);
   const tokenTimes = completed.map(item => item.firstTokenMs).filter(Number.isFinite);
-  const perLanguage = Object.fromEntries(EVAL_LANGUAGES.map(language => {
-    const matches = results.filter(item => item.language === language);
-    return [language, {
+  const breakdown = (values, key) => Object.fromEntries(values.map(value => {
+    const matches = results.filter(item => item[key] === value);
+    return [value, {
       attempts: matches.length,
       completed: matches.filter(item => item.ok).length,
       strictMatches: matches.filter(item => item.ok && item.exact).length
     }];
   }));
+  const perLanguage = breakdown(EVAL_LANGUAGES, "language");
+  const perCategory = breakdown(EVAL_CATEGORIES, "category");
   return {
     model, mode, syntheticFixtures: fixtureCount, attempts: results.length,
     completed: completed.length, failed: results.length - completed.length,
     strictExactMatches: completed.filter(item => item.exact).length,
     completionP50Ms: percentile(totalTimes, 0.5), completionP95Ms: percentile(totalTimes, 0.95),
     firstTokenP50Ms: percentile(tokenTimes, 0.5), firstTokenP95Ms: percentile(tokenTimes, 0.95),
-    perLanguage,
+    perLanguage, perCategory,
     disclaimer: "Strict synthetic continuation equality only; not human acceptance, compile correctness or model readiness."
   };
 }
