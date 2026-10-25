@@ -136,6 +136,13 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
   }
   if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
     "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
+  if (snapshot.activeModelReadiness === "checking") return entry("Next: Active Model Check Running",
+    "A user-invoked check is in progress; this view starts no additional request.", "sync");
+  if (snapshot.filePrivacy === "checking") return entry("Next: File Rules Check Running",
+    "Local file inspection is in progress; no network check starts from this view.", "sync");
+  if (snapshot.modelReadiness === "checking" && snapshot.activeEditor.modelSource === "Default model")
+    return entry("Next: Default Model Check Running",
+      "A user-invoked Ollama check is running; model availability is not confirmed.", "sync");
   if (snapshot.activeModelReadiness === "missing") return entry(
     snapshot.activeEditor.modelSource === "Language override" ? "Next: Change Language Model" : "Next: Choose Installed Model",
     "The effective model was missing during the last explicit active-model check.",
