@@ -6,6 +6,7 @@ import { generateCompletion, listModels, showModel } from "../../src/models/olla
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { ModelReadinessSession } from "../../src/ui/model-readiness";
+import { FilePrivacySession } from "../../src/ui/file-privacy-session";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
 import { collectRelatedText, isSupportedRelatedCandidate } from "../../src/context/related-editor";
@@ -34,8 +35,10 @@ export async function run(): Promise<void> {
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
   const readiness = new ModelReadinessSession();
+  const privacyStatus = new FilePrivacySession();
   const offlineSidebar = new LineLoomSidebar(
-    () => undefined, () => false, () => "ready", () => 0, () => readiness.state
+    () => undefined, () => false, () => "ready", () => 0,
+    () => readiness.state, () => privacyStatus.state
   );
   const roots = offlineSidebar.getChildren();
   // The recommendation must be computed locally and exposed through a native
@@ -88,6 +91,34 @@ export async function run(): Promise<void> {
   const checkedStatus = readinessEntry();
   assert.ok(checkedStatus?.kind === "item" && checkedStatus.item.description?.includes("last manual check"));
   readiness.clear();
+  const privacySection = () => {
+    const root = offlineSidebar.getChildren().find(
+      node => node.kind === "section" && node.section.id === "privacy"
+    );
+    assert.ok(root && root.kind === "section");
+    return root;
+  };
+  const privacyEntry = () => offlineSidebar.getChildren(privacySection()).find(
+    node => node.kind === "item" && node.item.id === "last-file-privacy"
+  );
+  const notChecked = privacyEntry();
+  assert.ok(notChecked?.kind === "item" && notChecked.item.description?.includes("Not checked"));
+  assert.ok(notChecked?.kind === "item" &&
+    offlineSidebar.getTreeItem(notChecked).accessibilityInformation?.label);
+  const privacyToken = privacyStatus.begin();
+  offlineSidebar.refresh();
+  assert.ok(privacyEntry()?.kind === "item" &&
+    (privacyEntry() as Extract<ReturnType<typeof offlineSidebar.getChildren>[number], { kind: "item" }>)
+      .item.description?.includes("Checking"));
+  assert.equal(privacyStatus.finish(privacyToken, "allowed"), true);
+  offlineSidebar.refresh();
+  const allowedPrivacy = privacyEntry();
+  assert.ok(allowedPrivacy?.kind === "item" &&
+    allowedPrivacy.item.description?.includes("rechecked before inference"));
+  privacyStatus.clear();
+  offlineSidebar.refresh();
+  const resetPrivacy = privacyEntry();
+  assert.ok(resetPrivacy?.kind === "item" && resetPrivacy.item.description?.includes("Not checked"));
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
@@ -300,6 +331,10 @@ export async function run(): Promise<void> {
       await vscode.commands.executeCommand("lineloom.checkConnection");
       assert.equal(modelListCalls, baselineModelListCalls + 1,
         "The explicit Check Ollama Connection command must query the model list once");
+      const baselineGenerationCalls = generationCalls;
+      await vscode.commands.executeCommand("lineloom.checkActiveFilePrivacy");
+      assert.equal(generationCalls, baselineGenerationCalls,
+        "An explicit file privacy inspection must not generate model completions");
       await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
       await configuration.update("excludedPaths", [], vscode.ConfigurationTarget.Global);
