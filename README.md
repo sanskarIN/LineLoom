@@ -11,6 +11,14 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
+## v1.3.1 GitHub pre-release — native sidebar reliability (published 2026-10-25)
+
+The [**v1.3.1 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) is available with a genuine VS Code preview-channel [**LineLoom-1.3.1.vsix**](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256).
+
+It adds privacy-safe native Control Center **Next:** recommendations, a manual check for the active editor's actual configured Ollama model (including language overrides), explicit last-check states for default-model readiness and local file privacy, and Unicode completion filtering. Checks remain opt-in and session-only; no passive network polling or workspace scanning was introduced.
+
+**For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
+
 ## v1.3.0 stable on GitHub (released 2026-10-25)
 
 The published v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. [Download the verified GitHub v1.3.0 stable VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256). See [release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
