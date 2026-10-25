@@ -48,6 +48,7 @@ describe("post-inference configuration revalidation", () => {
   it("rejects output-affecting model and editor preferences", () => {
     expect(isRequestConfigurationCurrent(base, { ...base, temperature: 0.5 }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, maxOutputTokens: 64 }, language, false)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, { ...base, crossFileContext: true }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, multiLine: false }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, suppressMidTokenAuto: false }, language, false)).toBe(false);
   });

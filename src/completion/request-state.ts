@@ -18,6 +18,7 @@ export function isRequestConfigurationCurrent(
     JSON.stringify(initial.languageModels) === JSON.stringify(latest.languageModels) &&
     initial.endpoint === latest.endpoint &&
     initial.allowRemoteEndpoints === latest.allowRemoteEndpoints &&
+    initial.crossFileContext === latest.crossFileContext &&
     initial.maxContextChars === latest.maxContextChars &&
     initial.maxOutputTokens === latest.maxOutputTokens &&
     initial.maxSuggestionLines === latest.maxSuggestionLines &&

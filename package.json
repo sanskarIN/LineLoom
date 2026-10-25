@@ -88,6 +88,16 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.selectRelatedFiles",
+        "title": "Select Related Files for Context",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.clearRelatedFiles",
+        "title": "Clear Selected Related Files",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.checkConnection",
         "title": "Check Ollama Connection",
         "category": "LineLoom"
@@ -261,7 +271,7 @@
         "lineloom.crossFileContext": {
           "type": "boolean",
           "default": false,
-          "description": "Reserved for a future version; cross-file reads are not implemented in this preview."
+          "description": "Experimental, disabled by default. Only explicitly selected, same-workspace, privacy-eligible small source files may enter local Ollama prompts; any remote inference requires separate approval. Selection is session-only."
         },
         "lineloom.performanceDiagnostics": {
           "type": "boolean",
