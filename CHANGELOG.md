@@ -2,10 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — post-v1.3.0 completion-safety hardening (source candidate)
+## Unreleased — post-v1.3.0 maintenance source (not published)
 
 - Reject additional hidden Unicode direction markers, soft hyphens, zero-width separators and invisible operators in model-generated inline suggestions rather than silently deleting characters and changing source. Preserve ZWNJ/ZWJ needed for multilingual identifiers and emoji sequences. Unit regressions included.
-- **Not yet shipped:** this source change does not modify the published v1.3.0 VSIX, npm package or either extension marketplace. New release packaging and real-model/manual QA remain separate gates.
+- Native sidebar: add one contextual, privacy-safe **Next:** action for extension/editor/endpoint and generation states; keep unsupported or untrusted-workspace guidance non-clickable instead of suggesting network actions. Clarify explicitly enabled but empty related-file selection separately from consented file counts. Add pure decision tests and mocked VS Code editor-host accessibility coverage.
+- **Not yet shipped:** these source changes do not modify the published v1.3.0 VSIX, npm package or either extension marketplace. New release packaging and real-model/manual QA remain separate gates.
 
 ## v1.3.0 — GitHub stable (2026-10-25)
 
