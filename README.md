@@ -165,6 +165,8 @@ The [LineLoom website](https://sanskarin.github.io/LineLoom/) is live and mainta
 
 Website content is excluded from the extension VSIX package. This does not add hosted inference, an account requirement or telemetry.
 
+**Documentation index:** [Browse all guides](docs/README.md).
+
 **Development and upcoming features:** [forward-looking roadmap](docs/roadmap.md) · [v1.3.1 maintenance plan](docs/releases/v1.3.1-plan.md) · [proposed future features](docs/feature-proposals.md) · [native sidebar guide](docs/sidebar.md) · [package-manager distribution](docs/packages.md) · [sanitized release evidence](docs/qa/release-evidence.md). These plans describe **unreleased ideas**, not features already in the installed extension.
 
 ## Release verification status
