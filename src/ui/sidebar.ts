@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import type { CompletionState, CompletionStats } from "../completion/engine";
+import type { ModelReadiness } from "./model-readiness";
 import { summarizeActiveEditor } from "./editor-context";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { sidebarSections, type SidebarEndpointState, type SidebarEntry, type SidebarSection } from "./sidebar-model";
@@ -29,7 +30,8 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
     private readonly getStats: () => Readonly<CompletionStats> | undefined,
     private readonly isApproved: (origin: string) => boolean,
     private readonly getState: () => CompletionState = () => "ready",
-    private readonly getRelatedFileCount: () => number = () => 0
+    private readonly getRelatedFileCount: () => number = () => 0,
+    private readonly getModelReadiness: () => ModelReadiness = () => "not-checked"
   ) {}
 
   refresh(): void { this.changes.fire(undefined); }
@@ -72,6 +74,7 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       continuationHits: stats?.continuationHits ?? 0,
       emptySuggestions: stats?.emptySuggestions ?? 0,
       performanceDiagnosticsEnabled: config.performanceDiagnostics,
+      modelReadiness: this.getModelReadiness(),
       crossFileContextEnabled: config.crossFileContext,
       relatedFileCount: this.getRelatedFileCount(),
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
