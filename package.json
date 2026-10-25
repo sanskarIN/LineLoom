@@ -118,6 +118,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.resetInferenceTimings",
+        "title": "Reset Inference Timing Samples",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.resetPrivacyTimings",
         "title": "Reset Privacy Timing Statistics",
         "category": "LineLoom"

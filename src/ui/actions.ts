@@ -46,6 +46,12 @@ export function quickActions(
     { id: "sidebar", label: "$(layout-sidebar-left) Open Control Center", description: "Open the LineLoom Activity Bar sidebar", command: "lineloom.openSidebar" },
     { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },
     ...(performanceDiagnostics ? [{
+      id: "resetInferenceTimings",
+      label: "$(trash) Reset Inference Timing Samples",
+      description: "Clear opt-in Ollama duration samples without resetting suggestion counts",
+      command: "lineloom.resetInferenceTimings"
+    }] : []),
+    ...(performanceDiagnostics ? [{
       id: "resetPrivacyTimings",
       label: "$(trash) Reset Privacy Timing Statistics",
       description: "Clear local, aggregate privacy check durations without changing settings",

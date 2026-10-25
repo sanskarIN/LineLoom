@@ -30,6 +30,9 @@ export interface SidebarSnapshot {
   continuationHits: number;
   emptySuggestions: number;
   averageLatencyMs?: number;
+  recentLatencySamples?: number;
+  recentLatencyP50Ms?: number;
+  recentLatencyP95Ms?: number;
   performanceDiagnosticsEnabled?: boolean;
   modelReadiness?: ModelReadiness;
   activeModelReadiness?: ModelReadiness;
@@ -308,12 +311,26 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         { id: "cache-hits", label: "Cache Hits", description: String(snapshot.cacheHits), icon: "database" },
         { id: "continuations", label: "Continuation Reuses", description: String(snapshot.continuationHits), icon: "history" },
         { id: "empty-results", label: "Empty Results", description: String(snapshot.emptySuggestions), icon: "circle" },
+        ...(!snapshot.performanceDiagnosticsEnabled || !snapshot.recentLatencySamples ||
+            snapshot.recentLatencyP50Ms === undefined || snapshot.recentLatencyP95Ms === undefined
+          ? [] : [
+            { id: "latency-p50", label: "Recent Ollama p50",
+              description: Math.round(snapshot.recentLatencyP50Ms) + " ms (" +
+                snapshot.recentLatencySamples + " sample(s))", icon: "clock" },
+            { id: "latency-p95", label: "Recent Ollama p95",
+              description: Math.round(snapshot.recentLatencyP95Ms) + " ms (last 64 max)", icon: "clock" }
+          ]),
         ...(snapshot.averageLatencyMs === undefined ? [] : [
           { id: "latency", label: "Average Measured Latency",
             description: Math.round(snapshot.averageLatencyMs) + " ms",
             icon: "clock" }
         ]),
         { id: "diagnostics", label: "Open Diagnostics", icon: "output", command: "lineloom.diagnostics" },
+        ...(snapshot.performanceDiagnosticsEnabled ? [{
+          id: "reset-inference-timings", label: "Reset Inference Timing Samples",
+          description: "Erase recent Ollama p50/p95 and all inference duration samples; keeps suggestion counts",
+          icon: "trash", command: "lineloom.resetInferenceTimings"
+        }] : []),
         ...(snapshot.performanceDiagnosticsEnabled ? [{
           id: "reset-privacy-timings", label: "Reset Privacy Timing Statistics",
           description: "Clear in-memory privacy eligibility timing data",
