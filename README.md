@@ -11,6 +11,8 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
+**Stable registry distribution (2026-10-25):** [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) is independently confirmed as its public downloadable `latest` version (`preRelease: false`, `verified: true`); the [version-pinned publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119) reused the existing stable GitHub VSIX. The maintainer also manually published v1.3.0 to [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom). The separate GitHub v1.3.1 preview was **not** uploaded to either registry. Real-model and physical-device QA remain unverified.
+
 ## v1.3.1 GitHub pre-release — native sidebar reliability (published 2026-10-25)
 
 The [**v1.3.1 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) is available with a genuine VS Code preview-channel [**LineLoom-1.3.1.vsix**](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256).
@@ -147,7 +149,7 @@ real-model or physical-device acceptance. The
 and [release readiness tracker #60](https://github.com/sanskarIN/LineLoom/issues/60)
 track the remaining gates.
 
-**No standalone v1.2.5 GitHub release was published.** Its merged source changes were included in the later **v1.3.0 GitHub stable VSIX**. The latest separately published historical GitHub preview remains **v1.2.4**. GitHub publication did not update either external extension marketplace.
+**No standalone v1.2.5 GitHub release was published.** Its merged source changes were included in the later **v1.3.0 GitHub stable VSIX**. The latest GitHub testing preview is **v1.3.1**; the older v1.2.4 preview remains available. GitHub publication did not update either external extension marketplace.
 
 ## Install LineLoom
 
@@ -155,7 +157,7 @@ Install the currently published version from your editor's supported registry:
 
 - **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)** — for VS Code users.
 - **[Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom)** — for compatible editors using the Open VSX extension registry.
-- Both listings use publisher `SanskarCodes` and extension ID `SanskarCodes.lineloom`. **GitHub stable v1.3.0 is separately downloadable**; Open VSX v1.2.0 was previously verified, but check the live version of each registry independently.
+- Both listings use publisher `SanskarCodes` and extension ID `SanskarCodes.lineloom`. **v1.3.0 Stable is now available in both extension registries**; Open VSX v1.3.0 was verified independently, and the maintainer updated Marketplace separately.
 
 In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify the publisher **SanskarCodes**, and choose **Install**. You can also use the Command Palette's **Extensions: Install Extensions** action, or the VS Code CLI:
 
@@ -163,7 +165,7 @@ In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify th
 code --install-extension SanskarCodes.lineloom
 ```
 
-If your editor obtains extensions from Open VSX, open its Extensions view, search for **LineLoom**, and verify the publisher **SanskarCodes**. The last independently documented Open VSX publication was [stable v1.2.0](https://open-vsx.org/extension/SanskarCodes/lineloom); consult the live listing for the current version.
+If your editor obtains extensions from Open VSX, open its Extensions view, search for **LineLoom**, and verify the publisher **SanskarCodes**. The independently verified Open VSX publication is now [stable v1.3.0](https://open-vsx.org/extension/SanskarCodes/lineloom); check the live listing for later updates.
 
 ### Alternative: install the GitHub stable VSIX
 
@@ -171,7 +173,7 @@ The latest [GitHub v1.3.0 stable release](https://github.com/sanskarIN/LineLoom/
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
-**Distribution status:** GitHub [v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) is published. The last independently confirmed [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) release was v1.2.0 (2026-10-20); verify both live registry pages rather than assuming the GitHub tag updated them. GitHub owner `sanskarIN` and publisher `SanskarCodes` are intentionally different. [Publisher instructions](docs/publishing.md).
+**Distribution status:** GitHub [v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) is published. [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) was independently published and verified on 2026-10-25 ([publishing run](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119)); Marketplace v1.3.0 was updated manually by the maintainer. GitHub releases never synchronize registries automatically. GitHub owner `sanskarIN` and publisher `SanskarCodes` are intentionally different. [Publisher instructions](docs/publishing.md).
 
 ## Project website and documentation
 

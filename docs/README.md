@@ -1,6 +1,6 @@
 # LineLoom documentation
 
-**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1), published the same day; it is not a stable or registry release. GitHub stable, older previews, Visual Studio Marketplace, Open VSX and GitHub Packages npm installers are **independent artifacts**. Always check the selected distribution's own version.
+**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1), published the same day; it is not a stable or registry release. Open VSX v1.3.0 Stable was independently verified as latest on 2026-10-25, and the maintainer separately updated Marketplace to v1.3.0. GitHub stable, previews and package-manager versions remain independent; check each distribution's own version.
 
 This is a documentation index for users, maintainers and contributors. Proposed plans are labeled separately from implemented features.
 

@@ -136,7 +136,7 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
   assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
   assert.match(pagesGuide, /GitHub v1\.3\.0 stable is the latest publicly verified GitHub stable download/);
-  assert.match(pagesGuide, /GitHub .*v1\.2\.4.*latest published pre-release/);
+  assert.match(pagesGuide, /GitHub .*v1\.3\.1.*latest published pre-release/);
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });
 
@@ -152,6 +152,19 @@ test("published GitHub Packages CLI is correctly distinguished from editor regis
   assert.match(guide, /authenticated read access/);
   assert.match(guide, /not.*published to npmjs\.com/i);
   assert.ok(page.includes("GitHub Packages"));
+});
+
+test("public registry evidence and stable versus preview stay distinct", () => {
+  const pub = readFileSync(resolve(root, "docs/publishing.md"), "utf8");
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  assert.match(pub, /40201081119/);
+  assert.match(pub, /preRelease: false/);
+  assert.ok(page.includes("Open VSX v1.3.0 Stable"));
+  assert.ok(guide.includes("Open VSX v1.3.0 Stable"));
+  assert.ok(readme.includes("latest GitHub") || readme.includes("v1.3.1"));
+  assert.ok(!page.includes("Open VSX v1.2.0 Stable"));
+  assert.ok(!guide.includes("Open VSX v1.2.0 Stable"));
 });
 
 test("official Marketplace and Open VSX listings are visible throughout published resources", () => {
@@ -186,8 +199,8 @@ test("official Marketplace and Open VSX listings are visible throughout publishe
   assert.ok(guide.includes('id="open-vsx"'), "Installation guide should explain Open VSX");
   assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "VS Code CLI install command must be documented");
   assert.ok(readme.includes("LineLoom-1.2.0.vsix"), "GitHub stable VSIX fallback should remain available");
-  assert.ok(page.includes("Open VSX v1.2.0 Stable"), "Homepage must state the verified Open VSX stable version");
-  assert.ok(guide.includes("Open VSX v1.2.0 Stable"), "Installation guide must show the current Open VSX stable version");
+  assert.ok(page.includes("Open VSX v1.3.0 Stable"), "Homepage must state the verified Open VSX stable version");
+  assert.ok(guide.includes("Open VSX v1.3.0 Stable"), "Installation guide must show the current Open VSX stable version");
   assert.ok(publisherGuide.includes("verified: true"), "Publishing guide must reflect the verified Open VSX registry response");
   assert.ok(!page.includes("Open VSX currently shows no publisher verification badge"), "Do not preserve obsolete publisher status");
   assert.ok(!page.includes("Open VSX publication has not yet been verified"), "Remove old unlaunched registry language");
