@@ -5,6 +5,7 @@ import { utimes } from "node:fs/promises";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
+import { ModelReadinessSession } from "../../src/ui/model-readiness";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
 import { collectRelatedText, isSupportedRelatedCandidate } from "../../src/context/related-editor";
@@ -32,7 +33,10 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand("lineloom.clearRelatedFiles");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
-  const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
+  const readiness = new ModelReadinessSession();
+  const offlineSidebar = new LineLoomSidebar(
+    () => undefined, () => false, () => "ready", () => 0, () => readiness.state
+  );
   const roots = offlineSidebar.getChildren();
   // The recommendation must be computed locally and exposed through a native
   // accessible TreeItem, without asking Ollama or inspecting code.
@@ -60,17 +64,25 @@ export async function run(): Promise<void> {
   assert.equal(refreshEvents, 1, "Sidebar refresh should fire one tree change");
   sidebarSubscription.dispose();
   offlineSidebar.dispose();
+  // A passive sidebar read must never produce a model-discovery request.
+  const modelItems = offlineSidebar.getChildren(
+    roots.find(node => node.kind === "section" && node.section.id === "models")
+  );
+  assert.ok(modelItems.some(node => node.kind === "item" &&
+    node.item.id === "model-readiness" && node.item.description?.includes("Not checked")));
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
   let releaseHeldGeneration: (() => void) | undefined;
   let generationCalls = 0;
+  let modelListCalls = 0;
   let lastModelSent = "";
   let lastPromptSent = "";
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
+      modelListCalls++;
       response.end(JSON.stringify({ models: [{ name: "lineloom-test:latest" }] }));
     } else if (request.url === "/api/show") {
       response.end(JSON.stringify({ details: { family: "test" } }));
@@ -263,6 +275,12 @@ export async function run(): Promise<void> {
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+      const baselineModelListCalls = modelListCalls;
+      await vscode.commands.executeCommand("lineloom.refreshSidebar");
+      assert.equal(modelListCalls, baselineModelListCalls, "Sidebar refresh must not probe Ollama");
+      await vscode.commands.executeCommand("lineloom.checkConnection");
+      assert.equal(modelListCalls, baselineModelListCalls + 1,
+        "The explicit Check Ollama Connection command must query the model list once");
       await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
       await configuration.update("excludedPaths", [], vscode.ConfigurationTarget.Global);
