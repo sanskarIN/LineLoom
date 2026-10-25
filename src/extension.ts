@@ -235,7 +235,8 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   output.appendLine("Model: " + config.model);
   output.appendLine("Language model overrides: " + Object.keys(config.languageModels).length + " configured (inspect VS Code settings to review model tags)");
   output.appendLine("Enabled: " + config.enabled + "; automatic: " + config.autoTrigger);
-  output.appendLine("Cross-file context: not implemented (no cross-file reads)");
+  output.appendLine("Cross-file context: " + (config.crossFileContext ? "opt-in enabled" : "off") +
+    "; explicitly selected related files: " + (engine?.getRelatedFileCount() ?? 0) + " (session only)");
   output.appendLine("Registered languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
   output.appendLine("Enabled language IDs: " + config.enabledLanguages.join(", "));
   output.appendLine("Requests: " + (stats?.requests ?? 0) + "; completions: " + (stats?.completions ?? 0) +
@@ -313,6 +314,43 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context));
   command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
+  command("lineloom.clearRelatedFiles", () => {
+    engine?.setRelatedFiles([]);
+    vscode.window.showInformationMessage("LineLoom: session-only related file selection cleared.");
+  });
+  command("lineloom.selectRelatedFiles", async () => {
+    const config = readConfig();
+    const editor = vscode.window.activeTextEditor;
+    if (!config.crossFileContext) {
+      vscode.window.showWarningMessage("Enable lineloom.crossFileContext in Settings before choosing related files.");
+      return;
+    }
+    if (!editor || editor.document.uri.scheme !== "file" || !vscode.workspace.isTrusted) return;
+    const folder = vscode.workspace.getWorkspaceFolder(editor.document.uri);
+    if (!folder) return;
+    const chosen = await vscode.window.showOpenDialog({
+      canSelectMany: true, canSelectFiles: true, canSelectFolders: false, defaultUri: folder.uri,
+      openLabel: "Select related source files"
+    });
+    if (!chosen) return;
+    if (chosen.length > 2) {
+      vscode.window.showWarningMessage("Select at most two small related source files.");
+      return;
+    }
+    // No silent scanning. Confirm sending selected snippets to the configured
+    // Ollama endpoint, in addition to ordinary cursor context.
+    const agreed = await vscode.window.showWarningMessage(
+      "LineLoom may include up to 2 KiB from each chosen file in completion prompts. " +
+      "A separately approved remote Ollama endpoint could receive these snippets. " +
+      "Selections stay in memory only for this editor session.",
+      { modal: true }, "Use Selected Files"
+    );
+    if (agreed !== "Use Selected Files" || !readConfig().crossFileContext ||
+        !vscode.workspace.isTrusted || vscode.window.activeTextEditor?.document !== editor.document) return;
+    engine?.setRelatedFiles(chosen);
+    vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
+      " related file(s). Privacy rules are checked before each model request.");
+  });
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   // Privacy eligibility measurements are in memory only. Permit an immediate
@@ -331,7 +369,9 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
-      engine?.cancel();
+      // Requiring a fresh selection after any configuration change prevents
+      // old consent being reused with new endpoint or exclusion settings.
+      engine?.setRelatedFiles([]);
       clearIgnoreCache();
       const config = readConfig();
       if (!config.performanceDiagnostics) {
@@ -345,6 +385,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
+      engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
       sidebar.refresh();
     }),
@@ -363,7 +404,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // authorized under the old policy cannot be surfaced after the change.
   const onIgnoreRulesChanged = (): void => {
     clearIgnoreCache();
-    engine?.cancel();
+    engine?.setRelatedFiles([]);
     const latest = readConfig();
     currentState = latest.enabled ? "ready" : "disabled";
     status.set(currentState, latest.autoTrigger);
