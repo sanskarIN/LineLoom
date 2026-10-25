@@ -26,6 +26,18 @@ This is a snapshot of the **configured default model's presence in Ollama's retu
 - A second manual check supersedes the first; late results from a previous check cannot overwrite the current status. Changing any LineLoom configuration or workspace trust clears the previous result. A dismissed approval is not treated as a successful check.
 - The code is a **future release candidate**, not included in the already published v1.3.0 VSIX, Marketplace or Open VSX packages. Actual physical-device accessibility and real-model quality remain outstanding.
 
+## Post-v1.3.0 development: last manual file privacy check (unreleased)
+
+The sidebar now displays a **Last Manual File Check** row below **Check Active File Privacy** in the Privacy & Connection section. The row starts **Not checked**, changes to **Checking** only after a person invokes the command, and then displays the previous local path-and-ignore inspection outcome (**Passed**, **Blocked**, or **No active editor**). The normal **Next:** hint also explains an explicitly blocked file, without offering an unsafe bypass.
+
+This is **not continuous monitoring**, a file-content scanner, or a guarantee of future completion eligibility. A **Passed** result means only that existing path and ignore checks succeeded *at that instant*; the completion engine independently revalidates privacy before inference. Model readiness, language settings, endpoint approval and eventual prompt safety are separate checks.
+
+- No filename, absolute path, file content, actual ignore-rule pattern or secret enters the sidebar's stored status. The status lives only in extension memory.
+- The sidebar's normal refresh, focus and rendering perform **no file reads, prompt construction or Ollama requests**.
+- The command runs the pre-existing local inspector only after a deliberate click. A second inspection supersedes any older pending result.
+- Active editor changes, active document edits/closures, extension configuration, workspace trust and ignore-file watcher changes clear the previous result. Late asynchronous results cannot restore an old approval after these events.
+- The change is **source-only** until a future version is explicitly tested and released; it is not in the published GitHub v1.3.0 VSIX or either extension marketplace.
+
 ## What the Control Center shows
 
 | Section | Visible information and actions |
@@ -33,7 +45,7 @@ This is a snapshot of the **configured default model's presence in Ollama's retu
 | **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation**. The future maintenance candidate adds one contextual **Next:** recommendation |
 | **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands; an unreleased enhancement adds the last user-triggered default-model check |
 | **Active Editor** | Language name, effective model and **provisional settings-level** eligibility; not a proof the file passes privacy checks |
-| **Privacy & Connection** | Workspace trust, endpoint *category* (loopback, remote approval state or invalid), manual **Check Active File Privacy**, selected related-file count, clear-selected-files action and explicit **Check Ollama Connection** |
+| **Privacy & Connection** | Workspace trust, endpoint *category*, **Check Active File Privacy**, selected related-file count, and manual **Check Ollama Connection**; a future source candidate adds the last explicit file-inspection status |
 | **Session Activity** | In-memory counts for requests, suggestions, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
 | **More Actions** | Settings, setup guide, Quick Actions |
 
