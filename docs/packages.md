@@ -5,7 +5,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 ## GitHub Packages npm installer
 
 - GitHub scope/name: `@sanskarin/lineloom-cli`.
-- Published package version: `0.1.0`; next CLI development candidate: `0.2.0` (independent of extension version).
+- Published package version: `0.1.0`; current CLI development candidate: `0.3.0` (independent of extension version; v0.2.0 was not published).
 - Source: `packages/lineloom-cli/`.
 - Target: GitHub's npm registry, `https://npm.pkg.github.com`; GitHub Packages attaches it to this repository via package metadata after a successful publish.
 - No dependencies or automatic installation lifecycle scripts.
@@ -30,7 +30,7 @@ With the same authenticated scope configuration, `npm exec --package=@sanskarin/
 
 **Security controls:** Explicit command invocation only; release manifests are version-pinned; all redirects are restricted to GitHub asset hosts; downloads are size-limited and SHA-256-verified before editor installation; editor commands use an allowlist and no shell; temporary files are removed. The CLI sends no project data to an inference provider and never downloads a model.
 
-## Next CLI candidate: v0.2.0 (not published)
+## Unpublished CLI candidates: v0.2.0 verification and v0.3.0 offline installation
 
 CLI v0.2.0 adds a manual **offline verify** subcommand for downloaded release assets:
 
@@ -39,7 +39,16 @@ lineloom verify ./LineLoom-1.2.0.vsix
 lineloom verify ./LineLoom-1.2.4.vsix --preview
 ```
 
-It reads only a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with the pinned stable/preview digest. It cannot download, install or contact the Ollama service. **The current published v0.1.0 GitHub Packages CLI does not contain this feature.** A future v0.2.0 publication requires fresh owner authorization and a version-specific workflow; the existing v0.1.0 authorization cannot publish v0.2.0.
+It reads only a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with the pinned stable/preview digest. It cannot download, install or contact the Ollama service. **The current published v0.1.0 GitHub Packages CLI does not contain this feature.** Neither v0.2.0 nor v0.3.0 is published. Any future package publication requires fresh owner authorization and a version-specific workflow; the existing v0.1.0 authorization cannot publish newer CLI versions.
+
+The newer **v0.3.0 development candidate** can install a downloaded, official VSIX entirely offline:
+
+```sh
+lineloom install --file ./LineLoom-1.2.0.vsix
+lineloom install --file ./LineLoom-1.2.4.vsix --preview
+```
+
+The installer copies the selected regular file into a private temporary directory, compares the **staged bytes** against the pinned digest before running the editor, and cleans up afterwards. It has no network fallback and does not alter the chosen download. `--file` and `--dry-run` cannot be combined. The currently published v0.1.0 package cannot perform offline installation.
 
 ## CI and release process
 

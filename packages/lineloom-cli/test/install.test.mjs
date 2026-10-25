@@ -141,3 +141,28 @@ test("verify command parses stable and preview and does not install on failure",
   }), 1);
   assert.match(io.messages.join("\n"), /LineLoom installer:/);
 });
+
+test("offline install CLI parses local VSIX and rejects conflicting options", () => {
+  assert.deepEqual(parseArgs(["install", "--preview", "--file", "preview.vsix", "--editor", "codium"]), {
+    command: "install", channel: "preview", editor: "codium", dryRun: false, file: "preview.vsix"
+  });
+  for (const args of [
+    ["install", "--file"], ["install", "--file", "--preview"],
+    ["install", "--file", "a.vsix", "--file", "b.vsix"],
+    ["install", "--file", "a.vsix", "--dry-run"]
+  ]) assert.throws(() => parseArgs(args));
+});
+
+test("offline CLI never downloads or installs a mismatching artifact", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-cli-offline-"));
+  const file = join(dir, "download.vsix");
+  const io = logger();
+  try {
+    await writeFile(file, fixture);
+    assert.equal(await run(["install", "--file", file], io, {
+      fetchImpl: () => { throw Error("Network invoked"); },
+      runner: () => { throw Error("Editor invoked"); }
+    }), 1);
+    assert.match(io.messages.join("\n"), /SHA-256/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

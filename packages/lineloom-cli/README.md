@@ -22,7 +22,7 @@ lineloom install --editor codium
 
 A temporary file is erased after installation. Digest mismatch, unsafe redirects, oversized files and missing editors prevent installation.
 
-**The source is now CLI v0.2.0 (development, not published).** GitHub Packages currently serves v0.1.0, which does not provide the new offline verify command.
+**The source is now CLI v0.3.0 (development, not published).** GitHub Packages currently serves v0.1.0; neither the v0.2.0 offline verification nor v0.3.0 offline installation commands are published.
 
 ## Offline VSIX verification (v0.2.0 candidate)
 
@@ -34,3 +34,15 @@ lineloom verify ./LineLoom-1.2.4.vsix --preview
 ```
 
 The verifier requires a regular local .vsix file, has a 10 MiB file size cap, and rejects any checksum mismatch. **These commands are not yet in published CLI v0.1.0.** CLI versions are independent of the extension version. Installing this npm package does not run an automatic extension install; explicitly run `lineloom install`. Distribution through **npmjs.com** requires separate npm scope ownership and publication. Read [package distribution notes](https://github.com/sanskarIN/LineLoom/blob/main/docs/packages.md).
+
+## Offline VSIX installation (v0.3.0 source candidate)
+
+Install an already-downloaded official release with **no HTTP requests**:
+
+```sh
+lineloom install --file ./LineLoom-1.2.0.vsix
+lineloom install --file ./LineLoom-1.2.4.vsix --preview
+lineloom install --file ./LineLoom-1.2.0.vsix --editor codium
+```
+
+This command accepts a regular local VSIX, copies it into a private, bounded temporary file, verifies the **staged bytes** against the built-in stable/preview SHA-256 digest, and only then invokes a supported editor CLI. Invalid/tampered downloads are rejected; the temporary copy is removed after success or failure, and the original file is unchanged. `--file` cannot be combined with `--dry-run`. **Not available in the published CLI v0.1.0.** This command neither downloads a VSIX nor contacts Ollama.
