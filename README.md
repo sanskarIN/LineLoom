@@ -11,6 +11,12 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
+## Dedicated code-completion model — development track (not released)
+
+A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and original synthetic fixtures for **Rust, C, C++, Python and TypeScript**. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).
+
+The latest **GitHub preview v1.3.1** was published on 2026-10-25 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1). It remains a pre-release, not a v1.4.0 model release; the stable remains v1.3.0.
+
 ## v1.3.0 stable on GitHub (released 2026-10-25)
 
 The published v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. [Download the verified GitHub v1.3.0 stable VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256). See [release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
