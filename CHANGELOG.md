@@ -2,6 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — post-v1.3.0 completion-safety hardening (source candidate)
+
+- Reject additional hidden Unicode direction markers, soft hyphens, zero-width separators and invisible operators in model-generated inline suggestions rather than silently deleting characters and changing source. Preserve ZWNJ/ZWJ needed for multilingual identifiers and emoji sequences. Unit regressions included.
+- **Not yet shipped:** this source change does not modify the published v1.3.0 VSIX, npm package or either extension marketplace. New release packaging and real-model/manual QA remain separate gates.
+
 ## v1.3.0 — GitHub stable (2026-10-25)
 
 - **Published:** [GitHub stable v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) with a genuine non-pre-release VS Code VSIX and SHA-256 asset. Visual Studio Marketplace, Open VSX and the npm CLI are published separately and were **not** updated by this workflow.
