@@ -30,6 +30,23 @@ describe("completion filtering", () => {
         codePoint.toString(16)).toBe("");
     }
   });
+  it("rejects hidden directional marks and invisible formatting characters", () => {
+    // Do not silently strip a character that could change how generated
+    // source appears relative to the code that an editor actually runs.
+    const hidden = [
+      0x00ad, 0x061c, 0x180e, 0x200b, 0x200e, 0x200f,
+      0x2028, 0x2029, 0x2060, 0x2061, 0x2062, 0x2063, 0x2064,
+      0x206a, 0x206b, 0x206c, 0x206d, 0x206e, 0x206f, 0xfeff
+    ];
+    for (const codePoint of hidden) {
+      const raw = "const answer = 42; // " + String.fromCodePoint(codePoint) + " hidden";
+      expect(cleanCompletion(raw, "", "", true), codePoint.toString(16)).toBe("");
+    }
+  });
+  it("preserves Unicode joiners for international identifiers and emoji", () => {
+    const source = "const नाम\u200cसूची = '👩\u200d💻';";
+    expect(cleanCompletion(source, "", "", true)).toBe(source);
+  });
   it("allows ordinary newline, tabs and valid non-ASCII characters", () => {
     expect(cleanCompletion("    return 😀\r\n\tvalue", "", "", true)).toBe("    return 😀\n\tvalue");
     expect(cleanCompletion("const 日本語 = 'ok';", "", "", true)).toBe("const 日本語 = 'ok';");
