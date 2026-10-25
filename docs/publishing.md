@@ -1,8 +1,12 @@
-# Extension distribution: GitHub v1.2.0 stable and external registry releases
+# Extension distribution: GitHub stable, preview and independent registries
 
 LineLoom is an **independent MIT-licensed VS Code extension**. Its GitHub repository is at https://github.com/sanskarIN/LineLoom. The project owner has selected the public publisher ID **SanskarCodes** (display name: **Sanskar**). The GitHub username **sanskarIN** is *not* the extension publisher ID.
 
-**Current publication status (2026-10-20):** [GitHub v1.2.0 Stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) and [Open VSX v1.2.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) are public under extension ID **SanskarCodes.lineloom**. The Open VSX API independently confirms `version: 1.2.0`, `preRelease: false`, `downloadable: true`, and `verified: true`. The [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) is a separate distribution and its v1.2.0 rollout is not verified here. Store credentials only in protected publisher environments such as GitHub Actions secrets; never commit credentials.
+**Publication status (2026-10-25):** [GitHub v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) and the newer [v1.3.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) are publicly available with independent SHA-256-verified VSIX assets. The v1.3.1 release is **pre-release only**, not latest stable. The last independently verified [Open VSX v1.2.0 stable](https://open-vsx.org/extension/SanskarCodes/lineloom) is separate, as is the [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom); check each live registry for its actual version. GitHub releases never publish to either external registry or the npm CLI. Keep publisher credentials in protected environments and never commit them.
+
+## v1.3.1 GitHub pre-release (published 2026-10-25)
+
+The [v1.3.1 public pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) provides the genuine preview-channel [VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256). The [owner-authorized publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) passed independent cross-platform checks, mocked VS Code integration, audited dependencies, preview identity verification, clean installation and a digest-pinned v1.3.0 stable-to-preview upgrade. The workflow also prevents overwriting existing tags or updating stable latest. Human actual Ollama and physical desktop/accessibility checks remain NOT RUN. No Marketplace/Open VSX/npm package was published, and v1.3.0 remains GitHub stable.
 
 ## v1.2.1 GitHub-only pre-release (published 2026-10-22)
 
