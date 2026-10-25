@@ -171,7 +171,9 @@ describe("native sidebar suggested next step", () => {
       "loopback", "remote-approved", "remote-needs-approval", "remote-blocked", "invalid"
     ] as const) {
       const entry = next({ endpointState });
-      expect(JSON.stringify(entry)).not.toMatch(/https?:\/\/|\/private\/|127\\.0\\.0\\.1/);
+      expect(JSON.stringify(entry)).not.toContain("https://");
+      expect(JSON.stringify(entry)).not.toContain("/private/");
+      expect(JSON.stringify(entry)).not.toContain("127.0.0.1");
     }
     // Exactly one click target; the pure model never starts a request.
     expect(next({ completionState: "unavailable" }).description).toContain("user-initiated");
