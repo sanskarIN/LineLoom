@@ -5,6 +5,7 @@ import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
 import { ModelReadinessSession } from "./ui/model-readiness";
+import { FilePrivacySession } from "./ui/file-privacy-session";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache, mayReadRelatedFile } from "./privacy/exclusions";
 import { isSupportedRelatedCandidate } from "./context/related-editor";
@@ -178,34 +179,63 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
  * Inspect the current editor's existing path and ignore policies on demand.
  * This never constructs prompts, sends requests, logs files or changes settings.
  */
-async function checkActiveFilePrivacy(): Promise<void> {
+async function checkActiveFilePrivacy(
+  privacy: FilePrivacySession, refresh: () => void
+): Promise<void> {
+  // Called only from an explicit command; the sidebar itself never touches
+  // active-document paths or invokes the filesystem privacy checker.
+  const token = privacy.begin();
+  refresh();
   const document = vscode.window.activeTextEditor?.document;
   const version = document?.version;
   const config = readConfig();
   const patternSnapshot = JSON.stringify(config.excludedPaths);
   const isCurrent = (): boolean =>
-    Boolean(document && !document.isClosed && vscode.workspace.isTrusted &&
-      vscode.window.activeTextEditor?.document === document &&
+    Boolean(privacy.isCurrent(token) && document && !document.isClosed &&
+      vscode.workspace.isTrusted && vscode.window.activeTextEditor?.document === document &&
       document.version === version &&
       JSON.stringify(readConfig().excludedPaths) === patternSnapshot);
-  const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
-  switch (result) {
-    case "no-editor":
-      void vscode.window.showInformationMessage("LineLoom: Open a local file to check its privacy exclusions.");
-      return;
-    case "stale":
-      void vscode.window.showWarningMessage("LineLoom: Editor or privacy settings changed during the check. Run it again.");
-      return;
-    case "blocked":
+  try {
+    const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
+    // An older check can never restore a success badge after an editor,
+    // document, trust or policy change (or after a newer check has begun).
+    if (!privacy.isCurrent(token)) return;
+    if (result === "stale" || (result !== "no-editor" && !isCurrent())) {
+      privacy.clear();
+      refresh();
       void vscode.window.showWarningMessage(
-        "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
+        "LineLoom: Editor or privacy settings changed during the check. Run it again."
       );
       return;
-    case "allowed":
-      void vscode.window.showInformationMessage(
-        "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
-      );
-      return;
+    }
+    if (!privacy.finish(token, result)) return;
+    refresh();
+    switch (result) {
+      case "no-editor":
+        void vscode.window.showInformationMessage(
+          "LineLoom: Open a local file to check its privacy exclusions."
+        );
+        return;
+      case "blocked":
+        void vscode.window.showWarningMessage(
+          "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
+        );
+        return;
+      case "allowed":
+        void vscode.window.showInformationMessage(
+          "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
+        );
+        return;
+    }
+  } catch {
+    // A failed inspection must not leave a reassuring "allowed" status or
+    // include underlying filesystem paths in user-visible diagnostics.
+    if (!privacy.isCurrent(token)) return;
+    privacy.clear();
+    refresh();
+    void vscode.window.showWarningMessage(
+      "LineLoom: File privacy inspection could not finish. No inference request was made."
+    );
   }
 }
 
@@ -296,12 +326,14 @@ export function activate(context: vscode.ExtensionContext): void {
   // Invalidate overlapping pickers when privacy, settings or editor state changes.
   let relatedPickerRevision = 0;
   const modelReadiness = new ModelReadinessSession();
+  const filePrivacy = new FilePrivacySession();
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
     () => currentState,
     () => engine?.getRelatedFileCount() ?? 0,
-    () => modelReadiness.state
+    () => modelReadiness.state,
+    () => filePrivacy.state
   );
   engine = new CompletionEngine(
     (state) => {
@@ -350,7 +382,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
   command("lineloom.checkConnection", () => checkConnection(context, modelReadiness, () => sidebar.refresh()));
-  command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
+  command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy(filePrivacy, () => sidebar.refresh()));
   command("lineloom.clearRelatedFiles", () => {
     relatedPickerRevision++;
     engine?.setRelatedFiles([]);
@@ -430,6 +462,7 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
       modelReadiness.clear();
+      filePrivacy.clear();
       relatedPickerRevision++;
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.
@@ -447,6 +480,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
+      filePrivacy.clear();
       relatedPickerRevision++;
       engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
@@ -455,11 +489,22 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.onDidChangeTextEditorSelection((event) => {
       if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
     }),
-    vscode.workspace.onDidChangeTextDocument((event) => engine?.onDocumentChanged(event)),
-    vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document === vscode.window.activeTextEditor?.document) {
+        filePrivacy.clear();
+        sidebar.refresh();
+      }
+      engine?.onDocumentChanged(event);
+    }),
+    vscode.workspace.onDidCloseTextDocument(() => {
+      filePrivacy.clear();
+      engine?.cancelIfEditorChanged(vscode.window.activeTextEditor);
+      sidebar.refresh();
+    })
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
     modelReadiness.clear();
+    filePrivacy.clear();
     relatedPickerRevision++;
     clearIgnoreCache();
     sidebar.refresh();
@@ -468,6 +513,7 @@ export function activate(context: vscode.ExtensionContext): void {
   // async rule scans and any queued/in-flight generation, so suggestions
   // authorized under the old policy cannot be surfaced after the change.
   const onIgnoreRulesChanged = (): void => {
+    filePrivacy.clear();
     relatedPickerRevision++;
     clearIgnoreCache();
     engine?.setRelatedFiles([]);
