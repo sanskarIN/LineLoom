@@ -31,7 +31,7 @@ describe("Marketplace release manifest", () => {
   it("keeps lockfile and extension version synchronized", () => {
     // Exact versions are checked by version-specific publisher workflows;
     // this general manifest contract must also work for later previews.
-    expect(pkg.version).toMatch(/^\\d+\\.\\d+\\.\\d+$/);
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
     expect(lock.packages[""].version).toBe(pkg.version);
