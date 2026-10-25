@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sidebarSections, type SidebarSnapshot } from "../../src/ui/sidebar-model";
+import { recommendedSidebarAction, sidebarSections, type SidebarSnapshot } from "../../src/ui/sidebar-model";
 
 const snapshot: SidebarSnapshot = {
   enabled: true, autoTrigger: true, model: "qwen2.5-coder:1.5b",
@@ -107,5 +107,85 @@ describe("related context sidebar consent disclosure", () => {
     expect(on.find(x => x.id === "related-context")?.command).toBe("lineloom.selectRelatedFiles");
     expect(on.find(x => x.id === "clear-related-context")?.command).toBe("lineloom.clearRelatedFiles");
     expect(JSON.stringify(on)).not.toContain("/private/");
+  });
+});
+
+describe("native sidebar suggested next step", () => {
+  const next = (patch: Partial<SidebarSnapshot> = {}) => recommendedSidebarAction({ ...snapshot, ...patch });
+  const blocked = (eligibility: string): SidebarSnapshot["activeEditor"] => ({
+    ...snapshot.activeEditor, eligibility
+  });
+
+  it("offers one command only when a user can explicitly take that action", () => {
+    const groups = sidebarSections(snapshot);
+    const items = groups[0].items;
+    expect(items.filter(item => item.id === "next-step")).toHaveLength(1);
+    expect(items.find(item => item.id === "next-step")).toMatchObject({
+      command: "lineloom.trigger", label: "Next: Trigger Completion"
+    });
+    expect(next({ autoTrigger: false })).toMatchObject({
+      command: "lineloom.trigger", label: "Next: Try Manual Completion"
+    });
+    expect(next({ enabled: false, completionState: "generating" })).toMatchObject({
+      command: "lineloom.enable", label: "Next: Enable Autocomplete"
+    });
+  });
+
+  it("prioritizes workspace trust and editor eligibility before model or network actions", () => {
+    expect(next({ workspaceTrusted: false, completionState: "unavailable" })).toMatchObject({
+      label: "Next: Review Workspace Trust", command: undefined
+    });
+    for (const [eligibility, label] of [
+      ["Open a supported code file", "Next: Open a Source File"],
+      ["No inline provider for this language", "Next: Switch Language"],
+      ["Only local file editors support completion", "Next: Open a Local File"]
+    ]) {
+      const choice = next({ activeEditor: blocked(eligibility), completionState: "unavailable" });
+      expect(choice.label).toBe(label);
+      expect(choice.command).toBeUndefined();
+    }
+    expect(next({ activeEditor: blocked("Language disabled in settings") }).command)
+      .toBe("lineloom.manageLanguages");
+    expect(next({ activeEditor: blocked("No model configured") }).command).toBe("lineloom.selectModel");
+  });
+
+  it.each([
+    ["Invalid inference endpoint", "lineloom.openSettings"],
+    ["Remote endpoint disabled", "lineloom.openSettings"],
+    ["Remote endpoint approval required", "lineloom.checkConnection"]
+  ])("offers an explicit user action for %s", (eligibility, command) => {
+    expect(next({ activeEditor: blocked(eligibility) }).command).toBe(command);
+  });
+
+  it.each([
+    ["generating", "lineloom.cancel"],
+    ["unavailable", "lineloom.checkConnection"],
+    ["error", "lineloom.diagnostics"]
+  ] as const)("routes %s engine state to %s", (state, command) => {
+    expect(next({ completionState: state }).command).toBe(command);
+  });
+
+  it("never passively validates or reveals a URL, filename or user source", () => {
+    for (const endpointState of [
+      "loopback", "remote-approved", "remote-needs-approval", "remote-blocked", "invalid"
+    ] as const) {
+      const entry = next({ endpointState });
+      expect(JSON.stringify(entry)).not.toMatch(/https?:\/\/|\/private\/|127\\.0\\.0\\.1/);
+    }
+    // Exactly one click target; the pure model never starts a request.
+    expect(next({ completionState: "unavailable" }).description).toContain("user-initiated");
+  });
+
+  it("distinguishes enabled but empty related-file consent from two selected references", () => {
+    const entries = (value: number) =>
+      sidebarSections({ ...snapshot, crossFileContextEnabled: true, relatedFileCount: value })
+        .flatMap(section => section.items);
+    expect(entries(0).find(item => item.id === "related-context")?.description)
+      .toContain("no files selected");
+    expect(entries(0).some(item => item.id === "clear-related-context")).toBe(false);
+    expect(entries(2).find(item => item.id === "related-context")?.description)
+      .toContain("rechecked before use");
+    expect(entries(2).find(item => item.id === "clear-related-context")?.command)
+      .toBe("lineloom.clearRelatedFiles");
   });
 });
