@@ -2,14 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
-## Unreleased — post-v1.3.0 maintenance source (not published)
+## v1.3.1 — GitHub pre-release (2026-10-25)
 
 - Reject additional hidden Unicode direction markers, soft hyphens, zero-width separators and invisible operators in model-generated inline suggestions rather than silently deleting characters and changing source. Preserve ZWNJ/ZWJ needed for multilingual identifiers and emoji sequences. Unit regressions included.
 - Native sidebar: add **Check Active Editor Model** to verify the actual language-overridden model on explicit user request; new native Tree View status and priority guidance for missing default vs override, stale-safe after editor/configuration changes, with editor-host integration coverage.
 - Native sidebar: add a **Last Manual File Check** row showing only local path/ignore inspection outcome after an explicit user action; no filesystem reads on ordinary sidebar refresh. Clear it on editor/document, settings, trust and ignore-policy changes, with guarded async results and unit/editor-host regressions.
 - Native sidebar: add an **explicitly checked** default-model readiness row, showing only last-check status (not checked/in progress/found/missing/failed), never auto-probing Ollama. Invalidate the ephemeral status on settings changes, workspace trust updates and newer concurrent checks; add pure tests and mocked real VS Code host checks.
 - Native sidebar: add one contextual, privacy-safe **Next:** action for extension/editor/endpoint and generation states; keep unsupported or untrusted-workspace guidance non-clickable instead of suggesting network actions. Clarify explicitly enabled but empty related-file selection separately from consented file counts. Add pure decision tests and mocked VS Code editor-host accessibility coverage.
-- **Not yet shipped:** these source changes do not modify the published v1.3.0 VSIX, npm package or either extension marketplace. New release packaging and real-model/manual QA remain separate gates.
+- **Published on GitHub as pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) includes a genuine pre-release-channel VSIX and SHA-256, verified against the published v1.3.0 stable upgrade baseline. **Stable GitHub v1.3.0**, Visual Studio Marketplace, Open VSX and separately versioned npm packages were **not** updated by the v1.3.1 publisher. Actual Ollama model quality, physical desktop/screen-reader and hardware latency QA are still **NOT RUN**; four moderate dev-tool transitive audit findings remain under review.
 
 ## v1.3.0 — GitHub stable (2026-10-25)
 
