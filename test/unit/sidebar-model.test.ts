@@ -285,3 +285,52 @@ describe("explicit active-file privacy check in native sidebar", () => {
       .toBe("lineloom.manageLanguages");
   });
 });
+
+describe("manual active editor model readiness", () => {
+  const elements = (state: NonNullable<SidebarSnapshot["activeModelReadiness"]>, modelSource = "Language override") =>
+    sidebarSections({
+      ...snapshot, activeModelReadiness: state,
+      activeEditor: { ...snapshot.activeEditor, modelSource }
+    }).flatMap(group => group.items);
+
+  it("exposes a user-invoked active model check with explicit not-monitored label", () => {
+    const fresh = elements("not-checked").find(item => item.id === "active-model-readiness");
+    expect(fresh).toMatchObject({
+      command: "lineloom.checkActiveModel",
+      label: "Last Active Model Check"
+    });
+    expect(fresh?.description).toContain("Not checked");
+    const present = elements("available").find(item => item.id === "active-model-readiness");
+    expect(present?.description).toContain("not monitored");
+    expect(present?.icon).toBe("check");
+  });
+
+  it("routes a missing language override to language-model picker and missing default to default picker", () => {
+    const override = elements("missing").find(item => item.id === "next-step");
+    expect(override).toMatchObject({ command: "lineloom.selectLanguageModel", label: "Next: Change Language Model" });
+    const fallback = elements("missing", "Default model").find(item => item.id === "next-step");
+    expect(fallback).toMatchObject({ command: "lineloom.selectModel", label: "Next: Choose Installed Model" });
+  });
+
+  it("prioritizes disabled/trust/editor and in-progress generation safety gates", () => {
+    const blocked = sidebarSections({
+      ...snapshot, activeModelReadiness: "missing", workspaceTrusted: false
+    }).flatMap(group => group.items);
+    expect(blocked.find(item => item.id === "next-step")?.command).toBeUndefined();
+    const generating = sidebarSections({
+      ...snapshot, activeModelReadiness: "missing", completionState: "generating"
+    }).flatMap(group => group.items);
+    expect(generating.find(item => item.id === "next-step")?.command).toBe("lineloom.cancel");
+    const failed = elements("unreachable");
+    expect(failed.find(item => item.id === "next-step")?.command).toBe("lineloom.checkActiveModel");
+  });
+
+  it("never leaks model details, source, endpoint or paths through the status value", () => {
+    for (const state of ["checking", "available", "missing", "unreachable"] as const) {
+      const status = elements(state).find(item => item.id === "active-model-readiness");
+      expect(JSON.stringify(status)).not.toContain("https://");
+      expect(JSON.stringify(status)).not.toContain("/workspace/");
+      expect(JSON.stringify(status)).not.toContain("rust-local");
+    }
+  });
+});
