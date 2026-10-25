@@ -71,6 +71,7 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       completionState: this.getState(),
       requests: stats?.requests ?? 0,
       completions: stats?.completions ?? 0,
+      accepted: stats?.accepted ?? 0,
       cancelled: stats?.cancelled ?? 0,
       failed: stats?.failed ?? 0,
       cacheHits: stats?.cacheHits ?? 0,

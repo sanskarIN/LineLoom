@@ -7,7 +7,7 @@ const snapshot: SidebarSnapshot = {
   endpointState: "loopback",
   activeEditor: { language: "Rust", model: "rust-local", modelSource: "Language override",
     eligibility: "Allowed by settings; file rules checked on request" },
-  completionState: "ready", requests: 3, completions: 2, cancelled: 1,
+  completionState: "ready", requests: 3, completions: 2, accepted: 1, cancelled: 1,
   failed: 0, cacheHits: 2, continuationHits: 1, emptySuggestions: 4,
   performanceDiagnosticsEnabled: false
 };
@@ -27,6 +27,8 @@ describe("LineLoom local sidebar model", () => {
     });
     expect(entries.find(item => item.id === "state")?.description).toBe("Ready (model not automatically verified)");
     expect(entries.find(item => item.id === "cancelled")?.description).toBe("1");
+    expect(entries.find(item => item.id === "accepted")?.description).toBe("1");
+    expect(entries.find(item => item.id === "completions")?.label).toBe("Suggestions Offered");
     expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");
     expect(entries.find(item => item.id === "continuations")?.description).toBe("1");
     expect(entries.find(item => item.id === "empty-results")?.description).toBe("4");

@@ -58,7 +58,7 @@ The **Last Active Model Check** entry in the **Active Editor** section now offer
 | **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands; an unreleased enhancement adds the last user-triggered default-model check |
 | **Active Editor** | Language, effective model and **provisional settings-level** eligibility; an upcoming preview adds explicit active-editor model verification (including overrides), never a passive model request |
 | **Privacy & Connection** | Workspace trust, endpoint *category*, **Check Active File Privacy**, selected related-file count, and manual **Check Ollama Connection**; a future source candidate adds the last explicit file-inspection status |
-| **Session Activity** | In-memory counts for requests, suggestions, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
+| **Session Activity** | In-memory counts for requests, **suggestions offered and accepted**, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
 | **More Actions** | Settings, setup guide, Quick Actions |
 
 **Engine status = Ready does not establish model availability.** The model may be missing or Ollama may be offline. Use the explicit **Check Ollama Connection** action instead of interpreting the sidebar's settings-derived status as a live health check.
@@ -77,6 +77,12 @@ This feature ships in GitHub stable v1.3.0, but is **OFF by default**.
 6. The sidebar shows the number selected, **not filenames**. Choose **Clear Related Files** or use **LineLoom: Clear Selected Related Files** to revoke selection. Changing LineLoom settings, active editors or ignore rules also clears it.
 
 Selected paths/snippets are kept only in current-session memory; hard exclusions and nested ignore policies are checked before and after use. No repository scan, automatic reference discovery or persistent code index occurs. **The tool cannot detect every secret in an otherwise allowed file**—choose only source you are comfortable sending to the configured Ollama endpoint. See [privacy and resource boundaries](privacy/selected-context.md).
+
+## Session-only accepted-suggestion counter (unreleased)
+
+**Suggestions Offered** counts ghost-text items returned by LineLoom, including cached results. **Accepted Suggestions** counts one-shot VS Code item acceptance callbacks. No text, filename, document identifier, model output, or individual acceptance event is stored or logged; only an in-memory aggregate counter and up to 128 opaque random pending callback tokens are retained. Duplicate and invalid tokens do not count. Editor refresh does not issue inference or send network requests.
+
+These counts are **not proof of quality**, human usefulness, or an accurate acceptance *rate*: the editor can show or discard items repeatedly, and some interaction paths may not invoke the callback. Unit and mocked VS Code-host tests exercise the callback wiring, but manual acceptance and actual Windows/macOS/Linux accessibility tests remain **NOT RUN**. This source feature is **not** in the already published v1.3.0 stable or GitHub v1.3.1 preview.
 
 ## Privacy of the view
 

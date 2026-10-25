@@ -371,7 +371,8 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
     "; explicitly selected related files: " + (engine?.getRelatedFileCount() ?? 0) + " (session only)");
   output.appendLine("Registered languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
   output.appendLine("Enabled language IDs: " + config.enabledLanguages.join(", "));
-  output.appendLine("Requests: " + (stats?.requests ?? 0) + "; completions: " + (stats?.completions ?? 0) +
+  output.appendLine("Requests: " + (stats?.requests ?? 0) + "; suggestions offered: " + (stats?.completions ?? 0) +
+     "; acceptance callbacks: " + (stats?.accepted ?? 0) +
     "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0) +
     "; empty responses: " + (stats?.emptySuggestions ?? 0) +
     "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0) +
@@ -419,9 +420,13 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.window.registerTreeDataProvider("lineloom.dashboard", sidebar));
   const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
-  function command(id: string, fn: () => unknown): void {
+  function command(id: string, fn: (...args: unknown[]) => unknown): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, fn));
   }
+  // One-shot, random, source-free token issued to each inline completion item.
+  command("lineloom.recordSuggestionAccepted", (token: unknown) => {
+    if (engine?.recordAcceptance(token)) sidebar.refresh();
+  });
   command("lineloom.enable", async () => {
     await vscode.workspace.getConfiguration("lineloom").update("enabled", true, vscode.ConfigurationTarget.Global);
     status.set("ready", readConfig().autoTrigger);
