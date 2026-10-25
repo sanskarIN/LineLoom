@@ -122,11 +122,11 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
       return entry("Next: Review Remote Approval",
         "An explicit connection check may ask you to approve this HTTPS origin.", "lock", "lineloom.checkConnection");
   }
+  if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
+    "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
   if (snapshot.filePrivacy === "blocked") return entry("Next: Review File Exclusions",
     "The last manual path/ignore check blocked the active file; inspect exclusions or open another file.",
     "shield");
-  if (snapshot.completionState === "generating") return entry("Next: Stop Generation",
-    "Cancel the active request without disabling future suggestions.", "debug-stop", "lineloom.cancel");
   if (snapshot.modelReadiness === "missing" && snapshot.activeEditor.modelSource === "Default model")
     return entry("Next: Choose Installed Model",
       "The default model was not present at the last manual check.", "symbol-method", "lineloom.selectModel");
