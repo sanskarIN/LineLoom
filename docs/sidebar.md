@@ -14,12 +14,24 @@ The Related-File Context entry now distinguishes **setting enabled but no files 
 
 **Release status:** This sidebar refinement is source work proposed for a future maintenance build, **not part of the published v1.3.0 VSIX or either marketplace version**. Physical keyboard/screen-reader testing and real Ollama acceptance remain open.
 
+## Post-v1.3.0 development: last manual model check (unreleased)
+
+After the user explicitly invokes **LineLoom: Check Ollama Connection**—from the sidebar, Command Palette, or Setup Guide—the model section can show a **Last Manual Model Check** line. Its statuses distinguish **Not checked**, **Checking**, **Default model found**, **Default model missing**, and **Connection failed**.
+
+This is a snapshot of the **configured default model's presence in Ollama's returned model list at the time of that action**, not automatic availability monitoring or proof that the model can generate useful code. Per-language model overrides remain independent; a successful default-model check does not verify a language-specific override. If the last check reports a missing default model, the sidebar suggests selecting an installed one; if a connection failed, it suggests an explicit retry.
+
+- Sidebar rendering, refreshing and navigation **never trigger model discovery**, inference, file access or remote approval.
+- A check is initiated only after a deliberate command; remote HTTPS hosts still require the existing separate opt-in and origin approval.
+- Only one of five non-sensitive status values is retained **in memory for the active session**. No model names, endpoint URLs, server responses or timestamps are stored by the readiness tracker.
+- A second manual check supersedes the first; late results from a previous check cannot overwrite the current status. Changing any LineLoom configuration or workspace trust clears the previous result. A dismissed approval is not treated as a successful check.
+- The code is a **future release candidate**, not included in the already published v1.3.0 VSIX, Marketplace or Open VSX packages. Actual physical-device accessibility and real-model quality remain outstanding.
+
 ## What the Control Center shows
 
 | Section | Visible information and actions |
 | --- | --- |
 | **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation**. The future maintenance candidate adds one contextual **Next:** recommendation |
-| **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands |
+| **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands; an unreleased enhancement adds the last user-triggered default-model check |
 | **Active Editor** | Language name, effective model and **provisional settings-level** eligibility; not a proof the file passes privacy checks |
 | **Privacy & Connection** | Workspace trust, endpoint *category* (loopback, remote approval state or invalid), manual **Check Active File Privacy**, selected related-file count, clear-selected-files action and explicit **Check Ollama Connection** |
 | **Session Activity** | In-memory counts for requests, suggestions, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
