@@ -20,7 +20,8 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
+    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings",
+    "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
     "lineloom.refreshSidebar", "lineloom.openSidebar", "lineloom.checkActiveModel"
@@ -31,6 +32,7 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
   // Test the actual extension command even with no Ollama server running.
   await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
+  await vscode.commands.executeCommand("lineloom.resetInferenceTimings");
   await vscode.commands.executeCommand("lineloom.clearRelatedFiles");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
@@ -531,6 +533,9 @@ export async function run(): Promise<void> {
         const measured = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(measured?.length, "Opted-in completion should remain available");
         assert.equal(engine.getStats().measuredRequests, 1);
+        assert.equal(engine.getStats().recentLatencySamples, 1);
+        assert.ok((engine.getStats().recentLatencyP50Ms ?? -1) >= 0);
+        assert.equal(engine.getStats().recentLatencyP95Ms, engine.getStats().recentLatencyP50Ms);
         const requestsBeforeOptOut = engine.getStats().requests;
         const completedBeforeOptOut = engine.getStats().completions;
         await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
@@ -540,6 +545,8 @@ export async function run(): Promise<void> {
         assert.equal(engine.getStats().measuredRequests, 0);
         assert.equal(engine.getStats().lastLatencyMs, 0);
         assert.equal(engine.getStats().totalLatencyMs, 0);
+        assert.equal(engine.getStats().recentLatencySamples, 0);
+        assert.equal(engine.getStats().recentLatencyP95Ms, undefined);
         assert.equal(engine.getStats().requests, requestsBeforeOptOut);
         assert.equal(engine.getStats().completions, completedBeforeOptOut);
         engine.cancel();
@@ -567,6 +574,8 @@ export async function run(): Promise<void> {
           await lateSample;
           assert.equal(engine.getStats().measuredRequests, 0,
             "A response started before opt-out must not repopulate a new opt-in session");
+          assert.equal(engine.getStats().recentLatencySamples, 0,
+            "Late response must not restore cleared percentile samples");
         } finally {
           holdGeneration = false;
           releaseHeldGeneration?.();
