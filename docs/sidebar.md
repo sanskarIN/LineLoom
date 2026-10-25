@@ -78,6 +78,14 @@ This feature ships in GitHub stable v1.3.0, but is **OFF by default**.
 
 Selected paths/snippets are kept only in current-session memory; hard exclusions and nested ignore policies are checked before and after use. No repository scan, automatic reference discovery or persistent code index occurs. **The tool cannot detect every secret in an otherwise allowed file**—choose only source you are comfortable sending to the configured Ollama endpoint. See [privacy and resource boundaries](privacy/selected-context.md).
 
+## Clearer status bar and pending check messages (unreleased)
+
+The native status bar no longer claims **Ready for local code completion** merely because autocomplete is enabled. Its tooltip explicitly says that the Ollama model and active-file rules are **not automatically verified**. Manual-only mode identifies paused automatic suggestions while allowing manual completion. Unavailable and error states direct users to manual checks and source-free diagnostics.
+
+The sidebar **Next:** recommendation distinguishes user-invoked checks currently running (default model, effective active-editor model, local file privacy) from successful outcomes. These in-progress notices have no command, do not trigger duplicate requests, and remain lower priority than blocked editor/workspace states or actively generating suggestions. Refresh is still offline and does not inspect source or approve a remote origin.
+
+Pure unit tests cover status wording and pending-state priorities. Actual Windows/macOS/Linux keyboard-only, high-contrast, screen-reader and human model acceptance remain **NOT RUN**. These are unreleased source changes; published v1.3.0 Stable and v1.3.1 preview are unchanged.
+
 ## Session-only accepted-suggestion counter (unreleased)
 
 **Suggestions Offered** counts ghost-text items returned by LineLoom, including cached results. **Accepted Suggestions** counts one-shot VS Code item acceptance callbacks. No text, filename, document identifier, model output, or individual acceptance event is stored or logged; only an in-memory aggregate counter and up to 128 opaque random pending callback tokens are retained. Duplicate and invalid tokens do not count. Editor refresh does not issue inference or send network requests.
