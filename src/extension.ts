@@ -4,6 +4,7 @@ import { normalizeLanguageModels } from "./settings/language-models";
 import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
 import { LineLoomSidebar } from "./ui/sidebar";
+import { ModelReadinessSession } from "./ui/model-readiness";
 import { quickActions } from "./ui/actions";
 import { clearIgnoreCache, mayReadRelatedFile } from "./privacy/exclusions";
 import { isSupportedRelatedCandidate } from "./context/related-editor";
@@ -54,19 +55,45 @@ function selectionOriginCurrent(context: vscode.ExtensionContext, origin: string
   return isEndpointSelectionCurrent(origin, latest.endpoint, latest.allowRemoteEndpoints,
     (target) => context.globalState.get<string>("approvedRemoteOrigin") === target);
 }
-async function checkConnection(context: vscode.ExtensionContext): Promise<void> {
+async function checkConnection(
+  context: vscode.ExtensionContext,
+  readiness: ModelReadinessSession,
+  refresh: () => void
+): Promise<void> {
+  // Only this command and the explicitly clicked Setup Guide action can
+  // contact /api/tags. The native sidebar merely renders the session result.
+  const token = readiness.begin();
+  refresh();
   const origin = await approveEndpoint(context, true);
-  if (!origin) return;
+  if (!readiness.isCurrent(token)) return;
+  if (!origin) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    return;
+  }
+  const selected = readConfig().model;
+  const isValid = (): boolean => readiness.isCurrent(token) &&
+    selectionOriginCurrent(context, origin) && readConfig().model === selected;
   try {
     const models = await listModels(origin);
-    if (!selectionOriginCurrent(context, origin)) return;
-    const selected = readConfig().model;
+    if (!isValid()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
     const present = models.some((model) => model.name === selected);
+    readiness.finish(token, present ? "available" : "missing");
+    refresh();
     vscode.window.showInformationMessage(
       "LineLoom: Ollama reachable; " + models.length + " installed model(s). " +
-      (present ? "Selected model is available." : "Selected model is not installed. Use LineLoom: Select Model.")
+      (present ? "Selected model is available at this check." : "Selected model is not installed. Use LineLoom: Select Model.")
     );
   } catch (error) {
+    if (!isValid()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    readiness.finish(token, "unreachable");
+    refresh();
     vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
@@ -182,13 +209,15 @@ async function checkActiveFilePrivacy(): Promise<void> {
   }
 }
 
-async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
+async function setupGuide(
+  context: vscode.ExtensionContext, readiness: ModelReadinessSession, refresh: () => void
+): Promise<void> {
   const action = await vscode.window.showInformationMessage(
     "Welcome to LineLoom. Install and start Ollama, run 'ollama pull qwen2.5-coder:1.5b', then check your connection.",
     "Check Connection", "Select Model", "Open Settings", "Ollama Website"
   );
   switch (action) {
-    case "Check Connection": await checkConnection(context); break;
+    case "Check Connection": await checkConnection(context, readiness, refresh); break;
     case "Select Model": await selectModel(context); break;
     case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER); break;
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
@@ -266,11 +295,13 @@ export function activate(context: vscode.ExtensionContext): void {
   let currentState: CompletionState = "ready";
   // Invalidate overlapping pickers when privacy, settings or editor state changes.
   let relatedPickerRevision = 0;
+  const modelReadiness = new ModelReadinessSession();
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
     () => currentState,
-    () => engine?.getRelatedFileCount() ?? 0
+    () => engine?.getRelatedFileCount() ?? 0,
+    () => modelReadiness.state
   );
   engine = new CompletionEngine(
     (state) => {
@@ -318,7 +349,7 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectModel", () => selectModel(context));
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
-  command("lineloom.checkConnection", () => checkConnection(context));
+  command("lineloom.checkConnection", () => checkConnection(context, modelReadiness, () => sidebar.refresh()));
   command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
   command("lineloom.clearRelatedFiles", () => {
     relatedPickerRevision++;
@@ -389,7 +420,7 @@ export function activate(context: vscode.ExtensionContext): void {
     sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom privacy eligibility timing counters cleared for this session.");
   });
-  command("lineloom.setup", () => setupGuide(context));
+  command("lineloom.setup", () => setupGuide(context, modelReadiness, () => sidebar.refresh()));
   command("lineloom.performance", () => {
     const stats = engine?.getStats();
     if (!stats) return;
@@ -398,6 +429,7 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
+      modelReadiness.clear();
       relatedPickerRevision++;
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.
@@ -427,6 +459,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
+    modelReadiness.clear();
     relatedPickerRevision++;
     clearIgnoreCache();
     sidebar.refresh();
