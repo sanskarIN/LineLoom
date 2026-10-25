@@ -355,8 +355,8 @@ export async function run(): Promise<void> {
         } finally {
           holdGeneration = false;
           releaseHeldGeneration?.();
-          heldGenerationStarted = undefined;
-          releaseHeldGeneration = undefined;
+          // Retain the callback type: the mock server assigns it asynchronously.
+          // Resetting it here narrows later optional calls to 'never' in TypeScript.
           await vscode.workspace.fs.writeFile(permitted.uri, originalRelatedBytes);
           clearIgnoreCache();
           engine.cancel();
