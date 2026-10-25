@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
-  EVAL_LANGUAGES, createRequest, normalizeGenerated, percentile,
+  EVAL_LANGUAGES, EVAL_CATEGORIES, createRequest, normalizeGenerated, percentile,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
 
@@ -12,9 +12,13 @@ const fixturePath = new URL("../model/fixtures/completion-v1.json", import.meta.
 const fixtures = validateFixtures(JSON.parse(await readFile(fixturePath, "utf8")));
 
 test("manifest contains distinct synthetic cases for each scoped language", () => {
-  assert.equal(fixtures.length, 10);
+  assert.equal(fixtures.length, 30);
   assert.deepEqual([...new Set(fixtures.map(item => item.language))].sort(), [...EVAL_LANGUAGES].sort());
   assert.equal(new Set(fixtures.map(item => item.id)).size, fixtures.length);
+  for (const language of EVAL_LANGUAGES) {
+    assert.equal(fixtures.filter(item => item.language === language).length, 6);
+  }
+  assert.deepEqual([...new Set(fixtures.map(item => item.category))].sort(), [...EVAL_CATEGORIES].sort());
 });
 
 test("fixture validation rejects missing coverage, duplicates and malformed content", () => {
@@ -29,6 +33,14 @@ test("fixture validation rejects missing coverage, duplicates and malformed cont
   assert.throws(() => validateFixtures({
     schemaVersion: 1, fixtures: fixtures.map((item, i) =>
       i === 0 ? { ...item, prefix: "x".repeat(4097) } : item)
+  }));
+  assert.throws(() => validateFixtures({
+    schemaVersion: 1, fixtures: fixtures.map((item, i) =>
+      i === 0 ? { ...item, category: "unknown" } : item)
+  }));
+  assert.throws(() => validateFixtures({
+    schemaVersion: 1, fixtures: fixtures.map((item, i) =>
+      i === 0 ? { ...item, category: undefined } : item)
   }));
 });
 
@@ -67,9 +79,9 @@ test("nearest-rank percentiles and safe aggregate reporting", () => {
   assert.equal(percentile([15, 10, 100, 20], 0.5), 15);
   assert.equal(percentile([15, 10, 100, 20], 0.95), 100);
   const summary = summarizeMeasurements([
-    { language: "rust", ok: true, exact: true, totalMs: 20, firstTokenMs: 10 },
-    { language: "rust", ok: true, exact: false, totalMs: 100, firstTokenMs: null },
-    { language: "cpp", ok: false, exact: false }
+    { language: "rust", category: "expression", ok: true, exact: true, totalMs: 20, firstTokenMs: 10 },
+    { language: "rust", category: "expression", ok: true, exact: false, totalMs: 100, firstTokenMs: null },
+    { language: "cpp", category: "suffix", ok: false, exact: false }
   ], 10, "local-test", "fim");
   assert.equal(summary.attempts, 3);
   assert.equal(summary.completed, 2);
@@ -78,6 +90,8 @@ test("nearest-rank percentiles and safe aggregate reporting", () => {
   assert.equal(summary.firstTokenP50Ms, 10);
   assert.equal(summary.completionP95Ms, 100);
   assert.deepEqual(summary.perLanguage.rust, { attempts: 2, completed: 2, strictMatches: 1 });
+  assert.deepEqual(summary.perCategory.expression, { attempts: 2, completed: 2, strictMatches: 1 });
+  assert.deepEqual(summary.perCategory.suffix, { attempts: 1, completed: 0, strictMatches: 0 });
   assert.equal(JSON.stringify(summary).includes("return"), false);
 });
 
@@ -89,7 +103,28 @@ test("dry-run reports scoped fixture IDs without starting inference", () => {
   const data = JSON.parse(stdout);
   assert.equal(data.dryRun, true);
   assert.equal(data.networkCalls, 0);
-  assert.equal(data.requestsPlanned, 4);
+  assert.equal(data.requestsPlanned, 12);
   assert.deepEqual(data.targetLanguages, ["cpp"]);
   assert.equal(Object.hasOwn(data, "prefix"), false);
+});
+
+test("category-selective dry-run stays offline and never prints fixture content", () => {
+  const script = fileURLToPath(new URL("./model-eval.mjs", import.meta.url));
+  const stdout = execFileSync(process.execPath, [
+    script, "--dry-run", "--language", "rust", "--category", "indentation"
+  ], { encoding: "utf8", timeout: 5000 });
+  const data = JSON.parse(stdout);
+  assert.equal(data.networkCalls, 0);
+  assert.deepEqual(data.targetLanguages, ["rust"]);
+  assert.deepEqual(data.targetCategories, ["indentation"]);
+  assert.deepEqual(data.fixtureIds, ["rust-branch"]);
+  assert.equal(data.requestsPlanned, 1);
+  assert.equal(stdout.includes("fn non_negative"), false);
+});
+
+test("model evaluator rejects unsupported category filters without making requests", () => {
+  const script = fileURLToPath(new URL("./model-eval.mjs", import.meta.url));
+  assert.throws(() => execFileSync(process.execPath, [
+    script, "--dry-run", "--category", "unreviewed"
+  ], { encoding: "utf8", timeout: 5000, stdio: "pipe" }));
 });

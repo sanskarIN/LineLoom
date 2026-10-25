@@ -7,17 +7,18 @@ import { readFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import {
-  EVAL_LANGUAGES, EVAL_MODES, createRequest, normalizeGenerated,
+  EVAL_LANGUAGES, EVAL_MODES, EVAL_CATEGORIES, createRequest, normalizeGenerated,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
+import { consumeOllamaStream } from "./model-eval-stream.mjs";
 
 function cli(argv) {
-  const options = { model: "qwen2.5-coder:1.5b", runs: 1, mode: "auto", language: "all", dryRun: false };
+  const options = { model: "qwen2.5-coder:1.5b", runs: 1, mode: "auto", language: "all", category: "all", dryRun: false };
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
     if (flag === "--dry-run") { options.dryRun = true; continue; }
-    if (!["--model", "--runs", "--mode", "--language"].includes(flag) || i + 1 >= argv.length) {
-      throw new Error("Use --model TAG --runs 1..5 --mode auto|fim|instruction --language LANG|all [--dry-run]");
+    if (!["--model", "--runs", "--mode", "--language", "--category"].includes(flag) || i + 1 >= argv.length) {
+      throw new Error("Use --model TAG --runs 1..5 --mode auto|fim|instruction --language LANG|all --category CATEGORY|all [--dry-run]");
     }
     const value = argv[++i];
     if (flag === "--model") options.model = validateModelTag(value);
@@ -33,45 +34,13 @@ function cli(argv) {
       if (value !== "all" && !EVAL_LANGUAGES.includes(value)) throw new Error("Unsupported language");
       options.language = value;
     }
+    if (flag === "--category") {
+      if (value !== "all" && !EVAL_CATEGORIES.includes(value)) throw new Error("Unsupported category");
+      options.category = value;
+    }
   }
   validateModelTag(options.model);
   return options;
-}
-/** Parse bounded Ollama NDJSON while respecting cancellation and split UTF-8 chunks. */
-async function consumeStream(stream, start) {
-  const reader = stream.getReader();
-  const decoder = new TextDecoder("utf-8", { fatal: true });
-  let pending = "", output = "", firstTokenMs = null, done = false, byteCount = 0;
-  try {
-    while (true) {
-      const chunk = await reader.read();
-      if (chunk.done) break;
-      byteCount += chunk.value.byteLength;
-      if (byteCount > 262144) throw new Error("stream-limit");
-      pending += decoder.decode(chunk.value, { stream: true });
-      if (pending.length > 65536) throw new Error("line-limit");
-      let lineEnd;
-      while ((lineEnd = pending.indexOf("\n")) !== -1) {
-        const line = pending.slice(0, lineEnd).trim(); pending = pending.slice(lineEnd + 1);
-        if (!line) continue;
-        const payload = JSON.parse(line);
-        if (typeof payload.error === "string") throw new Error("server-error");
-        if (typeof payload.response === "string") {
-          if (payload.response.length && firstTokenMs === null) firstTokenMs = performance.now() - start;
-          output += payload.response;
-          if (output.length > 8192) throw new Error("output-limit");
-        }
-        if (payload.done === true) { done = true; break; }
-      }
-      if (done) break;
-    }
-    // The final response must declare done, not silently accept a cut-off stream.
-    if (!done) throw new Error("incomplete-stream");
-    return { output, firstTokenMs };
-  } finally {
-    await reader.cancel().catch(() => undefined);
-    reader.releaseLock();
-  }
 }
 async function evaluate(fixture, model, mode) {
   const controller = new AbortController();
@@ -84,15 +53,15 @@ async function evaluate(fixture, model, mode) {
       signal: controller.signal, redirect: "error"
     });
     if (!response.ok || !response.body) throw new Error("http-failed");
-    const parsed = await consumeStream(response.body, start);
+    const parsed = await consumeOllamaStream(response.body, start);
     return {
-      language: fixture.language, ok: true,
+      language: fixture.language, category: fixture.category, ok: true,
       exact: normalizeGenerated(parsed.output) === fixture.expected,
       firstTokenMs: parsed.firstTokenMs, totalMs: performance.now() - start
     };
   } catch {
     // Do not print request, source, endpoint details, exception text, or model response.
-    return { language: fixture.language, ok: false, exact: false };
+    return { language: fixture.language, category: fixture.category, ok: false, exact: false };
   } finally {
     clearTimeout(timeout);
   }
@@ -101,12 +70,15 @@ async function main() {
   const opts = cli(process.argv.slice(2));
   const fixtures = validateFixtures(JSON.parse(await readFile(
     fileURLToPath(new URL("../model/fixtures/completion-v1.json", import.meta.url)), "utf8"
-  ))).filter(item => opts.language === "all" || item.language === opts.language);
+  ))).filter(item => (opts.language === "all" || item.language === opts.language) &&
+    (opts.category === "all" || item.category === opts.category));
   const mode = resolveMode(opts.model, opts.mode);
+  if (fixtures.length === 0) throw new Error("No matching fixtures");
   if (opts.dryRun) {
     console.log(JSON.stringify({
       dryRun: true, model: opts.model, mode,
       targetLanguages: [...new Set(fixtures.map(item => item.language))],
+      targetCategories: [...new Set(fixtures.map(item => item.category))],
       fixtureIds: fixtures.map(item => item.id), requestsPlanned: fixtures.length * opts.runs,
       networkCalls: 0
     }, null, 2));

@@ -15,7 +15,7 @@
 | Candidate | Earliest sensible target | User value | Privacy/compatibility conditions | Decision |
 | --- | --- | --- | --- | --- |
 | Clearer inline completion states and recovery | v1.3.1 patch | Explain model-not-found, timeout, blocked editor and cancelled requests | No filenames/prompts/endpoints in diagnostics; accessible native VS Code UI | P1 / scoped |
-| Quality and latency comparison harness | v1.4.0 research | Reproducible model choice and tuneable defaults | Synthetic source only; explicit user-run local Ollama; no uploaded benchmarks | **Implementation proposed in development PR**; real results NOT RUN |
+| Quality and latency comparison harness | v1.4.0 research | Reproducible model choice and tuneable defaults | Synthetic source only; explicit user-run local Ollama; no uploaded benchmarks | **Harness merged; expanded-category and stream-safety improvements under review**; real results NOT RUN |
 | Sidebar navigation and keyboard accessibility | v1.4.0 | Easier model switching, per-language choices and privacy inspection | No background probes; maintain simple Tree View; actual screen-reader QA | P1 / research |
 | Opt-in model readiness panel | v1.4.0 | Distinguish server reachable, model installed and editor eligible | Trigger network only on explicit command; no periodic polling or remote probing | P1 / design |
 | Completion-acceptance and cancellation tuning | v1.4.0 | Reduce irrelevant suggestions and wasted requests | Optional local session counters only; raw code/paths never logged or stored | P1 / research |
