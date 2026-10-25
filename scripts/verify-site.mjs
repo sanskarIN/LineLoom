@@ -100,7 +100,7 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /(?:do not|don\x27t) double-click/i);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
-  assert.ok(guide.includes("LineLoom-1.2.0.vsix"));
+  assert.ok(guide.includes("LineLoom-1.3.0.vsix"), "Install guide must offer the latest GitHub stable VSIX");
   assert.ok(guide.includes("GitHub v1.2.4 pre-release"),
     "Current GitHub preview must appear in the install guide");
   assert.ok(guide.includes("LineLoom-1.2.4.vsix"),
@@ -135,7 +135,7 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.match(readme, /Website: \[sanskarin\.github\.io\]\(https:\/\/sanskarin\.github\.io\/\)/);
   assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
   assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
-  assert.match(pagesGuide, /GitHub v1\.2\.0 stable remains the stable download/);
+  assert.match(pagesGuide, /GitHub v1\.3\.0 stable is the latest publicly verified GitHub stable download/);
   assert.match(pagesGuide, /GitHub .*v1\.2\.4.*latest published pre-release/);
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });

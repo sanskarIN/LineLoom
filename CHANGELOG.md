@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.3.0 — GitHub stable (2026-10-25)
+
+- **Published:** [GitHub stable v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) with a genuine non-pre-release VS Code VSIX and SHA-256 asset. Visual Studio Marketplace, Open VSX and the npm CLI are published separately and were **not** updated by this workflow.
+- **New (default OFF):** explicit user selection of at most two tiny, supported related source files from the active workspace. Session-only consent, ignore/canonical/sensitive-path gates, bounded UTF-8 reads, no automatic scanning, post-response revalidation and revocation-driven cancellation. These snippets may enter the user's configured Ollama prompt; approved remote hosts may receive them.
+- **Maintenance since v1.2.0:** privacy timing reset and prompt sanitization, active-file privacy inspection, ignore-policy fingerprinting/strict encoding, safer model configuration and source text handling, and stronger editor-host/cancellation tests.
+- **Tooling:** documented compatibility mitigation for high-severity MSAL publishing advisory with a reproducible lockfile, retaining four moderate dev-tool transitive findings under review.
+- **Verified automation:** security, Windows/macOS/Linux tests, Linux VS Code mocked Ollama extension host, stable-channel VSIX and isolated upgrades from independently SHA-256-pinned historical releases. **NOT RUN:** manual actual Ollama quality/performance, physical OS editor interaction, keyboard/screen-reader acceptance and real publisher credential workflows; see [release notes](docs/releases/v1.3.0.md) and [QA matrix](docs/qa/v1.3.0-manual-acceptance.md).
+
+
 ## Unreleased — v1.2.5 development (merged source, not published)
 
 - **CLI v0.2.0 candidate (not published):** add opt-in offline SHA-256 verification for user-downloaded pinned stable/preview VSIX files with local size/file-type checks. This verifies only; it does not install, download, contact Ollama or publish the npm package. GitHub Packages currently serves v0.1.0.
