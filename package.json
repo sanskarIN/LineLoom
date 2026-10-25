@@ -334,7 +334,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -348,7 +348,10 @@
     "test:upgrade-vsix": "node scripts/smoke-upgrade-vsix.mjs",
     "package:stable": "npm run package",
     "test:source-tree": "node --test scripts/check-source-tree.mjs && node scripts/verify-source-tree.mjs",
-    "test:packager-security": "node --test scripts/check-packager-deps.test.mjs && node scripts/check-packager-deps.mjs"
+    "test:packager-security": "node --test scripts/check-packager-deps.test.mjs && node scripts/check-packager-deps.mjs",
+    "test:model-eval": "node --test scripts/model-eval.test.mjs",
+    "model:eval": "node scripts/model-eval.mjs",
+    "model:eval:dry": "node scripts/model-eval.mjs --dry-run"
   },
   "dependencies": {
     "ignore": "^7.0.13"

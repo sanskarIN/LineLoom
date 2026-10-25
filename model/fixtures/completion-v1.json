@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "description": "Original, synthetic inline-completion probes; not training data or user source.",
+  "fixtures": [
+    {
+      "id": "rust-arithmetic",
+      "language": "rust",
+      "prefix": "fn double(value: i32) -> i32 {\n    value * ",
+      "suffix": "\n}\n",
+      "expected": "2"
+    },
+    {
+      "id": "rust-comparison",
+      "language": "rust",
+      "prefix": "fn is_even(value: i32) -> bool {\n    value % 2 == ",
+      "suffix": "\n}\n",
+      "expected": "0"
+    },
+    {
+      "id": "c-addition",
+      "language": "c",
+      "prefix": "int add(int a, int b) {\n    return a + ",
+      "suffix": "\n}\n",
+      "expected": "b;"
+    },
+    {
+      "id": "c-comparison",
+      "language": "c",
+      "prefix": "int is_positive(int value) {\n    return value > ",
+      "suffix": "\n}\n",
+      "expected": "0;"
+    },
+    {
+      "id": "cpp-conditional",
+      "language": "cpp",
+      "prefix": "int clamp_lower(int value, int minimum) {\n    return value < minimum ? minimum : ",
+      "suffix": "\n}\n",
+      "expected": "value;"
+    },
+    {
+      "id": "cpp-boolean",
+      "language": "cpp",
+      "prefix": "bool is_zero(int value) {\n    return value == ",
+      "suffix": "\n}\n",
+      "expected": "0;"
+    },
+    {
+      "id": "python-multiply",
+      "language": "python",
+      "prefix": "def square(value: int) -> int:\n    return value * ",
+      "suffix": "\n",
+      "expected": "value"
+    },
+    {
+      "id": "python-string",
+      "language": "python",
+      "prefix": "def greet(name: str) -> str:\n    return \"Hello, \" + ",
+      "suffix": "\n",
+      "expected": "name"
+    },
+    {
+      "id": "typescript-multiply",
+      "language": "typescript",
+      "prefix": "export function double(value: number): number {\n  return value * ",
+      "suffix": "\n}\n",
+      "expected": "2;"
+    },
+    {
+      "id": "typescript-comparison",
+      "language": "typescript",
+      "prefix": "export const isEmpty = (value: string): boolean => value.length === ",
+      "suffix": "\n",
+      "expected": "0;"
+    }
+  ]
+}

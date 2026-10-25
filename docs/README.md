@@ -37,6 +37,7 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | [Development](development/README.md) | Build and test workflow |
 | [Source-tree checks](development/source-tree.md) | Required TypeScript module inventory |
 | [Performance](performance/README.md) | Benchmarks and measurement limits |
+| [Code model research](../model/README.md) | Five-language synthetic evaluation and future training/privacy gates |
 | [v1.3.0 human acceptance](qa/v1.3.0-manual-acceptance.md) | Unverified physical/model/accessibility scenarios |
 | [Release evidence procedure](qa/release-evidence.md) | Sanitized pass/fail/deferral and cross-channel release truthfulness |
 
