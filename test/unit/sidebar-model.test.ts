@@ -168,6 +168,26 @@ describe("native sidebar suggested next step", () => {
     expect(next({ completionState: state }).command).toBe(command);
   });
 
+  it("keeps pending readiness checks non-clickable and distinct from confirmed availability", () => {
+    const active = next({ activeModelReadiness: "checking" });
+    expect(active.label).toBe("Next: Active Model Check Running");
+    expect(active.command).toBeUndefined();
+    const policy = next({ filePrivacy: "checking" });
+    expect(policy.label).toBe("Next: File Rules Check Running");
+    expect(policy.command).toBeUndefined();
+    const current = next({
+      modelReadiness: "checking",
+      activeEditor: { ...snapshot.activeEditor, modelSource: "Default model" }
+    });
+    expect(current.label).toBe("Next: Default Model Check Running");
+    expect(current.command).toBeUndefined();
+    expect(next({ activeModelReadiness: "checking", completionState: "generating" }).command)
+      .toBe("lineloom.cancel");
+    expect(next({ filePrivacy: "checking", workspaceTrusted: false }).label)
+      .toBe("Next: Review Workspace Trust");
+    expect(next({ modelReadiness: "checking" }).command).toBe("lineloom.trigger");
+  });
+
   it("never passively validates or reveals a URL, filename or user source", () => {
     for (const endpointState of [
       "loopback", "remote-approved", "remote-needs-approval", "remote-blocked", "invalid"
