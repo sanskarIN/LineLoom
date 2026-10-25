@@ -34,6 +34,18 @@ export async function run(): Promise<void> {
   // editor source, and ensure keyboard/screen-reader names are populated.
   const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
   const roots = offlineSidebar.getChildren();
+  // The recommendation must be computed locally and exposed through a native
+  // accessible TreeItem, without asking Ollama or inspecting code.
+  const completionSection = roots.find(node => node.kind === "section" && node.section.id === "status");
+  assert.ok(completionSection && completionSection.kind === "section", "Missing completion section");
+  const nextSteps = offlineSidebar.getChildren(completionSection).filter(
+    node => node.kind === "item" && node.item.id === "next-step"
+  );
+  assert.equal(nextSteps.length, 1, "Exactly one contextual next step should be visible");
+  const nextTreeItem = offlineSidebar.getTreeItem(nextSteps[0]);
+  assert.ok(nextTreeItem.accessibilityInformation?.label?.includes("Next:"),
+    "Suggested next step must have a screen-reader name");
+  assert.ok(nextTreeItem.tooltip, "Suggested next step must explain its behavior");
   const activeSection = roots.find(node => node.kind === "section" && node.section.id === "editor");
   assert.ok(activeSection && activeSection.kind === "section", "Missing active editor section");
   const activeItems = offlineSidebar.getChildren(activeSection);
