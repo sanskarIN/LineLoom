@@ -190,9 +190,11 @@ async function checkActiveFilePrivacy(
   const version = document?.version;
   const config = readConfig();
   const patternSnapshot = JSON.stringify(config.excludedPaths);
+  const trustSnapshot = vscode.workspace.isTrusted;
   const isCurrent = (): boolean =>
     Boolean(privacy.isCurrent(token) && document && !document.isClosed &&
-      vscode.workspace.isTrusted && vscode.window.activeTextEditor?.document === document &&
+      vscode.workspace.isTrusted === trustSnapshot &&
+      vscode.window.activeTextEditor?.document === document &&
       document.version === version &&
       JSON.stringify(readConfig().excludedPaths) === patternSnapshot);
   try {
