@@ -22,6 +22,12 @@ test("rejects affected MSAL majors and old 7.0 releases", () => {
     assert.throws(()=>verifyPackagerDependencyGraph(manifest,lock),/affected/);
   }
 });
+test("rejects prerelease, malformed and unversioned MSAL lock entries", () => {
+  for (const version of ["", "7.1.0-rc.1", "6.0.1-beta.0", "unlocked", "7.x", "1.2"]) {
+    const { manifest, lock } = fixture(version);
+    assert.throws(() => verifyPackagerDependencyGraph(manifest, lock), /Expected pinned/);
+  }
+});
 test("does not reject patched 7.1 releases on advisory grounds", () => {
   const {manifest,lock}=fixture("7.1.0");
   assert.equal(verifyPackagerDependencyGraph(manifest,lock).msal,"7.1.0");

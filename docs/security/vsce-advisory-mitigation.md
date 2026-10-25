@@ -15,11 +15,13 @@ The formerly installed `@vscode/vsce@4.0.0` (dev-only packager/publisher) resolv
 
 The isolated [compatibility experiment](https://github.com/sanskarIN/LineLoom/actions/runs/40175617026) passed `npm ci --ignore-scripts`, `npm audit --audit-level=high`, `npm run check`, and an actual VSIX packaging + archive/manifest verification.
 
-**Caveat:** It still reported **three moderate-severity advisories** associated with the old package graph (including transitive `uuid`). A passing *high-threshold* audit does not equal zero advisories. The old release tool also introduces more packages and a different publishing/authentication implementation. Before allowing actual publication, test the authorized GitHub release workflow in an isolated no-credential smoke and verify publisher authentication using an approved, non-production workflow that never exposes tokens.
+**Caveat:** It still reported **four moderate-severity npm audit findings** associated with the old package graph (including transitive `uuid`). A passing *high-threshold* audit does not equal zero advisories. All four findings are in the dev-time packaging chain `@vscode/vsce -> @azure/identity -> @azure/msal-node -> uuid`, not four separate newly found root-package advisories. The direct underlying advisory is [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq) for `uuid < 11.1.1`; transitive packages inherit audit findings. `npm audit --omit=dev --audit-level=moderate` separately checks dependencies that could ship in an extension, while the full audit continues to block high/critical risk.
+
+The old release tool also introduces more packages and a different publishing/authentication implementation. Before allowing actual publication, test the authorized GitHub release workflow in an isolated no-credential smoke and verify publisher authentication using an approved, non-production workflow that never exposes tokens.
 
 ## Exit criteria
 
-- Review exact lockfile graph and npm audit including moderate advisories.
+- Review exact lockfile graph and four moderate transitive audit findings, including whether to use a more recent supported publisher package.
 - Pass regular Linux/macOS/Windows CI and VSIX clean-install/upgrade tests with the *committed* lockfile and scripts.
 - Confirm `vsce publish` authentication compatibility through an authorized secure test; never print credentials in public logs.
 - Prefer upgrading to supported patched upstream VSIX/Azure dependencies when available; replace the temporary override instead of keeping an outdated packager indefinitely.
