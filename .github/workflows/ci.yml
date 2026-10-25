@@ -45,7 +45,7 @@ jobs:
       - name: Run VS Code extension-host integration
         run: xvfb-run -a npm run test:integration
   package:
-    name: v1.3.0 stable-channel VSIX candidate
+    name: Stable-channel VSIX candidate (manifest version)
     runs-on: ubuntu-latest
     needs: [check, integration]
     steps:
@@ -60,6 +60,7 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
+          echo "LINELOOM_CANDIDATE_VERSION=${VERSION}" >> "$GITHUB_ENV"
           npx vsce package --no-dependencies -o "LineLoom-${VERSION}.vsix"
           LINELOOM_EXPECT_STABLE=1 npm run verify:vsix -- "LineLoom-${VERSION}.vsix"
           sha256sum "LineLoom-${VERSION}.vsix" > "LineLoom-${VERSION}.sha256"
@@ -117,9 +118,9 @@ jobs:
           xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.4.vsix" "LineLoom-${VERSION}.vsix"
       - uses: actions/upload-artifact@v7
         with:
-          name: lineloom-v1.3.0-stable-candidate
+          name: lineloom-${{ env.LINELOOM_CANDIDATE_VERSION }}-stable-channel-ci-candidate
           # Never ship the downloaded v1.2.0 baseline as a candidate asset.
           path: |
-            LineLoom-1.3.0.vsix
-            LineLoom-1.3.0.sha256
+            LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}.vsix
+            LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}.sha256
           if-no-files-found: error
