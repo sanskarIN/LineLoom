@@ -27,7 +27,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Verify explicit owner release authorization
         env:
           EVENT_NAME: ${{ github.event_name }}
