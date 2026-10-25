@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
 import { EmptySuggestionBackoff } from "./backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
+import { AcceptanceTracker } from "./acceptance";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { collectRelatedText } from "../context/related-editor";
@@ -18,7 +19,7 @@ import { resolveLanguageModel } from "../settings/language-models";
 
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
-  requests: number; completions: number; cancelled: number; failed: number;
+  requests: number; completions: number; accepted: number; cancelled: number; failed: number;
   totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
   emptySuggestions: number; suppressedEmptyRetries: number; continuationHits: number;
 }
@@ -31,10 +32,11 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   private readonly suggestions = new SuggestionCache();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
   private readonly continuations = new ContinuationCache();
+  private readonly acceptance = new AcceptanceTracker();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
   private readonly metrics: CompletionStats = {
-    requests: 0, completions: 0, cancelled: 0, failed: 0,
+    requests: 0, completions: 0, accepted: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
     emptySuggestions: 0, suppressedEmptyRetries: 0, continuationHits: 0
   };
@@ -43,6 +45,21 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
   getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
+  /** Only the one-shot VS Code acceptance callback can increase this count. */
+  recordAcceptance(token: unknown): boolean {
+    if (!this.acceptance.acknowledge(token)) return false;
+    this.metrics.accepted++;
+    return true;
+  }
+  private makeInlineItem(value: string, position: vscode.Position): vscode.InlineCompletionItem {
+    const item = new vscode.InlineCompletionItem(value, new vscode.Range(position, position));
+    item.command = {
+      command: "lineloom.recordSuggestionAccepted",
+      title: "Record LineLoom Suggestion Acceptance",
+      arguments: [this.acceptance.issue()]
+    };
+    return item;
+  }
   getRelatedFileCount(): number { return this.relatedFiles.length; }
   /** Explicit selection exists only for the current extension session. */
   setRelatedFiles(files: readonly vscode.Uri[]): void {
@@ -94,7 +111,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     );
     this.cancelIfEditorChanged(vscode.window.activeTextEditor);
   }
-  dispose(): void { this.cancel(); }
+  dispose(): void { this.cancel(); this.acceptance.clear(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
     if (ms === 0) return !token.isCancellationRequested;
     return new Promise((resolve) => {
@@ -202,7 +219,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.metrics.continuationHits++;
         this.metrics.completions++;
         this.onState("ready");
-        return [new vscode.InlineCompletionItem(remainder, new vscode.Range(position, position))];
+        return [this.makeInlineItem(remainder, position)];
       }
       const key = createHash("sha256").update(JSON.stringify([
         document.uri.toString(), document.languageId, document.version, offset, url.origin, model,
@@ -217,7 +234,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         this.metrics.completions++;
         this.continuations.remember(continuationPoint, cached);
-        return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
+        return [this.makeInlineItem(cached, position)];
       }
       if (token.isCancellationRequested || requestId !== this.generation ||
           !isTargetCurrent() || !mayUseCurrentConfiguration()) return;
@@ -286,8 +303,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.metrics.completions++;
         this.continuations.remember(continuationPoint, suggestion);
         this.suggestions.put(key, suggestion);
-        const insertion = new vscode.Range(position, position);
-        return [new vscode.InlineCompletionItem(suggestion, insertion)];
+        return [this.makeInlineItem(suggestion, position)];
       } catch (error: unknown) {
         if (timedOut && requestId === this.generation) {
           this.metrics.failed++;

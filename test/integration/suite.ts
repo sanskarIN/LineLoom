@@ -395,10 +395,21 @@ export async function run(): Promise<void> {
         const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(first?.length, "Expected inline completion from the mocked model");
         assert.equal(first[0].insertText, "42");
+        const callback = first[0].command;
+        assert.equal(callback?.command, "lineloom.recordSuggestionAccepted");
+        assert.equal(callback?.arguments?.length, 1);
+        const oneTimeToken = callback.arguments?.[0];
+        assert.equal(typeof oneTimeToken, "string");
+        assert.equal(engine.getStats().accepted, 0, "Offering ghost text does not imply acceptance");
+        assert.equal(engine.recordAcceptance("invented-token"), false);
+        assert.equal(engine.recordAcceptance(oneTimeToken), true);
+        assert.equal(engine.recordAcceptance(oneTimeToken), false, "Replay cannot double-count");
+        assert.equal(engine.getStats().accepted, 1);
         assert.equal(lastModelSent, "lineloom-typed:latest", "TypeScript must use its assigned Ollama model");
         const second = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
+        assert.equal(second[0].command?.command, "lineloom.recordSuggestionAccepted");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
 
         // Real editor-host privacy regression: no cross-file source enters the

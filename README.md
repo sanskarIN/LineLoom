@@ -21,6 +21,10 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
+## Session acceptance metrics — development only
+
+The unreleased VS Code extension code distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and this work is not in the v1.3.0 stable or v1.3.1 preview packages. See [sidebar privacy and status](docs/sidebar.md).
+
 ## Dedicated code-completion model — development track (not released)
 
 A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and **30 original categorized synthetic fixtures** for **Rust, C, C++, Python and TypeScript**. The evaluator has strict bounded stream decoding and language/category-level aggregate results. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).

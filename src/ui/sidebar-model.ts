@@ -23,6 +23,7 @@ export interface SidebarSnapshot {
   completionState: CompletionState;
   requests: number;
   completions: number;
+  accepted: number;
   cancelled: number;
   failed: number;
   cacheHits: number;
@@ -293,7 +294,8 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
     {
       id: "activity", label: "Session Activity", icon: "pulse", items: [
         { id: "requests", label: "Requests", description: String(snapshot.requests), icon: "arrow-up" },
-        { id: "completions", label: "Suggestions", description: String(snapshot.completions), icon: "check" },
+        { id: "completions", label: "Suggestions Offered", description: String(snapshot.completions), icon: "check" },
+        { id: "accepted", label: "Accepted Suggestions", description: String(snapshot.accepted), icon: "check-all" },
         { id: "failed", label: "Failed", description: String(snapshot.failed), icon: "warning" },
         { id: "cancelled", label: "Cancelled", description: String(snapshot.cancelled), icon: "circle-slash" },
         { id: "cache-hits", label: "Cache Hits", description: String(snapshot.cacheHits), icon: "database" },

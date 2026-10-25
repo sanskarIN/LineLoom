@@ -28,8 +28,9 @@
 1. Resolve or explicitly record remaining **manual v1.3.0 acceptance** tasks with sanitized dated evidence. Keep [security #79](https://github.com/sanskarIN/LineLoom/issues/79) open while compatible upstream packaging options and inherited moderate advisories are assessed.
 2. Fix the highest-impact small runtime regressions in focused PRs with mocked VS Code host tests; improve feedback without recording user code or filenames.
 3. Validate the pinned npm CLI branch separately, especially the independent security workflow; do not publish proposed commands before acceptance.
-4. Use the [dedicated-model synthetic evaluation harness](../model/README.md) to collect genuine optional local Ollama baseline evidence, and review [training and licensing gates](../model/TRAINING_PLAN.md) before any fine-tuning. No benchmark results or model weights are claimed yet.
-5. Use [v1.3.1 preview feedback](releases/v1.3.1.md) and unresolved manual acceptance to plan the next **stable** candidate separately; then investigate v1.4.0 usability and model-quality work.
+4. Measure suggestions offered separately from the session-only VS Code accepted-item callbacks in development; do not infer usefulness or human model quality. Manual acceptance and accessibility on physical OS devices remain **NOT RUN**. See [sidebar notes](sidebar.md).
+5. Use the [dedicated-model synthetic evaluation harness](../model/README.md) to collect genuine optional local Ollama baseline evidence, and review [training and licensing gates](../model/TRAINING_PLAN.md) before any fine-tuning. No benchmark results or model weights are claimed yet.
+6. Use [v1.3.1 preview feedback](releases/v1.3.1.md) and unresolved manual acceptance to plan the next **stable** candidate separately; then investigate v1.4.0 usability and model-quality work.
 
 ## Permanent non-goals for current releases
 
