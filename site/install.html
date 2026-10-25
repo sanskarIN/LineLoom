@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Install LineLoom v1.2.0 as a stable GitHub VSIX, or the separately published registry version from Visual Studio Marketplace/Open VSX.">
+  <meta name="description" content="Install LineLoom v1.3.0 as a stable GitHub VSIX, or choose separately published versions on Visual Studio Marketplace and Open VSX.">
   <link rel="canonical" href="https://sanskarin.github.io/LineLoom/install.html">
   <link rel="icon" type="image/svg+xml" href="./assets/lineloom.svg">
   <link rel="stylesheet" href="./styles.css">
@@ -15,14 +15,14 @@
   <header class="site-header"><div class="shell nav">
     <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
     <nav aria-label="Help navigation" class="nav-links"><a href="./">Home</a><a href="#windows">Windows</a><a href="#mac-linux">macOS / Linux</a><a href="#package-manager">npm installer</a><a href="#diagnostics">Troubleshooting</a></nav>
-    <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0" target="_blank" rel="noopener noreferrer">GitHub stable v1.2.0 ↗</a>
+    <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0" target="_blank" rel="noopener noreferrer">GitHub stable v1.3.0 ↗</a>
   </div></header>
   <main class="shell install-doc" id="main">
-    <p class="section-kicker">LINELOOM HELP / GITHUB STABLE v1.2.0</p>
+    <p class="section-kicker">LINELOOM HELP / GITHUB STABLE v1.3.0</p>
     <h1>Install the extension.<br><span class="brand-accent">In the right editor.</span></h1>
-    <p class="doc-intro"><strong>Latest GitHub stable: v1.2.0.</strong> Download <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix"><code>LineLoom-1.2.0.vsix</code></a> and its SHA-256 checksum from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0">published GitHub stable release</a>. It contains Control Center improvements, but real Ollama model performance and hands-on OS, privacy, upgrade and accessibility acceptance remain unverified. Older <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1">v1.1.1 pre-release</a> remains available. Open VSX v1.2.0 Stable is now available; Visual Studio Marketplace remains a separate update.</p>
+    <p class="doc-intro"><strong>Latest GitHub stable: v1.3.0.</strong> Download <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix"><code>LineLoom-1.3.0.vsix</code></a> and its <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256">SHA-256 checksum</a> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">public GitHub stable release</a>. This version adds default-off, explicitly selected related-file context. Cross-platform CI and isolated VSIX upgrade checks passed; real Ollama performance, physical desktop/privacy and accessibility acceptance remain NOT RUN. The older <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1">v1.1.1 pre-release</a> remains available. Open VSX serves v1.2.0 as last independently verified here, while Visual Studio Marketplace has a separate release schedule.</p>
     <p class="doc-intro"><strong>Optional preview for testers:</strong> <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.4">GitHub v1.2.4 pre-release</a> ships a distinct <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.vsix">preview-channel VSIX</a> and a <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.4/LineLoom-1.2.4.sha256">checksum</a>. It adds opt-in, path-free privacy-eligibility timing diagnostics. This is not the default stable installation or verified real-model/desktop QA. Test in a disposable VS Code profile with non-sensitive files.</p>
-    <p class="doc-intro">LineLoom has a listing on <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a>, and v1.2.0 Stable is published on <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a>. Choose the registry your editor supports. The GitHub v1.2.0 <code>.vsix</code> download is an extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
+    <p class="doc-intro">LineLoom has a listing on <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a>, and v1.2.0 Stable is published on <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a>. Choose the registry your editor supports. The GitHub v1.3.0 <code>.vsix</code> download is an extension archive, not a Windows executable; do not double-click it in File Explorer.</p>
     <section class="doc-block" id="marketplace">
       <h2>Recommended — Install from VS Code Marketplace</h2>
       <ol>
@@ -45,7 +45,7 @@
     </section>
     <section class="doc-block" id="package-manager">
       <h2>Optional package manager installer — GitHub Packages</h2>
-      <p><strong>Published separately:</strong> <code>@sanskarin/lineloom-cli@0.1.0</code> is an npm-format command-line installer. It verifies the SHA-256 of published GitHub VSIX files, choosing stable v1.2.0 by default or v1.2.4 only when <code>--preview</code> is given. It is <strong>not</strong> a new extension release and is <strong>not</strong> published to npmjs.com.</p>
+      <p><strong>Published separately:</strong> <code>@sanskarin/lineloom-cli@0.1.0</code> is an npm-format command-line installer. It verifies the SHA-256 of published GitHub VSIX files, choosing stable v1.2.0 by default or v1.2.4 only when <code>--preview</code> is given. It has <strong>not</strong> been updated for the new GitHub v1.3.0 stable release; use the verified v1.3.0 VSIX above for the new features. It is <strong>not</strong> a new extension release and is <strong>not</strong> published to npmjs.com.</p>
       <p>Requires Node.js 22+, a supported editor command on PATH and authenticated read access to <code>npm.pkg.github.com</code>. Configure your npm package credentials privately; never paste tokens into public files or shell history. See the <a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/packages.md">package manager installation guide</a> for GitHub registry authentication.</p>
       <div class="command doc-command"><code>npm config set @sanskarin:registry https://npm.pkg.github.com</code><button class="copy" type="button" data-copy="npm config set @sanskarin:registry https://npm.pkg.github.com" aria-label="Copy npm scope registry command">Copy</button></div>
       <div class="command doc-command"><code>npm install --global @sanskarin/lineloom-cli</code><button class="copy" type="button" data-copy="npm install --global @sanskarin/lineloom-cli" aria-label="Copy npm installer command">Copy</button></div>
@@ -56,7 +56,7 @@
     <section class="doc-block" id="windows">
       <h2>Windows 11 — manual GitHub VSIX installation</h2>
       <ol>
-        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0">Download <code>LineLoom-1.2.0.vsix</code></a> from GitHub release assets (save it normally).</li>
+        <li><a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">Download <code>LineLoom-1.2.0.vsix</code></a> from GitHub release assets (save it normally).</li>
         <li>Launch <a href="https://code.visualstudio.com/">Visual Studio Code</a>, not Visual Studio Community, Enterprise, or VSIX Installer.</li>
         <li>Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> to open the Extensions view.</li>
         <li>Click the <strong>three dots (…)</strong> in the Extensions view, select <strong>Install from VSIX…</strong>, then choose the downloaded file.</li>
@@ -68,23 +68,23 @@
     </section>
     <section class="doc-block" id="mac-linux">
       <h2>macOS and Linux</h2>
-      <ol><li>Download <code>LineLoom-1.2.0.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0">GitHub stable release</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
+      <ol><li>Download <code>LineLoom-1.2.0.vsix</code> from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">GitHub stable release</a>.</li><li>Open Visual Studio Code and choose <strong>Extensions → … → Install from VSIX…</strong>.</li><li>Optionally, when the <code>code</code> CLI is installed and your shell is in the download directory, run:</li></ol>
       <div class="command doc-command"><code>code --install-extension ./LineLoom-1.2.0.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-1.2.0.vsix" aria-label="Copy installation command">Copy</button></div>
     </section>
     <section class="doc-block" id="diagnostics">
       <h2>If installation still fails</h2>
       <ul>
         <li>Check the actual app: select <strong>Help → About</strong> in VS Code. Full Visual Studio and VS Code are different applications.</li>
-        <li>Verify the file ends in <code>.vsix</code> and was obtained from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0">official GitHub release</a>. A checksum asset is included there.</li>
+        <li>Verify the file ends in <code>.vsix</code> and was obtained from the <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">official GitHub release</a>. A checksum asset is included there.</li>
         <li>Check your VS Code version meets the manifest requirement of <strong>1.96.0 or later</strong> (compatible stable versions).</li>
         <li>If the <code>code</code> command isn't recognized, use the UI method. On macOS, you may first need to install the <code>code</code> shell command from the VS Code Command Palette.</li>
         <li>If VS Code reports an extension error, copy its exact text—without personal information—and <a href="https://github.com/sanskarIN/LineLoom/issues">open a GitHub issue</a>. VSIX packaging tests alone cannot verify every machine.</li>
       </ul>
       <p><strong>Registry status:</strong> LineLoom v1.2.0 Stable is published on <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry</a>; the <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">Visual Studio Marketplace</a> listing is updated independently under publisher <code>SanskarCodes</code>. A local GitHub VSIX remains available for manual installation.</p>
     </section>
-    <div class="doc-actions"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">VS Code Marketplace ↗</a><a class="button button-outline" href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix">Download GitHub VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
+    <div class="doc-actions"><a class="button button-primary" href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">VS Code Marketplace ↗</a><a class="button button-outline" href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX Registry ↗</a><a class="button button-outline" href="https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix">Download GitHub VSIX ↗</a><a class="button button-outline" href="./">Back to homepage</a></div>
   </main>
-  <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v1.2.0 · GitHub stable release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
+  <footer class="footer"><div class="shell footer-bottom"><span>LineLoom v1.3.0 · GitHub stable release · MIT open-source project</span><a href="https://github.com/sanskarIN/LineLoom/blob/main/PRIVACY.md">Privacy</a></div></footer>
   <script src="./site.js" defer></script>
 </body>
 </html>

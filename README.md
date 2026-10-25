@@ -2,18 +2,18 @@
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/SanskarCodes.lineloom?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
 [![Open VSX Registry](https://img.shields.io/open-vsx/v/SanskarCodes/lineloom?label=Open%20VSX)](https://open-vsx.org/extension/SanskarCodes/lineloom)
-[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0)
+[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0)
 [![MIT license](https://img.shields.io/badge/license-MIT-70d6ce)](LICENSE)
 
 **Write less. Build more. Stay in control.**
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Latest publicly verified GitHub stable: v1.2.0 (until a new release is verified).** v1.3.0 source is a candidate; changing the manifest version does not publish it. Automated checks are distinct from outstanding real-model, OS/accessibility and publisher-authentication QA. Marketplace/Open VSX versions remain independently managed.
+> **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
-## v1.3.0 stable-channel candidate (not yet published)
+## v1.3.0 stable on GitHub (released 2026-10-25)
 
-The proposed v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. See [candidate release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
+The published v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. [Download the verified GitHub v1.3.0 stable VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256). See [release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
 
 ## v1.2.0 stable on GitHub (released 2026-10-20)
 
@@ -242,8 +242,8 @@ LineLoom is free and has **no subscription or paywall**. If useful, you may supp
 
 [MIT License](LICENSE). [Licensing history and third-party notices](docs/licensing.md). LineLoom is an independent project; no affiliation or endorsement by Microsoft, GitHub, Ollama or model providers is implied.
 
-## v1.3.0 design work (not released)
+## v1.3.0 selected-context design and limitations
 
-[Draft PR #93](https://github.com/sanskarIN/LineLoom/pull/93) prepares a default-off, explicitly user-selected **related-file context** feature. It permits at most two small (2 KiB each), policy-eligible source files to be used as anonymous untrusted reference snippets in a completion prompt. There is no repository scanning, persistent index or hidden background file selection. The user must enable the setting, pick files and confirm the disclosure each session; a separately approved remote Ollama host could receive those extra snippets.
+The [v1.3.0 GitHub stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) includes a default-off, explicitly user-selected **related-file context** feature, originally prepared in [PR #93](https://github.com/sanskarIN/LineLoom/pull/93). It permits at most two small (2 KiB each), policy-eligible source files to be used as anonymous untrusted reference snippets in a completion prompt. There is no repository scanning, persistent index or hidden background file selection. The user must enable the setting, pick files and confirm the disclosure each session; a separately approved remote Ollama host could receive those extra snippets.
 
-**This is development source, not a stable or preview release.** See the [privacy/threat model RFC](docs/privacy/selected-context.md), [v1.3.0 candidate plan](docs/releases/v1.3.0-plan.md) and [manual QA matrix](docs/qa/v1.3.0-manual-acceptance.md). v1.2.0 remains the public stable; v1.2.4 is the latest published GitHub preview. Security issue [#79](https://github.com/sanskarIN/LineLoom/issues/79) still blocks new extension publishing.
+**Published on GitHub, but not manually accepted across physical OSs.** See the [privacy/threat model](docs/privacy/selected-context.md), [release notes](docs/releases/v1.3.0.md), and [manual QA matrix](docs/qa/v1.3.0-manual-acceptance.md). v1.2.4 remains the most recent separate GitHub preview. A compatibility mitigation for high-severity [issue #79](https://github.com/sanskarIN/LineLoom/issues/79) is included; four moderate transitive publisher-tool findings remain for review.

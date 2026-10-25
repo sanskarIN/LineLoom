@@ -56,7 +56,7 @@
 
 **v1.2.0 (GitHub stable, published 2026-10-20):** [GitHub stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) ships the native sidebar, privacy-safe in-memory diagnostics, hardened Ollama model picker, and verified non-preview VSIX plus SHA-256. Published on GitHub after automated CI and clean install by owner authorization; real-model/manual cross-platform/accessibility/upgrade QA remains unverified and open in [issue #21](https://github.com/sanskarIN/LineLoom/issues/21). Visual Studio Marketplace/Open VSX v1.2.0 rollout is a separate pending step. C# and Dart are deferred.
 
-**v1.3.0 (candidate only, not released):** opt-in **explicitly selected** bounded related-file context (maximum two tiny files), strict per-file privacy and post-response revalidation, accessible consent and hands-on performance review; see [draft PR #93](https://github.com/sanskarIN/LineLoom/pull/93), [design RFC](privacy/selected-context.md) and [stable candidate plan](releases/v1.3.0-plan.md). No repository indexing or unrestricted cross-file reads.
+**v1.3.0 (GitHub stable, published 2026-10-25):** opt-in **explicitly selected** bounded related-file context (maximum two tiny files), strict per-file privacy and post-response revalidation, accessible consent and ongoing hands-on performance review; see [original PR #93](https://github.com/sanskarIN/LineLoom/pull/93), [design RFC](privacy/selected-context.md) and [stable candidate plan](releases/v1.3.0-plan.md). No repository indexing or unrestricted cross-file reads. Publisher CI passed; physical OS, real Ollama and accessibility QA remain unverified.
 
 **v2.0.0:** optional additional providers and deeper language intelligence, remaining local-first by default.
 
