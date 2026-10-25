@@ -260,7 +260,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           : undefined;
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
             document.version !== version || !isTargetCurrent() || !stillAllowed ||
-            !relatedAfter || JSON.stringify(relatedAfter) !== JSON.stringify(related)) {
+            !relatedAfter || JSON.stringify(relatedAfter) !== JSON.stringify(related) ||
+            !relatedCurrent()) {
           this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;

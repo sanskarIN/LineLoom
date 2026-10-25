@@ -362,6 +362,33 @@ export async function run(): Promise<void> {
           engine.cancel();
         }
 
+        // Clearing consent while inference is still in flight must abort the
+        // model response even if both the editor bytes and selected source
+        // contents are unchanged. The old response must not fill the cache.
+        engine.setRelatedFiles([permitted.uri]);
+        const revokedStart = new Promise<void>(resolve => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const revokedRequest = engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        try {
+          await Promise.race([
+            revokedStart,
+            new Promise<never>((_resolve, reject) =>
+              setTimeout(() => reject(new Error("Consent-revocation request did not start")), 8000))
+          ]);
+          engine.setRelatedFiles([]);
+          releaseHeldGeneration?.();
+          assert.equal(await revokedRequest, undefined,
+            "Revoked related-file consent must discard any in-flight response");
+          assert.equal(engine.getRelatedFileCount(), 0,
+            "Revoked consent must erase selection immediately");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          engine.cancel();
+        }
+
         // An excluded related file must suppress the request, not silently
         // drop only that reference and still send a prompt.
         engine.setRelatedFiles([deniedByApp.uri]);
