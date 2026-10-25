@@ -4,11 +4,21 @@
 
 This is a **native VS Code Tree View**, not a web app, separate chat service or background Ollama process.
 
+## On `main` after v1.3.0 — contextual next step (unreleased)
+
+The in-development Control Center adds one **Next:** action near Engine Status. It prioritizes disabled autocomplete, restricted workspace trust, unsupported/non-local editors, disabled languages, invalid or unapproved endpoint settings, and unavailable models before offering actions for generation or diagnostics. When no safe command can perform the required step (for example, opening a supported file or changing Workspace Trust), it displays guidance **without a clickable command**.
+
+Where a native LineLoom command already exists, clicking the recommendation performs that **explicit user action**: Enable Autocomplete, Manage Autocomplete Languages, Select Model, Open Settings, Check Ollama Connection, Stop Current Generation, Open Diagnostics or Trigger Completion. The recommendation itself never sends a prompt, reads file contents or contacts Ollama; it does not claim the configured model is reachable or that the file passed privacy inspection. Engine Status remains independent of model availability and permission checks.
+
+The Related-File Context entry now distinguishes **setting enabled but no files chosen** from session-only selected references. Enabling the setting alone is not consent to read additional files, and selection remains bounded to two user-chosen files.
+
+**Release status:** This sidebar refinement is source work proposed for a future maintenance build, **not part of the published v1.3.0 VSIX or either marketplace version**. Physical keyboard/screen-reader testing and real Ollama acceptance remain open.
+
 ## What the Control Center shows
 
 | Section | Visible information and actions |
 | --- | --- |
-| **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation** |
+| **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation**. The future maintenance candidate adds one contextual **Next:** recommendation |
 | **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands |
 | **Active Editor** | Language name, effective model and **provisional settings-level** eligibility; not a proof the file passes privacy checks |
 | **Privacy & Connection** | Workspace trust, endpoint *category* (loopback, remote approval state or invalid), manual **Check Active File Privacy**, selected related-file count, clear-selected-files action and explicit **Check Ollama Connection** |
