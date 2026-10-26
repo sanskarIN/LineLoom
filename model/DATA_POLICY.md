@@ -20,13 +20,13 @@ Model card and dataset card must disclose sources, exclusions, approximate langu
 
 ## Pre-training mechanical audit (unreleased development)
 
-Use the read-only, offline \`npm run model:data-audit -- --manifest local-reviewed-dataset.json\`
+Use the read-only, offline `npm run model:data-audit -- --manifest local-reviewed-dataset.json`
 **only for explicitly obtained, separately reviewed source**. This file is never
 checked in, auto-downloaded or discovered from VS Code. Maximum 1 MiB; up to
 256 records and 8,192 UTF-16 units of snippet content per record.
 Sample schema v1:
 
-\`\`\`json
+```json
 {
   "schemaVersion": 1,
   "samples": [
@@ -46,7 +46,7 @@ Sample schema v1:
     }
   ]
 }
-\`\`\`
+```
 
 The illustrated single record **does not pass** by itself: each real
 manifest needs reviewed train, validation and test samples from distinct

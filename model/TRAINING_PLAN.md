@@ -58,7 +58,7 @@ measured M2 model quality, successful training or redistribution approval.
 
 ## M1 mechanical dataset preflight — development, not training
 
-A new \`model:data-audit\` command verifies **explicitly provided** records
+A new `model:data-audit` command verifies **explicitly provided** records
 without creating train shards, collecting user workspaces, or downloading
 repos. It enforces human-attested rights/opt-out/attribution flags,
 repository-group split isolation, source-revision syntax, deduplication,

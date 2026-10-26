@@ -18,6 +18,20 @@ const windows = (tokens, n) => {
   for (let i = 0; i + n <= tokens.length; i++) result.add(tokens.slice(i, i + n).join(" "));
   return result;
 };
+/**
+ * Bounded character shingles catch near-identical snippets with one renamed
+ * token that token-based 5-grams may otherwise miss. At most ~513 windows
+ * are retained per sample, keeping comparisons bounded across 256 records.
+ */
+const characterShingles = value => {
+  const result = new Set();
+  const width = 12;
+  const step = Math.max(1, Math.ceil(value.length / 512));
+  for (let i = 0; i + width <= value.length; i += step) {
+    result.add(value.slice(i, i + width));
+  }
+  return result;
+};
 const intersect = (a, b) => {
   let count = 0;
   for (const item of a) if (b.has(item)) count++;
@@ -88,6 +102,7 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
     // only ORIGINAL checked-in public fixtures, no external requests.
     const norm = normalized(content);
     const tokens = windows(tokenize(content), 5);
+    const characters = characterShingles(norm);
     if (publicTexts.some(t => (t.length >= 48 && norm.includes(t)) ||
         (norm.length >= 48 && t.includes(norm)))) malformed();
     if (publicWindows.some(reference => reference.size >= 5 && tokens.size >= 5 &&
@@ -99,8 +114,11 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
           (norm.includes(existing.norm) || existing.norm.includes(norm))) malformed();
       if (tokens.size >= 5 && existing.tokens.size >= 5 &&
           intersect(tokens, existing.tokens) / Math.min(tokens.size, existing.tokens.size) >= 0.9) malformed();
+      if (characters.size >= 24 && existing.characters.size >= 24 &&
+          intersect(characters, existing.characters) /
+            Math.min(characters.size, existing.characters.size) >= 0.9) malformed();
     }
-    samples.push({ norm, tokens });
+    samples.push({ norm, tokens, characters });
     countByLanguage[s.language]++;
     countBySplit[s.split]++;
     countByLicense[s.spdxLicense]++;

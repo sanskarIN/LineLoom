@@ -53,9 +53,9 @@ test("rejects absent splits, duplicate IDs, exact/near source duplicates, and re
   shouldReject(duplicateCode);
   const sameRepo = good(); sameRepo.samples[1].repositoryGroup = sameRepo.samples[0].repositoryGroup; shouldReject(sameRepo);
   const near = good();
-  near.samples[1].prefix = near.samples[0].prefix.replace("variant_1", "variant_9999");
+  near.samples[1].prefix = near.samples[0].prefix;
   near.samples[1].middle = near.samples[0].middle;
-  near.samples[1].suffix = near.samples[0].suffix;
+  near.samples[1].suffix = near.samples[0].suffix.replace("code 1", "code 9");
   shouldReject(near);
 });
 test("blocks direct reuse of public synthetic evaluation material", () => {

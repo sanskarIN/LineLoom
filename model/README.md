@@ -81,10 +81,10 @@ This tool is unreleased development and not included in GitHub v1.4.0.
 LineLoom Code now has a **read-only offline preflight** for potential training
 samples. For a local, independently reviewed, permissioned manifest:
 
-\`\`\`sh
+```sh
 npm run test:model-data-audit
 npm run model:data-audit -- --manifest local-reviewed-dataset.json
-\`\`\`
+```
 
 The audit checks language/split coverage, repository-group segregation,
 source revision and review declarations, duplicate and near-duplicate

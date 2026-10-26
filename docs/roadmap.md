@@ -88,7 +88,7 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
 
 
 - **Model data governance (post-v1.4.0 source):** opt-in,
-  read-only \`model:data-audit\` preflight for explicitly approved local
+  read-only `model:data-audit` preflight for explicitly approved local
   manifest files; fail-closed rights declarations, repo-group holdout splits,
   duplicate/heuristic benchmark contamination, and obvious secrets.
   No corpus was gathered, rights have not been approved and no training run
