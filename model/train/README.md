@@ -79,7 +79,7 @@ Hugging Face offline mode, greedy bounded generation and fixed local
 original synthetic probes only. The stdout report contains numeric
 strict-match totals by language and fixed disclaimers; no generated code,
 private model directory or adapter path is displayed. This is a **separate
-`lineloom-hf-synthetic-smoke-v1`** protocol; do not mix its scores
+`lineloom-hf-synthetic-smoke-v2`** protocol; do not mix its scores
 with the Ollama network/latency `lineloom-synthetic-v3` protocol.
 
 Passing six synthetic examples per language is **not sufficient** for a
@@ -180,3 +180,46 @@ incomparable with the Ollama `lineloom-synthetic-v3` protocol.
 Tests are run automatically by `npm run test:model-training` using Python
 standard library only; they use invented in-memory count summaries and
 perform **no inference**.
+
+## Local adapter integrity gate (source development, no trained weights)
+
+New adapter experiments record a **source-free** `adapterReceiptProtocol:
+lineloom-local-adapter-receipt-v1` in their locally retained
+`model/runs/<experiment>/experiment.json`. The receipt records the
+actual SHA-256 digests of all adapter files **by relative filename**,
+plus the local base `config.json` and `tokenizer.json` digests,
+the explicitly declared 40-hex model revision and training split counts.
+
+Verify a locally generated adapter **without any ML dependency, network
+request, checkpoint loading or inference**:
+
+```sh
+npm run model:adapter:verify -- \
+  --base-dir /path/to/approved-local-qwen-base-checkpoint \
+  --base-revision REPLACE_WITH_ACTUAL_REVIEWED_40_HEX_CHECKPOINT_COMMIT \
+  --adapter-dir model/runs/private-experiment-001/adapter
+```
+
+This command checks a bounded adapter tree (regular files, no symlinks,
+up to 64 files, 128 MiB per file, 256 MiB total), relative file names,
+missing/extra/modified artifacts, the receipt's real-run markers,
+the held-out test-use count and current local base metadata. It prints
+only fixed statuses and the number of verified files; errors never
+print paths or source. A read-only check makes **no copies, downloads,
+model merges or public artifacts**.
+
+The **real LoRA smoke runner and HF v2 comparator now require a matching
+new-style receipt** before reporting adapter improvements. Legacy and
+third-party adapters without this LineLoom training receipt are intentionally
+not accepted by this specific comparison workflow; they require separate
+independent review and migration, not fabricating a receipt. Base-only smoke
+still works as before. Default planning modes still import no ML packages.
+
+These SHA-256 values **are not signatures**, do not authenticate the
+claimed model revision, full base-weight files, training corpus rights,
+training run honesty, or the absence of hidden/poisoned code, and cannot
+guarantee protection from malicious local races. The receipt may be
+modified along with an adapter by someone who controls both files.
+They only detect accidental mismatch and basic tampering, and are NOT
+distribution approvals. Real GPU training, model correctness, independent
+quality evaluation and production readiness remain unverified.
