@@ -76,6 +76,25 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
   const completed = results.filter(item => item.ok);
   const totalTimes = completed.map(item => item.totalMs);
   const tokenTimes = completed.map(item => item.firstTokenMs).filter(Number.isFinite);
+  // Group only checked-in synthetic fixture IDs; never include IDs or generated code
+  // in the public summary. Failed attempts count as non-matches.
+  const fixtureGroups = new Map();
+  for (const item of results) {
+    if (typeof item.fixtureId !== "string") continue;
+    const group = fixtureGroups.get(item.fixtureId) ?? { attempts: 0, exactMatches: 0 };
+    group.attempts++;
+    if (item.ok && item.exact) group.exactMatches++;
+    fixtureGroups.set(item.fixtureId, group);
+  }
+  const groups = [...fixtureGroups.values()];
+  const fixtureOutcomes = {
+    evaluated: groups.length,
+    repeated: groups.filter(group => group.attempts > 1).length,
+    exactAtLeastOnce: groups.filter(group => group.exactMatches > 0).length,
+    exactEveryAttempt: groups.filter(group => group.exactMatches === group.attempts).length,
+    mixedExactOutcomes: groups.filter(group =>
+      group.attempts > 1 && group.exactMatches > 0 && group.exactMatches < group.attempts).length
+  };
   const breakdown = (values, key) => Object.fromEntries(values.map(value => {
     const matches = results.filter(item => item[key] === value);
     return [value, {
@@ -92,7 +111,7 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
     strictExactMatches: completed.filter(item => item.exact).length,
     completionP50Ms: percentile(totalTimes, 0.5), completionP95Ms: percentile(totalTimes, 0.95),
     firstTokenP50Ms: percentile(tokenTimes, 0.5), firstTokenP95Ms: percentile(tokenTimes, 0.95),
-    perLanguage, perCategory,
-    disclaimer: "Strict synthetic continuation equality only; not human acceptance, compile correctness or model readiness."
+    perLanguage, perCategory, fixtureOutcomes,
+    disclaimer: "Strict synthetic continuation equality only; repeated attempts are not an independent quality study, human acceptance, compile correctness or model readiness."
   };
 }
