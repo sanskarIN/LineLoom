@@ -130,6 +130,7 @@ export async function run(): Promise<void> {
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
+  let mockTransientFailure = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
   let releaseHeldGeneration: (() => void) | undefined;
@@ -151,6 +152,11 @@ export async function run(): Promise<void> {
       lastModelSent = payload.model ?? "";
       lastPromptSent = payload.prompt ?? ""; // kept only inside synthetic test server; never logged
       generationCalls++;
+      if (mockTransientFailure) {
+        response.statusCode = 503;
+        response.end(JSON.stringify({ error: "temporary" }));
+        return;
+      }
       if (holdGeneration) {
         heldGenerationStarted?.();
         await new Promise<void>((resolve) => { releaseHeldGeneration = resolve; });
@@ -798,6 +804,28 @@ export async function run(): Promise<void> {
         assert.equal(generationCalls, callsAfterEmpty + 1, "Manual invocation must bypass empty-result backoff");
         assert.equal(engine.getStats().suppressedEmptyRetries, 1);
         mockEmptyResponses = false;
+        // A mocked transient 503 should back off automatic *network* attempts,
+        // but a manual invocation bypasses the cooldown immediately. Success
+        // on that manual retry clears the profile's cooldown.
+        await configuration.update("model", "lineloom-transient:latest", vscode.ConfigurationTarget.Global);
+        mockTransientFailure = true;
+        engine.resetTransientFailures();
+        engine.cancel();
+        const transientFirst = await engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token);
+        assert.equal(transientFirst, undefined);
+        const transientCalls = generationCalls;
+        const transientAgain = await engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token);
+        assert.equal(transientAgain, undefined);
+        assert.equal(generationCalls, transientCalls, "Automatic retry should defer during transient cooldown");
+        assert.ok(engine.getStats().suppressedTransientRetries >= 1);
+        mockTransientFailure = false;
+        const transientManual = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token);
+        assert.ok(transientManual?.length, "Manual completion must bypass and clear transient cooldown");
+        assert.equal(generationCalls, transientCalls + 1);
+        // Keep other model profiles independent of the failed endpoint/model.
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         // Exercise preview language providers with actual VS Code file modes.
         for (const [filename, languageId] of [

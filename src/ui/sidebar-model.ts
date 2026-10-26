@@ -28,6 +28,7 @@ export interface SidebarSnapshot {
   failed: number;
   cacheHits: number;
   continuationHits: number;
+  suppressedTransientRetries?: number;
   emptySuggestions: number;
   averageLatencyMs?: number;
   recentLatencySamples?: number;
@@ -311,6 +312,9 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         { id: "cache-hits", label: "Cache Hits", description: String(snapshot.cacheHits), icon: "database" },
         { id: "continuations", label: "Continuation Reuses", description: String(snapshot.continuationHits), icon: "history" },
         { id: "empty-results", label: "Empty Results", description: String(snapshot.emptySuggestions), icon: "circle" },
+        { id: "transient-retries", label: "Automatic Requests Deferred",
+          description: String(snapshot.suppressedTransientRetries ?? 0) + " (temporary Ollama failures; manual retry available)",
+          icon: "clock" },
         ...(!snapshot.performanceDiagnosticsEnabled || !snapshot.recentLatencySamples ||
             snapshot.recentLatencyP50Ms === undefined || snapshot.recentLatencyP95Ms === undefined
           ? [] : [

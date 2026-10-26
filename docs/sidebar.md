@@ -119,3 +119,30 @@ The status and consent interactions are designed for native VS Code accessibilit
 ## Developer validation
 
 Run `npm ci`, `npm run check` and (on a supported VS Code test setup) `npm run test:integration`. Verify keyboard interactions and consent with an actual editor; observe that a sidebar refresh does not cause a model request. For release/OS-specific evidence and installed VSIX checks, use the [evidence protocol](qa/release-evidence.md) and [manual acceptance checklist](qa/v1.3.0-manual-acceptance.md). Automated tests are not a substitute for physical platform acceptance.
+
+
+## v1.4 development: bounded transient Ollama retry cooldown (unreleased)
+
+Repeated **automatic** completion requests after a temporary Ollama error no longer
+hammer an overloaded or unreachable server on every keystroke. For HTTP 429,
+HTTP 5xx, transport failures or request timeouts, an in-memory cooldown grows
+from 1 to 2, 4, 8 seconds up to 30 seconds for the same **hashed**
+endpoint/model profile. Other endpoint/model profiles remain independent.
+Only 16 hashed profiles can be retained in memory. A successful generation
+clears the profile's streak; configuration or authorization changes reset
+the cooldown. No content, file paths, source snippets, raw endpoint URLs or
+model names are recorded by the cooldown.
+
+The guard applies **only** to automatic Ollama network generations, after
+normal editor eligibility and privacy checks. It never bypasses exclusions,
+workspace trust, cancellation or remote approval. Manual **Trigger Completion**
+is allowed even during the cooldown; no timer or background retry is started.
+A session-only `Automatic Requests Deferred` counter appears in the native
+Session Activity section and source-free Diagnostics. This counter is not a
+measure of model quality, completion acceptance or server recovery.
+
+Unit tests cover TTL, escalating delay, capacity, error classification and
+reset. The mocked VS Code extension-host checks temporary HTTP 503 suppression
+and immediate manual recovery. Actual physical-editor, local-model and
+accessibility acceptance remain **NOT RUN**. This source change has no published
+VSIX until a separately verified release.

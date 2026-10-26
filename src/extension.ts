@@ -376,6 +376,7 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
     "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0) +
     "; empty responses: " + (stats?.emptySuggestions ?? 0) +
     "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0) +
+    "; deferred transient automatic retries: " + (stats?.suppressedTransientRetries ?? 0) +
     "; typed continuation reuses: " + (stats?.continuationHits ?? 0));
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
@@ -567,6 +568,7 @@ export function activate(context: vscode.ExtensionContext): void {
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.
       engine?.setRelatedFiles([]);
+      engine?.resetTransientFailures();
       clearIgnoreCache();
       const config = readConfig();
       if (!config.performanceDiagnostics) {
@@ -608,6 +610,7 @@ export function activate(context: vscode.ExtensionContext): void {
     activeModelReadiness.clear();
     filePrivacy.clear();
     relatedPickerRevision++;
+    engine?.resetTransientFailures();
     clearIgnoreCache();
     sidebar.refresh();
   }));
