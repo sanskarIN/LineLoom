@@ -153,3 +153,22 @@ Reports now specify benchmark protocol `lineloom-synthetic-v2`, and the
 comparison command refuses old v1 or mixed-protocol reports. Do not
 compare new v2 signal counts with prior v1 runs or call them a quality
 benchmark until actual local model evidence has been collected.
+
+
+## 9. Source-free request-spec SHA-256 (v3 source, not yet released)
+
+Both the offline dry-run and real model evaluator record
+`requestSpecSha256` of the complete constructed original synthetic Ollama
+requests, excluding the model tag. The hash binds prompt instructions,
+prefix, FIM suffix, stream flag and explicit sampling/context settings,
+independent of the `fixtureSetSha256` hash of public probes and expected
+continuations. Neither value writes raw prompts or model completions to
+the benchmark report.
+
+The comparator rejects missing/different request-spec digests. Because
+the report contract changes, its protocol is now
+**`lineloom-synthetic-v3`**; v1/v2 reports must be rerun to compare.
+The digest is a local reproducibility check, **not an attestation** of
+server-side settings, model checkpoint/quantization, physical hardware or
+semantic quality. Record those external variables separately and review
+numeric results honestly.

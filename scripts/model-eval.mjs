@@ -8,7 +8,7 @@ import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import {
   EVAL_LANGUAGES, EVAL_MODES, EVAL_CATEGORIES, EVAL_BENCHMARK_PROTOCOL,
-  fixtureSetSha256, createRequest, normalizeGenerated,
+  fixtureSetSha256, requestSpecSha256, createRequest, normalizeGenerated,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
 import { consumeOllamaStream } from "./model-eval-stream.mjs";
@@ -80,6 +80,9 @@ async function main() {
   if (opts.dryRun) {
     console.log(JSON.stringify({
       dryRun: true, model: opts.model, mode,
+      benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
+      fixtureSetSha256: fixtureSetSha256(fixtures),
+      requestSpecSha256: requestSpecSha256(fixtures, mode),
       targetLanguages: [...new Set(fixtures.map(item => item.language))],
       targetCategories: [...new Set(fixtures.map(item => item.category))],
       fixtureIds: fixtures.map(item => item.id), requestsPlanned: fixtures.length * opts.runs,
@@ -95,6 +98,7 @@ async function main() {
     ...summarizeMeasurements(measurements, fixtures.length, opts.model, mode),
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     fixtureSetSha256: fixtureSetSha256(fixtures),
+    requestSpecSha256: requestSpecSha256(fixtures, mode),
     runsPerFixture: opts.runs
   }, null, 2));
   if (measurements.some(item => !item.ok)) process.exitCode = 1;

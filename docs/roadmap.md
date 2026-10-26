@@ -112,3 +112,10 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   with additional character-shingle overlap checks. Report only bounded
   language-by-split counts. No corpus was gathered and no actual model
   training or editor-quality benchmark took place.
+
+
+- **M2 synthetic request reproducibility (post-v1.4.1 development):**
+  protocol v3 adds source-free fingerprints for generated synthetic prompts,
+  FIM suffixes and explicit Ollama settings; offline comparison requires
+  identical request spec and refuses legacy v1/v2 reports. Hardware,
+  server defaults and model revisions still require independent review.
