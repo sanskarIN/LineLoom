@@ -25,26 +25,19 @@ except ImportError:
         validate_local_checkpoint, verify_fim_tokenizer
     )
 
-PUBLIC_FIXTURES = ROOT / "model/fixtures/completion-v1.json"
+try:
+    from .smoke_report import (
+        fingerprints, hash_local_metadata_file, read_public_fixtures
+    )
+except ImportError:
+    from smoke_report import (
+        fingerprints, hash_local_metadata_file, read_public_fixtures
+    )
 
 
 def select_public_fixtures(language: str) -> list[dict]:
-    """No user paths or arbitrary manifests may enter this synthetic smoke."""
-    raw = json.loads(PUBLIC_FIXTURES.read_text(encoding="utf-8"))
-    if raw.get("schemaVersion") != 1 or not isinstance(raw.get("fixtures"), list):
-        raise ExperimentRejected("invalid-public-probes")
-    all_fixtures = raw["fixtures"]
-    if len(all_fixtures) != 30 or any(
-        sample.get("language") not in LANGUAGES or
-        not all(isinstance(sample.get(k), str) for k in ("prefix", "suffix", "expected"))
-        for sample in all_fixtures
-    ):
-        raise ExperimentRejected("invalid-public-probes")
-    selected = [sample for sample in all_fixtures
-                if language == "all" or sample["language"] == language]
-    if len(selected) != (30 if language == "all" else 6):
-        raise ExperimentRejected("invalid-public-coverage")
-    return selected
+    """Use only strictly validated checked-in synthetic cases."""
+    return read_public_fixtures(language)
 
 
 def normalize_completion(response: str) -> str:
@@ -156,7 +149,11 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
         "artifactKind": "local-lora-adapter" if args.adapter_dir else "local-base-model",
-        "benchmarkProtocol": "lineloom-hf-synthetic-smoke-v1",
+        **fingerprints(fixture_set, args.max_new_tokens),
+        "selectedLanguage": args.language,
+        "baseRevisionDeclared": args.base_revision,
+        "baseConfigSha256": hash_local_metadata_file(base_dir / "config.json"),
+        "tokenizerSha256": hash_local_metadata_file(base_dir / "tokenizer.json"),
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
         "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
@@ -188,7 +185,8 @@ def main() -> int:
             print(json.dumps({
                 "stage": "OFFLINE_SYNTHETIC_PLAN_ONLY",
                 "realModelInferenceExecuted": False,
-                "syntheticFixtures": len(fixtures),
+                **fingerprints(fixtures, args.max_new_tokens),
+                "selectedLanguage": args.language,
                 "perLanguage": {language: sum(f["language"] == language for f in fixtures)
                                 for language in LANGUAGES},
                 "networkCalls": 0,
