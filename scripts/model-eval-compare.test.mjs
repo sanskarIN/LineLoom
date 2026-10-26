@@ -49,7 +49,9 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.equal(result.syntheticFixtures, 30);
   assert.equal(result.candidateMinusBaseline.strictExactMatches, 4);
   assert.equal(result.candidateMinusBaseline.failed, 0);
-  assert.equal(result.perLanguageStrictMatchDelta.rust, 4);
+  const expectedRustDelta = fixtures.slice(1, 3).filter(f => f.language === "rust").length * 2;
+  assert.equal(result.perLanguageStrictMatchDelta.rust, expectedRustDelta);
+  assert.equal(Object.values(result.perLanguageStrictMatchDelta).reduce((a, b) => a + b, 0), 4);
   assert.equal(Object.keys(result.perLanguageStrictMatchDelta).length, 5);
   assert.equal(Object.keys(result.perCategoryStrictMatchDelta).length, 5);
   const text = JSON.stringify(result);
