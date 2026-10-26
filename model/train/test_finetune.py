@@ -212,7 +212,7 @@ class LocalGateTests(unittest.TestCase):
             with self.assertRaises(finetune.ExperimentRejected):
                 finetune.validate_local_checkpoint(path)
             (path / "tokenizer.json").write_text("{}", encoding="utf-8")
-            self.assertEqual(finetune.validate_local_checkpoint(path), path)
+            self.assertEqual(finetune.validate_local_checkpoint(path), path.resolve())
 
 if __name__ == "__main__":
     unittest.main()
