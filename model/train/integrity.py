@@ -139,7 +139,14 @@ def verify_training_receipt(adapter_dir: Path, base_dir: Path, revision: str) ->
             receipt.get("stage") != "LOCAL_UNREVIEWED_ADAPTER_EXPERIMENT" or
             receipt.get("trainingExecuted") is not True or
             receipt.get("published") is not False or
+            type(receipt.get("testSamplesUsed")) is not int or
             receipt.get("testSamplesUsed") != 0 or
+            type(receipt.get("trainSamples")) is not int or
+            receipt["trainSamples"] <= 0 or
+            type(receipt.get("validationSamples")) is not int or
+            receipt["validationSamples"] <= 0 or
+            not isinstance(receipt.get("trainingManifestSha256"), str) or
+            not SHA256.fullmatch(receipt["trainingManifestSha256"]) or
             receipt.get("baseRevisionDeclared") != revision):
         raise IntegrityRejected("adapter-receipt-mismatch")
     metadata = base_metadata_hashes(base_dir)
