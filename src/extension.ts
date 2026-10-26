@@ -78,7 +78,7 @@ async function checkConnection(
   const isValid = (): boolean => readiness.isCurrent(token) &&
     selectionOriginCurrent(context, origin) && readConfig().model === selected;
   try {
-    const models = await listModels(origin);
+    const models = await listModels(origin, readiness.signalFor(token));
     if (!isValid()) {
       if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
       return;
@@ -146,7 +146,7 @@ async function checkActiveModel(
         resolveLanguageModel(latest.model, language.id, latest.languageModels) === selected;
     })();
   try {
-    const models = await listModels(origin);
+    const models = await listModels(origin, readiness.signalFor(token));
     if (!isCurrent()) {
       if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
       return;

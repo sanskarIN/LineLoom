@@ -16,14 +16,24 @@ export type ModelReadiness =
 export class ModelReadinessSession {
   private revision = 0;
   private result: ModelReadiness = "not-checked";
+  // Store only the abort controller for the current explicit check.
+  private controller?: AbortController;
 
   get state(): ModelReadiness { return this.result; }
 
   /** Starting a second check supersedes every older pending check. */
   begin(): number {
+    this.controller?.abort();
+    this.controller = new AbortController();
     this.revision++;
     this.result = "checking";
     return this.revision;
+  }
+
+  /** Prevent a superseded request from reaching the model-list endpoint. */
+  signalFor(token: number): AbortSignal {
+    return this.isCurrent(token) && this.controller
+      ? this.controller.signal : AbortSignal.abort();
   }
 
   isCurrent(token: number): boolean {
@@ -33,11 +43,14 @@ export class ModelReadinessSession {
   finish(token: number, result: Exclude<ModelReadiness, "checking">): boolean {
     if (!this.isCurrent(token)) return false;
     this.result = result;
+    this.controller = undefined;
     return true;
   }
 
   /** Clear on any LineLoom configuration or consent boundary change. */
   clear(): void {
+    this.controller?.abort();
+    this.controller = undefined;
     this.revision++;
     this.result = "not-checked";
   }
