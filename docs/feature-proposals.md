@@ -1,6 +1,6 @@
 # Feature proposals after LineLoom v1.3.0
 
-**Proposal status: none of the features below is shipped or approved for release.** This page records candidates with explicit risks and go/no-go evidence. The published GitHub stable is [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0). See the [v1.3.1 maintenance plan](releases/v1.3.1-plan.md) for urgent correctness and release gates.
+**Status updated 2026-10-26:** This is a historical proposal list; some capabilities have since shipped in [GitHub v1.4.0 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) (session metrics, native readiness guidance and synthetic evaluation tooling). The latest **stable** is still [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0). Source changes [#126](https://github.com/sanskarIN/LineLoom/pull/126) and [#127](https://github.com/sanskarIN/LineLoom/pull/127) postdate v1.4.0 and are **not released**. Remaining proposals need independent validation; this page does not authorize tags, model training, publisher migration or external registry updates.
 
 ## Principles
 

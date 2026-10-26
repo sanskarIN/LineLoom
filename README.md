@@ -21,6 +21,22 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
+## After v1.4.0 — current `main` development (unreleased)
+
+The ongoing development branch now includes **Copy Sanitized Support Summary**
+in the native Control Center, Quick Actions and Command Palette, using only
+allowlisted session counters and coarse last-check statuses—never model names,
+files, prompts or endpoint URLs ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)).
+Switching editors also invalidates the previous editor's manually checked
+model and file status. Obsolete user-initiated Ollama model-list requests now
+receive cancellation signals when a new check starts or their status is
+invalidated ([PR #127](https://github.com/sanskarIN/LineLoom/pull/127)).
+
+These changes are **merged source only** and are **not included** in the
+published GitHub v1.4.0 preview or v1.3.0 stable. The extension publisher
+remains **`SanskarCodes`** with ID **`SanskarCodes.lineloom`**.
+No publisher-ID or registry migration is authorized or underway.
+
 ## v1.4.0 GitHub pre-release — published 2026-10-26
 
 [**Download GitHub v1.4.0 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) with its genuine VS Code preview-channel [**VSIX**](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.sha256). The [publisher completed successfully](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) after audits, mocked editor-host testing, digest validation, clean installation and a pinned v1.3.0 stable-to-preview upgrade.
