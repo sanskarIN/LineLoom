@@ -128,3 +128,24 @@ folder. The `test` split is never tokenized or optimized.
 [Usage, limitations and safety/rights gates](train/README.md).
 **No actual GPU/CPU training, dataset licensing approval, trained
 adapter, quantization, model card or model-release artifact yet exists.**
+
+## Next M3 iteration — five-language exposure and validation visibility
+
+The optional Python LoRA trainer now includes
+`model/train/sampling.py`: a reproducible seed-local, five-language
+round-robin over **train** records, with shuffled record order within
+each language. Because each language gets one draw per five microbatches,
+manifest ordering no longer determines the first optimizer steps.
+
+The unreviewed local experiment report includes training draw totals
+by language, a sample-weighted validation loss, a macro-average of the
+five language losses and individual validation loss/sample counts for
+Rust, C, C++, Python and TypeScript. This is meant to reveal bad
+language-specific validation performance rather than bury it inside
+a pooled loss. Small language buckets are oversampled by repetition:
+a mechanical audit pass remains inadequate for model training.
+
+The new sampler/validation tests run offline with Python standard library
+and no model checkpoint. **No approved corpus, trained adapter, GPU
+evaluation, independently measured model improvement or production
+release is claimed.**
