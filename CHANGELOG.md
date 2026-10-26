@@ -2,13 +2,13 @@
 
 All notable changes follow Semantic Versioning.
 
-## v1.4.1 — GitHub-only preview candidate (NOT YET PUBLISHED)
+## v1.4.1 — GitHub-only pre-release (published 2026-10-26)
 
 - Source-free support summary, editor-scoped check invalidation and cancellable manual Ollama discovery (PRs #126–127).
 - LineLoom Code research: deterministic offline synthetic benchmark comparison, strict local data provenance preflight and v2 output-format diagnostics (PRs #129–131). No model weights/training or real Ollama measurements.
-- Preview candidate only: publisher migration, VS Code Marketplace, Open VSX, npmjs.com and GitHub Packages **not changed**. Physical-editor, accessibility, real-model and training-data acceptance remain **NOT RUN**. [Release notes](docs/releases/v1.4.1.md) and [QA checklist](docs/qa/v1.4.1-preview-acceptance.md).
+- **Verified** genuine preview-channel VSIX and SHA-256 published by [GitHub Action 40265555223](https://github.com/sanskarIN/LineLoom/actions/runs/40265555223), after locked audits, mocked editor-host, isolated installation and pinned v1.3.0 upgrade. Publisher, stable release and extension registries **not changed**. Physical-editor, accessibility, real-model and training-data acceptance remain **NOT RUN**. [Release notes](docs/releases/v1.4.1.md) and [QA checklist](docs/qa/v1.4.1-preview-acceptance.md).
 
-## Unreleased — development after v1.4.0 GitHub pre-release
+## Historical post-v1.4.0 development — now bundled in GitHub v1.4.1 preview
 
 - **New manual support tool** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): copy an allowlisted, source-free support summary from the native sidebar, Quick Actions or Command Palette. Counts and last-check states only; optional latency measurements require diagnostics opt-in. No model names, files, endpoint URLs, source snippets, telemetry or network requests. The system clipboard is controlled by the host; review before sharing.
 - **Active-editor status correctness** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): clear previous model and file check outcomes on editor switches/edits/closes; reject late results from a former editor.
