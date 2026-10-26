@@ -15,3 +15,12 @@ model/cache/
 **/.venv/
 **/*.safetensors
 **/*.gguf
+
+# Keep all local model datasets/checkpoints/adapters out of Git.
+model/runs/
+model/cache/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/*.safetensors
+**/*.gguf
