@@ -533,6 +533,18 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   // Privacy eligibility measurements are in memory only. Permit an immediate
   // user-initiated reset without changing the diagnostics opt-in preference.
+  command("lineloom.resetSessionActivity", async () => {
+    const choice = await vscode.window.showWarningMessage(
+      "Reset LineLoom's in-memory completion session statistics? Active generation will stop. Model, privacy and language settings remain unchanged.",
+      { modal: true }, "Reset Session Activity"
+    );
+    if (choice !== "Reset Session Activity") return;
+    engine?.resetSessionActivity();
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage("LineLoom: session activity cleared; configuration retained.");
+  });
   command("lineloom.resetInferenceTimings", () => {
     engine?.clearLatencyMeasurements();
     sidebar.refresh();
@@ -563,7 +575,6 @@ export function activate(context: vscode.ExtensionContext): void {
       modelReadiness.clear();
       activeModelReadiness.clear();
       filePrivacy.clear();
-      activeModelReadiness.clear();
       relatedPickerRevision++;
       // Requiring a fresh selection after any configuration change prevents
       // old consent being reused with new endpoint or exclusion settings.

@@ -32,6 +32,7 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");
     expect(entries.find(item => item.id === "continuations")?.description).toBe("1");
     expect(entries.find(item => item.id === "empty-results")?.description).toBe("4");
+    expect(entries.find(item => item.id === "reset-session-activity")?.command).toBe("lineloom.resetSessionActivity");
     expect(entries.find(item => item.id === "transient-retries")?.description).toContain("0");
     const deferred = sidebarSections({ ...snapshot, suppressedTransientRetries: 3 }).flatMap(group => group.items);
     expect(deferred.find(item => item.id === "transient-retries")?.description).toContain("3");

@@ -28,6 +28,8 @@ export interface CompletionStats {
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  // Epoch prevents old in-flight cancellation results resurrecting reset counters.
+  private activityEpoch = 0;
   private relatedRevision = 0;
   private relatedFiles: vscode.Uri[] = [];
   // Increment on opt-out to reject measurements from already-running requests.
@@ -74,6 +76,17 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     return item;
   }
   getRelatedFileCount(): number { return this.relatedFiles.length; }
+  /** Reset only in-memory activity; do not modify settings or related-file consent. */
+  resetSessionActivity(): void {
+    this.cancel(); // Invalidates queued and in-flight generations first.
+    this.activityEpoch++;
+    this.acceptance.clear(); // Old inline-item commands cannot restore counts.
+    this.clearLatencyMeasurements();
+    this.resetTransientFailures();
+    for (const key of Object.keys(this.metrics) as Array<keyof typeof this.metrics>) {
+      this.metrics[key] = 0;
+    }
+  }
   /** Configuration and authorization changes revoke old automatic failure cooldowns. */
   resetTransientFailures(): void { this.transientFailures.clear(); }
   /** Explicit selection exists only for the current extension session. */
@@ -165,6 +178,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     const activeLine = document.lineAt(position.line).text;
     if (!shouldAutoComplete(activeLine.slice(0, position.character), config.minAutoTriggerChars, manual)) return;
     if (!shouldRequestAtCursor(activeLine.slice(position.character), manual, config.suppressMidTokenAuto)) return;
+    const activityEpoch = this.activityEpoch;
     const requestId = ++this.generation;
     this.controller?.abort();
     this.target = { uri: document.uri.toString(), version: initialVersion, position };
@@ -304,7 +318,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
             document.version !== version || !isTargetCurrent() || !stillAllowed ||
             !relatedAfter || JSON.stringify(relatedAfter) !== JSON.stringify(related) ||
             !relatedCurrent()) {
-          this.metrics.cancelled++;
+          if (activityEpoch === this.activityEpoch) this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;
         }
@@ -334,19 +348,19 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       } catch (error: unknown) {
         if (timedOut && requestId === this.generation && !token.isCancellationRequested) {
           if (mayUseCurrentConfiguration()) this.transientFailures.recordFailure(failureProfile);
-          this.metrics.failed++;
+          if (activityEpoch === this.activityEpoch) this.metrics.failed++;
           this.onState("unavailable");
           return;
         }
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation) {
-          this.metrics.cancelled++;
+          if (activityEpoch === this.activityEpoch) this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;
         }
         if (isTransientGenerationFailure(error) && mayUseCurrentConfiguration()) {
           this.transientFailures.recordFailure(failureProfile);
         }
-        this.metrics.failed++;
+        if (activityEpoch === this.activityEpoch) this.metrics.failed++;
         this.onState("unavailable");
         // No source code, prompts, generated response or token-bearing URLs are logged.
         if (error instanceof Error && /Invalid Ollama|Incomplete Ollama|safety limit/.test(error.message)) {
@@ -359,7 +373,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         if (this.controller === controller) this.controller = undefined;
       }
     } catch {
-      this.metrics.failed++;
+      if (activityEpoch === this.activityEpoch) this.metrics.failed++;
       this.onState("error");
       return;
     }

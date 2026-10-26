@@ -45,6 +45,9 @@ export function quickActions(
     { id: "connection", label: "$(plug) Check Ollama Connection", description: "Contact the current endpoint only when selected", command: "lineloom.checkConnection" },
     { id: "sidebar", label: "$(layout-sidebar-left) Open Control Center", description: "Open the LineLoom Activity Bar sidebar", command: "lineloom.openSidebar" },
     { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },
+    { id: "resetSessionActivity", label: "$(trash) Reset Session Activity",
+      description: "Erase session counters and timings; cancel generation, retain configuration",
+      command: "lineloom.resetSessionActivity" },
     ...(performanceDiagnostics ? [{
       id: "resetInferenceTimings",
       label: "$(trash) Reset Inference Timing Samples",

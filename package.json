@@ -118,6 +118,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.resetSessionActivity",
+        "title": "Reset Session Activity",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.resetInferenceTimings",
         "title": "Reset Inference Timing Samples",
         "category": "LineLoom"
