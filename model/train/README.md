@@ -44,3 +44,47 @@ FIM loss is applied **only to the inserted middle and EOS tokens**, with the pre
 4. Review an accurate model/dataset card, copyright and distribution approval **before** separately authorizing any GGUF/quantization/Ollama export. This script **does not** export weights as an Ollama model, publish to GitHub or register an extension.
 
 The stable extension and `SanskarCodes.lineloom` publisher are unaffected.
+
+
+## Local base-versus-adapter synthetic smoke (no model publishing)
+
+A separate `model/train/smoke.py` lets a developer manually compare
+an independently installed base model to a **locally trained** LoRA adapter
+using **only** the 30 original checked-in synthetic completion probes
+(six each: Rust, C, C++, Python, TypeScript). No raw prompts or model
+responses are printed, stored or uploaded.
+
+```sh
+# Offline planning mode — imports no PyTorch, no weights, no network:
+python model/train/smoke.py --language all
+
+# Only after independently reviewing the local model and checkpoint:
+python model/train/smoke.py --run --approve-checkpoint \
+  --base-dir /path/to/reviewed-local-qwen-base \
+  --base-revision REPLACE_WITH_REVIEWED_40_HEX_COMMIT \
+  --device cuda --language all
+
+# Optional comparison after a *real* separate approved adapter training run:
+python model/train/smoke.py --run --approve-checkpoint \
+  --base-dir /path/to/reviewed-local-qwen-base \
+  --base-revision REPLACE_WITH_REVIEWED_40_HEX_COMMIT \
+  --adapter-dir model/runs/private-experiment-001/adapter \
+  --device cuda --language all
+```
+
+Both real commands are illustrative and cannot work without an actual
+reviewed checkpoint and (in the last command) locally trained adapter.
+All model loading is `local_files_only` with `trust_remote_code=False`,
+Hugging Face offline mode, greedy bounded generation and fixed local
+original synthetic probes only. The stdout report contains numeric
+strict-match totals by language and fixed disclaimers; no generated code,
+private model directory or adapter path is displayed. This is a **separate
+`lineloom-hf-synthetic-smoke-v1`** protocol; do not mix its scores
+with the Ollama network/latency `lineloom-synthetic-v3` protocol.
+
+Passing six synthetic examples per language is **not sufficient** for a
+real-world-quality claim. Inference quality, safety, semantic correctness,
+compiler tests, editor latency and tokenizer/FIM compatibility must all
+be tested on real approved hardware before any adapter/weights export.
+The script never exports GGUF, registers an Ollama model, automatically
+changes LineLoom settings or publishes to any service.
