@@ -13,7 +13,7 @@
 
 ## Milestone gates
 
-1. **M0 — Measurement foundation (merged to main):** fixed MIT-original synthetic fixtures, local-only evaluator, pure tests, per-language exact-match counts and measured first-token / total p50-p95. No performance results invented.
+1. **M0 — Measurement foundation (merged to main):** fixed MIT-original synthetic fixtures, local-only evaluator, pure tests, per-language exact-match counts, aggregate repeated-fixture outcomes and measured first-token / total p50-p95. The [local baseline protocol](EVALUATION_PROTOCOL.md) defines reproducible, sanitized reporting. No real model performance results have been recorded.
 2. **M1 — Dataset review:** licensed provenance for each source (repository, revision, SPDX license, consent/opt-out status), duplicate and near-duplicate removal, secret/PII scanning, malware/poisoned training example filtering, holdout split by **repository**, not file, and an exclusion mechanism. Never train automatically on users' workspaces.
 3. **M2 — Baseline comparison:** record real Ollama results for the same fixtures using at least one known FIM baseline; include named model, prompt mode, hardware, quantization, run count and temperature. The initial 30 synthetic cases still do not justify model-quality claims; expand to a sufficiently diverse, independently reviewed holdout suite before making such claims.
 4. **M3 — Small adapter experiment:** with reviewed checkpoint and corpus, train completion-only/FIM on opted-in or appropriately licensed sources. Record full config, seeds, base model revision, data hashes, train/validation splits, loss curves and GPU compute use. No externally sourced or private data in this repository.

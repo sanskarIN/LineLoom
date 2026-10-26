@@ -39,7 +39,7 @@ npm run model:eval -- --model lineloom-code:dev --mode fim --language rust
 - Run one **named model and mode at a time** on the same local machine, with warmed and cold trials recorded separately in human-written notes. Do not compare claims across different hardware without annotation.
 - Human review of syntax correctness, unsafe code, indentation, duplicate suffix, irrelevant outputs, keyboard UX and actual VS Code acceptance remains **NOT RUN** until recorded separately.
 
-See [training and release gates](TRAINING_PLAN.md) and [dataset and contributor policy](DATA_POLICY.md). Do not confuse the extension's version numbers with any future model version.
+See the [reproducible local benchmark protocol](EVALUATION_PROTOCOL.md), [training and release gates](TRAINING_PLAN.md) and [dataset and contributor policy](DATA_POLICY.md). Do not confuse the extension's version numbers with any future model version.
 
 ## Source and safety boundaries
 
