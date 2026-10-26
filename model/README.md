@@ -173,3 +173,25 @@ for deterministic offline standard-library unit tests. **Real training
 has not been executed here**, and minimal mechanically passing input is
 far from a useful training dataset. See [train/README](train/README.md)
 and [data policy](DATA_POLICY.md).
+
+## First runnable local FIM LoRA experiment — not trained or released
+
+The [train/](train/README.md) directory now contains a voluntary
+**local-only** training program using a separately reviewed
+[Qwen2.5-Coder-0.5B](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B)
+base candidate and *only* explicitly supplied source records which pass
+the current offline dataset audit. It builds Qwen-style FIM examples,
+masks prefix and suffix loss, trains only on declared training records,
+validates separately and never consumes the held-out test split. The
+program requires explicit rights/checkpoint approval flags, an
+independently reviewed local safetensors checkpoint and optional
+user-installed ML dependencies before starting optimization. All
+candidate inputs/outputs stay local; adapter directories are Git-ignored
+and excluded from the VSIX. The default command makes a sanitized
+**offline plan only**, and `npm run test:model-training` exercises its
+FIM encoding and approval gates without downloading data or weights.
+
+**No approved corpus, GPU training session, adapter/weights, actual
+quality measurements or deployable model were created by this source
+change.** The 15-record mechanical audit minimum cannot produce a
+useful trained model, and reviewed licensing/provenance remain required.
