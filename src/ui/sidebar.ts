@@ -10,7 +10,7 @@ type SidebarNode =
   | { kind: "section"; section: SidebarSection }
   | { kind: "item"; item: SidebarEntry };
 
-function endpointState(isApproved: (origin: string) => boolean): SidebarEndpointState {
+export function endpointState(isApproved: (origin: string) => boolean): SidebarEndpointState {
   const config = readConfig();
   try {
     const endpoint = validateEndpoint(config.endpoint);

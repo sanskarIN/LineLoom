@@ -118,6 +118,11 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.copySupportSummary",
+        "title": "Copy Sanitized Support Summary",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.resetSessionActivity",
         "title": "Reset Session Activity",
         "category": "LineLoom"

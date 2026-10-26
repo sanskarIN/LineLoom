@@ -330,6 +330,9 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             icon: "clock" }
         ]),
         { id: "diagnostics", label: "Open Diagnostics", icon: "output", command: "lineloom.diagnostics" },
+        { id: "copy-support-summary", label: "Copy Sanitized Support Summary",
+          description: "Copy local-only settings categories, last-check status and aggregate counters; no source or URLs",
+          icon: "clippy", command: "lineloom.copySupportSummary" },
         { id: "reset-session-activity", label: "Reset Session Activity",
           description: "Erase in-memory suggestion counters and durations; stop active generation, keep settings and file consent",
           icon: "trash", command: "lineloom.resetSessionActivity" },

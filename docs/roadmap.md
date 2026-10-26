@@ -45,3 +45,17 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
 - [Release evidence rules](qa/release-evidence.md) · [v1.3.0 acceptance checklist](qa/v1.3.0-manual-acceptance.md)
 - [Selected-file context privacy RFC](privacy/selected-context.md) · [Packages guide](packages.md)
 - [CHANGELOG.md](../CHANGELOG.md) for **historical releases through the GitHub v1.4.0 preview** and what was actually released, and [GitHub Releases](https://github.com/sanskarIN/LineLoom/releases) for public artifact truth.
+
+
+## After v1.4.0 — working notes (unreleased)
+
+- **Active-editor readiness correctness:** switching/closing an editor must
+  clear *both* manual last-check model and file statuses, and pending results
+  cannot reappear after the editor changes. This does not cause passive checks.
+- **Copy sanitized support summary:** opt-in clipboard action with aggregate
+  session counts and finite-latency summaries only, no source, filenames,
+  model IDs, endpoint URLs or stored analytics. Clipboard privacy is disclosed.
+- **Publisher ID migration:** intentionally **NOT STARTED**. The current
+  `SanskarCodes.lineloom` identity, installation paths and registry listings
+  remain unchanged until the maintainer explicitly authorizes a future
+  publisher/extension-ID migration, rollback plan and separate channel checks.

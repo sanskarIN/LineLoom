@@ -177,3 +177,23 @@ They do **not** mean these features are absent from v1.4.0. The latest
 GitHub stable is still v1.3.0; the extension marketplaces were not updated.
 Physical keyboard/screen-reader testing and real model-quality acceptance
 remain **NOT RUN**.
+
+
+## Upcoming development: Copy Sanitized Support Summary (not in v1.4.0)
+
+A new explicit **Copy Sanitized Support Summary** action in the native Session
+Activity panel, Quick Actions, and Command Palette copies only session-level
+counters, bounded configuration *counts*, endpoint category (not URL),
+and the previous user-requested model/file-check status. It never reads
+document text, includes filenames or model tags, contacts Ollama, or writes
+a permanent report. Optional latency p50/p95 appears only while performance
+diagnostics are enabled. A successful copy uses the operating-system clipboard:
+**review the report before sharing it**, and be aware that other local
+applications may be able to read clipboard contents.
+
+The editor-scoped last manual model/file statuses are now reset together
+on editor switch, edit or close. In-flight checks from the prior editor
+cannot restore an obsolete result. This fixes stale manual readiness
+information after moving between files with different language overrides.
+Unit and mocked editor-host coverage guard these privacy boundaries.
+Real desktop and screen-reader acceptance remains **NOT RUN**.
