@@ -20,7 +20,7 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings",
+    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings", "lineloom.resetSessionActivity",
     "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
@@ -988,6 +988,31 @@ export async function run(): Promise<void> {
         privateEditor.selection = new vscode.Selection(privateCursor, privateCursor);
         const blocked = await engine.provideInlineCompletionItems(privateDoc, privateCursor, trigger, cancellation.token);
         assert.equal(blocked, undefined, "Never provide inline completions from .env");
+        // Session reset erases counters, cooldown and pending acceptance
+        // acknowledgements without affecting model/language/privacy settings.
+        const oldAcceptedItem = manualMidToken?.[0];
+        const oldToken = oldAcceptedItem?.command?.arguments?.[0];
+        assert.equal(typeof oldToken, "string");
+        assert.ok(engine.getStats().requests > 0);
+        const previousEnabled = configuration.get("enabled", true);
+        const previousModel = configuration.get("model");
+        const previousLanguages = configuration.get("enabledLanguages");
+        engine.resetSessionActivity();
+        const blank = engine.getStats();
+        assert.equal(blank.requests, 0);
+        assert.equal(blank.completions, 0);
+        assert.equal(blank.accepted, 0);
+        assert.equal(blank.failed, 0);
+        assert.equal(blank.cancelled, 0);
+        assert.equal(blank.suppressedTransientRetries, 0);
+        assert.equal(blank.recentLatencySamples, 0);
+        assert.equal(engine.recordAcceptance(oldToken), false,
+          "Stale suggestion acceptance must not repopulate reset counters");
+        assert.equal(configuration.get("enabled", true), previousEnabled);
+        assert.equal(configuration.get("model"), previousModel);
+        assert.deepEqual(configuration.get("enabledLanguages"), previousLanguages);
+        assert.equal(engine.getRelatedFileCount(), 0);
+
       } finally {
         cancellation.dispose();
       }

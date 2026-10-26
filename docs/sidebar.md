@@ -146,3 +146,21 @@ reset. The mocked VS Code extension-host checks temporary HTTP 503 suppression
 and immediate manual recovery. Actual physical-editor, local-model and
 accessibility acceptance remain **NOT RUN**. This source change has no published
 VSIX until a separately verified release.
+
+
+## v1.4 development: reset session activity (unreleased)
+
+The explicit **Reset Session Activity** command is available from Quick Actions
+and Session Activity in the native Control Center. It presents a confirmation
+dialog, then stops queued/in-flight generation, invalidates pending one-shot
+acceptance callbacks, clears all in-memory completion counts, recent inference
+durations and automatic failure cooldowns. It **does not change** the user's
+model, language enablement, endpoint/consent preferences, or explicitly chosen
+related-file selection. Local privacy timing statistics are independent and
+remain controlled by **Reset Privacy Timing Statistics**.
+
+The reset never contacts Ollama, scans files or uploads data. Old cancelled
+generations cannot repopulate counters after reset. The development tests
+cover registration, counter erasure, stale accepted-item tokens and untouched
+preferences with a mocked VS Code extension host. Physical accessibility
+and real Ollama validation remain **NOT RUN**.

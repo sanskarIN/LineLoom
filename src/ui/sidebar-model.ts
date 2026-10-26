@@ -330,6 +330,9 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             icon: "clock" }
         ]),
         { id: "diagnostics", label: "Open Diagnostics", icon: "output", command: "lineloom.diagnostics" },
+        { id: "reset-session-activity", label: "Reset Session Activity",
+          description: "Erase in-memory suggestion counters and durations; stop active generation, keep settings and file consent",
+          icon: "trash", command: "lineloom.resetSessionActivity" },
         ...(snapshot.performanceDiagnosticsEnabled ? [{
           id: "reset-inference-timings", label: "Reset Inference Timing Samples",
           description: "Erase recent Ollama p50/p95 and all inference duration samples; keeps suggestion counts",
