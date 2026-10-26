@@ -114,3 +114,12 @@ candidate-minus-baseline counts and rejects missing/inconsistent signal
 summaries. Signals can be false positives or false negatives and do not
 prove compilability, safety, relevance, acceptance or model superiority.
 No actual Ollama baseline measurements have been made by this change.
+
+
+**Current preflight hardening:** every target language must have declared
+samples in *all three* repository-separated splits (train, validation, test).
+Lightly edited copies of the public synthetic evaluation fixtures are
+additionally screened using bounded character shingles. Audit outputs include
+only numerical per-language/per-split totals; this is not enough data for a
+real model, and these heuristics do not replace independently reviewed rights,
+fork relationships, or contamination scans.

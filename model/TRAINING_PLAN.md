@@ -75,3 +75,12 @@ per-signal offline comparison deltas, while retaining strict exact-match
 metrics. These identify possible output-format defects without logging
 inference responses; they do not replace compilation, human QA or actual
 model performance data. No training run is implied.
+
+
+**M1 quality gate hardening (post-v1.4.1 source):** do not accept a
+manifest merely because *some* train/validation/test samples exist.
+The offline audit now requires Rust, C, C++, Python and TypeScript each
+to occur in every split, verifies repo-group holdout consistency and
+screens even lightly modified public benchmark probes via character
+shingles. This mechanical 15-sample minimum is not a meaningful corpus,
+a statistically powered holdout or training authorization.
