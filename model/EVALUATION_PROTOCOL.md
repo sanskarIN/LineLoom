@@ -187,3 +187,20 @@ contact **only** the fixed local Ollama endpoint after explicit invocation.
 A green mock suite **does not** constitute a completed real model test,
 a successful cancellation test on every Ollama version, or proof of
 correctness, hardware latency, licensed training or human usefulness.
+
+
+## 11. Separate local adapter smoke (source only, no verified model results)
+
+The optional [Python smoke runner](train/README.md) tests an
+*already* locally provisioned reviewed Qwen FIM base and an *optional*
+privately trained LoRA adapter using only 30 original checked-in public
+synthetic probes. It has a safe **offline plan** default and a separately
+gated `--run --approve-checkpoint` path. Real mode performs strictly
+bounded local greedy generations with no returned/printed code,
+source-paths or raw prompts; report is source-free per-language exact
+counts, not compile accuracy or inference latency.
+
+These results are a DIFFERENT protocol from the `model:eval`
+loopback Ollama v3 benchmark; do not directly compare scores across
+tokenization backends/modes. No real local model run is claimed in the
+repository. Independent human, compiler, rights and editor QA is required.
