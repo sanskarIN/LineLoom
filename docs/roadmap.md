@@ -10,6 +10,10 @@
 - **Independent distribution:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) listings use `SanskarCodes.lineloom` and are **not automatically updated by GitHub**. Open VSX v1.3.0 Stable was independently published and verified on 2026-10-25; the maintainer separately updated Marketplace to v1.3.0. Verify live registry versions before giving future install advice. GitHub Packages npm installer `@sanskarin/lineloom-cli` is independently published at **v0.1.0**, without CLI v0.2.0 verify or proposed v0.3.0 offline install.
 - **Outstanding quality evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows are not verified by the automated release. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60), [#79](https://github.com/sanskarIN/LineLoom/issues/79), and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
 
+## v1.4.1 GitHub pre-release candidate — not yet published
+
+Candidate source packages the post-v1.4.0 improvements (#126, #127, #129, #130, #131) behind a separately authorized, **GitHub-only** prerelease publisher. The published preview remains v1.4.0 until exact v1.4.1 public assets and preview metadata are verified. The stable stays v1.3.0 and all registries/publisher `SanskarCodes.lineloom` remain untouched. The new CLI/data tooling has no trained weights or verified real Ollama results. See [candidate release notes](releases/v1.4.1.md) and [manual QA](qa/v1.4.1-preview-acceptance.md).
+
 ## Post-preview source milestone (not released)
 
 - [PR #126](https://github.com/sanskarIN/LineLoom/pull/126): sanitized

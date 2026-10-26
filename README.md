@@ -21,6 +21,10 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
+## v1.4.1 GitHub preview candidate — pending independent publishing
+
+Current source includes an **unpublished v1.4.1 preview candidate** that bundles the manual sanitized support summary, editor-check cancellation fixes, and LineLoom Code synthetic evaluation/data-audit tools. **No v1.4.1 VSIX or tag is publicly verified yet.** The current published GitHub preview is still [v1.4.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0), and stable remains [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0). See [v1.4.1 candidate notes](docs/releases/v1.4.1.md) and [unperformed manual QA](docs/qa/v1.4.1-preview-acceptance.md). Publisher `SanskarCodes.lineloom` and both extension marketplaces remain unchanged.
+
 ## After v1.4.0 — current `main` development (unreleased)
 
 The ongoing development branch now includes **Copy Sanitized Support Summary**

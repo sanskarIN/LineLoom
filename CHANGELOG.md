@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.4.1 — GitHub-only preview candidate (NOT YET PUBLISHED)
+
+- Source-free support summary, editor-scoped check invalidation and cancellable manual Ollama discovery (PRs #126–127).
+- LineLoom Code research: deterministic offline synthetic benchmark comparison, strict local data provenance preflight and v2 output-format diagnostics (PRs #129–131). No model weights/training or real Ollama measurements.
+- Preview candidate only: publisher migration, VS Code Marketplace, Open VSX, npmjs.com and GitHub Packages **not changed**. Physical-editor, accessibility, real-model and training-data acceptance remain **NOT RUN**. [Release notes](docs/releases/v1.4.1.md) and [QA checklist](docs/qa/v1.4.1-preview-acceptance.md).
+
 ## Unreleased — development after v1.4.0 GitHub pre-release
 
 - **New manual support tool** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): copy an allowlisted, source-free support summary from the native sidebar, Quick Actions or Command Palette. Counts and last-check states only; optional latency measurements require diagnostics opt-in. No model names, files, endpoint URLs, source snippets, telemetry or network requests. The system clipboard is controlled by the host; review before sharing.
