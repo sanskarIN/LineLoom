@@ -5,16 +5,16 @@
 ## Current state (verified repository and GitHub release)
 
 - **GitHub stable: [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0)**, published 2026-10-25 with stable-channel VSIX and SHA-256. Default-off **explicitly selected** related-file context, native sidebar and single-file autocomplete are shipped.
-- **Latest GitHub preview: [v1.4.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0)**, published 2026-10-26 with genuine preview-channel VSIX and SHA-256 after independent audit, mocked editor-host checks, clean installation and a pinned v1.3.0 stable upgrade. It includes recent v1.4 reliability, diagnostics and model-eval tooling, but **not** trained weights or real model benchmarks. v1.3.0 remains stable; v1.3.1 is an earlier GitHub preview. No standalone v1.2.5 release exists.
+- **Latest GitHub preview: [v1.4.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.1)**, published 2026-10-26 with genuine preview-channel VSIX and SHA-256 after independent audit, mocked editor-host checks, clean installation and pinned v1.3.0 stable upgrade. It includes recent v1.4 reliability, diagnostics and model-eval tooling, but **not** trained weights or real model benchmarks. v1.3.0 remains stable; v1.3.1 is an earlier GitHub preview. No standalone v1.2.5 release exists.
 - **Shipped in preview:** [PR #99](https://github.com/sanskarIN/LineLoom/pull/99) added invisible-Unicode completion hardening, now included in the v1.3.1 pre-release VSIX.
 - **Independent distribution:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) listings use `SanskarCodes.lineloom` and are **not automatically updated by GitHub**. Open VSX v1.3.0 Stable was independently published and verified on 2026-10-25; the maintainer separately updated Marketplace to v1.3.0. Verify live registry versions before giving future install advice. GitHub Packages npm installer `@sanskarin/lineloom-cli` is independently published at **v0.1.0**, without CLI v0.2.0 verify or proposed v0.3.0 offline install.
 - **Outstanding quality evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows are not verified by the automated release. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60), [#79](https://github.com/sanskarIN/LineLoom/issues/79), and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
 
-## v1.4.1 GitHub pre-release candidate — not yet published
+## v1.4.1 GitHub-only pre-release — published
 
-Candidate source packages the post-v1.4.0 improvements (#126, #127, #129, #130, #131) behind a separately authorized, **GitHub-only** prerelease publisher. The published preview remains v1.4.0 until exact v1.4.1 public assets and preview metadata are verified. The stable stays v1.3.0 and all registries/publisher `SanskarCodes.lineloom` remain untouched. The new CLI/data tooling has no trained weights or verified real Ollama results. See [candidate release notes](releases/v1.4.1.md) and [manual QA](qa/v1.4.1-preview-acceptance.md).
+The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.1) packages post-v1.4.0 improvements (#126, #127, #129, #130, #131) after an owner-authorized [publisher run](https://github.com/sanskarIN/LineLoom/actions/runs/40265555223), with both public checksum-matching assets. Stable stays v1.3.0 and all registries/publisher `SanskarCodes.lineloom` remain untouched. No trained weights or verified real Ollama model benchmark. See [versioned release notes](releases/v1.4.1.md) and [manual QA NOT RUN](qa/v1.4.1-preview-acceptance.md).
 
-## Post-preview source milestone (not released)
+## Post-v1.4.0 source work (now included in v1.4.1 preview)
 
 - [PR #126](https://github.com/sanskarIN/LineLoom/pull/126): sanitized
   clipboard support summary and editor-scoped manual-status invalidation.
