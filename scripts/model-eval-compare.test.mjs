@@ -49,6 +49,8 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.equal(result.syntheticFixtures, 30);
   assert.equal(result.candidateMinusBaseline.strictExactMatches, 4);
   assert.equal(result.candidateMinusBaseline.failed, 0);
+  assert.equal(result.completedWithoutFormatSignalDelta, 0);
+  assert.equal(result.completionFormatSignalDelta.markdownFence, 0);
   const expectedRustDelta = fixtures.slice(1, 3).filter(f => f.language === "rust").length * 2;
   assert.equal(result.perLanguageStrictMatchDelta.rust, expectedRustDelta);
   assert.equal(Object.values(result.perLanguageStrictMatchDelta).reduce((a, b) => a + b, 0), 4);
@@ -70,6 +72,11 @@ test("old, mismatched and inconsistent benchmark reports fail closed", () => {
     { ...valid, failed: 4 }, { ...valid, strictExactMatches: 61 },
     { ...valid, completionP95Ms: -1 }, { ...valid, completionP95Ms: "fast" },
     { ...valid, perLanguage: { rust: {} } },
+    { ...valid, formatDiagnostics: undefined },
+    { ...valid, formatDiagnostics: { ...valid.formatDiagnostics, inspectedCompleted: 0 } },
+    { ...valid, formatDiagnostics: { ...valid.formatDiagnostics, signals: {
+      ...valid.formatDiagnostics.signals, markdownFence: 999
+    } } },
     { ...valid, fixtureOutcomes: { ...valid.fixtureOutcomes, evaluated: 0 } }
   ];
   for (const item of invalid) assert.throws(() => compareModelReports(valid, item));

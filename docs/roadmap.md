@@ -93,3 +93,10 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   duplicate/heuristic benchmark contamination, and obvious secrets.
   No corpus was gathered, rights have not been approved and no training run
   has been performed. Human review is required after a mechanical PASS.
+
+
+- **LineLoom Code synthetic evaluation (post-v1.4.0):** v2 protocol includes
+  seven conservative, source-free response-format indicators; offline
+  baseline comparator refuses v1/v2 mixture and highlights aggregate
+  response-format changes alongside exact matches and latency. This
+  infrastructure has **no real-Ollama quality measurements** yet.

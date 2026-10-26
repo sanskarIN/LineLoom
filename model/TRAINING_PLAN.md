@@ -67,3 +67,11 @@ source-free. It does not verify permission authenticity, detect all PII,
 ensure a corpus's license is compatible with a checkpoint, or make the model
 safe. Failing audit blocks the next step; passing audit only means mechanical
 preconditions hold and **never authorizes fine-tuning or model publication**.
+
+
+**Format-focused local evaluation (post-v1.4.0 development):** synthetic
+v2 benchmark adds seven aggregate non-content formatting indicators and
+per-signal offline comparison deltas, while retaining strict exact-match
+metrics. These identify possible output-format defects without logging
+inference responses; they do not replace compilation, human QA or actual
+model performance data. No training run is implied.
