@@ -163,3 +163,19 @@ actual trained LoRA weights are still unverified.
 
 `npm run test:model-training` covers the comparator offline with
 mocked source-free counts; no model checkpoint is loaded.
+
+## M3 artifact correctness: local adapter receipts
+
+The experimental local LoRA fine-tuner records a bounded,
+source-free **adapter file integrity receipt** including relative
+filenames, SHA-256 digests, local base config/tokenizer hashes, train
+and validation counts, sealed-test usage and an explicitly declared
+revision. A separate stdlib-only verification command checks the
+receipt before opt-in LoRA smoke or comparing to a local base model.
+
+This gate detects accidental artifact tampering and mismatched base
+metadata, but deliberately **does not** claim signed provenance,
+hashes of all base weights, checkpoint license verification, GPU
+execution, reproducibility, training-corpus rights, compiler results,
+real autocomplete quality or distribution approval. Existing adapters
+without a LineLoom receipt are ineligible for this specific comparator.
