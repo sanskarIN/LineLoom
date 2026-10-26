@@ -2,6 +2,13 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — development after v1.4.0 GitHub pre-release
+
+- **New manual support tool** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): copy an allowlisted, source-free support summary from the native sidebar, Quick Actions or Command Palette. Counts and last-check states only; optional latency measurements require diagnostics opt-in. No model names, files, endpoint URLs, source snippets, telemetry or network requests. The system clipboard is controlled by the host; review before sharing.
+- **Active-editor status correctness** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): clear previous model and file check outcomes on editor switches/edits/closes; reject late results from a former editor.
+- **Efficient explicit model discovery** ([PR #127](https://github.com/sanskarIN/LineLoom/pull/127)): abort stale, manually initiated Ollama model-list queries when superseded or invalidated, without adding background requests.
+- **Publisher unchanged:** `SanskarCodes.lineloom`, Marketplace and Open VSX links preserved. No tag, new VSIX, trained model, migration or registry publication from these changes. Physical editor accessibility and actual model-quality testing remain **NOT RUN**.
+
 ## v1.4.0 — GitHub pre-release (published 2026-10-26)
 
 - Bounded, profile-hashed automatic Ollama retry cooldown after transient HTTP/transport/timeout errors; manual inference bypass, no passive retry and no stored source context (PR #121).

@@ -10,6 +10,20 @@
 - **Independent distribution:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) listings use `SanskarCodes.lineloom` and are **not automatically updated by GitHub**. Open VSX v1.3.0 Stable was independently published and verified on 2026-10-25; the maintainer separately updated Marketplace to v1.3.0. Verify live registry versions before giving future install advice. GitHub Packages npm installer `@sanskarin/lineloom-cli` is independently published at **v0.1.0**, without CLI v0.2.0 verify or proposed v0.3.0 offline install.
 - **Outstanding quality evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows are not verified by the automated release. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60), [#79](https://github.com/sanskarIN/LineLoom/issues/79), and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
 
+## Post-preview source milestone (not released)
+
+- [PR #126](https://github.com/sanskarIN/LineLoom/pull/126): sanitized
+  clipboard support summary and editor-scoped manual-status invalidation.
+- [PR #127](https://github.com/sanskarIN/LineLoom/pull/127): explicit Ollama
+  model checks now abort obsolete pending discovery requests on settings,
+  trust and editor changes.
+- Both PRs passed mocked Linux extension-host, Windows/macOS/Linux CI,
+  dependency audit and VSIX candidate checks. These tests are not real-model
+  or physical keyboard/screen-reader acceptance. Published releases are unchanged.
+- **Publisher migration remains on hold.** Preserve
+  `SanskarCodes.lineloom` and all existing marketplace links until the
+  maintainer specifically requests and approves a migration plan.
+
 ## Forward-looking milestones
 
 | Target | State | Priority and proposed deliverables | Explicit gates |
