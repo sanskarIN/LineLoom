@@ -60,7 +60,8 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.ok(!text.includes("secret-model-tag"));
   assert.ok(!text.includes(baseline.fixtureSetSha256));
   assert.ok(!text.includes("rust-branch"));
-  assert.ok(!text.includes("prefix"));
+  assert.ok(!text.includes("fn double(value"));
+  assert.ok(!text.includes("private-source"));
 });
 
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
