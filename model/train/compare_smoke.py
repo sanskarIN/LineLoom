@@ -18,11 +18,13 @@ try:
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, read_public_fixtures
     )
+    from .integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
 except ImportError:
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, read_public_fixtures
     )
+    from integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
 
 MAX_REPORT_BYTES = 32 * 1024
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -81,6 +83,13 @@ def _validated_report(report: dict, kind: str) -> dict:
                 not SHA256.fullmatch(report[key])
                 for key in ("baseConfigSha256", "tokenizerSha256"))):
         raise SmokeReportRejected("ineligible-real-smoke-report")
+    if kind == "local-lora-adapter":
+        if (report.get("adapterReceiptVerified") is not True or
+                report.get("adapterReceiptProtocol") != ADAPTER_RECEIPT_PROTOCOL):
+            raise SmokeReportRejected("unverified-adapter")
+    elif (report.get("adapterReceiptVerified") is not False or
+          report.get("adapterReceiptProtocol") != "not-applicable"):
+        raise SmokeReportRejected("invalid-base-receipt")
     attempts = report.get("syntheticAttempts")
     exact = report.get("strictExactMatches")
     if (type(attempts) is not int or attempts != expected["syntheticFixtures"] or
