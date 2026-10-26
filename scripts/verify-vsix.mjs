@@ -31,6 +31,7 @@ try {
   for (const item of mustContain) assert.ok(entries.includes(item), "VSIX missing: " + item);
   assert.ok(!entries.some(x => /(^|\/)node_modules\//.test(x)), "VSIX must exclude node_modules");
   assert.ok(!entries.some(x => x.startsWith("extension/site/")), "VSIX must exclude the website");
+  assert.ok(!entries.some(x => x.startsWith("extension/model/")), "VSIX must exclude research, datasets and model scripts");
   assert.ok(!entries.some(x => x.startsWith("extension/model/")), "VSIX must exclude all training material and scripts");
   assert.ok(!entries.some(x => /(^|\/)\.env(\.|$)/.test(x)), "VSIX unexpectedly includes an environment file");
   assert.ok(!entries.some(x => /(^|\/)(?:test|tests|scripts|\.github|examples)\//.test(x)),
