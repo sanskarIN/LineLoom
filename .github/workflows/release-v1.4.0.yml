@@ -32,7 +32,7 @@ jobs:
           const p = JSON.parse(fs.readFileSync('package.json','utf8'));
           const l = JSON.parse(fs.readFileSync('package-lock.json','utf8'));
           if(p.name !== 'lineloom' || p.publisher !== 'SanskarCodes' ||
-             p.version !== '1.3.1' || l.version !== p.version ||
+             p.version !== '1.4.0' || l.version !== p.version ||
              l.packages?.['']?.version !== p.version ||
              p.devDependencies?.['@vscode/vsce'] !== '3.9.2')
             throw Error('Unexpected publisher, preview version or locked package identity');
@@ -55,12 +55,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          npx vsce package --pre-release --no-dependencies -o LineLoom-1.3.1.vsix
-          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.3.1.vsix
-          sha256sum LineLoom-1.3.1.vsix > LineLoom-1.3.1.sha256
-          sha256sum --check LineLoom-1.3.1.sha256
+          npx vsce package --pre-release --no-dependencies -o LineLoom-1.4.0.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.4.0.vsix
+          sha256sum LineLoom-1.4.0.vsix > LineLoom-1.4.0.sha256
+          sha256sum --check LineLoom-1.4.0.sha256
       - name: Install candidate in a clean isolated VS Code profile
-        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.3.1.vsix
+        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.4.0.vsix
       - name: Fetch and checksum-check the published v1.3.0 stable VSIX
         shell: bash
         run: |
@@ -72,7 +72,7 @@ jobs:
       - name: Upgrade published stable to preview with synthetic settings preserved
         env:
           LINELOOM_EXPECT_PRE_RELEASE: '1'
-        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.3.0.vsix LineLoom-1.3.1.vsix
+        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.3.0.vsix LineLoom-1.4.0.vsix
       - name: Reject existing v1.4.0 tag or release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -94,7 +94,7 @@ jobs:
         run: |
           set -euo pipefail
           gh release create v1.4.0 \
-            LineLoom-1.3.1.vsix LineLoom-1.3.1.sha256 \
+            LineLoom-1.4.0.vsix LineLoom-1.4.0.sha256 \
             --target "${GITHUB_SHA}" --prerelease --latest=false \
             --title "LineLoom v1.4.0 — Reliability & Model Evaluation Preview" \
             --notes-file docs/releases/v1.4.0.md
@@ -105,4 +105,4 @@ jobs:
         run: |
           set -euo pipefail
           gh api repos/sanskarIN/LineLoom/releases/tags/v1.4.0 \
-            --jq 'if (.prerelease == true and .draft == false and (.assets | map(.name) | sort) == ["LineLoom-1.3.1.sha256","LineLoom-1.3.1.vsix"]) then "PASS: preview release and both assets" else error("Unexpected preview metadata or assets") end'
+            --jq 'if (.prerelease == true and .draft == false and (.assets | map(.name) | sort) == ["LineLoom-1.4.0.sha256","LineLoom-1.4.0.vsix"]) then "PASS: preview release and both assets" else error("Unexpected preview metadata or assets") end'
