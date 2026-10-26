@@ -205,3 +205,17 @@ prints no generated code, and reports only source-free per-language
 strict matches. This is distinct from Ollama benchmark protocol v3;
 the two cannot be directly compared, and neither is a full
 correctness/accessibility/security evaluation.
+
+## Balanced local training-loop research (unreleased source)
+
+The opt-in LoRA prototype now provides a seeded, language-balanced
+microbatch sampler and **per-language validation loss** alongside
+sample-weighted and macro validation means. The separate train/validation/test
+boundaries remain enforced, and the test holdout is not passed to the
+training loop or validation metrics. Offline synthetic sampler tests require
+only Python standard library.
+
+This only improves experiment design and diagnostics. It does **not**
+mean any real weights were trained, that FIM output quality improved, or
+that a useful five-language dataset, real baseline, GPU or local adapter
+exists. [Experiment instructions](train/README.md).

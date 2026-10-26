@@ -34,7 +34,7 @@ python model/train/finetune.py \
 
 This example has a placeholder revision and deliberately cannot run as-is. The script refuses missing approvals/checkpoint, invalid hex revision, dataset-audit failures, truncated inputs, missing FIM IDs, unavailable CUDA and existing output directories. **Flags are human assertions, not cryptographic legal approvals.** Model loading is forced to local files, without remote code. Output is a locally stored **LoRA adapter only** with hashed files and sanitized numeric validation-loss metadata; held-out `test` examples are never tensorized or optimized. No full base model is copied or silently exported. The output directory is required to be outside the repository or inside the gitignored `model/runs/` path. Do not commit local manifests, training output, model cache, private paths or training logs.
 
-FIM loss is applied **only to the inserted middle and EOS tokens**, with the prefix and suffix masked as labels `-100`. Qwen FIM format: `<|fim_prefix|>prefix<|fim_suffix|>suffix<|fim_middle|>target`. Fixed experimental LoRA parameters are r=8, alpha=16, dropout=0.05 targeting query/value projections; AdamW, sequential bounded steps, deterministic seed. Requires realistic GPU memory and an independently confirmed compatible local environment.
+FIM loss is applied **only to the inserted middle and EOS tokens**, with the prefix and suffix masked as labels `-100`. Qwen FIM format: `<|fim_prefix|>prefix<|fim_suffix|>suffix<|fim_middle|>target`. Fixed experimental LoRA parameters are r=8, alpha=16, dropout=0.05 targeting query/value projections; AdamW with deterministic seeded, language-balanced train-only sampling and bounded optimizer steps. Requires realistic GPU memory and an independently confirmed compatible local environment.
 
 ## Evaluation/rollout gates
 
@@ -88,3 +88,45 @@ compiler tests, editor latency and tokenizer/FIM compatibility must all
 be tested on real approved hardware before any adapter/weights export.
 The script never exports GGUF, registers an Ollama model, automatically
 changes LineLoom settings or publishes to any service.
+
+## Seeded balanced training and per-language validation (development)
+
+The original prototype selected training records in manifest order, which
+could overrepresent a language when the records were grouped and the
+optimizer-step budget was small. The updated sampler uses a seed-local
+pseudo-random generator and **cycles through all five languages once per
+five microbatches** (with reproducible per-language reshuffling).
+At most one extra draw occurs in a partial cycle. Only manifest entries
+explicitly marked `train` may be sampled. The `validation` and `test`
+splits are rejected by the sampler; the test split is never tensorized
+or used to choose model parameters.
+
+The **default offline plan** also previews the scheduled language
+exposure as `plannedTrainingMicrobatches` and
+`plannedTrainingMicrobatchesByLanguage`. This can be reviewed without
+loading PyTorch, any model checkpoint or a GPU; plan-only metadata
+contains no code or source identifiers.
+
+Every real local experiment records:
+- `trainingSampler: "seeded-language-balanced-v1"`, fixed seed and
+  `trainingMicrobatchesByLanguage` exposure totals.
+- `validationLoss`: sample-weighted mean across **validation only**.
+- `validationMacroLoss`: unweighted mean of five language means.
+- `validationLossByLanguage` and `validationSamplesByLanguage`.
+
+All these metrics are **descriptive losses**, not code correctness,
+quality, fairness or acceptance scores. Oversampling a small language
+bucket only repeats the same examples; it does **not** create additional
+training data. Dataset proportions, larger independent held-out sets,
+learning curves, checkpoint selection, and real GPU reproducibility
+remain unresolved. No samples, paths, completions, or training snippets
+appear in printed metrics.
+
+```sh
+npm run test:model-training
+```
+
+The sampling tests use only synthetic in-memory record descriptors and
+Python standard library. They check seeded repeatability, distribution,
+bucket coverage, rejection of validation/test contamination, nonfinite
+losses and independence from the process-global PRNG.
