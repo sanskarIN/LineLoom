@@ -376,6 +376,7 @@
     "model:compare": "node scripts/model-eval-compare.mjs",
     "model:data-audit": "node scripts/model-data-audit.mjs",
     "test:model-data-audit": "node --test scripts/model-data-audit.test.mjs",
+    "model:adapter:verify": "python model/train/verify_adapter.py",
     "model:smoke:compare": "python model/train/compare_smoke.py",
     "test:model-training": "python -m unittest discover -s model/train -p test_*.py"
   },
