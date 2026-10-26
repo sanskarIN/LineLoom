@@ -85,3 +85,11 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   content fingerprint, mode, repetitions and numeric summary invariants.
   Per-language deltas help avoid hiding weaker C or C++ samples behind
   one total. No Ollama real-model measurements or trained model weights exist.
+
+
+- **Model data governance (post-v1.4.0 source):** opt-in,
+  read-only `model:data-audit` preflight for explicitly approved local
+  manifest files; fail-closed rights declarations, repo-group holdout splits,
+  duplicate/heuristic benchmark contamination, and obvious secrets.
+  No corpus was gathered, rights have not been approved and no training run
+  has been performed. Human review is required after a mechanical PASS.
