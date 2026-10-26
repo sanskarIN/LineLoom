@@ -55,13 +55,13 @@ async function evaluate(fixture, model, mode) {
     if (!response.ok || !response.body) throw new Error("http-failed");
     const parsed = await consumeOllamaStream(response.body, start);
     return {
-      language: fixture.language, category: fixture.category, ok: true,
+      fixtureId: fixture.id, language: fixture.language, category: fixture.category, ok: true,
       exact: normalizeGenerated(parsed.output) === fixture.expected,
       firstTokenMs: parsed.firstTokenMs, totalMs: performance.now() - start
     };
   } catch {
     // Do not print request, source, endpoint details, exception text, or model response.
-    return { language: fixture.language, category: fixture.category, ok: false, exact: false };
+    return { fixtureId: fixture.id, language: fixture.language, category: fixture.category, ok: false, exact: false };
   } finally {
     clearTimeout(timeout);
   }

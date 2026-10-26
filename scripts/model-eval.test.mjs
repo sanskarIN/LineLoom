@@ -128,3 +128,37 @@ test("model evaluator rejects unsupported category filters without making reques
     script, "--dry-run", "--category", "unreviewed"
   ], { encoding: "utf8", timeout: 5000, stdio: "pipe" }));
 });
+
+test("repeated synthetic fixture outcomes distinguish consistent and mixed strict matches", () => {
+  const measurements = [
+    { fixtureId: "rust-loop", language: "rust", category: "statement", ok: true, exact: true, totalMs: 10, firstTokenMs: 4 },
+    { fixtureId: "rust-loop", language: "rust", category: "statement", ok: true, exact: false, totalMs: 11, firstTokenMs: 5 },
+    { fixtureId: "cpp-const", language: "cpp", category: "type", ok: true, exact: true, totalMs: 12, firstTokenMs: 6 },
+    { fixtureId: "cpp-const", language: "cpp", category: "type", ok: true, exact: true, totalMs: 13, firstTokenMs: 7 },
+    { fixtureId: "python-indent", language: "python", category: "indentation", ok: false, exact: false },
+    { fixtureId: "python-indent", language: "python", category: "indentation", ok: true, exact: false, totalMs: 15, firstTokenMs: 8 }
+  ];
+  const summary = summarizeMeasurements(measurements, 3, "local-test", "fim");
+  assert.equal(summary.attempts, 6);
+  assert.equal(summary.strictExactMatches, 3);
+  assert.deepEqual(summary.fixtureOutcomes, {
+    evaluated: 3, repeated: 3, exactAtLeastOnce: 2,
+    exactEveryAttempt: 1, mixedExactOutcomes: 1
+  });
+  assert.equal(summary.perLanguage.rust.strictMatches, 1);
+  assert.equal(summary.perCategory.type.strictMatches, 2);
+  // Model outputs and even synthetic fixture IDs stay out of aggregate reporting.
+  assert.equal(JSON.stringify(summary).includes("rust-loop"), false);
+  assert.equal(JSON.stringify(summary).includes("python-indent"), false);
+});
+
+test("a single attempt cannot imply repeated-outcome stability", () => {
+  const summary = summarizeMeasurements([
+    { fixtureId: "single-test", language: "rust", category: "expression",
+      ok: true, exact: true, totalMs: 2, firstTokenMs: 1 }
+  ], 1, "local-test", "instruction");
+  assert.deepEqual(summary.fixtureOutcomes, {
+    evaluated: 1, repeated: 0, exactAtLeastOnce: 1,
+    exactEveryAttempt: 1, mixedExactOutcomes: 0
+  });
+});
