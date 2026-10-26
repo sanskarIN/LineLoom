@@ -112,3 +112,19 @@ Only offline plan/encoding/approval tests have been added and can run
 without a GPU. **No actual fine-tune, measured loss, approved corpus,
 quantization, model card or distributable model exists yet.** Data and
 checkpoint legal provenance still need independent review.
+
+## M3: optional local LoRA FIM training implementation (source milestone)
+
+`model/train/finetune.py` contains an executable opt-in local adapter
+experiment for a legally reviewed and separately provisioned
+Qwen2.5-Coder-0.5B **base** candidate. It uses FIM prefix/suffix/middle
+tokens, completion-only label masking, local validation-only loss, and
+small sequential LoRA optimizer steps. Only after passing the original
+offline data preflight and explicit checkpoint/rights approval flags
+can it load user-provided local safetensors; it writes an unreviewed PEFT
+adapter and sanitized SHA-256 metadata to a Git-ignored/outside-repo
+folder. The `test` split is never tokenized or optimized.
+
+[Usage, limitations and safety/rights gates](train/README.md).
+**No actual GPU/CPU training, dataset licensing approval, trained
+adapter, quantization, model card or model-release artifact yet exists.**
