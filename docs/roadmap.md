@@ -136,3 +136,12 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   regression tests in CI. **No local fine-tune was executed,
   no approved rights-checked corpus or weights exist, and no model
   release was published.** See [training instructions](../model/train/README.md).
+
+
+- **M3 early-adapter smoke (development after v1.4.1):** separate
+  local-only Python base/PEFT-adapter smoke against 30 original synthetic
+  probes, with offline planning, explicit reviewed-checkpoint gating and
+  fixed aggregate per-language reporting. No prompt/source/output logs,
+  downloads, registry publishing or automatic Ollama model migration.
+  Requires an actual approved model/adapter for real measurements;
+  no weights or measured quality are currently available.
