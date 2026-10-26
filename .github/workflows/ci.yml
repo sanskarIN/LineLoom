@@ -28,6 +28,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       - name: Install locked dependencies
         run: npm ci
       - name: Verify TypeScript, lint, unit tests and build
@@ -40,6 +43,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       - run: npm ci
       - run: npm run build
       - name: Run VS Code extension-host integration
@@ -53,6 +59,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
       - run: npm ci
       - run: npm run check
       - name: Build genuine stable-channel VSIX and checksum

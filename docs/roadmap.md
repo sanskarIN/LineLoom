@@ -124,3 +124,15 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   isolated in-memory transport tests now cover real request construction,
   full evaluation reporting, aborts, HTTP status/redirect failures and
   untrusted stream handling. A green test is not a real model benchmark.
+
+
+- **LineLoom Code M3 runnable LoRA experiment (development after v1.4.1):**
+  independently approved *local* Qwen2.5-Coder-0.5B base checkpoint
+  and private human-reviewed FIM dataset may be used with an opt-in
+  Python/PyTorch+PEFT adapter-training command. Prefix/suffix labels
+  are masked, training and validation splits remain distinct, the test
+  split is never used, and outputs remain excluded from Git/VSIX.
+  The default command does **only offline planning**, with pure Python
+  regression tests in CI. **No local fine-tune was executed,
+  no approved rights-checked corpus or weights exist, and no model
+  release was published.** See [training instructions](../model/train/README.md).
