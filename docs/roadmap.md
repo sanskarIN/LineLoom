@@ -1,6 +1,6 @@
 # LineLoom roadmap
 
-**Updated 2026-10-25 · Planned milestones are not implementation or release commitments.**
+**Updated 2026-10-26 · Planned milestones are not implementation or release commitments.**
 
 ## Current state (verified repository and GitHub release)
 
@@ -16,12 +16,12 @@
 | --- | --- | --- | --- |
 | **v1.3.1 — reliability preview** | **GitHub pre-release published** | Unicode completion safety, native sidebar next-action guidance, manually checked default and effective editor models, local file privacy | [Public preview and notes](releases/v1.3.1.md), [manual QA still outstanding](qa/v1.3.1-preview-acceptance.md); not a stable or registry release |
 | **CLI v0.2.0/v0.3.0** | Development candidates; not published | Offline local VSIX verification, then carefully reviewed offline installation from pinned artifacts | Independent [PR #92](https://github.com/sanskarIN/LineLoom/pull/92), package-only tests/security, real installs and version-specific GitHub Packages authorization |
-| **v1.4.0 — usability & quality** | **Model evaluation tooling in development**, no public release | 30-fixture, five-language categorized synthetic comparison harness, hardened NDJSON parsing, dedicated local model research, keyboard/accessible sidebar polish | No trained model or real results; privacy, on-device benchmarks, cross-platform QA and release approval still required |
+| **v1.4.0 — usability & quality** | **GitHub pre-release candidate only; not yet published** | 30-fixture, five-language synthetic evaluator and repeatability aggregates; native status clarity, accepted-item metrics, bounded p50/p95, automatic transient retry pause and explicit session reset | [Candidate notes](releases/v1.4.0.md), [manual QA NOT RUN](qa/v1.4.0-preview-acceptance.md), locked audit/VSIX/upgrade and separate GitHub-only publication |
 | **v1.4.x+ — language evaluation** | Research | Investigate C# and Dart opt-in support and model-specific prompting only if real samples justify them | VS Code language mapping, fixtures, bounded prompts, manual local model quality across OSs |
 | **v1.5.x+ — limited symbol intelligence** | RFC only | Explore optional developer-selected symbol/import hints with bounded parser effort | New opt-in privacy RFC, no automatic workspace scan or persistent indexing by default, independent I/O and security evaluation |
 | **v2.0.0 — additional local providers** | Research, not scheduled | Abstract backend transport without losing Ollama defaults | Explicit endpoint permissions, no cloud inference by default, strict stream decoding, cancel and budget equivalence |
 
-**The roadmap does not approve publication of any tag, VSIX, registry update or npm package.** Releases remain channel-specific and require explicit maintainer authorization.
+**The roadmap is not release evidence.** The v1.4.0 publisher is separately gated; no tag, VSIX, external registry or npm package is available until independently verified. Releases remain channel-specific and require maintainer authorization.
 
 ## Suggested next work order
 
