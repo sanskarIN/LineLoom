@@ -74,3 +74,23 @@ thermal or quantization equivalence, and completed-only latency percentiles
 are not representative when failures differ. Higher strict equality is not
 proof of safer/correct code. No actual Ollama model has been benchmarked here.
 This tool is unreleased development and not included in GitHub v1.4.0.
+
+
+## Dataset preparation safety gate (post-v1.4.0 source, unreleased)
+
+LineLoom Code now has a **read-only offline preflight** for potential training
+samples. For a local, independently reviewed, permissioned manifest:
+
+\`\`\`sh
+npm run test:model-data-audit
+npm run model:data-audit -- --manifest local-reviewed-dataset.json
+\`\`\`
+
+The audit checks language/split coverage, repository-group segregation,
+source revision and review declarations, duplicate and near-duplicate
+samples, overlap with the checked-in 30 synthetic evaluation fixtures,
+and conservative secret/PII red flags. It emits sanitized totals only;
+it does **not** train, copy, download, export, distribute, or persist
+any source. See [data governance](DATA_POLICY.md) for the private manifest
+schema, limitations, mandatory human reviews, and failure behavior.
+No approved training corpus or model weights exist yet.

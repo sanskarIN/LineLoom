@@ -16,3 +16,53 @@ Before accepting any training record:
 Potential data source for later *review*, **not automatically approved for use**: BigCode The Stack v2 and its documented license/provenance/opt-out workflows. Dataset availability and model-training rights must be rechecked for the chosen snapshot and downstream artifact.
 
 Model card and dataset card must disclose sources, exclusions, approximate language mix, evaluation contamination checks, unsafe-completion limitations, known license obligations and opt-out contact procedure before any model release.
+
+
+## Pre-training mechanical audit (unreleased development)
+
+Use the read-only, offline \`npm run model:data-audit -- --manifest local-reviewed-dataset.json\`
+**only for explicitly obtained, separately reviewed source**. This file is never
+checked in, auto-downloaded or discovered from VS Code. Maximum 1 MiB; up to
+256 records and 8,192 UTF-16 units of snippet content per record.
+Sample schema v1:
+
+\`\`\`json
+{
+  "schemaVersion": 1,
+  "samples": [
+    {
+      "id": "locally-reviewed-example-1",
+      "language": "rust",
+      "split": "train",
+      "repositoryGroup": "fork-family-1",
+      "sourceRevision": "0123456789abcdef0123456789abcdef01234567",
+      "spdxLicense": "MIT",
+      "rightsReviewed": true,
+      "optOutReviewed": true,
+      "attributionReviewed": true,
+      "prefix": "fn example() -> i32 { ",
+      "middle": "42",
+      "suffix": " }"
+    }
+  ]
+}
+\`\`\`
+
+The illustrated single record **does not pass** by itself: each real
+manifest needs reviewed train, validation and test samples from distinct
+repository/fork groups. All three Boolean review fields are human
+declarations, **not proof of permission or a substitute for legal review**.
+The allowlist of SPDX identifiers is intentionally narrow and is not a legal
+determination that training/redistribution is allowed.
+
+The tool refuses same-repository-group cross-split assignments, duplicate
+sample IDs and normalized exact duplicate code, and conservatively screens
+near-duplicate fragments (including checked-in original evaluation probes),
+obvious credentials, email addresses and hidden Unicode. Heuristics have
+both false negatives and false positives. Human red-team, attribution,
+copyright, current opt-out and independent secret scans **remain mandatory**.
+Output contains **counts and fixed warnings only**, never snippets, sample
+IDs, repository identities, revisions, full hashes or file paths. On failure,
+the exit code is nonzero and the error text is generic. No dataset export,
+download, training loop or server request occurs. Training authorization
+is a separate review gate.

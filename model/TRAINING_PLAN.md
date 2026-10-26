@@ -54,3 +54,16 @@ offline comparator for synthetic M0 reports enforces identical SHA-256
 fixture scope, prompt mode and run count before exposing source-free deltas
 per language and category. This is reproducibility infrastructure, not
 measured M2 model quality, successful training or redistribution approval.
+
+
+## M1 mechanical dataset preflight — development, not training
+
+A new \`model:data-audit\` command verifies **explicitly provided** records
+without creating train shards, collecting user workspaces, or downloading
+repos. It enforces human-attested rights/opt-out/attribution flags,
+repository-group split isolation, source-revision syntax, deduplication,
+heuristic evaluation overlap and obvious secret screening. Counts are
+source-free. It does not verify permission authenticity, detect all PII,
+ensure a corpus's license is compatible with a checkpoint, or make the model
+safe. Failing audit blocks the next step; passing audit only means mechanical
+preconditions hold and **never authorizes fine-tuning or model publication**.
