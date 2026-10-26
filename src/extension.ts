@@ -3,7 +3,9 @@ import { LANGUAGES, getLanguage, isLanguageEnabled } from "./languages/registry"
 import { normalizeLanguageModels, resolveLanguageModel } from "./settings/language-models";
 import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
-import { LineLoomSidebar } from "./ui/sidebar";
+import { LineLoomSidebar, endpointState } from "./ui/sidebar";
+import { formatSupportSummary } from "./ui/support-summary";
+import { invalidateEditorChecks } from "./ui/editor-checks";
 import { ModelReadinessSession } from "./ui/model-readiness";
 import { FilePrivacySession } from "./ui/file-privacy-session";
 import { quickActions } from "./ui/actions";
@@ -531,6 +533,36 @@ export function activate(context: vscode.ExtensionContext): void {
   });
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
+  command("lineloom.copySupportSummary", async () => {
+    const config = readConfig();
+    // Explicit local snapshot: never pass filenames, URI strings, actual model
+    // tags or endpoint origins into the report builder or clipboard.
+    const report = formatSupportSummary({
+      enabled: config.enabled,
+      autoTrigger: config.autoTrigger,
+      trustedWorkspace: vscode.workspace.isTrusted,
+      endpointState: endpointState(origin =>
+        context.globalState.get<string>("approvedRemoteOrigin") === origin),
+      engineState: currentState,
+      defaultModelCheck: modelReadiness.state,
+      activeModelCheck: activeModelReadiness.state,
+      activeFileCheck: filePrivacy.state,
+      diagnosticsEnabled: config.performanceDiagnostics,
+      relatedContextEnabled: config.crossFileContext,
+      relatedFileCount: engine?.getRelatedFileCount() ?? 0,
+      enabledLanguageCount: config.enabledLanguages.length,
+      languageOverrideCount: Object.keys(config.languageModels).length,
+      stats: engine?.getStats()
+    });
+    try {
+      await vscode.env.clipboard.writeText(report);
+      void vscode.window.showInformationMessage(
+        "LineLoom: sanitized, source-free session summary copied. Review before sharing."
+      );
+    } catch {
+      void vscode.window.showWarningMessage("LineLoom: clipboard copy failed; no report was saved.");
+    }
+  });
   // Privacy eligibility measurements are in memory only. Permit an immediate
   // user-initiated reset without changing the diagnostics opt-in preference.
   command("lineloom.resetSessionActivity", async () => {
@@ -593,7 +625,7 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
-      filePrivacy.clear();
+      invalidateEditorChecks(activeModelReadiness, filePrivacy);
       relatedPickerRevision++;
       engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
@@ -604,14 +636,13 @@ export function activate(context: vscode.ExtensionContext): void {
     }),
     vscode.workspace.onDidChangeTextDocument((event) => {
       if (event.document === vscode.window.activeTextEditor?.document) {
-        filePrivacy.clear();
-        activeModelReadiness.clear();
+        invalidateEditorChecks(activeModelReadiness, filePrivacy);
         sidebar.refresh();
       }
       engine?.onDocumentChanged(event);
     }),
     vscode.workspace.onDidCloseTextDocument(() => {
-      filePrivacy.clear();
+      invalidateEditorChecks(activeModelReadiness, filePrivacy);
       engine?.cancelIfEditorChanged(vscode.window.activeTextEditor);
       sidebar.refresh();
     })

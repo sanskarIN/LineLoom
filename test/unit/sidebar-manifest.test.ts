@@ -26,6 +26,9 @@ describe("Activity Bar control center registration", () => {
     expect(manifest.contributes.commands.some(item => item.command === "lineloom.refreshSidebar")).toBe(true);
     expect(manifest.contributes.commands.some(item => item.command === "lineloom.resetSessionActivity")).toBe(true);
     expect(manifest.contributes.commands).toContainEqual(expect.objectContaining({
+      command: "lineloom.copySupportSummary", title: "Copy Sanitized Support Summary"
+    }));
+    expect(manifest.contributes.commands).toContainEqual(expect.objectContaining({
       command: "lineloom.cancel", title: "Stop Current Generation"
     }));
     expect(manifest.contributes.menus["view/title"]).toContainEqual({

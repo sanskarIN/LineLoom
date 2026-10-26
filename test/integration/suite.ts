@@ -7,6 +7,7 @@ import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
 import { ModelReadinessSession } from "../../src/ui/model-readiness";
 import { FilePrivacySession } from "../../src/ui/file-privacy-session";
+import { invalidateEditorChecks } from "../../src/ui/editor-checks";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
 import { collectRelatedText, isSupportedRelatedCandidate } from "../../src/context/related-editor";
@@ -20,7 +21,7 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings", "lineloom.resetSessionActivity",
+    "lineloom.diagnostics", "lineloom.copySupportSummary", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings", "lineloom.resetSessionActivity",
     "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
@@ -127,6 +128,15 @@ export async function run(): Promise<void> {
   offlineSidebar.refresh();
   const resetPrivacy = privacyEntry();
   assert.ok(resetPrivacy?.kind === "item" && resetPrivacy.item.description?.includes("Not checked"));
+  // Verify that switching/closing an editor resets both session-only manual
+  // statuses and makes old asynchronous readiness responses obsolete.
+  const obsoleteModelToken = activeReadiness.begin();
+  const obsoletePrivacyToken = privacyStatus.begin();
+  invalidateEditorChecks(activeReadiness, privacyStatus);
+  assert.equal(activeReadiness.state, "not-checked");
+  assert.equal(privacyStatus.state, "not-checked");
+  assert.equal(activeReadiness.finish(obsoleteModelToken, "available"), false);
+  assert.equal(privacyStatus.finish(obsoletePrivacyToken, "allowed"), false);
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
@@ -366,6 +376,19 @@ export async function run(): Promise<void> {
         "The explicit active-model command must list models once, even with an override");
       assert.equal(generationCalls, beforeCheckGenerations, "Checking the active model must not send source");
       await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+      // The user-invoked clipboard action should never probe Ollama or
+      // contain filenames, endpoint URLs, prompts or model identity.
+      const beforeCopyGenerations = generationCalls;
+      const beforeCopyLists = modelListCalls;
+      await vscode.commands.executeCommand("lineloom.copySupportSummary");
+      const supportText = await vscode.env.clipboard.readText();
+      assert.ok(supportText.includes("LineLoom sanitized support summary"));
+      assert.ok(supportText.includes("Endpoint category: loopback"));
+      assert.ok(!supportText.includes(endpoint), "Do not copy the loopback URL or port");
+      assert.ok(!supportText.includes("lineloom-test:latest"), "Do not copy actual model tags");
+      assert.ok(!supportText.includes("allowed.ts"), "Do not copy document identities");
+      assert.equal(generationCalls, beforeCopyGenerations, "Clipboard copy must not infer");
+      assert.equal(modelListCalls, beforeCopyLists, "Clipboard copy must not discover models");
       // Diagnostics must capture only aggregate timings after explicit opt-in.
       resetEligibilityTimings();
       await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
