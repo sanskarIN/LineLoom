@@ -195,3 +195,13 @@ FIM encoding and approval gates without downloading data or weights.
 quality measurements or deployable model were created by this source
 change.** The 15-record mechanical audit minimum cannot produce a
 useful trained model, and reviewed licensing/provenance remain required.
+
+
+**Local FIM adapter verification (development after v1.4.1):** a separate
+[optional Python smoke runner](train/README.md) supports a plan-only
+mode and an explicit opt-in local base-versus-LoRA-adapter check over
+the original 30 synthetic fixtures. It runs no network requests,
+prints no generated code, and reports only source-free per-language
+strict matches. This is distinct from Ollama benchmark protocol v3;
+the two cannot be directly compared, and neither is a full
+correctness/accessibility/security evaluation.
