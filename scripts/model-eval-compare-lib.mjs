@@ -8,6 +8,7 @@
 import {
   EVAL_BENCHMARK_PROTOCOL, EVAL_LANGUAGES, EVAL_CATEGORIES
 } from "./model-eval-lib.mjs";
+import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 
 const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v);
 const integer = (v, min = 0, max = 1_000_000) =>
@@ -63,6 +64,21 @@ export function validateComparableReport(raw) {
       throw Error("incomplete-percentiles");
     }
   }
+  const format = raw.formatDiagnostics;
+  if (!isObject(format) || !integer(format.inspectedCompleted) ||
+      format.inspectedCompleted !== raw.completed ||
+      !integer(format.completedWithoutFormatSignals) ||
+      format.completedWithoutFormatSignals > raw.completed ||
+      !isObject(format.signals) ||
+      Object.keys(format.signals).length !== FORMAT_SIGNAL_NAMES.length ||
+      Object.keys(format.signals).some(key => !FORMAT_SIGNAL_NAMES.includes(key)) ||
+      !FORMAT_SIGNAL_NAMES.every(key => integer(format.signals[key]) && format.signals[key] <= raw.completed) ||
+      (format.completedWithoutFormatSignals === raw.completed &&
+        FORMAT_SIGNAL_NAMES.some(key => format.signals[key] !== 0)) ||
+      (format.completedWithoutFormatSignals < raw.completed &&
+        FORMAT_SIGNAL_NAMES.every(key => format.signals[key] === 0))) {
+    throw Error("invalid-format-diagnostics");
+  }
   const outcome = raw.fixtureOutcomes;
   if (!isObject(outcome) || ![
     "evaluated", "repeated", "exactAtLeastOnce", "exactEveryAttempt", "mixedExactOutcomes"
@@ -93,6 +109,11 @@ export function validateComparableReport(raw) {
     perCategory: validateBreakdown(
       raw.perCategory, EVAL_CATEGORIES, raw.attempts, raw.completed, raw.strictExactMatches
     ),
+    formatDiagnostics: {
+      inspectedCompleted: format.inspectedCompleted,
+      completedWithoutFormatSignals: format.completedWithoutFormatSignals,
+      signals: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(key => [key, format.signals[key]]))
+    },
     fixtureOutcomes: {
       evaluated: outcome.evaluated, repeated: outcome.repeated,
       exactAtLeastOnce: outcome.exactAtLeastOnce,
@@ -148,10 +169,16 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       [k, candidate.perLanguage[k].strictMatches - baseline.perLanguage[k].strictMatches])),
     perCategoryStrictMatchDelta: Object.fromEntries(EVAL_CATEGORIES.map(k =>
       [k, candidate.perCategory[k].strictMatches - baseline.perCategory[k].strictMatches])),
+    completionFormatSignalDelta: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
+      [name, candidate.formatDiagnostics.signals[name] - baseline.formatDiagnostics.signals[name]])),
+    completedWithoutFormatSignalDelta:
+      candidate.formatDiagnostics.completedWithoutFormatSignals -
+      baseline.formatDiagnostics.completedWithoutFormatSignals,
     warnings: [
       "Strict equality on original synthetic fixtures is not compile correctness, semantic quality, or editor acceptance.",
       "The file hash and prompt mode match, but hardware, quantization, temperature drift, cold/warm state and runtime conditions require manual verification.",
       "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
+      "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
       "No real-model comparison was performed by the offline tool."
     ]
   };

@@ -94,3 +94,23 @@ it does **not** train, copy, download, export, distribute, or persist
 any source. See [data governance](DATA_POLICY.md) for the private manifest
 schema, limitations, mandatory human reviews, and failure behavior.
 No approved training corpus or model weights exist yet.
+
+
+## Completion format diagnostics (post-v1.4.0 development, not released)
+
+The local-only benchmark now distinguishes **seven conservative format
+signals** from strict exact-match equality: empty output, markdown fencing,
+chat preambles, model protocol tokens, unsafe/hidden Unicode, copied prefix
+text and copied suffix text. Completed suggestions can have multiple flags.
+No generated text, snippets or per-fixture flags are written to reports.
+Only aggregate counts and a count of completions with no detected format
+flags are included.
+
+The benchmark protocol identifier is now **`lineloom-synthetic-v2`**.
+Existing v1 JSON reports are **not comparable** with v2: rerun both baseline
+and candidate models under the same new protocol rather than quietly
+mixing scoring definitions. The offline comparator now reports per-signal
+candidate-minus-baseline counts and rejects missing/inconsistent signal
+summaries. Signals can be false positives or false negatives and do not
+prove compilability, safety, relevance, acceptance or model superiority.
+No actual Ollama baseline measurements have been made by this change.

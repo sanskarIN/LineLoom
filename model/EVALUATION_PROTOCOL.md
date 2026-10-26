@@ -137,3 +137,19 @@ This does not establish matching runtime/hardware, independent statistical
 significance, correctness, user acceptance or actual first-party model
 progress. No physical model run or benchmark observation was performed by
 the implementation.
+
+
+## 8. Conservative completion-format signals (v2 development)
+
+The report records aggregate counts for `empty`, `markdownFence`,
+`chatPreamble`, `specialToken`, `unsafeUnicode`, `prefixEcho`,
+and `suffixEcho`, plus inspected completions and completions without any
+detected format flag. Multiple signals can apply to one completion; do
+not sum these counts to derive a failure rate. A token/code continuation
+may be semantically wrong despite no format flags. Manual editor review
+and separately isolated compiler checks are still required.
+
+Reports now specify benchmark protocol `lineloom-synthetic-v2`, and the
+comparison command refuses old v1 or mixed-protocol reports. Do not
+compare new v2 signal counts with prior v1 runs or call them a quality
+benchmark until actual local model evidence has been collected.

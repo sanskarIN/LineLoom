@@ -22,7 +22,7 @@ function report({ runs = 2, model = "local-test-a", count = 1 } = {}) {
       const exact = index < count;
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
-        ok: true, exact, firstTokenMs: 10 + run, totalMs: 30 + run
+        ok: true, exact, formatSignals: [], firstTokenMs: 10 + run, totalMs: 30 + run
       });
     }
   }
@@ -49,6 +49,8 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.equal(result.syntheticFixtures, 30);
   assert.equal(result.candidateMinusBaseline.strictExactMatches, 4);
   assert.equal(result.candidateMinusBaseline.failed, 0);
+  assert.equal(result.completedWithoutFormatSignalDelta, 0);
+  assert.equal(result.completionFormatSignalDelta.markdownFence, 0);
   const expectedRustDelta = fixtures.slice(1, 3).filter(f => f.language === "rust").length * 2;
   assert.equal(result.perLanguageStrictMatchDelta.rust, expectedRustDelta);
   assert.equal(Object.values(result.perLanguageStrictMatchDelta).reduce((a, b) => a + b, 0), 4);
@@ -58,7 +60,8 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.ok(!text.includes("secret-model-tag"));
   assert.ok(!text.includes(baseline.fixtureSetSha256));
   assert.ok(!text.includes("rust-branch"));
-  assert.ok(!text.includes("prefix"));
+  assert.ok(!text.includes("fn double(value"));
+  assert.ok(!text.includes("private-source"));
 });
 
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
@@ -70,6 +73,11 @@ test("old, mismatched and inconsistent benchmark reports fail closed", () => {
     { ...valid, failed: 4 }, { ...valid, strictExactMatches: 61 },
     { ...valid, completionP95Ms: -1 }, { ...valid, completionP95Ms: "fast" },
     { ...valid, perLanguage: { rust: {} } },
+    { ...valid, formatDiagnostics: undefined },
+    { ...valid, formatDiagnostics: { ...valid.formatDiagnostics, inspectedCompleted: 0 } },
+    { ...valid, formatDiagnostics: { ...valid.formatDiagnostics, signals: {
+      ...valid.formatDiagnostics.signals, markdownFence: 999
+    } } },
     { ...valid, fixtureOutcomes: { ...valid.fixtureOutcomes, evaluated: 0 } }
   ];
   for (const item of invalid) assert.throws(() => compareModelReports(valid, item));

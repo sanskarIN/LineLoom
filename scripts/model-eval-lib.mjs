@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 
 /**
  * Pure, dependency-free helpers for an opt-in, loopback-only synthetic benchmark.
@@ -8,7 +9,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v1";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v2";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -119,6 +120,11 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
       strictMatches: matches.filter(item => item.ok && item.exact).length
     }];
   }));
+  const inspectedCompleted = completed.filter(x => Array.isArray(x.formatSignals)).length;
+  const formatSignalCounts = Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
+    [name, completed.filter(x => Array.isArray(x.formatSignals) && x.formatSignals.includes(name)).length]));
+  const completedWithoutFormatSignals = completed.filter(x =>
+    Array.isArray(x.formatSignals) && x.formatSignals.length === 0).length;
   const perLanguage = breakdown(EVAL_LANGUAGES, "language");
   const perCategory = breakdown(EVAL_CATEGORIES, "category");
   return {
@@ -128,6 +134,7 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
     completionP50Ms: percentile(totalTimes, 0.5), completionP95Ms: percentile(totalTimes, 0.95),
     firstTokenP50Ms: percentile(tokenTimes, 0.5), firstTokenP95Ms: percentile(tokenTimes, 0.95),
     perLanguage, perCategory, fixtureOutcomes,
+    formatDiagnostics: { inspectedCompleted, completedWithoutFormatSignals, signals: formatSignalCounts },
     disclaimer: "Strict synthetic continuation equality only; repeated attempts are not an independent quality study, human acceptance, compile correctness or model readiness."
   };
 }
