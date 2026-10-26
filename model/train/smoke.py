@@ -29,9 +29,15 @@ try:
     from .smoke_report import (
         fingerprints, hash_local_metadata_file, read_public_fixtures
     )
+    from .integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
+    )
 except ImportError:
     from smoke_report import (
         fingerprints, hash_local_metadata_file, read_public_fixtures
+    )
+    from integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
     )
 
 
@@ -81,6 +87,12 @@ def validate_local_adapter(path: Path) -> Path:
 
 def run_local(fixture_set: list[dict], args) -> dict:
     """Only local model files; optional PEFT adapter is never uploaded/merged."""
+    # Fail closed before importing ML frameworks or loading any weights:
+    # merely having adapter.safetensors is insufficient for comparison.
+    if args.adapter_dir:
+        verify_training_receipt(
+            Path(args.adapter_dir), Path(args.base_dir), args.base_revision
+        )
     os.environ["HF_HUB_OFFLINE"] = "1"
     os.environ["TRANSFORMERS_OFFLINE"] = "1"
     os.environ["HF_DATASETS_OFFLINE"] = "1"
@@ -149,6 +161,10 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
         "artifactKind": "local-lora-adapter" if args.adapter_dir else "local-base-model",
+        "adapterReceiptVerified": bool(args.adapter_dir),
+        "adapterReceiptProtocol": (
+            ADAPTER_RECEIPT_PROTOCOL if args.adapter_dir else "not-applicable"
+        ),
         **fingerprints(fixture_set, args.max_new_tokens),
         "selectedLanguage": args.language,
         "baseRevisionDeclared": args.base_revision,
