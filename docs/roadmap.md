@@ -59,3 +59,8 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   `SanskarCodes.lineloom` identity, installation paths and registry listings
   remain unchanged until the maintainer explicitly authorizes a future
   publisher/extension-ID migration, rollback plan and separate channel checks.
+
+
+- **Manual model check efficiency (post-v1.4.0 development):** abort obsolete,
+  user-invoked model-list requests when the editor or configuration changes,
+  without adding passive probes or persistent network state.

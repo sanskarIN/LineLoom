@@ -131,8 +131,10 @@ export async function run(): Promise<void> {
   // Verify that switching/closing an editor resets both session-only manual
   // statuses and makes old asynchronous readiness responses obsolete.
   const obsoleteModelToken = activeReadiness.begin();
+  const obsoleteSignal = activeReadiness.signalFor(obsoleteModelToken);
   const obsoletePrivacyToken = privacyStatus.begin();
   invalidateEditorChecks(activeReadiness, privacyStatus);
+  assert.equal(obsoleteSignal.aborted, true, "Editor invalidation aborts obsolete model check");
   assert.equal(activeReadiness.state, "not-checked");
   assert.equal(privacyStatus.state, "not-checked");
   assert.equal(activeReadiness.finish(obsoleteModelToken, "available"), false);

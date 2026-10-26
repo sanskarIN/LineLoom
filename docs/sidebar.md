@@ -197,3 +197,16 @@ cannot restore an obsolete result. This fixes stale manual readiness
 information after moving between files with different language overrides.
 Unit and mocked editor-host coverage guard these privacy boundaries.
 Real desktop and screen-reader acceptance remains **NOT RUN**.
+
+
+## Post-v1.4.0 development: cancellation of outdated model checks (unreleased)
+
+**Check Ollama Connection** and **Check Active Editor Model** now send a
+cancellable signal with each explicitly requested model-list check. Starting
+another check, changing editor, changing settings, or invalidating the manual
+status aborts the outdated request instead of leaving unnecessary discovery
+work running. Previously returned status remains session-only; a late check
+cannot reintroduce a prior editor's model result. Cancellation does not undo
+bytes a remote service has already received. There are no automatic network
+checks, downloads, or telemetry. Automated tests verify abort and stale-token
+behavior; real physical-device/model acceptance remains **NOT RUN**.
