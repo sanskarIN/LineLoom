@@ -19,8 +19,16 @@ import sys
 
 try:
     from .sampling import balanced_sample_indices, validation_metrics
+    from .integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
+        adapter_artifact_hashes, base_metadata_hashes
+    )
 except ImportError:
     from sampling import balanced_sample_indices, validation_metrics
+    from integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
+        adapter_artifact_hashes, base_metadata_hashes
+    )
 
 ROOT = Path(__file__).resolve().parents[2]
 SPLITS = ("train", "validation", "test")
@@ -261,18 +269,18 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # PEFT adapter only; base model is NEVER copied, merged or exported.
     adapter_dir = output_dir / "adapter"
     model.save_pretrained(str(adapter_dir), safe_serialization=True)
-    config_digest = hashlib.sha256((model_dir / "config.json").read_bytes()).hexdigest()
-    artifact_hashes = {}
-    for item in sorted(adapter_dir.rglob("*")):
-        if item.is_file():
-            artifact_hashes[item.name] = hashlib.sha256(item.read_bytes()).hexdigest()
+    # Hash actual bytes after saving. Relative file keys avoid collisions
+    # between equal basenames in different PEFT subfolders.
+    artifact_hashes = adapter_artifact_hashes(adapter_dir)
+    base_hashes = base_metadata_hashes(model_dir)
     result = {
         "stage": "LOCAL_UNREVIEWED_ADAPTER_EXPERIMENT",
         "trainingExecuted": True,
         "published": False,
         "dataAudit": "MECHANICAL_CHECKS_PASS_ONLY",
         "trainingManifestSha256": data_digest,
-        "baseConfigSha256": config_digest,
+        "adapterReceiptProtocol": ADAPTER_RECEIPT_PROTOCOL,
+        **base_hashes,
         "baseRevisionDeclared": args.base_revision,
         "optimizerSteps": args.steps,
         "gradientAccumulation": args.gradient_accumulation,
@@ -338,7 +346,7 @@ def main() -> int:
         # No raw source, model output, file paths, repository names or tokens.
         print(json.dumps(result, indent=2))
         return 0
-    except (ExperimentRejected, OSError, ValueError, RuntimeError):
+    except (ExperimentRejected, IntegrityRejected, OSError, ValueError, RuntimeError):
         print("LineLoom Code local experiment was rejected or failed; review local gates and dependencies.", file=sys.stderr)
         return 1
 
