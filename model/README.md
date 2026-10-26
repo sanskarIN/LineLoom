@@ -259,3 +259,20 @@ measured inference**. Report hashes do not prove the identity of
 model weights, adapter application or equivalent execution hardware.
 Read the [full local model instructions](train/README.md) and do not
 compare this HF v2 protocol with Ollama synthetic v3.
+
+## Locally verifiable LoRA adapter receipts (not a model release)
+
+The local LoRA trainer now writes an **unreviewed, source-free**
+`lineloom-local-adapter-receipt-v1` metadata record with relative
+adapter file SHA-256 digests, local base config/tokenizer digests,
+training counts and the declared checkpoint revision. An offline
+`npm run model:adapter:verify -- --base-dir ... --base-revision ... --adapter-dir ...`
+command detects missing, changed, unexpected or symlinked adapter files.
+Actual adapter-vs-base HF smoke and comparisons require this matching
+receipt before treating an adapter as eligible.
+
+The receipt detects accidental mismatches, **not** whether weights
+were honestly trained, legally permissioned, correct or authentic.
+The full base weights are not hashed or proven and the receipt is not
+signed. No checkpoint, dataset, trained weights, GPU run or released
+model was produced by this code. See [local details](train/README.md).
