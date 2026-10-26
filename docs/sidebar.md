@@ -164,3 +164,16 @@ generations cannot repopulate counters after reset. The development tests
 cover registration, counter erasure, stale accepted-item tokens and untouched
 preferences with a mocked VS Code extension host. Physical accessibility
 and real Ollama validation remain **NOT RUN**.
+
+
+## v1.4.0 public preview status (2026-10-26)
+
+The features described above as post-v1.3.1 development—including accepted-item
+counters, status clarification, opt-in latency percentiles, transient retry
+cooldown and session-activity reset—are now bundled in the verified
+[GitHub v1.4.0 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0).
+Earlier historical notes retain their original implementation-stage wording.
+They do **not** mean these features are absent from v1.4.0. The latest
+GitHub stable is still v1.3.0; the extension marketplaces were not updated.
+Physical keyboard/screen-reader testing and real model-quality acceptance
+remain **NOT RUN**.

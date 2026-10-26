@@ -21,27 +21,29 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
-## v1.4.0 GitHub pre-release candidate — unpublished
+## v1.4.0 GitHub pre-release — published 2026-10-26
 
-The [v1.4.0 release plan](docs/releases/v1.4.0.md) collects multiple completed source changes: bounded transient Ollama retry cooldowns, explicit session-activity reset, source-free acceptance and inference timing aggregates, clearer model-readiness wording and the new dedicated model evaluation protocol. **There is no v1.4.0 public VSIX yet.** This is an opt-in GitHub preview candidate, not an approved stable or registry update. Human real-model, physical OS and accessibility acceptance remain **NOT RUN**. The latest verified GitHub stable stays v1.3.0; GitHub preview v1.3.1 remains available.
+[**Download GitHub v1.4.0 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) with its genuine VS Code preview-channel [**VSIX**](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.sha256). The [publisher completed successfully](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) after audits, mocked editor-host testing, digest validation, clean installation and a pinned v1.3.0 stable-to-preview upgrade.
 
-## Inference latency percentiles — development only
+**What's new:** bounded transient Ollama automatic retry cooldowns, confirmation-gated session-activity reset, source-free acceptance and inference timing aggregates, clearer model-readiness wording, and dedicated model evaluation tooling. See [versioned release notes](docs/releases/v1.4.0.md) and [manual QA checklist](docs/qa/v1.4.0-preview-acceptance.md). Physical Windows/macOS/Linux human accessibility and actual Ollama quality are still **NOT RUN**. The latest stable remains **v1.3.0**, and Marketplace/Open VSX/npm were not updated by this GitHub preview.
 
-With `lineloom.performanceDiagnostics` enabled, LineLoom now computes **rolling p50/p95** from up to 64 successful Ollama request durations, exposes them in native Session Activity and Diagnostics, and offers **Reset Inference Timing Samples**. Values are source-free, never persisted, erased on opt-out and protected from stale in-flight results. Suggestion counters remain unchanged after a timing reset. **No real-model latency benchmark has been run**, and this work is not in the existing stable/preview/registry packages. See [sidebar timing/privacy documentation](docs/sidebar.md).
+## Inference latency percentiles — in GitHub v1.4.0 preview
 
-## Native readiness clarity — development only
+With `lineloom.performanceDiagnostics` enabled, LineLoom now computes **rolling p50/p95** from up to 64 successful Ollama request durations, exposes them in native Session Activity and Diagnostics, and offers **Reset Inference Timing Samples**. Values are source-free, never persisted, erased on opt-out and protected from stale in-flight results. Suggestion counters remain unchanged after a timing reset. **No real-model latency benchmark has been run**, and this feature is included in the GitHub v1.4.0 preview, not in v1.3.0 stable or either independent registry. See [sidebar timing/privacy documentation](docs/sidebar.md).
 
-The status bar differentiates **autocomplete enabled** from **model availability actually checked**. While explicit local model or file-policy checks are running, the sidebar displays non-clickable progress wording. No passive Ollama calls, file reads or new endpoint consent are introduced. See [sidebar documentation](docs/sidebar.md). This work is not in the published stable/preview packages.
+## Native readiness clarity — in GitHub v1.4.0 preview
 
-## Session acceptance metrics — development only
+The status bar differentiates **autocomplete enabled** from **model availability actually checked**. While explicit local model or file-policy checks are running, the sidebar displays non-clickable progress wording. No passive Ollama calls, file reads or new endpoint consent are introduced. See [sidebar documentation](docs/sidebar.md). This feature is in the GitHub v1.4.0 preview, but not the v1.3.0 stable or independent registries.
 
-The unreleased VS Code extension code distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and this work is not in the v1.3.0 stable or v1.3.1 preview packages. See [sidebar privacy and status](docs/sidebar.md).
+## Session acceptance metrics — in GitHub v1.4.0 preview
+
+The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview. See [sidebar privacy and status](docs/sidebar.md).
 
 ## Dedicated code-completion model — development track (not released)
 
 A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and **30 original categorized synthetic fixtures** for **Rust, C, C++, Python and TypeScript**. The evaluator has strict bounded stream decoding and language/category-level aggregate results. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).
 
-The latest **GitHub preview v1.3.1** was published on 2026-10-25 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1). It remains a pre-release, not a v1.4.0 model release; the stable remains v1.3.0.
+The latest **GitHub preview v1.4.0** was published on 2026-10-26 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0). This does **not** include a trained first-party model; v1.3.0 remains stable.
 
 ## v1.3.0 stable on GitHub (released 2026-10-25)
 
@@ -165,7 +167,7 @@ real-model or physical-device acceptance. The
 and [release readiness tracker #60](https://github.com/sanskarIN/LineLoom/issues/60)
 track the remaining gates.
 
-**No standalone v1.2.5 GitHub release was published.** Its merged source changes were included in the later **v1.3.0 GitHub stable VSIX**. The latest GitHub testing preview is **v1.3.1**; the older v1.2.4 preview remains available. GitHub publication did not update either external extension marketplace.
+**No standalone v1.2.5 GitHub release was published.** Its merged source changes were included in the later **v1.3.0 GitHub stable VSIX**. The latest GitHub testing preview is **v1.4.0**; the older v1.2.4 preview remains available. GitHub publication did not update either external extension marketplace.
 
 ## Install LineLoom
 

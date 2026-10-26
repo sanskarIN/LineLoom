@@ -2,14 +2,14 @@
 
 All notable changes follow Semantic Versioning.
 
-## v1.4.0 — GitHub pre-release candidate (publication pending)
+## v1.4.0 — GitHub pre-release (published 2026-10-26)
 
 - Bounded, profile-hashed automatic Ollama retry cooldown after transient HTTP/transport/timeout errors; manual inference bypass, no passive retry and no stored source context (PR #121).
 - Confirmation-gated **Reset Session Activity** clears ephemeral counts, timing samples, accepted-item tokens and cooldown, while preserving settings and independently authorized related-file selection (PR #122).
 - Session-only accepted-suggestion callback count distinct from suggestions offered (PR #116); optional bounded 64-sample inference duration p50/p95 and reset (PR #118).
 - Native status bar and sidebar recovery clarity for unverified model/file states and pending manual checks (PR #117).
 - Extend developer-only synthetic FIM evaluation with aggregate repeated-fixture outcomes (PR #119) and a reproducible, privacy-safe local baseline protocol (PR #120). **No trained model weights or real model benchmark results.**
-- **Publication pending:** v1.4.0 has no verified GitHub pre-release VSIX yet. Four moderate development-only transitive advisories remain under security review. Physical Windows/macOS/Linux, real Ollama model quality and accessibility acceptance remain **NOT RUN**. Marketplace, Open VSX and separately versioned npm CLI remain unchanged.
+- **Published:** [GitHub v1.4.0 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) with preview-channel VSIX and SHA-256, verified by [publisher workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) including isolated stable-to-preview upgrade. Four moderate development-only transitive advisories remain under security review. Physical Windows/macOS/Linux, real Ollama model quality and accessibility acceptance remain **NOT RUN**. Stable v1.3.0, Marketplace, Open VSX and separately versioned npm CLI remain unchanged.
 
 
 ## v1.3.1 — GitHub pre-release (2026-10-25)
