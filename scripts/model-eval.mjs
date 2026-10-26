@@ -12,6 +12,7 @@ import {
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
 import { consumeOllamaStream } from "./model-eval-stream.mjs";
+import { classifyCompletionFormat } from "./model-eval-quality.mjs";
 
 function cli(argv) {
   const options = { model: "qwen2.5-coder:1.5b", runs: 1, mode: "auto", language: "all", category: "all", dryRun: false };
@@ -58,6 +59,7 @@ async function evaluate(fixture, model, mode) {
     return {
       fixtureId: fixture.id, language: fixture.language, category: fixture.category, ok: true,
       exact: normalizeGenerated(parsed.output) === fixture.expected,
+      formatSignals: classifyCompletionFormat(parsed.output, fixture),
       firstTokenMs: parsed.firstTokenMs, totalMs: performance.now() - start
     };
   } catch {

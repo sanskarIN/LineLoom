@@ -22,7 +22,7 @@ function report({ runs = 2, model = "local-test-a", count = 1 } = {}) {
       const exact = index < count;
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
-        ok: true, exact, firstTokenMs: 10 + run, totalMs: 30 + run
+        ok: true, exact, formatSignals: [], firstTokenMs: 10 + run, totalMs: 30 + run
       });
     }
   }
