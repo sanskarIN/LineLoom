@@ -84,3 +84,11 @@ to occur in every split, verifies repo-group holdout consistency and
 screens even lightly modified public benchmark probes via character
 shingles. This mechanical 15-sample minimum is not a meaningful corpus,
 a statistically powered holdout or training authorization.
+
+
+**M2 reproducibility infrastructure (unreleased post-v1.4.1 source):**
+synthetic benchmark protocol v3 adds a deterministic hash of the actual
+constructed Ollama prompt/suffix and explicit generation settings, apart
+from the fixture-set fingerprint. Old or mismatched report formats fail
+closed. This does not provide real Ollama benchmark data, approved weights,
+training authorization, or evidence of model usefulness.
