@@ -113,3 +113,27 @@ accessibility testing before proposing a stable release.
 
 See [training plan](TRAINING_PLAN.md), [data policy](DATA_POLICY.md),
 [model README](README.md) and [manual release evidence rules](../docs/qa/release-evidence.md).
+
+
+## 7. Offline, controlled baseline-to-candidate comparison (unreleased)
+
+After both runs use the **same** checked-out fixtures, explicit prompt mode,
+hardware, quantization conditions, and `--runs`, save their aggregate JSON
+outputs locally and compare only after the reports have been reviewed:
+
+```sh
+npm run model:compare -- --baseline baseline.json --candidate candidate.json
+```
+
+The source-free comparator verifies a cryptographic fixture-set fingerprint
+(which includes checked-in fixture contents), benchmark protocol, prompt mode,
+run count, and per-language/category attempt scope before reporting deltas.
+It refuses incompatible/malformed/legacy reports rather than comparing
+percentages across different test sets. Input files are individually capped at
+32 KiB, and untrusted report fields are never echoed. Keep names and raw
+reports local, and **review the clipboard or output before publishing**.
+
+This does not establish matching runtime/hardware, independent statistical
+significance, correctness, user acceptance or actual first-party model
+progress. No physical model run or benchmark observation was performed by
+the implementation.

@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 /**
  * Pure, dependency-free helpers for an opt-in, loopback-only synthetic benchmark.
  * No workspace reads, user prompt logging, telemetry, or model downloads.
@@ -5,6 +7,20 @@
 export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "typescript"]);
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
+/** Bump when prompt construction, generation settings or matching changes. */
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v1";
+/**
+ * Deterministic fingerprint for the *checked-in, public, original* fixtures.
+ * Binds not only IDs, but language, category, prefix, suffix and reference
+ * continuation to the comparison. Never print or store the fixture contents.
+ * Order-independent to avoid a misleading change on manifest reordering.
+ */
+export function fixtureSetSha256(fixtures) {
+  const records = fixtures.map(item => [
+    item.id, item.language, item.category, item.prefix, item.suffix, item.expected
+  ]).sort((a, b) => a[0].localeCompare(b[0]));
+  return createHash("sha256").update(JSON.stringify(records), "utf8").digest("hex");
+}
 const languageLabels = Object.freeze({
   rust: "Rust", c: "C", cpp: "C++", python: "Python", typescript: "TypeScript"
 });

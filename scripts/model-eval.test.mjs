@@ -4,7 +4,8 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
-  EVAL_LANGUAGES, EVAL_CATEGORIES, createRequest, normalizeGenerated, percentile,
+  EVAL_LANGUAGES, EVAL_CATEGORIES, fixtureSetSha256,
+  EVAL_BENCHMARK_PROTOCOL, createRequest, normalizeGenerated, percentile,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
 
@@ -161,4 +162,13 @@ test("a single attempt cannot imply repeated-outcome stability", () => {
     evaluated: 1, repeated: 0, exactAtLeastOnce: 1,
     exactEveryAttempt: 1, mixedExactOutcomes: 0
   });
+});
+
+
+test("evaluator's fixture identity binds original content and benchmark protocol", () => {
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v1");
+  assert.match(fixtureSetSha256(fixtures), /^[a-f0-9]{64}$/);
+  assert.notEqual(fixtureSetSha256(fixtures), fixtureSetSha256(
+    fixtures.map((item, index) => index ? item : { ...item, prefix: item.prefix + " " })
+  ));
 });

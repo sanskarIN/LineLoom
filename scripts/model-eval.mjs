@@ -7,7 +7,8 @@ import { readFile } from "node:fs/promises";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import {
-  EVAL_LANGUAGES, EVAL_MODES, EVAL_CATEGORIES, createRequest, normalizeGenerated,
+  EVAL_LANGUAGES, EVAL_MODES, EVAL_CATEGORIES, EVAL_BENCHMARK_PROTOCOL,
+  fixtureSetSha256, createRequest, normalizeGenerated,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
 import { consumeOllamaStream } from "./model-eval-stream.mjs";
@@ -88,9 +89,12 @@ async function main() {
   for (let i = 0; i < opts.runs; i++) {
     for (const fixture of fixtures) measurements.push(await evaluate(fixture, opts.model, mode));
   }
-  console.log(JSON.stringify(summarizeMeasurements(
-    measurements, fixtures.length, opts.model, mode
-  ), null, 2));
+  console.log(JSON.stringify({
+    ...summarizeMeasurements(measurements, fixtures.length, opts.model, mode),
+    benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
+    fixtureSetSha256: fixtureSetSha256(fixtures),
+    runsPerFixture: opts.runs
+  }, null, 2));
   if (measurements.some(item => !item.ok)) process.exitCode = 1;
 }
 await main().catch(() => {
