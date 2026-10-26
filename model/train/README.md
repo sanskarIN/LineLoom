@@ -101,6 +101,12 @@ explicitly marked `train` may be sampled. The `validation` and `test`
 splits are rejected by the sampler; the test split is never tensorized
 or used to choose model parameters.
 
+The **default offline plan** also previews the scheduled language
+exposure as `plannedTrainingMicrobatches` and
+`plannedTrainingMicrobatchesByLanguage`. This can be reviewed without
+loading PyTorch, any model checkpoint or a GPU; plan-only metadata
+contains no code or source identifiers.
+
 Every real local experiment records:
 - `trainingSampler: "seeded-language-balanced-v1"`, fixed seed and
   `trainingMicrobatchesByLanguage` exposure totals.
