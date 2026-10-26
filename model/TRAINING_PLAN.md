@@ -92,3 +92,23 @@ constructed Ollama prompt/suffix and explicit generation settings, apart
 from the fixture-set fingerprint. Old or mismatched report formats fail
 closed. This does not provide real Ollama benchmark data, approved weights,
 training authorization, or evidence of model usefulness.
+
+## M3 implementation begins — opt-in FIM LoRA experiment (post-v1.4.1 source)
+
+`model/train/finetune.py` implements real PyTorch + PEFT local-only
+adapter fine-tuning for an independently reviewed, locally installed
+Qwen2.5-Coder-0.5B base candidate. It constructs Qwen FIM
+prefix/suffix/middle inputs with completion-only masked loss, validates
+the original *private* manifest through the existing offline Node audit,
+trains only `train` samples, calculates validation loss on `validation`
+samples, and **never uses test samples** in optimization or evaluation.
+Explicit rights and checkpoint flags are mandatory, as are an approved
+40-digit revision declaration and an existing local safetensors model.
+Output is an unreviewed, locally saved PEFT adapter and source-free
+metadata with hashes. Full instructions and caveats:
+[train/README.md](train/README.md).
+
+Only offline plan/encoding/approval tests have been added and can run
+without a GPU. **No actual fine-tune, measured loss, approved corpus,
+quantization, model card or distributable model exists yet.** Data and
+checkpoint legal provenance still need independent review.
