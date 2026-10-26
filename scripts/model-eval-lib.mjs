@@ -9,7 +9,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v2";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v3";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -62,6 +62,18 @@ export function validateFixtures(data) {
   }
   if ([...counts.values()].some(n => n < 6)) throw new Error("Every target language needs at least six fixtures");
   return data.fixtures;
+}
+/** Hash the generated synthetic request (except model tag) to bind FIM
+ * prompts, suffixes, streaming and explicit Ollama settings. No raw source
+ * or model response is included in summaries.
+ */
+export function requestSpecSha256(fixtures, mode, factory = createRequest) {
+  if (!["fim", "instruction"].includes(mode)) throw Error("invalid-benchmark-mode");
+  const records = fixtures.map(fixture => {
+    const { model: _model, ...request } = factory(fixture, "lineloom-canonical", mode);
+    return [fixture.id, request];
+  }).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+  return createHash("sha256").update(JSON.stringify(records), "utf8").digest("hex");
 }
 export function createRequest(fixture, model, mode = "auto") {
   const selected = resolveMode(model, mode);

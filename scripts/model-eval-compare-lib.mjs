@@ -38,6 +38,7 @@ function validateBreakdown(raw, names, totalAttempts, completed, strictMatches) 
 export function validateComparableReport(raw) {
   if (!isObject(raw) || raw.benchmarkProtocol !== EVAL_BENCHMARK_PROTOCOL ||
       !/^[a-f0-9]{64}$/.test(raw.fixtureSetSha256 ?? "") ||
+      !/^[a-f0-9]{64}$/.test(raw.requestSpecSha256 ?? "") ||
       !["fim", "instruction"].includes(raw.mode) ||
       !integer(raw.syntheticFixtures, 1, 100) ||
       !integer(raw.runsPerFixture, 1, 5) ||
@@ -96,6 +97,7 @@ export function validateComparableReport(raw) {
   return {
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     fixtureSetSha256: raw.fixtureSetSha256,
+    requestSpecSha256: raw.requestSpecSha256,
     mode: raw.mode,
     syntheticFixtures: raw.syntheticFixtures,
     runsPerFixture: raw.runsPerFixture,
@@ -140,6 +142,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
   const baseline = validateComparableReport(baselineRaw);
   const candidate = validateComparableReport(candidateRaw);
   if (baseline.fixtureSetSha256 !== candidate.fixtureSetSha256 ||
+      baseline.requestSpecSha256 !== candidate.requestSpecSha256 ||
       baseline.benchmarkProtocol !== candidate.benchmarkProtocol ||
       baseline.mode !== candidate.mode ||
       baseline.syntheticFixtures !== candidate.syntheticFixtures ||
@@ -176,7 +179,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       baseline.formatDiagnostics.completedWithoutFormatSignals,
     warnings: [
       "Strict equality on original synthetic fixtures is not compile correctness, semantic quality, or editor acceptance.",
-      "The file hash and prompt mode match, but hardware, quantization, temperature drift, cold/warm state and runtime conditions require manual verification.",
+      "Request and fixture hashes match, including explicit settings, but server defaults, model checkpoint revision, hardware, quantization and runtime conditions require manual verification.",
       "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
       "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
       "No real-model comparison was performed by the offline tool."
