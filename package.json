@@ -349,7 +349,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -369,7 +369,8 @@
     "model:eval:dry": "node scripts/model-eval.mjs --dry-run",
     "model:compare": "node scripts/model-eval-compare.mjs",
     "model:data-audit": "node scripts/model-data-audit.mjs",
-    "test:model-data-audit": "node --test scripts/model-data-audit.test.mjs"
+    "test:model-data-audit": "node --test scripts/model-data-audit.test.mjs",
+    "test:model-training": "python -m unittest discover -s model/train -p test_*.py"
   },
   "dependencies": {
     "ignore": "^7.0.13"
