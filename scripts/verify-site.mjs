@@ -14,9 +14,9 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // Published GitHub stable v1.3.0 is verified separately from registry versions.
-  // Historical v1.2.0 stable and the current v1.3.1 preview are distinguished.
-  assert.match(pkg.version, /^1\.(?:2\.[1-9]\d*|3\.\d+)$/);
+  // The development manifest may be newer than publicly published builds.
+  // Verify public stable and preview links separately from this source version.
+  assert.match(pkg.version, /^1\.(?:2\.[1-9]\d*|3\.\d+|4\.\d+)$/);
   assert.ok(page.includes("Latest GitHub testing preview: v1.3.1"),
     "Current published GitHub preview must be discoverable alongside stable.");
   assert.ok(page.includes("LineLoom-1.3.1.vsix"), "Published preview VSIX must be linked");
