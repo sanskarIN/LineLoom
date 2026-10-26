@@ -123,3 +123,22 @@ additionally screened using bounded character shingles. Audit outputs include
 only numerical per-language/per-split totals; this is not enough data for a
 real model, and these heuristics do not replace independently reviewed rights,
 fork relationships, or contamination scans.
+
+
+## Synthetic request fingerprints (benchmark protocol v3 — unreleased source)
+
+A request-spec SHA-256 now accompanies the original fixture-content hash
+in dry-run and real local benchmark summaries. It deterministically covers
+the **actual constructed synthetic requests**, including prefix/prompt, FIM
+suffix, streaming and explicit Ollama options (`temperature: 0`,
+`num_predict: 64`, `num_ctx: 2048`), **excluding the model tag** so different
+models can be compared. It never logs raw prompts, generated code or
+private workspace content. The offline comparator refuses missing or
+different request-spec hashes and still checks fixture hash, mode,
+repetitions and valid numeric outcomes.
+
+Protocol is now **`lineloom-synthetic-v3`**. Reports from v1/v2 cannot
+be compared to v3. Regenerate both reports on a matching checkout and use an
+explicit prompt mode. Matching hashes **cannot** verify model/Modelfile
+identity, server-side defaults, quantization, OS/GPU, system load,
+correctness or human acceptance. No real model was benchmarked here.
