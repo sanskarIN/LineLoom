@@ -83,6 +83,29 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertNotIn("fn ", proc.stdout)
         self.assertEqual(proc.stderr, "")
 
+    def test_real_adapter_smoke_refuses_missing_receipt_before_model_import(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp) / "base"
+            adapter = Path(temp) / "experiment" / "adapter"
+            base.mkdir()
+            adapter.mkdir(parents=True)
+            (base / "config.json").write_text("{}", encoding="utf-8")
+            (base / "tokenizer.json").write_text("{}", encoding="utf-8")
+            (base / "model.safetensors").write_bytes(b"test-only")
+            (adapter / "adapter_config.json").write_text("{}", encoding="utf-8")
+            (adapter / "adapter_model.safetensors").write_bytes(b"test-only")
+            command = [
+                sys.executable, str(Path(smoke.__file__).resolve()),
+                "--run", "--approve-checkpoint", "--base-dir", str(base),
+                "--base-revision", "a" * 40, "--adapter-dir", str(adapter),
+            ]
+            run = subprocess.run(command, capture_output=True, text=True, timeout=20)
+            self.assertEqual(run.returncode, 1)
+            self.assertEqual(run.stdout, "")
+            self.assertNotIn(str(base), run.stderr)
+            self.assertNotIn(str(adapter), run.stderr)
+            self.assertNotIn("test-only", run.stderr)
+
     def test_explicit_run_fails_without_reviewed_local_checkpoint(self):
         script = str(Path(smoke.__file__).resolve())
         cases = [
