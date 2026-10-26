@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import test from "node:test";
 import {
   EVAL_BENCHMARK_PROTOCOL, EVAL_LANGUAGES, EVAL_CATEGORIES,
-  fixtureSetSha256, summarizeMeasurements, validateFixtures
+  fixtureSetSha256, requestSpecSha256, summarizeMeasurements, validateFixtures
 } from "./model-eval-lib.mjs";
 import { validateComparableReport, compareModelReports } from "./model-eval-compare-lib.mjs";
 import { readFileSync } from "node:fs";
@@ -29,7 +29,8 @@ function report({ runs = 2, model = "local-test-a", count = 1 } = {}) {
   return {
     ...summarizeMeasurements(results, fixtures.length, model, "fim"),
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
-    fixtureSetSha256: fixtureSetSha256(fixtures), runsPerFixture: runs
+    fixtureSetSha256: fixtureSetSha256(fixtures),
+    requestSpecSha256: requestSpecSha256(fixtures, "fim"), runsPerFixture: runs
   };
 }
 test("fixture content fingerprint is order-independent and changes on real fixture edits", () => {
@@ -59,6 +60,7 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   const text = JSON.stringify(result);
   assert.ok(!text.includes("secret-model-tag"));
   assert.ok(!text.includes(baseline.fixtureSetSha256));
+  assert.ok(!text.includes(baseline.requestSpecSha256));
   assert.ok(!text.includes("rust-branch"));
   assert.ok(!text.includes("fn double(value"));
   assert.ok(!text.includes("private-source"));
@@ -69,7 +71,9 @@ test("old, mismatched and inconsistent benchmark reports fail closed", () => {
   assert.equal(validateComparableReport(valid).attempts, 60);
   const invalid = [
     { ...valid, benchmarkProtocol: "old" }, { ...valid, runsPerFixture: 1 },
-    { ...valid, fixtureSetSha256: "secret" }, { ...valid, mode: "instruction" },
+    { ...valid, fixtureSetSha256: "secret" },
+    { ...valid, requestSpecSha256: undefined },
+    { ...valid, requestSpecSha256: "not-a-hash" }, { ...valid, mode: "instruction" },
     { ...valid, failed: 4 }, { ...valid, strictExactMatches: 61 },
     { ...valid, completionP95Ms: -1 }, { ...valid, completionP95Ms: "fast" },
     { ...valid, perLanguage: { rust: {} } },
@@ -84,6 +88,9 @@ test("old, mismatched and inconsistent benchmark reports fail closed", () => {
   const changedScope = report();
   changedScope.fixtureSetSha256 = "0".repeat(64);
   assert.throws(() => compareModelReports(valid, changedScope));
+  const changedRequest = report();
+  changedRequest.requestSpecSha256 = "a".repeat(64);
+  assert.throws(() => compareModelReports(valid, changedRequest));
   assert.throws(() => compareModelReports(valid, report({ runs: 3 })));
   assert.throws(() => compareModelReports(valid, { ...valid, mode: "instruction" }));
 });
