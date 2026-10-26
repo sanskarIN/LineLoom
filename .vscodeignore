@@ -17,3 +17,5 @@
 
 **/*.svg
 !assets/icons/sidebar.svg
+
+**/model/**
