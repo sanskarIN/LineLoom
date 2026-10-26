@@ -130,3 +130,53 @@ The sampling tests use only synthetic in-memory record descriptors and
 Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
+
+## Comparing local HF base-versus-adapter smoke reports (protocol v2)
+
+After **independently approved** local base and adapter runs on the same
+machine with the *same* base revision, tokenizer, fixtures and generation
+parameters, save their **source-free JSON stdout** into two local files:
+
+```sh
+# Illustrative only: both real smoke invocations still require reviewed
+# checkpoint, explicit approval, pre-installed ML dependencies and, for
+# the second run, an actual private adapter.
+python model/train/compare_smoke.py --base base-smoke.json --adapter adapter-smoke.json
+# Or use:
+npm run model:smoke:compare -- --base base-smoke.json --adapter adapter-smoke.json
+```
+
+This new command is **offline and read-only**. It does not perform model
+inference or load PyTorch, Transformers, PEFT, a model, or an adapter.
+Each user-supplied report must be a non-symlink UTF-8 JSON file no larger
+than 32 KiB. Only one of the fixed checked-in synthetic scopes
+(`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
+
+Real local `smoke.py --run` reports now include the
+`lineloom-hf-synthetic-smoke-v2` protocol, deterministic
+`fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
+greedy generation contract, fixed local base config/tokenizer SHA-256,
+and the **user-declared** 40-character base revision. The comparator
+recomputes fixture and FIM request hashes against the current checkout
+and refuses plans, legacy reports, corrupted counts, mixed base revisions,
+different settings, or comparisons without a local base report followed by
+a local adapter report.
+
+The only comparison output is **allowlisted numeric strict-match counts
+and adapter-minus-base differences** by language and total, plus fixed
+caveats. It never prints prompts, completions, model checkpoint paths,
+private metadata, filenames or user-supplied report fields.
+
+Important limitations: file/content hashes **are not attestation of
+actual model weights or correct adapter loading**. The declared revision is
+a human assertion. This comparator cannot verify matching hardware,
+GPU settings, tokenizer runtime behavior, hidden sampling defaults,
+compiler correctness, editor acceptance, speed or whether reports were
+truthfully generated. **The six probes per language are not a production
+model evaluation**, and a strict exact-match improvement does not establish
+quality. Protocol v1 reports must be rerun; HF protocol v2 remains
+incomparable with the Ollama `lineloom-synthetic-v3` protocol.
+
+Tests are run automatically by `npm run test:model-training` using Python
+standard library only; they use invented in-memory count summaries and
+perform **no inference**.

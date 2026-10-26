@@ -219,3 +219,25 @@ This only improves experiment design and diagnostics. It does **not**
 mean any real weights were trained, that FIM output quality improved, or
 that a useful five-language dataset, real baseline, GPU or local adapter
 exists. [Experiment instructions](train/README.md).
+
+## Source-free HF adapter-versus-base comparison (protocol v2, unreleased)
+
+The separate optional local Hugging Face synthetic smoke now tags each
+**real** base/LoRA run with a deterministic hash of the fixed public fixture
+subset, the ordered FIM request contract, declared base revision and SHA-256
+of the local base config and tokenizer metadata. The default dry plan has
+no base metadata because it opens no model files.
+
+`npm run model:smoke:compare -- --base base-smoke.json --adapter adapter-smoke.json`
+compares two manually captured **real** smoke JSON reports offline.
+It validates the two report kinds, recomputes the fixed fixture and
+request hashes locally, checks exact per-language totals and refuses
+changed checkpoint declarations, corrupt/mixed/legacy JSON or differing
+generation settings. Output contains only aggregate differences and
+fixed caveats; neither user report paths nor generated source are echoed.
+
+This adds **no trained weights, checkpoint downloads, adapter export or
+measured inference**. Report hashes do not prove the identity of
+model weights, adapter application or equivalent execution hardware.
+Read the [full local model instructions](train/README.md) and do not
+compare this HF v2 protocol with Ollama synthetic v3.

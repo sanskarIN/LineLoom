@@ -204,3 +204,30 @@ These results are a DIFFERENT protocol from the `model:eval`
 loopback Ollama v3 benchmark; do not directly compare scores across
 tokenization backends/modes. No real local model run is claimed in the
 repository. Independent human, compiler, rights and editor QA is required.
+
+## 12. Local Hugging Face base-versus-adapter consistency check (v2)
+
+The optional local HF smoke now reports fixture-scope/request-spec SHA-256
+and local **base config/tokenizer** metadata digests, along with its
+user-declared immutable revision. It does not hash the full base weights
+or prove checkpoint provenance. Only opt-in **real-run** reports with
+matching `lineloom-hf-synthetic-smoke-v2` hashes/settings and internally
+consistent per-language counts can be compared:
+
+```sh
+npm run model:smoke:compare -- --base base-smoke.json --adapter adapter-smoke.json
+```
+
+The comparison command is offline: it reads only two explicitly named,
+bounded JSON files and the checked-in original synthetic fixture set,
+with no model or inference framework loaded. It prints only numeric
+base-versus-adapter exact-match deltas and fixed interpretive warnings.
+Old protocol v1 smoke summaries are intentionally refused, and HF
+smoke scores must **never** be mixed with the Ollama v3 evaluation format.
+
+The consistency gate cannot show that either report came from a real
+model execution, that the purported checkpoint revision was truly used,
+that an adapter was correctly applied, that hardware was equivalent, or
+that any completion compiles, is secure, or improves VS Code acceptance.
+Real approved local trials and independent manual code/editor QA remain
+NOT RUN.

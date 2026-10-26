@@ -149,3 +149,17 @@ The new sampler/validation tests run offline with Python standard library
 and no model checkpoint. **No approved corpus, trained adapter, GPU
 evaluation, independently measured model improvement or production
 release is claimed.**
+
+## M4 preparation — reproducible local adapter comparisons
+
+The standalone optional HF FIM smoke can now produce protocol-v2
+synthetic fixture/request fingerprints and config/tokenizer digest
+metadata, and the offline comparator refuses ineligible or
+incompatible base-versus-adapter reports. Strict-match deltas remain
+five-language **synthetic diagnostics only**, not meaningful evidence
+of model improvement. Real checkpoint provenance, training corpus
+approval, compiler tests, editor acceptance, hardware latency and
+actual trained LoRA weights are still unverified.
+
+`npm run test:model-training` covers the comparator offline with
+mocked source-free counts; no model checkpoint is loaded.
