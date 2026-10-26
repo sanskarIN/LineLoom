@@ -4,15 +4,13 @@
  * Only contacts localhost Ollama. Prints aggregate statistics, never code.
  */
 import { readFile } from "node:fs/promises";
-import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import {
   EVAL_LANGUAGES, EVAL_MODES, EVAL_CATEGORIES, EVAL_BENCHMARK_PROTOCOL,
-  fixtureSetSha256, requestSpecSha256, createRequest, normalizeGenerated,
+  fixtureSetSha256, requestSpecSha256,
   resolveMode, summarizeMeasurements, validateFixtures, validateModelTag
 } from "./model-eval-lib.mjs";
-import { consumeOllamaStream } from "./model-eval-stream.mjs";
-import { classifyCompletionFormat } from "./model-eval-quality.mjs";
+import { evaluateSyntheticFixture } from "./model-eval-runner.mjs";
 
 function cli(argv) {
   const options = { model: "qwen2.5-coder:1.5b", runs: 1, mode: "auto", language: "all", category: "all", dryRun: false };
@@ -44,31 +42,6 @@ function cli(argv) {
   validateModelTag(options.model);
   return options;
 }
-async function evaluate(fixture, model, mode) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12000);
-  const start = performance.now();
-  try {
-    const response = await fetch("http://127.0.0.1:11434/api/generate", {
-      method: "POST", headers: { "content-type": "application/json" },
-      body: JSON.stringify(createRequest(fixture, model, mode)),
-      signal: controller.signal, redirect: "error"
-    });
-    if (!response.ok || !response.body) throw new Error("http-failed");
-    const parsed = await consumeOllamaStream(response.body, start);
-    return {
-      fixtureId: fixture.id, language: fixture.language, category: fixture.category, ok: true,
-      exact: normalizeGenerated(parsed.output) === fixture.expected,
-      formatSignals: classifyCompletionFormat(parsed.output, fixture),
-      firstTokenMs: parsed.firstTokenMs, totalMs: performance.now() - start
-    };
-  } catch {
-    // Do not print request, source, endpoint details, exception text, or model response.
-    return { fixtureId: fixture.id, language: fixture.language, category: fixture.category, ok: false, exact: false };
-  } finally {
-    clearTimeout(timeout);
-  }
-}
 async function main() {
   const opts = cli(process.argv.slice(2));
   const fixtures = validateFixtures(JSON.parse(await readFile(
@@ -92,7 +65,7 @@ async function main() {
   }
   const measurements = [];
   for (let i = 0; i < opts.runs; i++) {
-    for (const fixture of fixtures) measurements.push(await evaluate(fixture, opts.model, mode));
+    for (const fixture of fixtures) measurements.push(await evaluateSyntheticFixture(fixture, opts.model, mode));
   }
   console.log(JSON.stringify({
     ...summarizeMeasurements(measurements, fixtures.length, opts.model, mode),

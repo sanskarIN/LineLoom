@@ -119,3 +119,8 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   FIM suffixes and explicit Ollama settings; offline comparison requires
   identical request spec and refuses legacy v1/v2 reports. Hardware,
   server defaults and model revisions still require independent review.
+
+- **M2 local synthetic evaluator hardening (post-v1.4.1 development):**
+  isolated in-memory transport tests now cover real request construction,
+  full evaluation reporting, aborts, HTTP status/redirect failures and
+  untrusted stream handling. A green test is not a real model benchmark.
