@@ -66,3 +66,22 @@ IDs, repository identities, revisions, full hashes or file paths. On failure,
 the exit code is nonzero and the error text is generic. No dataset export,
 download, training loop or server request occurs. Training authorization
 is a separate review gate.
+
+
+### Five-language split coverage and improved contamination screening
+
+The development audit now requires **at least one independently declared
+train, validation and test sample for *each* of Rust, C, C++, Python and
+TypeScript** (15 total at minimum), with repository-group holdouts respected.
+Its source-free output adds an allowlisted `byLanguageAndSplit` count matrix.
+It also applies bounded character-shingle near-duplicate screening against
+the original checked-in evaluation probes, not just between submitted
+records, to reject lightly edited benchmark copies.
+
+**The minimum one sample per language/split is only a mechanical coverage
+gate.** It is far too small for training, statistical validation or reliable
+quality comparisons. The group IDs, source rights, licenses, attribution
+and opt-out declarations are still user-entered claims requiring independent
+verification. This audit is a fail-closed local heuristic, not a legal
+approval, a complete plagiarism detector, a proof of no contamination or
+authorization to export training data.

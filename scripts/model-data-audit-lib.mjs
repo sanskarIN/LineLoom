@@ -58,18 +58,23 @@ const malformed = () => { throw Error("dataset-audit-rejected"); };
 export function auditTrainingManifest(manifest, publicEvalManifest) {
   if (!manifest || typeof manifest !== "object" || Array.isArray(manifest) ||
       manifest.schemaVersion !== 1 || !Array.isArray(manifest.samples) ||
-      manifest.samples.length < 3 || manifest.samples.length > 256) malformed();
+      manifest.samples.length < EVAL_LANGUAGES.length * SPLITS.length ||
+      manifest.samples.length > 256) malformed();
   const publicFixtures = validateFixtures(publicEvalManifest);
   const publicTexts = publicFixtures.map(item =>
     normalized(item.prefix + item.expected + item.suffix));
   const publicHashes = new Set(publicTexts.map(sha256));
   const publicWindows = publicTexts.map(item => windows(tokenize(item), 5));
+  const publicShingles = publicTexts.map(characterShingles);
   const samples = [];
   const ids = new Set();
   const repoSplits = new Map();
   const seenSource = new Set();
   const countByLanguage = Object.fromEntries(EVAL_LANGUAGES.map(x => [x, 0]));
   const countBySplit = Object.fromEntries(SPLITS.map(x => [x, 0]));
+  const countByLanguageAndSplit = Object.fromEntries(EVAL_LANGUAGES.map(language => [
+    language, Object.fromEntries(SPLITS.map(split => [split, 0]))
+  ]));
   const countByLicense = Object.fromEntries(LICENSES.map(x => [x, 0]));
 
   for (const s of manifest.samples) {
@@ -107,6 +112,12 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
         (norm.length >= 48 && t.includes(norm)))) malformed();
     if (publicWindows.some(reference => reference.size >= 5 && tokens.size >= 5 &&
         intersect(reference, tokens) / Math.min(reference.size, tokens.size) >= 0.85)) malformed();
+    // Older public synthetic prompts were short, so edited copies may not
+    // share enough five-token sequences. Independent character-shingle
+    // screening catches trivial symbol/identifier substitutions without
+    // accepting them as clean training samples.
+    if (publicShingles.some(reference => reference.size >= 24 && characters.size >= 24 &&
+        intersect(reference, characters) / Math.min(reference.size, characters.size) >= 0.82)) malformed();
     for (const existing of samples) {
       // Conservative near-duplicate block even within a split. Similarity
       // screening is heuristic and MUST be supplemented before training.
@@ -121,9 +132,14 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
     samples.push({ norm, tokens, characters });
     countByLanguage[s.language]++;
     countBySplit[s.split]++;
+    countByLanguageAndSplit[s.language][s.split]++;
     countByLicense[s.spdxLicense]++;
   }
-  if (SPLITS.some(s => countBySplit[s] === 0)) malformed();
+  // A corpus is not an adequate five-language FIM training/holdout input
+  // if any of its targets has no repository-isolated validation or test data.
+  // This check establishes minimal *presence*, not statistical power.
+  if (EVAL_LANGUAGES.some(language =>
+    SPLITS.some(split => countByLanguageAndSplit[language][split] === 0))) malformed();
   return {
     auditProtocol: "lineloom-data-preflight-v1",
     status: "MECHANICAL_CHECKS_PASS_ONLY",
@@ -131,6 +147,7 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
     repositoryGroups: repoSplits.size,
     byLanguage: countByLanguage,
     bySplit: countBySplit,
+    byLanguageAndSplit: countByLanguageAndSplit,
     byDeclaredLicense: countByLicense,
     blockersStillRequiringHumanReview: [
       "Review actual copyright, licensing, author consent, attribution and current opt-out records.",

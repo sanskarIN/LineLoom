@@ -104,3 +104,11 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   baseline comparator refuses v1/v2 mixture and highlights aggregate
   response-format changes alongside exact matches and latency. This
   infrastructure has **no real-Ollama quality measurements** yet.
+
+
+- **LineLoom Code M1 data preflight hardening (development after v1.4.1):**
+  refuse missing train/validation/test coverage for any of Rust, C, C++,
+  Python or TypeScript and screen lightly altered public benchmark text
+  with additional character-shingle overlap checks. Report only bounded
+  language-by-split counts. No corpus was gathered and no actual model
+  training or editor-quality benchmark took place.
