@@ -194,9 +194,14 @@ class CompareSmokeTests(unittest.TestCase):
             self.assertEqual(compare_smoke.load_report(path)["artifactKind"],
                              "local-base-model")
             link = Path(temp) / "alias.json"
-            link.symlink_to(path)
-            with self.assertRaises(SmokeReportRejected):
-                compare_smoke.load_report(link)
+            try:
+                link.symlink_to(path)
+            except OSError:
+                # Some Windows runners deny symlink creation to unprivileged users.
+                pass
+            else:
+                with self.assertRaises(SmokeReportRejected):
+                    compare_smoke.load_report(link)
 
     def test_cli_compares_only_report_files_without_echoing_paths(self):
         with tempfile.TemporaryDirectory() as temp:
