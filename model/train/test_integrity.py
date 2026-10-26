@@ -1,7 +1,6 @@
 """Offline integrity gate regression tests: no model files, GPU, or network."""
 from __future__ import annotations
 
-import hashlib
 import json
 from pathlib import Path
 import subprocess
@@ -72,7 +71,6 @@ class AdapterIntegrityTests(unittest.TestCase):
             weights.write_bytes(weights.read_bytes() + b"tampered")
             with self.assertRaises(IntegrityRejected):
                 verify_training_receipt(adapter, base, REVISION)
-            base, adapter = fabricated_local_experiment(Path(temp) / "second") if False else (base, adapter)
             # Restore exactly the bytes recorded in the receipt.
             weights.write_bytes(b"synthetic test weights only")
             (adapter / "injected.bin").write_bytes(b"other content")
