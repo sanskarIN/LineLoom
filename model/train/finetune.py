@@ -136,7 +136,17 @@ def pad_examples(examples: list[dict], pad_token_id: int) -> dict:
     }
 
 
-def private_report(audit: dict, digest: str, steps: int, max_tokens: int) -> dict:
+def private_report(audit: dict, digest: str, steps: int, max_tokens: int,
+                   manifest: dict, gradient_accumulation: int, seed: int) -> dict:
+    # Planning observes sample descriptors only; no model or GPU is loaded.
+    train_records = [sample for sample in manifest["samples"]
+                     if sample["split"] == "train"]
+    order = balanced_sample_indices(
+        train_records, LANGUAGES, steps * gradient_accumulation, seed
+    )
+    exposure = {language: 0 for language in LANGUAGES}
+    for index in order:
+        exposure[train_records[index]["language"]] += 1
     return {
         "stage": "OFFLINE_PLAN_ONLY",
         "trainingExecuted": False,
@@ -146,6 +156,10 @@ def private_report(audit: dict, digest: str, steps: int, max_tokens: int) -> dic
         "byLanguageAndSplit": audit["byLanguageAndSplit"],
         "samples": audit["samples"],
         "plannedOptimizerSteps": steps,
+        "plannedTrainingMicrobatches": steps * gradient_accumulation,
+        "plannedTrainingMicrobatchesByLanguage": exposure,
+        "trainingSampler": "seeded-language-balanced-v1",
+        "seed": seed,
         "maxSequenceTokens": max_tokens,
         "requires": [
             "Separate independent data rights and current opt-out approvals.",
@@ -315,7 +329,10 @@ def main() -> int:
             validate_local_checkpoint(Path(args.base_dir))
         manifest, audit, digest = audit_manifest(Path(args.manifest))
         if not args.train:
-            print(json.dumps(private_report(audit, digest, args.steps, args.max_tokens), indent=2))
+            print(json.dumps(private_report(
+                audit, digest, args.steps, args.max_tokens,
+                manifest, args.gradient_accumulation, args.seed
+            ), indent=2))
             return 0
         result = train(manifest, digest, args)
         # No raw source, model output, file paths, repository names or tokens.
