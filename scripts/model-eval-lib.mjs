@@ -18,7 +18,7 @@ export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v1";
 export function fixtureSetSha256(fixtures) {
   const records = fixtures.map(item => [
     item.id, item.language, item.category, item.prefix, item.suffix, item.expected
-  ]).sort((a, b) => a[0].localeCompare(b[0]));
+  ]).sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
   return createHash("sha256").update(JSON.stringify(records), "utf8").digest("hex");
 }
 const languageLabels = Object.freeze({
