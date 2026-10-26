@@ -46,3 +46,31 @@ See the [reproducible local benchmark protocol](EVALUATION_PROTOCOL.md), [traini
 Existing LineLoom endpoint approval, workspace trust, file exclusions, per-language model selection, cancellation and bounded prompt windows remain in force. The benchmark introduces **no new inference path inside the extension**; it is an explicitly invoked development command.
 
 The eventual first-party model can be distributed only after a separate reviewed model license, weight provenance, privacy assessment, local compatibility test and maintainer release approval.
+
+
+## Post-v1.4.0 development: compare two local synthetic baselines (unreleased)
+
+The optional offline comparator checks that two reports use the **same SHA-256
+fingerprint of all selected public fixture contents**, the same resolved
+prompt mode, benchmark protocol, number of fixtures, and repetitions.
+New evaluator summaries include `benchmarkProtocol`,
+`fixtureSetSha256` and `runsPerFixture` (older summaries are not comparable).
+It also rejects malformed numeric totals and inconsistent per-language or
+per-category counts. Run separately against an already installed local model:
+
+```sh
+npm run model:eval -- --model qwen2.5-coder:1.5b --mode fim --runs 3 > baseline.json
+npm run model:eval -- --model YOUR-LOCAL-MODEL --mode fim --runs 3 > candidate.json
+npm run model:compare -- --baseline baseline.json --candidate candidate.json
+```
+
+**Security and interpretation:** this command is offline and reads only the two
+explicit report files, each limited to 32 KiB. It displays only allowlisted
+aggregate count/latency changes and per-language/per-category exact-match
+deltas, without echoing the model tags, filenames, JSON payloads, generated
+code, source, or file paths. Keep original report filenames and hardware
+details in **private** local notes. The comparator cannot verify CPU/GPU,
+thermal or quantization equivalence, and completed-only latency percentiles
+are not representative when failures differ. Higher strict equality is not
+proof of safer/correct code. No actual Ollama model has been benchmarked here.
+This tool is unreleased development and not included in GitHub v1.4.0.

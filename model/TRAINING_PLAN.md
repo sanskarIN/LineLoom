@@ -47,3 +47,10 @@ Do not interpret this example as permission to collect the named repository or t
 5. Privacy/security test outcomes and repeatable build artifacts.
 
 **No GPU training, checkpoint download, dataset scrape, synthetic real-model output collection, or model publication is performed by this plan.**
+
+
+**Post-v1.4.0 toolchain development (not a model release):** a bounded,
+offline comparator for synthetic M0 reports enforces identical SHA-256
+fixture scope, prompt mode and run count before exposing source-free deltas
+per language and category. This is reproducibility infrastructure, not
+measured M2 model quality, successful training or redistribution approval.

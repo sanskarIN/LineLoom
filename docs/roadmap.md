@@ -78,3 +78,10 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
 - **Manual model check efficiency (post-v1.4.0 development):** abort obsolete,
   user-invoked model-list requests when the editor or configuration changes,
   without adding passive probes or persistent network state.
+
+
+- **First-party FIM model evaluation (post-v1.4.0 development):** new
+  source-free offline baseline/candidate comparator enforces synthetic fixture
+  content fingerprint, mode, repetitions and numeric summary invariants.
+  Per-language deltas help avoid hiding weaker C or C++ samples behind
+  one total. No Ollama real-model measurements or trained model weights exist.
