@@ -172,3 +172,18 @@ The digest is a local reproducibility check, **not an attestation** of
 server-side settings, model checkpoint/quantization, physical hardware or
 semantic quality. Record those external variables separately and review
 numeric results honestly.
+
+## 10. Deterministic request-to-report unit verification (source development)
+
+The synthetic one-fixture evaluation path has a dependency-injected **in-memory
+transport test suite**. It checks the fixed loopback endpoint and explicit
+Ollama options, correct continuations, formatting indicators, malformed
+JSON streams, redirected/partial HTTP responses, private error-body
+redaction, abortable stalled requests and an abort racing a mocked result.
+All tests are offline; the production `model:eval` command continues to
+contact **only** the fixed local Ollama endpoint after explicit invocation.
+`npm run test:model-eval` runs the new regression tests automatically.
+
+A green mock suite **does not** constitute a completed real model test,
+a successful cancellation test on every Ollama version, or proof of
+correctness, hardware latency, licensed training or human usefulness.

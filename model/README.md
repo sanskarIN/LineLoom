@@ -142,3 +142,11 @@ be compared to v3. Regenerate both reports on a matching checkout and use an
 explicit prompt mode. Matching hashes **cannot** verify model/Modelfile
 identity, server-side defaults, quantization, OS/GPU, system load,
 correctness or human acceptance. No real model was benchmarked here.
+
+**Request-path test hardening (unreleased source):** a new offline testable
+synthetic evaluator verifies the entire request → bounded NDJSON parsing →
+completion-format flags/strict equality → source-free result flow using
+an injected mock transport. It fails closed for malformed replies, HTTP
+errors and aborted requests, and tests deadline races. No real Ollama
+inference, network access in tests, approved corpus or trained model
+is implied.
