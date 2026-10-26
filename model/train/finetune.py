@@ -17,6 +17,11 @@ import re
 import subprocess
 import sys
 
+try:
+    from .sampling import balanced_sample_indices, validation_metrics
+except ImportError:
+    from sampling import balanced_sample_indices, validation_metrics
+
 ROOT = Path(__file__).resolve().parents[2]
 SPLITS = ("train", "validation", "test")
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
@@ -190,6 +195,13 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     validation_set = [encode_fim(s, tokenizer, args.max_tokens) for s in validation_samples]
     if not train_set or not validation_set:
         raise ExperimentRejected("insufficient-train-validation")
+    # Train-only, seeded five-language round-robin. Input order is not
+    # evidence of corpus balance, so never follow manifest order directly.
+    draw_count = args.steps * args.gradient_accumulation
+    sample_order = balanced_sample_indices(train_samples, LANGUAGES, draw_count, args.seed)
+    exposure = {language: 0 for language in LANGUAGES}
+    for index in sample_order:
+        exposure[train_samples[index]["language"]] += 1
     model = AutoModelForCausalLM.from_pretrained(
         str(model_dir), local_files_only=True, trust_remote_code=False,
         use_safetensors=True, torch_dtype=dtype
@@ -214,7 +226,7 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
         for micro in range(args.gradient_accumulation):
-            index = (step * args.gradient_accumulation + micro) % len(train_set)
+            index = sample_order[step * args.gradient_accumulation + micro]
             output = model(**tensors(train_set[index]))
             if not torch.isfinite(output.loss).all():
                 raise ExperimentRejected("nonfinite-training-loss")
@@ -226,9 +238,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     with torch.no_grad():
         losses = [float(model(**tensors(item)).loss.detach().cpu())
                   for item in validation_set]
-    validation_loss = sum(losses) / len(losses)
-    if not 0 <= validation_loss < 1e6:
-        raise ExperimentRejected("invalid-validation-loss")
+    # Macro loss prevents a large language subset from hiding regression
+    # in an under-represented language. Held-out TEST data stays untouched.
+    validation = validation_metrics(validation_samples, losses, LANGUAGES)
 
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
@@ -251,7 +263,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         "optimizerSteps": args.steps,
         "gradientAccumulation": args.gradient_accumulation,
         "seed": args.seed,
-        "validationLoss": round(validation_loss, 6),
+        "trainingSampler": "seeded-language-balanced-v1",
+        "trainingMicrobatchesByLanguage": exposure,
+        **validation,
         "trainSamples": len(train_set),
         "validationSamples": len(validation_set),
         "testSamplesUsed": 0,
