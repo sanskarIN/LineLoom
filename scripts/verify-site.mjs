@@ -20,7 +20,7 @@ test("static site identity follows the release manifest", () => {
   assert.ok(page.includes("Latest GitHub testing preview: v1.4.1"),
     "Current published GitHub preview must be discoverable alongside stable.");
   assert.ok(page.includes("LineLoom-1.4.1.vsix"), "Published preview VSIX must be linked");
-  assert.ok(page.includes("LineLoom-1.4.0.sha256"), "Published preview checksum must be linked");
+  assert.ok(page.includes("LineLoom-1.4.1.sha256"), "Published preview checksum must be linked");
   assert.ok(!page.includes("v1.4.0 development (not released)"),
     "Do not describe a published preview as unreleased.");
   assert.ok(page.includes("v1.1.1 pre-release"));
