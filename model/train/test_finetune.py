@@ -163,7 +163,7 @@ class LocalGateTests(unittest.TestCase):
             self.assertNotIn("sensitive-file", run.stderr)
             self.assertEqual(run.stdout, "")
             source = synthetic_manifest()
-            source["samples"][0]["middle"] = 'token = "supersecretlocalprivate"'
+            source["samples"][0]["middle"] = 'api_key = "supersecretlocalprivate"'
             path.write_text(json.dumps(source), encoding="utf-8")
             again = subprocess.run(
                 [sys.executable, str(Path(finetune.__file__).resolve()),
