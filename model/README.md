@@ -1,6 +1,6 @@
 # LineLoom autocomplete-model research
 
-**State: research and evaluation infrastructure only. No LineLoom-trained model, weights, fine-tune, or benchmark results exist yet.**
+**State: experimental local model-building code plus evaluation infrastructure; no LineLoom-trained weights, completed GPU fine-tune, approved dataset, or real model benchmark results exist yet.**
 
 LineLoom's VS Code extension already supports more languages; this **dedicated model track is intentionally narrower**:
 
@@ -150,3 +150,26 @@ an injected mock transport. It fails closed for malformed replies, HTTP
 errors and aborted requests, and tests deadline races. No real Ollama
 inference, network access in tests, approved corpus or trained model
 is implied.
+
+## M3 first local adapter-training implementation (unreleased source)
+
+An actual **opt-in, locally runnable LoRA fine-tuning experiment** now lives
+under [train/](train/README.md). It uses the project's audited, manually
+supplied five-language FIM manifest and reviewed locally installed
+[Qwen2.5-Coder-0.5B](https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B)
+base **candidate**, not new pretrained weights. No checkpoint or training
+set is auto-downloaded or bundled. Python stdlib + Node can produce
+only a **dry planning report**; full training requires separate explicit
+data rights/checkpoint approvals, optional locally installed ML packages,
+an immutable revision declaration, and a pre-existing local safetensors
+model. The resulting *unreviewed* LoRA adapter is saved only in a locally
+ignored or outside-repository directory; no Ollama export/quantization
+or marketplace/model release is performed.
+
+Data are FIM-encoded with Qwen's documented special tokens, loss applies
+only to the missing code and EOS, and test split remains sealed. The default
+plan never calls PyTorch or a network. Run `npm run test:model-training`
+for deterministic offline standard-library unit tests. **Real training
+has not been executed here**, and minimal mechanically passing input is
+far from a useful training dataset. See [train/README](train/README.md)
+and [data policy](DATA_POLICY.md).
