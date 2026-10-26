@@ -39,6 +39,11 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
         "artifactKind": kind,
+        "adapterReceiptVerified": kind == "local-lora-adapter",
+        "adapterReceiptProtocol": (
+            "lineloom-local-adapter-receipt-v1"
+            if kind == "local-lora-adapter" else "not-applicable"
+        ),
         "selectedLanguage": language,
         "maxNewTokens": tokens,
         "baseRevisionDeclared": "1" * 40,
@@ -145,6 +150,8 @@ class CompareSmokeTests(unittest.TestCase):
             {"realModelInferenceExecuted": False},
             {"stage": "OFFLINE_SYNTHETIC_PLAN_ONLY"},
             {"artifactKind": "local-base-model"},
+            {"adapterReceiptVerified": False},
+            {"adapterReceiptProtocol": "unknown"},
             {"baseRevisionDeclared": "a" * 39},
         ):
             candidate = copy.deepcopy(self.adapter)
