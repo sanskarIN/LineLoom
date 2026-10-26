@@ -231,3 +231,18 @@ that an adapter was correctly applied, that hardware was equivalent, or
 that any completion compiles, is secure, or improves VS Code acceptance.
 Real approved local trials and independent manual code/editor QA remain
 NOT RUN.
+
+## 13. Adapter receipt check before reporting local improvement
+
+A real local LoRA-adapter HF synthetic smoke run now requires the
+`lineloom-local-adapter-receipt-v1` saved with a **LineLoom-trained
+local experiment**. Its file digests and local base metadata must still
+match. The HF v2 comparator refuses adapter reports without that
+verified receipt marker. Before opt-in smoke, an offline verification
+can be run explicitly with `npm run model:adapter:verify -- ...`;
+it prints no source or file paths.
+
+This is only a basic integrity consistency check: user-controlled
+receipts can be altered, the full base weights are not authenticated
+and a checksum says nothing about code usefulness, correctness,
+legality or safety. The real-model and human-review gates remain.
