@@ -68,6 +68,10 @@ describe("v1.4.2 GitHub-only preview publisher integrity", () => {
     expect(workflow).toContain("6af67d3caab5ae7a86dda574870cccb210fc20fbf105e014ce6532c0ff793e25");
     expect(workflow).toContain("d69705cd7f2cc273e455730d8a63b41a8a617e39d02f343bfdb1bf3f9d503c3b");
     expect(workflow).toContain("test:upgrade-vsix -- LineLoom-1.4.1.vsix LineLoom-1.4.2.vsix");
+    const smoke = readFileSync("scripts/smoke-upgrade-vsix.mjs", "utf8");
+    expect(smoke).toContain('new Set(["1.2.3", "1.2.4", "1.4.1"])');
+    expect(smoke).toContain("Baseline must be a pinned published stable or preview version");
+    expect(smoke).toContain("Published baseline must have correct stable/preview VSIX metadata");
     expect(workflow).toContain("--prerelease --latest=false");
     expect(workflow).toContain("gh release create v1.4.2");
     expect(workflow).toContain("Reject existing v1.4.2 tag or release");
