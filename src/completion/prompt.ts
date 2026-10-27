@@ -2,11 +2,16 @@ import type { DocumentContext } from "../context/extract";
 import type { LanguageSpec } from "../languages/registry";
 export interface PromptData { prompt: string; suffix?: string }
 /**
- * FIM suffix is deliberately limited to one known model family. Other models
- * receive bounded before/after snippets as untrusted data in an instruction prompt.
+ * Only explicitly recognized suffix-aware families receive native Ollama FIM.
+ * The opt-in lineloom-code local tag is reserved for a future independently
+ * installed FIM-capable model; no weights are downloaded or bundled.
+ * Unknown models retain the instruction prompt with bounded before/after data.
  */
+function supportsNativeFim(model: string): boolean {
+  return /^(?:qwen2\.5-coder(?:[:-]|$)|lineloom-code(?::|$))/i.test(model);
+}
 export function buildPrompt(language: LanguageSpec, context: DocumentContext, model: string, related: readonly string[] = []): PromptData {
-  if (!related.length && /^qwen2\.5-coder(?:[:-]|$)/i.test(model)) {
+  if (!related.length && supportsNativeFim(model)) {
     return { prompt: context.prefix, ...(context.suffix ? { suffix: context.suffix } : {}) };
   }
   return {

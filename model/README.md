@@ -41,6 +41,24 @@ npm run model:eval -- --model lineloom-code:dev --mode fim --language rust
 
 See the [reproducible local benchmark protocol](EVALUATION_PROTOCOL.md), [training and release gates](TRAINING_PLAN.md) and [dataset and contributor policy](DATA_POLICY.md). Do not confuse the extension's version numbers with any future model version.
 
+## Optional local `lineloom-code` FIM tag — development source only
+
+The extension now recognizes an explicitly configured local Ollama tag of
+`lineloom-code` or `lineloom-code:<tag>` as a native suffix-aware FIM model,
+just as it recognizes installed `qwen2.5-coder` models. This sends the bounded
+cursor prefix and optional suffix to Ollama rather than wrapping them in
+generic chat instructions. When the user explicitly selects additional
+reference files, the bounded instruction path is retained to preserve their
+untrusted-data boundaries. Other/unrecognized model names keep the existing
+instruction behavior.
+
+**A tag is only a routing convention, not proof of checkpoint capability.**
+Only assign such a tag to a locally installed model verified to accept Ollama
+FIM requests; simply renaming an unrelated chat model does not enable FIM.
+No model is downloaded, trained, selected by default or published by this
+change. Before claiming improved autocomplete, collect real-model and
+physical-editor evidence separately.
+
 ## Source and safety boundaries
 
 Existing LineLoom endpoint approval, workspace trust, file exclusions, per-language model selection, cancellation and bounded prompt windows remain in force. The benchmark introduces **no new inference path inside the extension**; it is an explicitly invoked development command.
