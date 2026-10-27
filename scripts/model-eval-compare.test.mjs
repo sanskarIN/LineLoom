@@ -99,6 +99,49 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   assert.ok(!text.includes("private-source"));
 });
 
+test("source-free regression review flags worse counts and format artifacts", () => {
+  const base = report({ count: 3 });
+  const worse = report({ count: 1, model: "sensitive-model-tag" });
+  worse.formatDiagnostics.completedWithoutFormatSignals -= 1;
+  worse.formatDiagnostics.signals.markdownFence += 1;
+  const compared = compareModelReports(base, worse);
+  assert.equal(compared.regressionReview.status, "inspect-regressions");
+  assert.ok(compared.regressionReview.flags.includes("fewer-strict-matches"));
+  assert.ok(compared.regressionReview.flags.includes("per-language-strict-regression"));
+  assert.ok(compared.regressionReview.flags.includes("fewer-format-clean-completions"));
+  assert.ok(compared.regressionReview.flags.includes("more-format-artifacts"));
+  assert.ok(compared.regressionReview.languagesWithFewerStrictMatches.includes("rust"));
+  assert.deepEqual(compared.regressionReview.increasedFormatSignals, ["markdownFence"]);
+  assert.equal(compared.regressionReview.latencyComparable, true);
+  assert.ok(!JSON.stringify(compared.regressionReview).includes("sensitive-model-tag"));
+});
+test("regression review does not treat tiny or incomparable latency changes as proven regression", () => {
+  const base = report({ count: 2 });
+  const candidate = report({ count: 2 });
+  candidate.completionP95Ms += 5;
+  candidate.completionP50Ms += 5;
+  const first = compareModelReports(base, candidate);
+  assert.equal(first.regressionReview.status, "no-heuristic-regressions-detected");
+  assert.equal(first.regressionReview.latencyComparable, true);
+
+  candidate.completionP95Ms = 300;
+  const slow = compareModelReports(base, candidate);
+  assert.ok(slow.regressionReview.flags.includes("higher-completed-p95-latency"));
+  assert.equal(slow.regressionReview.status, "inspect-regressions");
+  const selected = fixtures.filter(item => item.language === "rust");
+  const fewBase = report({ selected });
+  const fewCandidate = report({ selected });
+  fewCandidate.completionP95Ms = 900;
+  assert.equal(compareModelReports(fewBase, fewCandidate).regressionReview.latencyComparable, true);
+  const failureCandidate = report({ selected });
+  failureCandidate.failed = 1;
+  failureCandidate.completed = failureCandidate.attempts - 1;
+  failureCandidate.perLanguage.rust.completed -= 1;
+  failureCandidate.perCategory.expression.completed -= 1;
+  // An inconsistent derived report must be rejected rather than used as
+  // comparative latency evidence.
+  assert.throws(() => compareModelReports(fewBase, failureCandidate));
+});
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
   const valid = report();
   assert.equal(validateComparableReport(valid).attempts, 60);
