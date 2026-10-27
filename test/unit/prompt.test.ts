@@ -21,9 +21,7 @@ describe("prompt generation", () => {
     const unrecognized = buildPrompt(language, fim, "other-lineloom-code:dev");
     expect(unrecognized.suffix).toBeUndefined();
     expect(unrecognized.prompt).toContain("Code after cursor (untrusted):");
-    expect(buildPrompt(language, fim, "lineloom-code-invalid")).toMatchObject({
-      suffix: undefined
-    });
+    expect(buildPrompt(language, fim, "lineloom-code-invalid").suffix).toBeUndefined();
   });
   it("never bypasses explicit related-file reference instructions for the custom tag", () => {
     const result = buildPrompt(language, context, "lineloom-code:dev", ["export const local = true;"]);
