@@ -1,0 +1,120 @@
+name: Publish LineLoom v1.4.2 GitHub preview (owner authorized)
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/release-v1.4.2.flag
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-github-preview-v1.4.2
+  cancel-in-progress: false
+jobs:
+  publish:
+    name: Audit, test, package, and publish GitHub preview only
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - name: Verify owner-authorization flag, package identity, and honest release notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/release-v1.4.2.flag)" = "OWNER_AUTHORIZED_GITHUB_PRE_RELEASE_V1.4.2_MANUAL_QA_DISCLOSED"
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+          const l = JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          if(p.name !== 'lineloom' || p.publisher !== 'SanskarCodes' ||
+             p.version !== '1.4.2' || l.version !== p.version ||
+             l.packages?.['']?.version !== p.version ||
+             p.devDependencies?.['@vscode/vsce'] !== '3.9.2')
+            throw Error('Unexpected publisher, preview version or locked package identity');
+          const notes = fs.readFileSync('docs/releases/v1.4.2.md','utf8');
+          if(!notes.includes('Manual QA outstanding') || !notes.includes('NOT RUN') ||
+             !notes.includes('Development dependency advisories') || !notes.includes('not a stable release'))
+            throw Error('Preview notes must disclose manual QA, dependency and stable-channel limitations');
+          NODE
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Source, TypeScript, lint, unit, QA and docs checks
+        run: npm run check
+      - name: Mocked VS Code extension-host integration
+        run: xvfb-run -a npm run test:integration
+      - name: Complete toolchain security audit, high or critical
+        run: npm audit --audit-level=high
+      - name: Production dependency security audit, moderate or higher
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Package genuine pre-release channel VSIX and check SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vsce package --pre-release --no-dependencies -o LineLoom-1.4.2.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- LineLoom-1.4.2.vsix
+          sha256sum LineLoom-1.4.2.vsix > LineLoom-1.4.2.sha256
+          sha256sum --check LineLoom-1.4.2.sha256
+      - name: Install candidate in a clean isolated VS Code profile
+        run: xvfb-run -a npm run test:install-vsix -- LineLoom-1.4.2.vsix
+      - name: Fetch and checksum-check the published v1.3.0 stable VSIX
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.3.0.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix
+          echo "6af67d3caab5ae7a86dda574870cccb210fc20fbf105e014ce6532c0ff793e25  LineLoom-1.3.0.vsix" | sha256sum --check
+      - name: Upgrade published stable to preview with synthetic settings preserved
+        env:
+          LINELOOM_EXPECT_PRE_RELEASE: '1'
+        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.3.0.vsix LineLoom-1.4.2.vsix
+      - name: Fetch pinned v1.4.1 GitHub preview and check its SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.4.1.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.4.1/LineLoom-1.4.1.vsix
+          echo "d69705cd7f2cc273e455730d8a63b41a8a617e39d02f343bfdb1bf3f9d503c3b  LineLoom-1.4.1.vsix" | sha256sum --check
+      - name: Upgrade published v1.4.1 preview to new preview in isolated profile
+        env:
+          LINELOOM_EXPECT_PRE_RELEASE: '1'
+        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.4.1.vsix LineLoom-1.4.2.vsix
+      - name: Reject existing v1.4.2 tag or release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.4.2 >/dev/null 2>&1; then
+            echo "v1.4.2 release already exists; refusing overwrite"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v1.4.2 >/dev/null; then
+            echo "v1.4.2 tag exists; refusing overwrite"
+            exit 1
+          fi
+      - name: Publish GitHub pre-release only (never registry or stable latest)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v1.4.2 \
+            LineLoom-1.4.2.vsix LineLoom-1.4.2.sha256 \
+            --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "LineLoom v1.4.2 — Local Code Quality and FIM Preview" \
+            --notes-file docs/releases/v1.4.2.md
+      - name: Verify pre-release status, tag and exact public assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/sanskarIN/LineLoom/releases/tags/v1.4.2 \
+            --jq 'if (.prerelease == true and .draft == false and (.assets | map(.name) | sort) == ["LineLoom-1.4.2.sha256","LineLoom-1.4.2.vsix"]) then "PASS: preview release and both assets" else error("Unexpected preview metadata or assets") end'
