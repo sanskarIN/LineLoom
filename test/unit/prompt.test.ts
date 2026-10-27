@@ -9,6 +9,28 @@ describe("prompt generation", () => {
     expect(buildPrompt(language, context, "qwen2.5-coder:1.5b").prompt).toBe("const answer = ");
     expect(buildPrompt(language, context, "generic-model:latest").prompt).toContain("Output ONLY");
   });
+  it("uses native suffix-aware FIM for an explicitly selected local LineLoom Code tag", () => {
+    const fim = extractContext("const value = right", 14, 512);
+    expect(fim.prefix).toBe("const value = ");
+    expect(fim.suffix).toBe("right");
+    for (const model of ["lineloom-code:dev", "lineloom-code", "LINELOOM-CODE:preview"]) {
+      expect(buildPrompt(language, fim, model)).toEqual({
+        prompt: "const value = ", suffix: "right"
+      });
+    }
+    const unrecognized = buildPrompt(language, fim, "other-lineloom-code:dev");
+    expect(unrecognized.suffix).toBeUndefined();
+    expect(unrecognized.prompt).toContain("Code after cursor (untrusted):");
+    expect(buildPrompt(language, fim, "lineloom-code-invalid")).toMatchObject({
+      suffix: undefined
+    });
+  });
+  it("never bypasses explicit related-file reference instructions for the custom tag", () => {
+    const result = buildPrompt(language, context, "lineloom-code:dev", ["export const local = true;"]);
+    expect(result.suffix).toBeUndefined();
+    expect(result.prompt).toContain("untrusted reference data");
+    expect(result.prompt).toContain("export const local = true;");
+  });
   it("includes explicitly chosen references as untrusted data and keeps zero-selection FIM intact", () => {
     const result = buildPrompt(language, context, "qwen2.5-coder:1.5b", ["export const helper = 42;"]);
     expect(result.prompt).toContain("untrusted reference data");
