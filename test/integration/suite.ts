@@ -879,7 +879,7 @@ export async function run(): Promise<void> {
             assert.equal(languageId, "lua", "HTML/CSS built-in language mode missing");
             continue;
           }
-          let optDocument = await vscode.workspace.openTextDocument(
+          let optDocument: vscode.TextDocument = await vscode.workspace.openTextDocument(
             vscode.Uri.joinPath(folder.uri, filename));
           if (optDocument.languageId !== languageId) {
             optDocument = await vscode.languages.setTextDocumentLanguage(optDocument, languageId);
