@@ -865,6 +865,59 @@ export async function run(): Promise<void> {
           const suggested = await engine.provideInlineCompletionItems(previewDoc, previewPos, trigger, cancellation.token);
           assert.ok(suggested?.length, "Expected mocked provider suggestion in " + languageId);
         }
+        // Exercise experimental opt-in modes in a real extension host,
+        // including the default-deny inference boundary and model overrides.
+        // Lua language mode is not built into all editor distributions, so
+        // only test it when this host actually registers it.
+        const registeredModes = new Set(await vscode.languages.getLanguages());
+        for (const [filename, languageId, languageLabel] of [
+          ["editor-optin.html", "html", "HTML"],
+          ["editor-optin.css", "css", "CSS"],
+          ["editor-optin.lua", "lua", "Lua"]
+        ] as const) {
+          if (!registeredModes.has(languageId)) {
+            assert.equal(languageId, "lua", "HTML/CSS built-in language mode missing");
+            continue;
+          }
+          let optDocument = await vscode.workspace.openTextDocument(
+            vscode.Uri.joinPath(folder.uri, filename));
+          if (optDocument.languageId !== languageId) {
+            optDocument = await vscode.languages.setTextDocumentLanguage(optDocument, languageId);
+          }
+          assert.equal(optDocument.languageId, languageId);
+          const optEditor = await vscode.window.showTextDocument(optDocument);
+          const optPosition = optDocument.positionAt(optDocument.getText().length);
+          optEditor.selection = new vscode.Selection(optPosition, optPosition);
+          assert.equal(configuration.get<string[]>("enabledLanguages")?.includes(languageId),
+            false, languageLabel + " must be disabled by default");
+          const callsWhileDisabled = generationCalls;
+          const disabled = await engine.provideInlineCompletionItems(
+            optDocument, optPosition, trigger, cancellation.token);
+          assert.equal(disabled, undefined, "Disabled " + languageLabel + " must not suggest");
+          assert.equal(generationCalls, callsWhileDisabled,
+            "Disabled " + languageLabel + " sent source to the mock Ollama server");
+          await configuration.update("enabledLanguages", [
+            "python", "javascript", "typescript", "rust", "kotlin",
+            "go", "java", "c", "cpp", languageId
+          ], vscode.ConfigurationTarget.Global);
+          await configuration.update("languageModels", {
+            [languageId]: "lineloom-optin:latest"
+          }, vscode.ConfigurationTarget.Global);
+          const enabled = await engine.provideInlineCompletionItems(
+            optDocument, optPosition, trigger, cancellation.token);
+          assert.equal(enabled?.[0]?.insertText, "42",
+            "Explicitly enabled " + languageLabel + " should receive a mocked suggestion");
+          assert.equal(generationCalls, callsWhileDisabled + 1,
+            "Enabled " + languageLabel + " must generate exactly once");
+          assert.equal(lastModelSent, "lineloom-optin:latest",
+            "Experimental mode must use its explicit model override");
+          assert.ok(lastPromptSent.includes("Language: " + languageLabel + "."),
+            "Experimental mode must use language-specific instructions");
+          await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+          await configuration.update("enabledLanguages", [
+            "python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"
+          ], vscode.ConfigurationTarget.Global);
+        }
         const goDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "editor-test.go"));
         const goEditor = await vscode.window.showTextDocument(goDoc);
         const goPosition = goDoc.positionAt(goDoc.getText().length);
