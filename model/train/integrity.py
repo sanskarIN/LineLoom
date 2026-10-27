@@ -8,9 +8,12 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+from contextlib import contextmanager
 from pathlib import Path
 import re
 import stat
+from typing import BinaryIO, Iterator
 
 PROTOCOL = "lineloom-local-adapter-receipt-v1"
 MAX_RECEIPT_BYTES = 32 * 1024
@@ -35,32 +38,61 @@ def _object_without_duplicates(pairs: list[tuple[str, object]]) -> dict:
     return record
 
 
-def _file_hash(path: Path, max_bytes: int) -> str:
-    """Bounded streaming SHA-256, with basic changed-file checks.
+def _same_regular_file(expected: os.stat_result, actual: os.stat_result) -> bool:
+    """Check the opened inode/device, size and modification time against lstat."""
+    return (stat.S_ISREG(actual.st_mode) and
+            (expected.st_dev, expected.st_ino, expected.st_size, expected.st_mtime_ns) ==
+            (actual.st_dev, actual.st_ino, actual.st_size, actual.st_mtime_ns))
 
-    The stat checks catch ordinary concurrent edits, not malicious races.
+
+@contextmanager
+def _checked_regular_stream(path: Path, max_bytes: int) -> Iterator[BinaryIO]:
+    """Read from a checked file descriptor, never a separately reopened path.
+
+    O_NOFOLLOW prevents final-component symlink substitution where supported.
+    The lstat/fstat/lstat identity checks are retained for Windows and races;
+    intermediate directory replacement is not fully prevented by this API.
     """
     try:
         before = path.lstat()
         if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= max_bytes:
             raise IntegrityRejected("invalid-artifact-file")
-        digest = hashlib.sha256()
-        size = 0
-        with path.open("rb") as stream:
-            while chunk := stream.read(65536):
-                size += len(chunk)
-                if size > max_bytes:
-                    raise IntegrityRejected("oversized-artifact")
-                digest.update(chunk)
-        after = path.lstat()
-        if (size != before.st_size or size != after.st_size or
-                before.st_mtime_ns != after.st_mtime_ns or
-                before.st_ino != after.st_ino or
-                not stat.S_ISREG(after.st_mode)):
-            raise IntegrityRejected("artifact-changed")
-        return digest.hexdigest()
+        # O_NONBLOCK also avoids hanging when a concurrently swapped target is
+        # a FIFO. On Windows these flags may be unavailable; fstat remains vital.
+        flags = (os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) |
+                 getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0))
+        fd = os.open(path, flags)
+        try:
+            stream = os.fdopen(fd, "rb")
+        except BaseException:
+            os.close(fd)
+            raise
+        with stream:
+            opened = os.fstat(stream.fileno())
+            if not _same_regular_file(before, opened):
+                raise IntegrityRejected("artifact-changed-before-read")
+            yield stream
+            closed = os.fstat(stream.fileno())
+            after = path.lstat()
+            if (not _same_regular_file(before, closed) or
+                    not _same_regular_file(before, after)):
+                raise IntegrityRejected("artifact-changed-during-read")
     except OSError:
+        # Never display OS errors: their messages may contain private paths.
         raise IntegrityRejected("unreadable-artifact") from None
+
+
+def _file_hash(path: Path, max_bytes: int) -> str:
+    """Bounded streaming SHA-256 with descriptor-backed identity checks."""
+    digest = hashlib.sha256()
+    size = 0
+    with _checked_regular_stream(path, max_bytes) as stream:
+        while chunk := stream.read(65536):
+            size += len(chunk)
+            if size > max_bytes:
+                raise IntegrityRejected("oversized-artifact")
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def base_metadata_hashes(base_dir: Path) -> dict:
@@ -105,11 +137,8 @@ def adapter_artifact_hashes(adapter_dir: Path) -> dict[str, str]:
 def read_training_receipt(path: Path) -> dict:
     """Strict, bounded JSON. An arbitrary report is never treated as proof."""
     try:
-        if path.is_symlink() or not path.is_file():
-            raise IntegrityRejected("missing-experiment-receipt")
-        if not 0 < path.stat().st_size <= MAX_RECEIPT_BYTES:
-            raise IntegrityRejected("invalid-experiment-receipt-size")
-        raw = path.read_bytes()
+        with _checked_regular_stream(path, MAX_RECEIPT_BYTES) as stream:
+            raw = stream.read(MAX_RECEIPT_BYTES + 1)
         if not 0 < len(raw) <= MAX_RECEIPT_BYTES:
             raise IntegrityRejected("invalid-experiment-receipt-size")
         document = json.loads(

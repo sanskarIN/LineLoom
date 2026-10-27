@@ -2,18 +2,22 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 try:
+    from . import integrity as integrity_module
     from .integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
         base_metadata_hashes, read_training_receipt, verify_training_receipt
     )
 except ImportError:
+    import integrity as integrity_module
     from integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
         base_metadata_hashes, read_training_receipt, verify_training_receipt
@@ -162,6 +166,61 @@ class AdapterIntegrityTests(unittest.TestCase):
             (adapter / "empty.bin").write_bytes(b"")
             with self.assertRaises(IntegrityRejected):
                 adapter_artifact_hashes(adapter)
+
+    def test_regular_file_path_swap_is_rejected_before_hashing_other_content(self):
+        # Simulate the exact lstat/open gap, not just a static symlink.
+        with tempfile.TemporaryDirectory() as temp:
+            base, adapter = fabricated_local_experiment(Path(temp))
+            target = adapter / "adapter_model.safetensors"
+            displaced = adapter / "original.tmp"
+            external = Path(temp) / "unrelated-private-source"
+            external.write_bytes(b"not an adapter artifact")
+            original_open = os.open
+            changed = False
+
+            def swap_then_open(path, flags, *args, **kwargs):
+                nonlocal changed
+                if Path(path) == target and not changed:
+                    changed = True
+                    target.rename(displaced)
+                    try:
+                        target.symlink_to(external)
+                    except (OSError, NotImplementedError):
+                        displaced.rename(target)
+                        raise unittest.SkipTest("Symlink creation not supported in this environment")
+                return original_open(path, flags, *args, **kwargs)
+
+            with mock.patch.object(integrity_module.os, "open", side_effect=swap_then_open):
+                with self.assertRaises(IntegrityRejected):
+                    adapter_artifact_hashes(adapter)
+            self.assertTrue(changed)
+
+    def test_receipt_path_swap_is_rejected_before_json_read(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base, adapter = fabricated_local_experiment(Path(temp))
+            receipt = adapter.parent / "experiment.json"
+            displaced = adapter.parent / "original-receipt.tmp"
+            foreign = Path(temp) / "unrelated-private-json"
+            foreign.write_text('{"secret":"never-consume"}', encoding="utf-8")
+            original_open = os.open
+            swapped = False
+
+            def swap_then_open(path, flags, *args, **kwargs):
+                nonlocal swapped
+                if Path(path) == receipt and not swapped:
+                    swapped = True
+                    receipt.rename(displaced)
+                    try:
+                        receipt.symlink_to(foreign)
+                    except (OSError, NotImplementedError):
+                        displaced.rename(receipt)
+                        raise unittest.SkipTest("Symlink creation not supported in this environment")
+                return original_open(path, flags, *args, **kwargs)
+
+            with mock.patch.object(integrity_module.os, "open", side_effect=swap_then_open):
+                with self.assertRaises(IntegrityRejected):
+                    read_training_receipt(receipt)
+            self.assertTrue(swapped)
 
     def test_cli_outputs_only_fixed_metadata_and_sanitized_failures(self):
         script = str(Path(__file__).resolve().with_name("verify_adapter.py"))
