@@ -1,6 +1,6 @@
-# LineLoom language controls — v0.4.0
+# LineLoom language controls
 
-LineLoom registers the VS Code inline-completion provider for nine language IDs:
+LineLoom registers the VS Code inline-completion provider for twelve language IDs (nine enabled by default):
 
 | VS Code ID | Language | Typical extensions | Preview status |
 | --- | --- | --- | --- |
@@ -13,6 +13,9 @@ LineLoom registers the VS Code inline-completion provider for nine language IDs:
 | `java` | Java | `.java` | Experimental in v0.4.0 |
 | `c` | C | `.c`, some `.h` | Experimental in v0.4.0 |
 | `cpp` | C++ | `.cpp`, `.cc`, `.cxx`, `.hpp` | Experimental in v0.4.0 |
+| `html` | HTML | `.html`, `.htm` | New experimental, opt-in only |
+| `css` | CSS | `.css` | New experimental, opt-in only |
+| `lua` | Lua | `.lua` | New experimental, opt-in only; editor language mode may require an extension |
 
 Actual support uses the **language mode reported by VS Code**, not the filename alone. For example, `.h` files may be recognized as either C or C++ depending on the selected editor mode. If needed, use **Change Language Mode** in VS Code.
 
@@ -23,6 +26,8 @@ Open **Command Palette → LineLoom: Manage Autocomplete Languages**, check the 
 ```json
 "lineloom.enabledLanguages": ["python", "typescript", "rust", "go"]
 ```
+
+The existing nine defaults are unchanged. To try HTML, CSS or Lua, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"` or `"lua"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
 

@@ -28,6 +28,10 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
   `SanskarCodes.lineloom` and all existing marketplace links until the
   maintainer specifically requests and approves a migration plan.
 
+## In review — optional HTML, CSS and Lua languages
+
+Source-only proposal (not shipped): register three additional editor modes as explicit opt-ins, retain the nine existing default-enabled languages, support per-language local model overrides, and preserve all endpoint/privacy gates. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before any release.
+
 ## Forward-looking milestones
 
 | Target | State | Priority and proposed deliverables | Explicit gates |
