@@ -25,15 +25,15 @@ npm run test:model-eval
 npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3 --mode auto
 # Compare syntax-sensitive or suffix behavior in isolation:
 npm run model:eval -- --language cpp --category suffix --runs 2
-# For a future FIM-trained, locally installed custom model:
-npm run model:eval -- --model lineloom-code:dev --mode fim --language rust
+# For a future locally installed and reviewed FIM-capable LineLoom Code model:
+npm run model:eval -- --model lineloom-code:dev --mode auto --language rust
 ```
 
 - The evaluator is **opt-in** and talks only to `http://127.0.0.1:11434/api/generate`. It has no configurable remote endpoint and no model downloads.
 - `--dry-run` is fully offline. No evaluator command reads editor buffers, repositories or personal source.
 - `--runs` allows 1–5 sequential repetitions. Language filters: `rust`, `c`, `cpp`, `python`, `typescript`, or `all`. The optional `--category` filter selects `expression`, `statement`, `suffix`, `type`, `indentation`, or `all`.
 - Each language has six hand-authored, synthetic checks. Category-specific results distinguish common expressions, statements, suffix awareness, type usage, and indentation. **Synthetic strict matches can reject valid alternative implementations**.
-- `auto` uses prefix/suffix generation for the known `qwen2.5-coder` model family and a bounded instruction format for all others; `--mode fim` explicitly benchmarks a custom FIM-capable model.
+- `auto` uses prefix/suffix generation for explicitly recognized `qwen2.5-coder` and `lineloom-code` model tags, matching extension routing; unrecognized models use a bounded instruction format. `--mode fim` forces FIM only when the locally installed model actually supports it, and `--mode instruction` forces the generic protocol.
 - Only aggregate counts, per-language/per-category strict matches, nearest-rank p50/p95 duration/first-token latency, and **fixture-level outcome totals without fixture IDs** are printed. `fixtureOutcomes` reports how many synthetic fixtures were evaluated, repeated, matched at least once, matched on every attempt, or had mixed exact-match outcomes. Failed requests count as non-matches. `exactEveryAttempt` also includes one-run fixtures; use `repeated` to distinguish repeated observations. These are descriptive synthetic results, **not statistical pass@k, real-editor acceptance or proven model quality**. Model text, prompts, paths and server errors are not logged. A failed request returns a failure count and a nonzero process exit code.
 - The stream decoder validates NDJSON finalization, malformed response fields, UTF-8 boundaries and strict output/byte/record limits; the tests use offline synthetic streams rather than real model access.
 - Run one **named model and mode at a time** on the same local machine, with warmed and cold trials recorded separately in human-written notes. Do not compare claims across different hardware without annotation.
@@ -58,6 +58,21 @@ FIM requests; simply renaming an unrelated chat model does not enable FIM.
 No model is downloaded, trained, selected by default or published by this
 change. Before claiming improved autocomplete, collect real-model and
 physical-editor evidence separately.
+
+## Ollama synthetic benchmark protocol v4 (development, not released)
+
+The opt-in offline evaluator now routes `lineloom-code` and
+`lineloom-code:<tag>` via native FIM in `--mode auto`, matching the
+extension's explicit local-tag behavior when no related files are selected.
+The prior synthetic v3 evaluator chose instructions for this tag; comparing
+those differently routed reports would be misleading. The benchmark
+identifier is now **`lineloom-synthetic-v4`** and legacy v1–v3 Ollama
+reports are intentionally rejected by the offline comparator. Re-run
+baseline and candidate against the same checkout, explicit mode and
+fixture scope; do not mix them with Hugging Face smoke v2 reports.
+The change adds no installed model, real benchmark result, or automatic
+download. Explicit `--mode instruction` still allows a controlled
+generic-model baseline.
 
 ## Source and safety boundaries
 

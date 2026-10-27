@@ -55,11 +55,23 @@ test("model tag validation rejects control, whitespace and shell-looking values"
 test("FIM option retains suffix and instruction mode contains untrusted marked context", () => {
   const example = fixtures[0];
   assert.equal(resolveMode("qwen2.5-coder:1.5b"), "fim");
-  assert.equal(resolveMode("lineloom-code:dev"), "instruction");
+  for (const model of [
+    "lineloom-code", "lineloom-code:dev", "LineLoom-Code:local",
+    "qwen2.5-coder", "qwen2.5-coder:1.5b", "qwen2.5-coder-7b"
+  ]) assert.equal(resolveMode(model), "fim", model);
+  for (const other of [
+    "lineloom-code-next", "lineloom-coder:dev", "user/lineloom-code:dev",
+    "qwen2.5-coderx:7b", "generic-local:latest"
+  ]) assert.equal(resolveMode(other), "instruction", other);
+  assert.equal(resolveMode("lineloom-code:dev", "instruction"), "instruction");
+  assert.equal(resolveMode("generic-local:latest", "fim"), "fim");
   const native = createRequest(example, "qwen2.5-coder:1.5b", "auto");
   assert.equal(native.prompt, example.prefix);
   assert.equal(native.suffix, example.suffix);
   assert.equal(native.options.temperature, 0);
+  const autoLineLoom = createRequest(example, "lineloom-code:dev", "auto");
+  assert.equal(autoLineLoom.prompt, example.prefix);
+  assert.equal(autoLineLoom.suffix, example.suffix);
   const forced = createRequest(example, "lineloom-code:dev", "fim");
   assert.equal(forced.suffix, example.suffix);
   const generic = createRequest(example, "lineloom-code:dev", "instruction");
@@ -111,6 +123,22 @@ test("dry-run reports scoped fixture IDs without starting inference", () => {
   assert.equal(data.requestsPlanned, 12);
   assert.deepEqual(data.targetLanguages, ["cpp"]);
   assert.equal(Object.hasOwn(data, "prefix"), false);
+});
+
+test("LineLoom Code auto dry-run selects FIM and binds the native request fingerprint", () => {
+  const script = fileURLToPath(new URL("./model-eval.mjs", import.meta.url));
+  const stdout = execFileSync(process.execPath, [
+    script, "--dry-run", "--model", "lineloom-code:dev", "--mode", "auto",
+    "--language", "typescript"
+  ], { encoding: "utf8", timeout: 5000 });
+  const data = JSON.parse(stdout);
+  assert.equal(data.mode, "fim");
+  assert.equal(data.networkCalls, 0);
+  assert.equal(data.benchmarkProtocol, "lineloom-synthetic-v4");
+  assert.equal(data.requestSpecSha256, requestSpecSha256(
+    fixtures.filter(item => item.language === "typescript"), "fim"
+  ));
+  assert.equal(stdout.includes("const"), false, "Never print synthetic prompt code");
 });
 
 test("category-selective dry-run stays offline and never prints fixture content", () => {
@@ -170,7 +198,7 @@ test("a single attempt cannot imply repeated-outcome stability", () => {
 
 
 test("evaluator's fixture identity binds original content and benchmark protocol", () => {
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v3");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v4");
   assert.match(fixtureSetSha256(fixtures), /^[a-f0-9]{64}$/);
   assert.match(requestSpecSha256(fixtures, "fim"), /^[a-f0-9]{64}$/);
   assert.equal(requestSpecSha256(fixtures, "fim"), requestSpecSha256([...fixtures].reverse(), "fim"));
