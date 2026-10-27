@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Isolated, non-interactive VS Code CLI upgrade smoke: pinned published
- * stable (v1.2.0 or v1.3.0) or v1.2.3/v1.2.4 preview -> local candidate.
+ * stable (v1.2.0 or v1.3.0) or pinned v1.2.3/v1.2.4/v1.4.1 preview -> local candidate.
  *
  * Checks that the CLI replaces the listed extension version while preserving
  * a synthetic user settings.json byte-for-byte. It does NOT verify that an
@@ -60,7 +60,7 @@ async function main() {
     const candidate = inspectVsix(candidateArchive, process.env.LINELOOM_EXPECT_PRE_RELEASE === "1");
     const source = JSON.parse(readFileSync("package.json", "utf8"));
     const stableBaselines = new Set(["1.2.0", "1.3.0"]);
-    const previewBaselines = new Set(["1.2.3", "1.2.4"]);
+    const previewBaselines = new Set(["1.2.3", "1.2.4", "1.4.1"]);
     assert.ok(stableBaselines.has(previous.version) || previewBaselines.has(previous.version),
       "Baseline must be a pinned published stable or preview version");
     assert.equal(previous.preRelease, previewBaselines.has(previous.version),
