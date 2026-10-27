@@ -21,19 +21,27 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
-## v1.4.2 GitHub-only preview candidate (publication gated)
+## v1.4.2 GitHub-only preview — published 2026-10-27
 
-The next GitHub-only preview is prepared with experimental **HTML/CSS/Lua
-opt-in completions**, explicit **LineLoom Code native local FIM routing**,
-offline adapter integrity verification, v4 synthetic benchmark scope checks,
-and fixed-enum model regression-review signals. These are development features,
-**not trained first-party weights or measured model-quality improvements**.
-The original nine default-enabled languages, `SanskarCodes.lineloom` ID and
-v1.3.0 stable marketplaces remain unchanged. Download links will be promoted
-on the website **only after public GitHub release artifacts are verified**.
-See [v1.4.2 release scope](docs/releases/v1.4.2.md) and
+The [**GitHub v1.4.2 testing preview**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2)
+is published with a genuine [preview-channel VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.2/LineLoom-1.4.2.vsix)
+and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.2/LineLoom-1.4.2.sha256).
+The [version-pinned release workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40446223653)
+passed locked audits, Linux VS Code mocked editor-host tests, pre-release
+packaging, digest validation, a clean install and independently pinned upgrades
+from published v1.3.0 stable and v1.4.1 preview.
+
+New in this preview: experimental **HTML/CSS/Lua opt-in completions**,
+explicit **LineLoom Code native local FIM routing**, offline adapter
+integrity checks, v4 synthetic benchmark scope verification and source-free
+regression review. These are development features, **not trained first-party
+weights or measured model-quality improvements**. The original nine
+default-enabled languages and `SanskarCodes.lineloom` ID remain unchanged.
+See [release notes](docs/releases/v1.4.2.md) and
 [manual QA checklist](docs/qa/v1.4.2-preview-acceptance.md).
 Manual Ollama and physical desktop acceptance remain **NOT RUN**.
+The GitHub stable version remains **v1.3.0**; external extension registries
+and npm distributions were not updated.
 
 ## v1.4.1 GitHub preview — published 2026-10-26
 
@@ -75,24 +83,24 @@ The status bar differentiates **autocomplete enabled** from **model availability
 
 The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview. See [sidebar privacy and status](docs/sidebar.md).
 
-## Additional `main` development after v1.4.1 — not released
+## Changes after v1.4.1 — included in GitHub v1.4.2 preview
 
-The following work is **merged into source**, but **not included in the
-published v1.3.0 stable or v1.4.1 preview**:
+The following work is now **included in the GitHub v1.4.2 testing preview**
+but **not** in the v1.3.0 stable build or external extension registries:
 
 - [PR #144](https://github.com/sanskarIN/LineLoom/pull/144) recognizes HTML, CSS and Lua as **experimental, explicit opt-in** languages. The original nine default-enabled modes are unchanged; locally installed model overrides may be assigned separately.
 - [PR #145](https://github.com/sanskarIN/LineLoom/pull/145) recognizes an explicitly selected, locally installed `lineloom-code` FIM model tag, with bounded Ollama prefix/suffix completion. This is request routing only, not trained or shipped weights.
 - [PR #143](https://github.com/sanskarIN/LineLoom/pull/143) adds SHA-256 local LoRA adapter artifact receipts and a read-only verification gate before research smoke runs. The checks do **not** prove provenance, permission to train, or model usefulness.
 
-These changes have automated CI evidence, **not** real Ollama model quality,
-physical-editor accessibility or a new authorized extension release. The
-publisher ID and independent registries are unchanged.
+These changes have verified v1.4.2 GitHub pre-release packaging and automated
+CI evidence, **not** real Ollama quality, physical-editor accessibility or a
+stable/registry update. The publisher ID and independent registries are unchanged.
 
 ## Dedicated code-completion model — development track (not released)
 
 A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and **30 original categorized synthetic fixtures** for **Rust, C, C++, Python and TypeScript**. The evaluator has strict bounded stream decoding and language/category-level aggregate results. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).
 
-The latest **GitHub preview v1.4.0** was published on 2026-10-26 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0). This does **not** include a trained first-party model; v1.3.0 remains stable.
+The latest **GitHub preview v1.4.2** was published on 2026-10-27 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2). This does **not** include a trained first-party model; v1.3.0 remains stable.
 
 ## v1.3.0 stable on GitHub (released 2026-10-25)
 
