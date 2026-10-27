@@ -5,11 +5,46 @@
  * Reject incompatible reports instead of manufacturing percentages over
  * different fixture sets, run counts or prompting protocols.
  */
+import { readFileSync } from "node:fs";
 import {
-  EVAL_BENCHMARK_PROTOCOL, EVAL_LANGUAGES, EVAL_CATEGORIES
+  EVAL_BENCHMARK_PROTOCOL, EVAL_LANGUAGES, EVAL_CATEGORIES,
+  validateFixtures, fixtureSetSha256, requestSpecSha256
 } from "./model-eval-lib.mjs";
 import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 
+/**
+ * Reconstruct the only scopes exposed by the evaluator from the fixed
+ * checked-in public manifest. Hash agreement between two arbitrary reports
+ * alone is not proof that they used our reviewed synthetic fixtures.
+ * This is NOT an attestation of an actual model run or model identity.
+ */
+function buildReviewedScopes() {
+  const fixtures = validateFixtures(JSON.parse(readFileSync(
+    new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"
+  )));
+  const scopes = new Map();
+  for (const language of ["all", ...EVAL_LANGUAGES]) {
+    for (const category of ["all", ...EVAL_CATEGORIES]) {
+      const selected = fixtures.filter(item =>
+        (language === "all" || item.language === language) &&
+        (category === "all" || item.category === category));
+      if (!selected.length) continue;
+      const fingerprint = fixtureSetSha256(selected);
+      const languageCounts = Object.fromEntries(EVAL_LANGUAGES.map(id => [
+        id, selected.filter(item => item.language === id).length
+      ]));
+      const categoryCounts = Object.fromEntries(EVAL_CATEGORIES.map(id => [
+        id, selected.filter(item => item.category === id).length
+      ]));
+      for (const mode of ["fim", "instruction"]) {
+        scopes.set([fingerprint, requestSpecSha256(selected, mode), mode].join(":"),
+          { count: selected.length, languageCounts, categoryCounts });
+      }
+    }
+  }
+  return scopes;
+}
+const REVIEWED_SCOPES = buildReviewedScopes();
 const isObject = v => v !== null && typeof v === "object" && !Array.isArray(v);
 const integer = (v, min = 0, max = 1_000_000) =>
   Number.isSafeInteger(v) && v >= min && v <= max;
@@ -94,6 +129,24 @@ export function validateComparableReport(raw) {
       (raw.runsPerFixture === 1 && outcome.exactAtLeastOnce !== outcome.exactEveryAttempt)) {
     throw Error("inconsistent-outcomes");
   }
+  const scope = REVIEWED_SCOPES.get([
+    raw.fixtureSetSha256, raw.requestSpecSha256, raw.mode
+  ].join(":"));
+  if (!scope || scope.count !== raw.syntheticFixtures) {
+    throw Error("unrecognized-reviewed-scope");
+  }
+  const perLanguage = validateBreakdown(
+    raw.perLanguage, EVAL_LANGUAGES, raw.attempts, raw.completed, raw.strictExactMatches
+  );
+  const perCategory = validateBreakdown(
+    raw.perCategory, EVAL_CATEGORIES, raw.attempts, raw.completed, raw.strictExactMatches
+  );
+  if (EVAL_LANGUAGES.some(key =>
+        perLanguage[key].attempts !== scope.languageCounts[key] * raw.runsPerFixture) ||
+      EVAL_CATEGORIES.some(key =>
+        perCategory[key].attempts !== scope.categoryCounts[key] * raw.runsPerFixture)) {
+    throw Error("inconsistent-reviewed-scope-counts");
+  }
   return {
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     fixtureSetSha256: raw.fixtureSetSha256,
@@ -105,12 +158,7 @@ export function validateComparableReport(raw) {
     failed: raw.failed, strictExactMatches: raw.strictExactMatches,
     completionP50Ms: raw.completionP50Ms, completionP95Ms: raw.completionP95Ms,
     firstTokenP50Ms: raw.firstTokenP50Ms, firstTokenP95Ms: raw.firstTokenP95Ms,
-    perLanguage: validateBreakdown(
-      raw.perLanguage, EVAL_LANGUAGES, raw.attempts, raw.completed, raw.strictExactMatches
-    ),
-    perCategory: validateBreakdown(
-      raw.perCategory, EVAL_CATEGORIES, raw.attempts, raw.completed, raw.strictExactMatches
-    ),
+    perLanguage, perCategory,
     formatDiagnostics: {
       inspectedCompleted: format.inspectedCompleted,
       completedWithoutFormatSignals: format.completedWithoutFormatSignals,
