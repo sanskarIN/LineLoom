@@ -215,6 +215,14 @@ not accepted by this specific comparison workflow; they require separate
 independent review and migration, not fabricating a receipt. Base-only smoke
 still works as before. Default planning modes still import no ML packages.
 
+Verifier hardening after the first receipt implementation opens regular files
+through checked descriptors (no-follow on platforms supporting it, plus
+pre/post-open identity and size/mtime checks). The receipt is bounded while
+reading, and concurrently swapped file paths are rejected in offline tests.
+This reduces accidental/malicious final-file replacement risk but is **not**
+an atomic filesystem snapshot or a defense against arbitrary intermediate
+symlink/directory races; verify untrusted artifacts in an isolated directory.
+
 These SHA-256 values **are not signatures**, do not authenticate the
 claimed model revision, full base-weight files, training corpus rights,
 training run honesty, or the absence of hidden/poisoned code, and cannot
