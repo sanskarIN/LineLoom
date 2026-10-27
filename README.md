@@ -27,7 +27,7 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **Changes from v1.4.0:** explicit source-free support-report copy, editor-scoped readiness fixes, cancellable manual model discovery, synthetic benchmark comparison, offline dataset governance screening and v2 formatting signals across Rust, C, C++, Python and TypeScript. **No LineLoom-trained weights or real Ollama quality results** are claimed. Real physical-editor/accessibility testing is **NOT RUN**. See [release notes](docs/releases/v1.4.1.md) and [manual QA checklist](docs/qa/v1.4.1-preview-acceptance.md). **GitHub stable stays v1.3.0**; publisher `SanskarCodes.lineloom`, Marketplace, Open VSX and npm distribution remain unchanged.
 
-## After v1.4.0 — current `main` development (unreleased)
+## After v1.4.0 — changes incorporated into v1.4.1 preview
 
 The ongoing development branch now includes **Copy Sanitized Support Summary**
 in the native Control Center, Quick Actions and Command Palette, using only
@@ -60,6 +60,19 @@ The status bar differentiates **autocomplete enabled** from **model availability
 ## Session acceptance metrics — in GitHub v1.4.0 preview
 
 The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview. See [sidebar privacy and status](docs/sidebar.md).
+
+## Additional `main` development after v1.4.1 — not released
+
+The following work is **merged into source**, but **not included in the
+published v1.3.0 stable or v1.4.1 preview**:
+
+- [PR #144](https://github.com/sanskarIN/LineLoom/pull/144) recognizes HTML, CSS and Lua as **experimental, explicit opt-in** languages. The original nine default-enabled modes are unchanged; locally installed model overrides may be assigned separately.
+- [PR #145](https://github.com/sanskarIN/LineLoom/pull/145) recognizes an explicitly selected, locally installed `lineloom-code` FIM model tag, with bounded Ollama prefix/suffix completion. This is request routing only, not trained or shipped weights.
+- [PR #143](https://github.com/sanskarIN/LineLoom/pull/143) adds SHA-256 local LoRA adapter artifact receipts and a read-only verification gate before research smoke runs. The checks do **not** prove provenance, permission to train, or model usefulness.
+
+These changes have automated CI evidence, **not** real Ollama model quality,
+physical-editor accessibility or a new authorized extension release. The
+publisher ID and independent registries are unchanged.
 
 ## Dedicated code-completion model — development track (not released)
 
@@ -231,12 +244,14 @@ The [v1.3.0 GitHub stable publishing workflow](https://github.com/sanskarIN/Line
 
 ## Features
 
+This section describes the **current development source**. Some features may not yet be in the published stable/preview VSIX; see the version-specific notes above.
+
 - **Stricter send-time privacy controls:** rechecks active model, file exclusions, workspace trust and remote-endpoint permission before sending completion context. Pending model-picker choices are also discarded if the Ollama endpoint or remote approval changes.
 - **Per-language Ollama models:** assign a different installed model to each supported language using **LineLoom: Assign Language Model** or the status-bar Quick Actions picker. Unassigned languages use the default `lineloom.model`; JSX/TSX use the JavaScript/TypeScript override. No automatic model downloads.
-- Native VS Code inline suggestions for **nine language IDs**: Python, JavaScript/JSX, TypeScript/TSX, Rust, Kotlin, **Go, Java, C and C++**. Go, Java, C and C++ remain experimental.
+- Native VS Code inline suggestions for **12 recognized language IDs** in current source. The original **nine defaults** are Python, JavaScript/JSX, TypeScript/TSX, Rust, Kotlin, Go, Java, C and C++. **HTML, CSS and Lua are additional experimental opt-in modes, not enabled by default** and not yet part of a published VSIX. See [language controls](docs/languages/README.md).
 - **Smarter automatic request timing:** suppresses background inference directly before existing identifier characters (including Unicode letters, combining marks, connector punctuation and joiners). Configure `lineloom.suppressMidTokenAuto` (default on) to opt out; manual requests always work, and skip the typing debounce.
 - **Typed suggestion continuation:** when you type the beginning of an inline suggestion, LineLoom can offer the remaining text immediately from short-lived memory without another Ollama generation. Context, settings, active editor, workspace privacy **and the actual single-insertion edit event** must all match. Multi-edit changes, selection replacements and edits elsewhere invalidate reuse. No cross-file reads.
-- Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family. Improved cleanup removes common model control tokens and explanations outside leading fenced code blocks. Ollama streams have total-byte, event-count and per-event safety limits.
+- Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family or, in unreleased source, an explicitly configured `lineloom-code` tag for an independently installed FIM-capable model. Improved cleanup removes common model control tokens and explanations outside leading fenced code blocks. Ollama streams have total-byte, event-count and per-event safety limits.
 - **Quick Actions from the status bar:** enable/disable completion, pause/resume automatic suggestions, trigger manually, choose a default or per-language model, manage languages, check connection, open diagnostics or settings. Model discovery and connection checks run only when selected by the user.
 - User-selected installed model, endpoint, timeouts, output limits, temperature, automatic-trigger controls and **per-language opt-in/out settings**.
 - Cancellation on newer requests, active cursor/editor changes and timeouts; a short-lived backoff stops repeatedly sending identical automatic requests after an empty model result. Explicit user-triggered requests bypass this backoff. Additional checks run before sending code or reusing a cached suggestion. No insertion is attempted for selected text or multiple cursors, and automatic suggestions defer to active native IntelliSense completions.
@@ -260,7 +275,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Quick Actions · Pause or Resume Automatic Suggestions · Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Manage Autocomplete Languages · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v1.0.0 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists the enabled editor modes (12 recognized in unreleased source; original nine selected by default). HTML, CSS and Lua must be explicitly enabled; JSX and TSX follow JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v1.0.0 even if the reserved setting is enabled.
 
 ## Privacy and safety
 

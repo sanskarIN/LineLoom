@@ -28,9 +28,15 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
   `SanskarCodes.lineloom` and all existing marketplace links until the
   maintainer specifically requests and approves a migration plan.
 
-## In review — optional HTML, CSS and Lua languages
+## Merged into unreleased source — optional HTML, CSS and Lua languages
 
-Source-only proposal (not shipped): register three additional editor modes as explicit opt-ins, retain the nine existing default-enabled languages, support per-language local model overrides, and preserve all endpoint/privacy gates. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before any release.
+[PR #144](https://github.com/sanskarIN/LineLoom/pull/144) merged the source-only implementation (not yet published in a VSIX): three additional editor modes require explicit opt-in, the nine existing defaults remain unchanged, per-language local model overrides work, and existing endpoint/privacy gates remain in force. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before any release.
+
+## Model research merged after v1.4.1 (not released)
+
+- [PR #145](https://github.com/sanskarIN/LineLoom/pull/145): an explicitly configured `lineloom-code` model tag uses native bounded FIM requests when no extra references are selected. This does not establish that a first-party model was actually trained or installed.
+- [PR #143](https://github.com/sanskarIN/LineLoom/pull/143): integrity receipts for local LoRA adapter experiment artifacts, strict offline verification and matching-receipt gates before smoke comparison. Digest matching alone is **not** signature or provenance verification.
+- Cross-platform and editor-host automated checks passed for the merged source. Actual model inference, generated-code quality, physical accessibility and distribution approval remain outstanding.
 
 ## Forward-looking milestones
 
