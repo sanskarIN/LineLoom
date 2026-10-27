@@ -54,6 +54,7 @@ try {
   await writeFile(path.join(fixture, "editor-optin.html"), "<main><p>", "utf8");
   await writeFile(path.join(fixture, "editor-optin.css"), ".card { padding: ", "utf8");
   await writeFile(path.join(fixture, "editor-optin.lua"), "local answer = ", "utf8");
+  await writeFile(path.join(fixture, "editor-fim.ts"), "const answer = /* preserved suffix */", "utf8");
   await runTests({
     extensionDevelopmentPath: root,
     extensionTestsPath: path.join(root, "dist/integration.js"),
