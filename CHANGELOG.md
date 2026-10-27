@@ -2,6 +2,15 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.4.2 — GitHub-only pre-release candidate (publication gated)
+
+- [#144](https://github.com/sanskarIN/LineLoom/pull/144): opt-in HTML/CSS/Lua with original nine enabled language defaults preserved.
+- [#145](https://github.com/sanskarIN/LineLoom/pull/145): explicit local LineLoom Code FIM routing, no bundled/trained model.
+- [#143](https://github.com/sanskarIN/LineLoom/pull/143), [#147](https://github.com/sanskarIN/LineLoom/pull/147): offline adapter integrity receipts and file-descriptor hardening, no provenance authorization.
+- [#148](https://github.com/sanskarIN/LineLoom/pull/148), [#149](https://github.com/sanskarIN/LineLoom/pull/149): mocked editor-host language and FIM request regressions.
+- [#150](https://github.com/sanskarIN/LineLoom/pull/150), [#151](https://github.com/sanskarIN/LineLoom/pull/151), [#152](https://github.com/sanskarIN/LineLoom/pull/152): v4 synthetic evaluator, reviewed fixture-scope verification and privacy-safe heuristic comparison.
+- **No real model inference/quality or physical-device/manual accessibility validation recorded; NOT RUN.** Stable v1.3.0, registries and publisher unchanged. [Release notes](docs/releases/v1.4.2.md) and [manual QA](docs/qa/v1.4.2-preview-acceptance.md).
+
 ## v1.4.1 — GitHub-only pre-release (published 2026-10-26)
 
 - Source-free support summary, editor-scoped check invalidation and cancellable manual Ollama discovery (PRs #126–127).

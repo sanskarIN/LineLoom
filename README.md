@@ -21,6 +21,20 @@ It adds privacy-safe native Control Center **Next:** recommendations, a manual c
 
 **For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
 
+## v1.4.2 GitHub-only preview candidate (publication gated)
+
+The next GitHub-only preview is prepared with experimental **HTML/CSS/Lua
+opt-in completions**, explicit **LineLoom Code native local FIM routing**,
+offline adapter integrity verification, v4 synthetic benchmark scope checks,
+and fixed-enum model regression-review signals. These are development features,
+**not trained first-party weights or measured model-quality improvements**.
+The original nine default-enabled languages, `SanskarCodes.lineloom` ID and
+v1.3.0 stable marketplaces remain unchanged. Download links will be promoted
+on the website **only after public GitHub release artifacts are verified**.
+See [v1.4.2 release scope](docs/releases/v1.4.2.md) and
+[manual QA checklist](docs/qa/v1.4.2-preview-acceptance.md).
+Manual Ollama and physical desktop acceptance remain **NOT RUN**.
+
 ## v1.4.1 GitHub preview — published 2026-10-26
 
 **[Download v1.4.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.1)**: verified genuine VS Code [LineLoom-1.4.1.vsix](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.1/LineLoom-1.4.1.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.1/LineLoom-1.4.1.sha256). The version-pinned [GitHub publisher](https://github.com/sanskarIN/LineLoom/actions/runs/40265555223) passed tests, security audits, preview-channel manifest validation, clean installation and pinned stable-to-preview upgrade.
