@@ -150,6 +150,7 @@ export async function run(): Promise<void> {
   let modelListCalls = 0;
   let lastModelSent = "";
   let lastPromptSent = "";
+  let lastSuffixSent: string | undefined;
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
@@ -160,9 +161,12 @@ export async function run(): Promise<void> {
     } else if (request.url === "/api/generate") {
       const parts: Buffer[] = [];
       for await (const chunk of request) parts.push(Buffer.from(chunk));
-      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string; prompt?: string };
+      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as {
+        model?: string; prompt?: string; suffix?: string
+      };
       lastModelSent = payload.model ?? "";
       lastPromptSent = payload.prompt ?? ""; // kept only inside synthetic test server; never logged
+      lastSuffixSent = payload.suffix; // synthetic test-only context, never logged
       generationCalls++;
       if (mockTransientFailure) {
         response.statusCode = 503;
@@ -918,6 +922,41 @@ export async function run(): Promise<void> {
             "python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"
           ], vscode.ConfigurationTarget.Global);
         }
+        // Exercise the complete local FIM HTTP request, not only buildPrompt()
+        // unit tests. The recognized LineLoom Code tag must send a bounded
+        // prefix and a separate suffix, while unknown models use instructions.
+        const fimDocument = await vscode.workspace.openTextDocument(
+          vscode.Uri.joinPath(folder.uri, "editor-fim.ts"));
+        const fimPosition = fimDocument.positionAt("const answer = ".length);
+        const fimEditor = await vscode.window.showTextDocument(fimDocument);
+        fimEditor.selection = new vscode.Selection(fimPosition, fimPosition);
+        await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
+        await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const callsBeforeFim = generationCalls;
+        const nativeFim = await engine.provideInlineCompletionItems(
+          fimDocument, fimPosition, trigger, cancellation.token);
+        assert.equal(nativeFim?.[0]?.insertText, "42",
+          "Mocked LineLoom Code FIM should offer only missing insertion text");
+        assert.equal(generationCalls, callsBeforeFim + 1);
+        assert.equal(lastModelSent, "lineloom-code:dev");
+        assert.equal(lastPromptSent, "const answer = ",
+          "Native FIM must send the bounded cursor prefix, not chat instructions");
+        assert.equal(lastSuffixSent, "/* preserved suffix */",
+          "Native FIM must keep code after the cursor as a separate Ollama suffix");
+
+        await configuration.update("model", "generic-local:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const generic = await engine.provideInlineCompletionItems(
+          fimDocument, fimPosition, trigger, cancellation.token);
+        assert.equal(generic?.[0]?.insertText, "42");
+        assert.equal(lastSuffixSent, undefined,
+          "Unrecognized models must never receive an assumed FIM suffix");
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+          "Generic models must retain the bounded instruction prompt");
+        await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+
         const goDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "editor-test.go"));
         const goEditor = await vscode.window.showTextDocument(goDoc);
         const goPosition = goDoc.positionAt(goDoc.getText().length);
