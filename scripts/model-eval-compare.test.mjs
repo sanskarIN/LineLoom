@@ -15,10 +15,10 @@ import { readFileSync } from "node:fs";
 const fixtures = validateFixtures(JSON.parse(readFileSync(
   fileURLToPath(new URL("../model/fixtures/completion-v1.json", import.meta.url)), "utf8"
 )));
-function report({ runs = 2, model = "local-test-a", count = 1 } = {}) {
+function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtures, mode = "fim" } = {}) {
   const results = [];
   for (let run = 0; run < runs; run++) {
-    for (const [index, fixture] of fixtures.entries()) {
+    for (const [index, fixture] of selected.entries()) {
       const exact = index < count;
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
@@ -27,10 +27,10 @@ function report({ runs = 2, model = "local-test-a", count = 1 } = {}) {
     }
   }
   return {
-    ...summarizeMeasurements(results, fixtures.length, model, "fim"),
+    ...summarizeMeasurements(results, selected.length, model, mode),
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
-    fixtureSetSha256: fixtureSetSha256(fixtures),
-    requestSpecSha256: requestSpecSha256(fixtures, "fim"), runsPerFixture: runs
+    fixtureSetSha256: fixtureSetSha256(selected),
+    requestSpecSha256: requestSpecSha256(selected, mode), runsPerFixture: runs
   };
 }
 test("fixture content fingerprint is order-independent and changes on real fixture edits", () => {
@@ -40,6 +40,39 @@ test("fixture content fingerprint is order-independent and changes on real fixtu
   assert.notEqual(hash, fixtureSetSha256(fixtures.map((f, i) =>
     i === 0 ? { ...f, expected: f.expected + "x" } : f)));
   assert.notEqual(hash, fixtureSetSha256(fixtures.slice(1)));
+});
+
+test("recognized checked-in language/category scopes and modes compare offline", () => {
+  for (const mode of ["fim", "instruction"]) {
+    for (const selected of [
+      fixtures.filter(item => item.language === "rust"),
+      fixtures.filter(item => item.category === "suffix"),
+      fixtures.filter(item => item.language === "typescript" && item.category === "indentation")
+    ]) {
+      if (!selected.length) continue;
+      const baseline = report({ selected, mode, runs: 2, count: 0 });
+      const candidate = report({ selected, mode, runs: 2, count: 1 });
+      assert.equal(validateComparableReport(baseline).syntheticFixtures, selected.length);
+      assert.equal(compareModelReports(baseline, candidate).scopeVerified, true);
+    }
+  }
+});
+test("rejects fabricated matching hashes and rearranged attempt allocations", () => {
+  const valid = report();
+  const fake = { ...valid,
+    fixtureSetSha256: "0".repeat(64), requestSpecSha256: "1".repeat(64)
+  };
+  assert.throws(() => compareModelReports(fake, fake),
+    "Matching invented hashes are not evidence of the reviewed fixture set");
+  const misallocated = structuredClone(valid);
+  for (const field of ["attempts", "completed"]) {
+    misallocated.perLanguage.rust[field] -= 1;
+    misallocated.perLanguage.c[field] += 1;
+  }
+  assert.throws(() => validateComparableReport(misallocated),
+    "Equal totals cannot hide attempts moved to another language");
+  assert.throws(() => validateComparableReport({ ...valid, mode: "instruction" }),
+    "A request hash must bind to its claimed prompt mode");
 });
 
 test("comparison returns only bounded counts and per-language/category deltas", () => {
