@@ -113,6 +113,15 @@ are not representative when failures differ. Higher strict equality is not
 proof of safer/correct code. No actual Ollama model has been benchmarked here.
 This tool is unreleased development and not included in GitHub v1.4.0.
 
+The offline report comparator now also returns a strictly allowlisted
+`regressionReview` with indicators for additional request failures,
+fewer strict matches (including per-language declines), fewer completions
+without format flags, more recognized format artifacts, and substantial
+completed-request p95 increases under equal completion counts. This is
+**not a pass/fail model quality score**; it cannot verify hardware parity,
+code compilation, practical usability, or the authenticity of a report.
+No source snippets, model names or custom user report fields are echoed.
+
 
 ## Dataset preparation safety gate (post-v1.4.0 source, unreleased)
 

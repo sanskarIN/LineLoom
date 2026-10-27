@@ -181,6 +181,43 @@ function selectedNumbers(report) {
     completionP50Ms, completionP95Ms, firstTokenP50Ms, firstTokenP95Ms };
 }
 
+/** Review flags are diagnostic signals, not a release verdict or quality score.
+ * Keep output entirely allowlisted; never repeat untrusted input strings. */
+export function reviewSyntheticRegressions(baseline, candidate) {
+  const flags = [];
+  if (candidate.failed > baseline.failed) flags.push("more-failed-requests");
+  if (candidate.strictExactMatches < baseline.strictExactMatches) flags.push("fewer-strict-matches");
+  if (candidate.formatDiagnostics.completedWithoutFormatSignals <
+      baseline.formatDiagnostics.completedWithoutFormatSignals) {
+    flags.push("fewer-format-clean-completions");
+  }
+  const languagesWithFewerStrictMatches = EVAL_LANGUAGES.filter(language =>
+    candidate.perLanguage[language].strictMatches <
+    baseline.perLanguage[language].strictMatches);
+  if (languagesWithFewerStrictMatches.length) flags.push("per-language-strict-regression");
+  const increasedFormatSignals = FORMAT_SIGNAL_NAMES.filter(name =>
+    candidate.formatDiagnostics.signals[name] > baseline.formatDiagnostics.signals[name]);
+  if (increasedFormatSignals.length) flags.push("more-format-artifacts");
+  // Total latency only counts completions, so flag substantial changes only
+  // with equal finished counts and at least ten completed requests. This is
+  // still descriptive; hardware and other process loads are not attested.
+  const latencyComparable = baseline.completed === candidate.completed &&
+    baseline.completed >= 10;
+  if (latencyComparable && baseline.completionP95Ms !== null &&
+      candidate.completionP95Ms !== null &&
+      candidate.completionP95Ms - baseline.completionP95Ms >= 100 &&
+      candidate.completionP95Ms >= baseline.completionP95Ms * 1.25) {
+    flags.push("higher-completed-p95-latency");
+  }
+  return {
+    status: flags.length ? "inspect-regressions" : "no-heuristic-regressions-detected",
+    flags,
+    languagesWithFewerStrictMatches,
+    increasedFormatSignals,
+    latencyComparable,
+    interpretation: "Synthetic review signals only; not model quality, statistical significance or release approval."
+  };
+}
 /**
  * Higher delta strict matches is not necessarily better code. Both mode and
  * fixture fingerprint must agree; environment/quantization cannot be checked
@@ -201,6 +238,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
     throw Error("incompatible-fixture-scope");
   }
   return {
+    regressionReview: reviewSyntheticRegressions(baseline, candidate),
     comparisonType: "controlled-synthetic-exact-match",
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     scopeVerified: true,
