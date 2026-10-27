@@ -98,7 +98,12 @@ npm run model:compare -- --baseline baseline.json --candidate candidate.json
 ```
 
 **Security and interpretation:** this command is offline and reads only the two
-explicit report files, each limited to 32 KiB. It displays only allowlisted
+explicit report files, each limited to 32 KiB, plus the fixed checked-in public
+synthetic fixture manifest. The comparator verifies each claimed fixture-set
+and request-spec hash against actual supported language/category selections,
+not merely against the other report; it also checks exact per-language/category
+attempt allocations. These checks are **not cryptographic attestation of an
+actual model run** and cannot establish hardware or model identity. It displays only allowlisted
 aggregate count/latency changes and per-language/per-category exact-match
 deltas, without echoing the model tags, filenames, JSON payloads, generated
 code, source, or file paths. Keep original report filenames and hardware

@@ -132,17 +132,22 @@ outputs locally and compare only after the reports have been reviewed:
 npm run model:compare -- --baseline baseline.json --candidate candidate.json
 ```
 
-The source-free comparator verifies a cryptographic fixture-set fingerprint
-(which includes checked-in fixture contents), benchmark protocol, prompt mode,
-run count, and per-language/category attempt scope before reporting deltas.
+The source-free comparator reconstructs the permitted language/category filter
+scopes from the fixed checked-in public synthetic fixture manifest and verifies
+each claimed fixture and request-spec hash against that reviewed content,
+not merely against the other report. It also validates benchmark protocol,
+prompt mode, run count, and the exact per-language/category attempt allocation.
 It refuses incompatible/malformed/legacy reports rather than comparing
 percentages across different test sets. Input files are individually capped at
 32 KiB, and untrusted report fields are never echoed. Keep names and raw
 reports local, and **review the clipboard or output before publishing**.
 
-This does not establish matching runtime/hardware, independent statistical
-significance, correctness, user acceptance or actual first-party model
-progress. No physical model run or benchmark observation was performed by
+These reviewed-scope checks reject fabricated or inconsistent benchmark
+claims but cannot prove that a model was run: both a report and the checked-in
+fixture set could be modified by an adversary with local repository write
+access. This does not establish matching runtime/hardware, independent
+statistical significance, correctness, user acceptance or actual first-party
+model progress. No physical model run or benchmark observation was performed by
 the implementation.
 
 
