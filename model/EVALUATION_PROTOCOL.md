@@ -48,6 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
+The source benchmark v4 also recognizes `lineloom-code` and
+`lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
+extension routing. This name only selects a request format; it is not
+evidence that any checkpoint is installed or supports FIM. Use
+`--mode instruction` to force a generic comparison if needed.
+The Ollama report protocol is `lineloom-synthetic-v4`, which does not
+compare with earlier v1–v3 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.

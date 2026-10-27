@@ -9,7 +9,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v3";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v4";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -33,7 +33,11 @@ export function validateModelTag(value) {
 export function resolveMode(model, mode = "auto") {
   if (!EVAL_MODES.includes(mode)) throw new Error("Invalid prompt mode");
   if (mode !== "auto") return mode;
-  return /^qwen2\.5-coder(?:[:-]|$)/i.test(model) ? "fim" : "instruction";
+  // Keep the evaluator's --mode auto aligned with the extension's native
+  // prefix/suffix routing. The special tag is opt-in: it does not prove that
+  // any checkpoint exists or can actually perform FIM generation.
+  return /^(?:qwen2\.5-coder(?:[:-]|$)|lineloom-code(?::|$))/i.test(model)
+    ? "fim" : "instruction";
 }
 /**
  * Explicit, original synthetic fixtures only. Fail closed on unsupported
