@@ -1,4 +1,4 @@
-import { DEFAULT_ENABLED_LANGUAGES, type SupportedLanguage } from "../languages/registry";
+import { LANGUAGES, type SupportedLanguage } from "../languages/registry";
 import { normalizeModelTag } from "./normalize";
 
 /** A bounded, editor-only mapping. Unknown keys and malformed model tags are ignored. */
@@ -8,7 +8,7 @@ export function normalizeLanguageModels(input: unknown): LanguageModels {
   const result: LanguageModels = {};
   if (!input || typeof input !== "object" || Array.isArray(input)) return result;
   const values = input as Record<string, unknown>;
-  for (const language of DEFAULT_ENABLED_LANGUAGES) {
+  for (const { id: language } of LANGUAGES) {
     const value = values[language];
     const model = normalizeModelTag(value);
     if (model) result[language] = model;
