@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Offline comparison only: reads two user-selected, bounded JSON summaries.
- * No network, Ollama, source code, extra files, or path/model echo in output.
+ * Offline comparison only: reads two user-selected, bounded JSON summaries
+ * and the fixed checked-in public synthetic fixture manifest to verify scope.
+ * No network, Ollama, private workspace code, or path/model echo in output.
  */
 import { open } from "node:fs/promises";
 import { compareModelReports } from "./model-eval-compare-lib.mjs";
