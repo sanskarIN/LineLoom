@@ -1,14 +1,18 @@
 # LineLoom roadmap
 
-**Updated 2026-10-26 · Planned milestones are not implementation or release commitments.**
+**Updated 2026-10-28 · Planned milestones are not implementation or release commitments.**
 
 ## Current state (verified repository and GitHub release)
 
 - **GitHub stable: [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0)**, published 2026-10-25 with stable-channel VSIX and SHA-256. Default-off **explicitly selected** related-file context, native sidebar and single-file autocomplete are shipped.
-- **Latest GitHub preview: [v1.4.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.1)**, published 2026-10-26 with genuine preview-channel VSIX and SHA-256 after independent audit, mocked editor-host checks, clean installation and pinned v1.3.0 stable upgrade. It includes recent v1.4 reliability, diagnostics and model-eval tooling, but **not** trained weights or real model benchmarks. v1.3.0 remains stable; v1.3.1 is an earlier GitHub preview. No standalone v1.2.5 release exists.
+- **Latest GitHub preview: [v1.4.2](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2)**, published 2026-10-27 with a genuine preview-channel VSIX and SHA-256 after locked checks, a mocked editor-host test, clean install and pinned upgrades from stable v1.3.0 and preview v1.4.1. It adds optional HTML/CSS/Lua language modes, local FIM tag routing and synthetic model-research safeguards; **no first-party trained weights or real model benchmarks** are included. v1.3.0 remains GitHub stable; neither extension marketplace is updated by the GitHub release. No standalone v1.2.5 release exists.
 - **Shipped in preview:** [PR #99](https://github.com/sanskarIN/LineLoom/pull/99) added invisible-Unicode completion hardening, now included in the v1.3.1 pre-release VSIX.
 - **Independent distribution:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) listings use `SanskarCodes.lineloom` and are **not automatically updated by GitHub**. Open VSX v1.3.0 Stable was independently published and verified on 2026-10-25; the maintainer separately updated Marketplace to v1.3.0. Verify live registry versions before giving future install advice. GitHub Packages npm installer `@sanskarin/lineloom-cli` is independently published at **v0.1.0**, without CLI v0.2.0 verify or proposed v0.3.0 offline install.
 - **Outstanding quality evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows are not verified by the automated release. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60), [#79](https://github.com/sanskarIN/LineLoom/issues/79), and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
+
+## v1.4.2 GitHub-only pre-release — published
+
+The [verified GitHub v1.4.2 preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2) includes [opt-in HTML/CSS/Lua](https://github.com/sanskarIN/LineLoom/pull/144), [local-only native FIM tag routing](https://github.com/sanskarIN/LineLoom/pull/145), adapter-integrity receipts and stronger source-free synthetic benchmark checks. Publication ran through the [owner-authorized v1.4.2 workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40446223653); physical editor acceptance, real-model quality and independent registry updates are **not** implied. See [release notes](releases/v1.4.2.md) and [manual QA — NOT RUN](qa/v1.4.2-preview-acceptance.md).
 
 ## v1.4.1 GitHub-only pre-release — published
 
@@ -23,16 +27,16 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
   trust and editor changes.
 - Both PRs passed mocked Linux extension-host, Windows/macOS/Linux CI,
   dependency audit and VSIX candidate checks. These tests are not real-model
-  or physical keyboard/screen-reader acceptance. Published releases are unchanged.
+  or physical keyboard/screen-reader acceptance. The source changes shipped in the GitHub v1.4.1 preview.
 - **Publisher migration remains on hold.** Preserve
   `SanskarCodes.lineloom` and all existing marketplace links until the
   maintainer specifically requests and approves a migration plan.
 
-## Merged into unreleased source — optional HTML, CSS and Lua languages
+## Opt-in HTML, CSS and Lua — included in v1.4.2 preview
 
-[PR #144](https://github.com/sanskarIN/LineLoom/pull/144) merged the source-only implementation (not yet published in a VSIX): three additional editor modes require explicit opt-in, the nine existing defaults remain unchanged, per-language local model overrides work, and existing endpoint/privacy gates remain in force. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before any release.
+[PR #144](https://github.com/sanskarIN/LineLoom/pull/144) introduced three editor language modes, now packaged in the GitHub v1.4.2 preview. HTML, CSS and Lua require explicit opt-in; the nine original default-enabled languages remain unchanged. Per-language local model overrides and existing endpoint/privacy gates remain in force. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before recommending broader distribution.
 
-## Model research merged after v1.4.1 (not released)
+## Model research included in v1.4.2 preview (no model weights)
 
 - [PR #145](https://github.com/sanskarIN/LineLoom/pull/145): an explicitly configured `lineloom-code` model tag uses native bounded FIM requests when no extra references are selected. This does not establish that a first-party model was actually trained or installed.
 - [PR #143](https://github.com/sanskarIN/LineLoom/pull/143): integrity receipts for local LoRA adapter experiment artifacts, strict offline verification and matching-receipt gates before smoke comparison. Digest matching alone is **not** signature or provenance verification.
@@ -49,7 +53,7 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 | **v1.5.x+ — limited symbol intelligence** | RFC only | Explore optional developer-selected symbol/import hints with bounded parser effort | New opt-in privacy RFC, no automatic workspace scan or persistent indexing by default, independent I/O and security evaluation |
 | **v2.0.0 — additional local providers** | Research, not scheduled | Abstract backend transport without losing Ollama defaults | Explicit endpoint permissions, no cloud inference by default, strict stream decoding, cancel and budget equivalence |
 
-**The roadmap is not release evidence.** The [v1.4.0 publisher](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) and GitHub pre-release assets were verified independently; external registries, the npm CLI and stable v1.3.0 were not changed. Future releases remain channel-specific.
+**The roadmap is not release evidence.** The latest [v1.4.2 publisher](https://github.com/sanskarIN/LineLoom/actions/runs/40446223653) and GitHub pre-release assets were verified independently; external registries, the npm CLI and stable v1.3.0 were not changed. Future releases remain channel-specific.
 
 ## Suggested next work order
 
