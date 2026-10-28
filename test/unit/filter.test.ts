@@ -5,6 +5,25 @@ describe("completion filtering", () => {
   it("discards empty whitespace", () => expect(cleanCompletion("   ", "", "", true)).toBe(""));
   it("supports optional single-line suggestions", () => expect(cleanCompletion("abc\ndef", "", "", false)).toBe("abc"));
   it("removes exact suffix overlap", () => expect(cleanCompletion("return value\n}", "", "\n}", true)).toBe("return value"));
+  it("keeps short incidental identifier matches across the cursor", () => {
+    // Previously even one matching letter was removed from the model's code.
+    expect(cleanCompletion("return value", "", "else {", true)).toBe("return value");
+    expect(cleanCompletion("type", "", "peers", true)).toBe("type");
+    expect(cleanCompletion("const answer", "", "return count;", true)).toBe("const answer");
+    expect(cleanCompletion("let имя", "", "язык", true)).toBe("let имя");
+    expect(cleanCompletion("const code42", "", "42foo", true)).toBe("const code42");
+    expect(cleanCompletion("var $", "", "$foo", true)).toBe("var $");
+  });
+  it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return");
+    expect(cleanCompletion("call(x))", "", ")", true)).toBe("call(x)");
+    expect(cleanCompletion("fn main() {}}", "", "}", true)).toBe("fn main() {}");
+    expect(cleanCompletion("answer;;", "", ";", true)).toBe("answer;");
+  });
+  it("prefers a longer repeated suffix to a one-character identifier coincidence", () => {
+    expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
+    expect(cleanCompletion("return value\n}", "", "\n}", true)).toBe("return value");
+  });
   it("removes echoed current line", () => expect(cleanCompletion("let x = 3;", "let x = ", "", true)).toBe("3;"));
   it("rejects conversational responses", () => expect(cleanCompletion("Certainly, I can help", "", "", true)).toBe(""));
   it("preserves meaningful Python indentation", () =>
