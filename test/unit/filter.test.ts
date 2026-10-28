@@ -13,6 +13,10 @@ describe("completion filtering", () => {
     expect(cleanCompletion("let имя", "", "язык", true)).toBe("let имя");
     expect(cleanCompletion("const code42", "", "42foo", true)).toBe("const code42");
     expect(cleanCompletion("var $", "", "$foo", true)).toBe("var $");
+    expect(cleanCompletion("some", "", "omega", true)).toBe("some");
+    expect(cleanCompletion("return name", "", "nameSpace", true)).toBe("return name");
+    expect(cleanCompletion("scope", "", "pearl", true)).toBe("scope");
+    expect(cleanCompletion("const λambda", "", "ambdaExtra", true)).toBe("const λambda");
   });
   it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
     expect(cleanCompletion("return result", "", "result;", true)).toBe("return");
