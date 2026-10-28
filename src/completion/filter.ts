@@ -64,12 +64,15 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   for (let length = maxOverlap; length > 0; length--) {
     const overlap = suffix.slice(0, length);
     if (!value.endsWith(overlap)) continue;
-    // A one- or two-character identifier fragment is often accidental:
-    // e.g. "return value" before "else" must not become "return valu".
-    // Keep exact short identifier continuations rather than deleting
-    // potentially meaningful source. Longer echoes and short punctuation
-    // (such as a duplicated closing brace) remain eligible for cleanup.
-    if (length <= 2 && /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap)) continue;
+    // A one-/two-character identifier overlap is often coincidental:
+    // "return value" before "else" must not become "return valu".
+    // Also avoid cutting an identifier *mid-token* even for longer matches:
+    // "some" before "omega" must not become "s". Only completed-word
+    // matches of length >= 3 or punctuation overlaps can be deduplicated.
+    const identifier = /[\p{L}\p{M}\p{N}_$]/u;
+    if ((length <= 2 && /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap)) ||
+        (identifier.test(overlap.at(-1) ?? "") &&
+          length < suffix.length && identifier.test(suffix[length]))) continue;
     value = value.slice(0, -length);
     break;
   }
