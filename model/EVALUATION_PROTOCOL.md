@@ -198,6 +198,13 @@ transport test suite**. It checks the fixed loopback endpoint and explicit
 Ollama options, correct continuations, formatting indicators, malformed
 JSON streams, redirected/partial HTTP responses, private error-body
 redaction, abortable stalled requests and an abort racing a mocked result.
+The **research evaluator**, unlike latency-sensitive editor ghost text, now
+requires clean EOF after exactly one terminal `done: true` event; any later
+non-whitespace event (including another transport chunk) fails the attempt.
+A server that stalls after `done` is cancelled at the existing bounded
+per-fixture timeout, and such an attempt is recorded as failed. The interactive
+extension only validates the currently buffered terminal chunk and cancels
+immediately without waiting for EOF. Neither approach proves server honesty.
 All tests are offline; the production `model:eval` command continues to
 contact **only** the fixed local Ollama endpoint after explicit invocation.
 `npm run test:model-eval` runs the new regression tests automatically.
