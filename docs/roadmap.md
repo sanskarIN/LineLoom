@@ -34,7 +34,7 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 
 ## Opt-in HTML, CSS and Lua — included in v1.4.2 preview
 
-[PR #144](https://github.com/sanskarIN/LineLoom/pull/144) introduced three optional language modes, now packaged in the GitHub v1.4.2 preview: three additional editor modes require explicit opt-in, the nine existing defaults remain unchanged, per-language local model overrides work, and existing endpoint/privacy gates remain in force. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before recommending broader distribution.
+[PR #144](https://github.com/sanskarIN/LineLoom/pull/144) introduced three editor language modes, now packaged in the GitHub v1.4.2 preview. HTML, CSS and Lua require explicit opt-in; the nine original default-enabled languages remain unchanged. Per-language local model overrides and existing endpoint/privacy gates remain in force. No auto-download, workspace scanning or trained LineLoom Code weights are included. Review [language controls](languages/README.md) and [manual acceptance](qa/opt-in-web-lua-acceptance.md) before recommending broader distribution.
 
 ## Model research included in v1.4.2 preview (no model weights)
 
