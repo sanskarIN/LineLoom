@@ -62,10 +62,22 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   // Respect code after the cursor: avoid inserting content that is already there.
   const maxOverlap = Math.min(suffix.length, value.length);
   for (let length = maxOverlap; length > 0; length--) {
-    if (value.endsWith(suffix.slice(0, length))) {
-      value = value.slice(0, -length);
-      break;
-    }
+    const overlap = suffix.slice(0, length);
+    if (!value.endsWith(overlap)) continue;
+    // A one-/two-character identifier overlap is often coincidental:
+    // "return value" before "else" must not become "return valu".
+    // Also avoid cutting either identifier *mid-token* on longer matches:
+    // "some" before "omega" or "ome;" must not become "s". Only
+    // complete-word matches of length >= 3 or punctuation can be removed.
+    const identifier = /[\p{L}\p{M}\p{N}_$]/u;
+    const onlyIdentifier = /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap);
+    const cutsGeneratedWord = onlyIdentifier &&
+      identifier.test(value.at(-length - 1) ?? "");
+    const cutsFollowingWord = identifier.test(overlap.at(-1) ?? "") &&
+      length < suffix.length && identifier.test(suffix[length]);
+    if ((length <= 2 && onlyIdentifier) || cutsGeneratedWord || cutsFollowingWord) continue;
+    value = value.slice(0, -length);
+    break;
   }
   // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
   value = value.slice(0, 6000);
