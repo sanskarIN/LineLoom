@@ -17,6 +17,9 @@ describe("completion filtering", () => {
     expect(cleanCompletion("return name", "", "nameSpace", true)).toBe("return name");
     expect(cleanCompletion("scope", "", "pearl", true)).toBe("scope");
     expect(cleanCompletion("const λambda", "", "ambdaExtra", true)).toBe("const λambda");
+    expect(cleanCompletion("some", "", "ome;", true)).toBe("some");
+    expect(cleanCompletion("const alpha", "", "pha;", true)).toBe("const alpha");
+    expect(cleanCompletion("myCounter", "", "Counter;", true)).toBe("myCounter");
   });
   it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
     expect(cleanCompletion("return result", "", "result;", true)).toBe("return");
