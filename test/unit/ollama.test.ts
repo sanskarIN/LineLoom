@@ -94,9 +94,34 @@ describe("Ollama streaming NDJSON", () => {
     await expect(parseNdjson(truncated)).rejects.toThrow("Invalid Ollama UTF-8 response.");
   });
 
-  it("stops processing after the terminal done event in a single chunk", async () => {
-    const payload = '{"response":"ok","done":true}\n{"error":"ignored after completion"}\n';
-    expect(await parseNdjson(stream([payload]))).toBe("ok");
+  it("rejects extra buffered events after a terminal frame without exposing them", async () => {
+    const cases = [
+      '{"response":"ok","done":true}\\n{"error":"private-error"}\\n',
+      '{"response":"ok","done":true}\\n{"response":"another","done":true}\\n',
+      '{"response":"ok","done":true}\\n{"response":"unfinished"',
+      '{"response":"ok","done":true}\\nnot-json',
+      '{"response":"ok","done":true}\\n\\n{"done":false}\\n'
+    ];
+    for (const input of cases) {
+      const payload = input.replaceAll("\\n", "\n");
+      await expect(parseNdjson(stream([payload]))).rejects.toThrow("Invalid trailing Ollama event.");
+    }
+  });
+  it("accepts terminal frames with harmless whitespace and without a final newline", async () => {
+    expect(await parseNdjson(stream(['{"response":"ok","done":true}']))).toBe("ok");
+    expect(await parseNdjson(stream(['{"response":"ok","done":true}\\n   \t\\n'.replaceAll("\\n", "\n")]))).toBe("ok");
+  });
+  it("cancels a live stream promptly after terminal completion without waiting for EOF", async () => {
+    let cancelled = false;
+    const pending = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"response":"ok","done":true}\\n'.replaceAll("\\n", "\n")));
+        // Keep the source open: a waiting-for-EOF parser would hang.
+      },
+      cancel() { cancelled = true; }
+    });
+    expect(await parseNdjson(pending)).toBe("ok");
+    expect(cancelled).toBe(true);
   });
 
 });
