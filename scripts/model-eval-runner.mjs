@@ -36,7 +36,9 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
     if (controller.signal.aborted || response?.status !== 200 || !response.body || response.redirected) {
       throw new Error("invalid-http-response");
     }
-    const parsed = await consumeOllamaStream(response.body, started, clock);
+    // Strict benchmark parsing observes a clean EOF; the request's abort
+    // signal also cancels a server that stalls after its terminal frame.
+    const parsed = await consumeOllamaStream(response.body, started, clock, controller.signal);
     // Handle an abort racing the final streamed frame. A timed-out request
     // must never be reported as a successful completion, even if a mock
     // transport or nonstandard runtime ignored cancellation.
