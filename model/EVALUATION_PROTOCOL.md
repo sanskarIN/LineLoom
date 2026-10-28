@@ -137,6 +137,12 @@ scopes from the fixed checked-in public synthetic fixture manifest and verifies
 each claimed fixture and request-spec hash against that reviewed content,
 not merely against the other report. It also validates benchmark protocol,
 prompt mode, run count, and the exact per-language/category attempt allocation.
+It rejects mathematically impossible repeated-fixture outcomes (including
+mixed exact/non-exact attempts) and impossible formatting counts: every
+flagged completion must have at least one signal, and overlapping signals
+cannot individually exceed the number of flagged completions. Category-level
+strict-match regressions are surfaced for review alongside language-level
+regressions; these are warning signals, not proof of model quality.
 It refuses incompatible/malformed/legacy reports rather than comparing
 percentages across different test sets. Input files are individually capped at
 32 KiB, and untrusted report fields are never echoed. Keep names and raw

@@ -108,6 +108,8 @@ test("source-free regression review flags worse counts and format artifacts", ()
   assert.equal(compared.regressionReview.status, "inspect-regressions");
   assert.ok(compared.regressionReview.flags.includes("fewer-strict-matches"));
   assert.ok(compared.regressionReview.flags.includes("per-language-strict-regression"));
+  assert.ok(compared.regressionReview.flags.includes("per-category-strict-regression"));
+  assert.ok(compared.regressionReview.categoriesWithFewerStrictMatches.length > 0);
   assert.ok(compared.regressionReview.flags.includes("fewer-format-clean-completions"));
   assert.ok(compared.regressionReview.flags.includes("more-format-artifacts"));
   assert.ok(compared.regressionReview.languagesWithFewerStrictMatches.includes("rust"));
@@ -142,6 +144,66 @@ test("regression review does not treat tiny or incomparable latency changes as p
   // comparative latency evidence.
   assert.throws(() => compareModelReports(fewBase, failureCandidate));
 });
+
+test("repeated-fixture outcomes must describe mathematically possible exact matches", () => {
+  const valid = report({ runs: 3, count: 2 });
+  assert.equal(validateComparableReport(valid).fixtureOutcomes.exactEveryAttempt, 2);
+  const cases = [
+    { ...valid.fixtureOutcomes, mixedExactOutcomes: 1 },
+    // A single partial fixture can contribute at most runs-1 matches:
+    { ...valid.fixtureOutcomes, exactEveryAttempt: 1, mixedExactOutcomes: 1 },
+    // A new mixed fixture must contribute at least one additional match:
+    { ...valid.fixtureOutcomes, exactAtLeastOnce: 3, mixedExactOutcomes: 1 },
+    { ...valid.fixtureOutcomes, exactAtLeastOnce: 31, mixedExactOutcomes: 29 }
+  ];
+  for (const fixtureOutcomes of cases) {
+    assert.throws(() => validateComparableReport({ ...valid, fixtureOutcomes }));
+  }
+
+  // A genuine mixture is valid, including failures/nonmatches within a run.
+  const results = [];
+  for (let run = 0; run < 3; run++) {
+    for (const [index, fixture] of fixtures.entries()) {
+      results.push({
+        fixtureId: fixture.id, language: fixture.language, category: fixture.category,
+        ok: true, exact: index === 0 || (index === 1 && run === 0),
+        formatSignals: [], firstTokenMs: 10, totalMs: 30
+      });
+    }
+  }
+  const mixed = {
+    ...summarizeMeasurements(results, fixtures.length, "local-test", "fim"),
+    benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
+    fixtureSetSha256: fixtureSetSha256(fixtures),
+    requestSpecSha256: requestSpecSha256(fixtures, "fim"),
+    runsPerFixture: 3
+  };
+  assert.equal(mixed.fixtureOutcomes.mixedExactOutcomes, 1);
+  assert.equal(mixed.strictExactMatches, 4);
+  assert.equal(validateComparableReport(mixed).strictExactMatches, 4);
+  const single = report({ runs: 1, count: 2 });
+  assert.equal(validateComparableReport(single).strictExactMatches, 2);
+});
+
+test("completion format signals must cover precisely the flagged completion union", () => {
+  const valid = report();
+  const tooFewSignals = structuredClone(valid);
+  tooFewSignals.formatDiagnostics.completedWithoutFormatSignals -= 2;
+  tooFewSignals.formatDiagnostics.signals.markdownFence = 1;
+  assert.throws(() => validateComparableReport(tooFewSignals));
+
+  const tooManyOfOne = structuredClone(valid);
+  tooManyOfOne.formatDiagnostics.completedWithoutFormatSignals -= 1;
+  tooManyOfOne.formatDiagnostics.signals.markdownFence = 2;
+  assert.throws(() => validateComparableReport(tooManyOfOne));
+
+  const overlapping = structuredClone(valid);
+  overlapping.formatDiagnostics.completedWithoutFormatSignals -= 2;
+  overlapping.formatDiagnostics.signals.markdownFence = 2;
+  overlapping.formatDiagnostics.signals.prefixEcho = 2;
+  assert.equal(validateComparableReport(overlapping).formatDiagnostics.signals.prefixEcho, 2);
+});
+
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
   const valid = report();
   assert.equal(validateComparableReport(valid).attempts, 60);
