@@ -62,10 +62,16 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   // Respect code after the cursor: avoid inserting content that is already there.
   const maxOverlap = Math.min(suffix.length, value.length);
   for (let length = maxOverlap; length > 0; length--) {
-    if (value.endsWith(suffix.slice(0, length))) {
-      value = value.slice(0, -length);
-      break;
-    }
+    const overlap = suffix.slice(0, length);
+    if (!value.endsWith(overlap)) continue;
+    // A one- or two-character identifier fragment is often accidental:
+    // e.g. "return value" before "else" must not become "return valu".
+    // Keep exact short identifier continuations rather than deleting
+    // potentially meaningful source. Longer echoes and short punctuation
+    // (such as a duplicated closing brace) remain eligible for cleanup.
+    if (length <= 2 && /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap)) continue;
+    value = value.slice(0, -length);
+    break;
   }
   // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
   value = value.slice(0, 6000);
