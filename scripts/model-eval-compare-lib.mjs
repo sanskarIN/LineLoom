@@ -101,6 +101,10 @@ export function validateComparableReport(raw) {
     }
   }
   const format = raw.formatDiagnostics;
+  // Multiple flags may occur on a single completion, but every flagged
+  // completion must contribute at least one signal and no individual signal
+  // can exceed the count of flagged completions.
+  const flaggedCompleted = raw.completed - (format?.completedWithoutFormatSignals ?? 0);
   if (!isObject(format) || !integer(format.inspectedCompleted) ||
       format.inspectedCompleted !== raw.completed ||
       !integer(format.completedWithoutFormatSignals) ||
@@ -108,25 +112,30 @@ export function validateComparableReport(raw) {
       !isObject(format.signals) ||
       Object.keys(format.signals).length !== FORMAT_SIGNAL_NAMES.length ||
       Object.keys(format.signals).some(key => !FORMAT_SIGNAL_NAMES.includes(key)) ||
-      !FORMAT_SIGNAL_NAMES.every(key => integer(format.signals[key]) && format.signals[key] <= raw.completed) ||
-      (format.completedWithoutFormatSignals === raw.completed &&
-        FORMAT_SIGNAL_NAMES.some(key => format.signals[key] !== 0)) ||
-      (format.completedWithoutFormatSignals < raw.completed &&
-        FORMAT_SIGNAL_NAMES.every(key => format.signals[key] === 0))) {
+      !FORMAT_SIGNAL_NAMES.every(key => integer(format.signals[key]) &&
+        format.signals[key] <= flaggedCompleted) ||
+      FORMAT_SIGNAL_NAMES.reduce((sum, key) => sum + format.signals[key], 0) < flaggedCompleted) {
     throw Error("invalid-format-diagnostics");
   }
   const outcome = raw.fixtureOutcomes;
   if (!isObject(outcome) || ![
     "evaluated", "repeated", "exactAtLeastOnce", "exactEveryAttempt", "mixedExactOutcomes"
   ].every(k => integer(outcome[k]))) throw Error("invalid-outcomes");
+  // With a fixed number of attempts per fixture, each fixture is either
+  // never exact, exact on every run, or mixed. The aggregate match count
+  // must be attainable by those groups, even when failures count as misses.
+  const partial = outcome.exactAtLeastOnce - outcome.exactEveryAttempt;
+  const exactMinimum = outcome.exactEveryAttempt * raw.runsPerFixture + partial;
+  const exactMaximum = outcome.exactEveryAttempt * raw.runsPerFixture +
+    partial * (raw.runsPerFixture - 1);
   if (outcome.evaluated !== raw.syntheticFixtures ||
       outcome.repeated !== (raw.runsPerFixture > 1 ? raw.syntheticFixtures : 0) ||
       outcome.exactEveryAttempt > outcome.exactAtLeastOnce ||
-      outcome.exactAtLeastOnce > raw.strictExactMatches ||
-      outcome.exactEveryAttempt * raw.runsPerFixture > raw.strictExactMatches ||
+      outcome.exactAtLeastOnce > raw.syntheticFixtures ||
+      outcome.mixedExactOutcomes !== partial ||
       outcome.mixedExactOutcomes > outcome.repeated ||
-      outcome.mixedExactOutcomes > outcome.exactAtLeastOnce ||
-      (raw.runsPerFixture === 1 && outcome.exactAtLeastOnce !== outcome.exactEveryAttempt)) {
+      raw.strictExactMatches < exactMinimum ||
+      raw.strictExactMatches > exactMaximum) {
     throw Error("inconsistent-outcomes");
   }
   const scope = REVIEWED_SCOPES.get([
@@ -195,6 +204,10 @@ export function reviewSyntheticRegressions(baseline, candidate) {
     candidate.perLanguage[language].strictMatches <
     baseline.perLanguage[language].strictMatches);
   if (languagesWithFewerStrictMatches.length) flags.push("per-language-strict-regression");
+  const categoriesWithFewerStrictMatches = EVAL_CATEGORIES.filter(category =>
+    candidate.perCategory[category].strictMatches <
+    baseline.perCategory[category].strictMatches);
+  if (categoriesWithFewerStrictMatches.length) flags.push("per-category-strict-regression");
   const increasedFormatSignals = FORMAT_SIGNAL_NAMES.filter(name =>
     candidate.formatDiagnostics.signals[name] > baseline.formatDiagnostics.signals[name]);
   if (increasedFormatSignals.length) flags.push("more-format-artifacts");
@@ -213,6 +226,7 @@ export function reviewSyntheticRegressions(baseline, candidate) {
     status: flags.length ? "inspect-regressions" : "no-heuristic-regressions-detected",
     flags,
     languagesWithFewerStrictMatches,
+    categoriesWithFewerStrictMatches,
     increasedFormatSignals,
     latencyComparable,
     interpretation: "Synthetic review signals only; not model quality, statistical significance or release approval."
