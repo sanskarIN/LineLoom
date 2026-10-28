@@ -94,6 +94,33 @@ test("times out stalled fetch, passes the abort signal and returns source-free f
   assert.ok(!JSON.stringify(result).includes("private-transport-body"));
 });
 
+test("does not report a completed benchmark if Ollama stalls after done", async () => {
+  let transportCancelled = false;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(frame(fixture.expected, true)));
+      // A malformed test server leaves its HTTP body open after done.
+    },
+    cancel() { transportCancelled = true; }
+  });
+  const result = await run(async () => ({
+    status: 200, redirected: false, body
+  }), { timeoutMs: 5 });
+  assert.equal(result.ok, false);
+  assert.equal(transportCancelled, true);
+  assert.ok(!Object.hasOwn(result, "firstTokenMs"));
+  assert.ok(!JSON.stringify(result).includes(fixture.expected));
+});
+
+test("rejects post-terminal private server data on an additional transport chunk", async () => {
+  const result = await run(async () => ({
+    status: 200, redirected: false,
+    body: stream(frame(fixture.expected, true), '{"error":"PRIVATE_TOKEN"}\\n'.replaceAll("\\n", "\n"))
+  }));
+  assert.equal(result.ok, false);
+  assert.ok(!JSON.stringify(result).includes("PRIVATE_TOKEN"));
+});
+
 test("does not count a cancellation-racing successful mock as a completed measurement", async () => {
   const result = await run(async (_url, opts) => {
     // Even a custom transport that ignores abort cannot turn a timeout
