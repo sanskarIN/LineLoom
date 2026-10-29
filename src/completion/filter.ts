@@ -85,9 +85,9 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   // Code already after the caret may need the generated trailing separator
   // ("return " + "result") or indentation ("if ready:\n    " + "pass").
   // Trim completed lines, but keep the final whitespace run if the suffix
-  // starts immediately with an identifier character. No new whitespace is
-  // synthesized, and whitespace-only suggestions are still discarded.
-  const preserveCursorSpacing = /^[\p{L}\p{M}\p{N}_$]/u.test(suffix) &&
+  // starts immediately with non-whitespace source text (which can be a
+  // token, punctuation or a comment). Whitespace-only suggestions still fail.
+  const preserveCursorSpacing = /^\S/u.test(suffix) &&
     /[\t ]$/.test(value) && /\S/u.test(value);
   const cursorSpacing = preserveCursorSpacing ? /[\t ]+$/.exec(value)?.[0] ?? "" : "";
   value = value.replace(/[\t ]+$/gm, "");
