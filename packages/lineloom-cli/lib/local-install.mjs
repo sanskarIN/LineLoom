@@ -19,6 +19,13 @@ export async function installLocalRelease(spec, sourcePath, { editor = "code", r
   if (typeof spec?.sha256 !== "string" || !/^[a-f0-9]{64}$/.test(spec.sha256)) {
     throw new Error("Invalid pinned release SHA-256");
   }
+  // The version appears in a private temporary filename. This helper also
+  // accepts explicit specifications in tests, so reject path separators and
+  // malformed version identifiers rather than relying solely on getRelease().
+  if (typeof spec.version !== "string" ||
+      !/^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?$/.test(spec.version)) {
+    throw new Error("Invalid pinned release version");
+  }
   const entry = await lstat(sourcePath);
   if (!entry.isFile()) throw new Error("VSIX must be a regular file, not a link");
   if (entry.size < MIN_BYTES || entry.size > MAX_BYTES) {
