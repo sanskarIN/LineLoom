@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sidebarSections, type SidebarSnapshot } from "../../src/ui/sidebar-model";
+import { recommendedSidebarAction, sidebarSections, type SidebarSnapshot } from "../../src/ui/sidebar-model";
 
 const snapshot: SidebarSnapshot = {
   enabled: true, autoTrigger: true, model: "qwen2.5-coder:1.5b",
@@ -7,7 +7,7 @@ const snapshot: SidebarSnapshot = {
   endpointState: "loopback",
   activeEditor: { language: "Rust", model: "rust-local", modelSource: "Language override",
     eligibility: "Allowed by settings; file rules checked on request" },
-  completionState: "ready", requests: 3, completions: 2, cancelled: 1,
+  completionState: "ready", requests: 3, completions: 2, accepted: 1, cancelled: 1,
   failed: 0, cacheHits: 2, continuationHits: 1, emptySuggestions: 4,
   performanceDiagnosticsEnabled: false
 };
@@ -27,9 +27,16 @@ describe("LineLoom local sidebar model", () => {
     });
     expect(entries.find(item => item.id === "state")?.description).toBe("Ready (model not automatically verified)");
     expect(entries.find(item => item.id === "cancelled")?.description).toBe("1");
+    expect(entries.find(item => item.id === "accepted")?.description).toBe("1");
+    expect(entries.find(item => item.id === "completions")?.label).toBe("Suggestions Offered");
     expect(entries.find(item => item.id === "cache-hits")?.description).toBe("2");
     expect(entries.find(item => item.id === "continuations")?.description).toBe("1");
     expect(entries.find(item => item.id === "empty-results")?.description).toBe("4");
+    expect(entries.find(item => item.id === "reset-session-activity")?.command).toBe("lineloom.resetSessionActivity");
+    expect(entries.find(item => item.id === "copy-support-summary")?.command).toBe("lineloom.copySupportSummary");
+    expect(entries.find(item => item.id === "transient-retries")?.description).toContain("0");
+    const deferred = sidebarSections({ ...snapshot, suppressedTransientRetries: 3 }).flatMap(group => group.items);
+    expect(deferred.find(item => item.id === "transient-retries")?.description).toContain("3");
     expect(entries.find(item => item.id === "latency")).toBeUndefined();
     expect(entries.find(item => item.id === "editor-language")?.description).toBe("Rust");
     expect(entries.find(item => item.id === "editor-model")?.description).toBe("rust-local (Language override)");
@@ -39,9 +46,14 @@ describe("LineLoom local sidebar model", () => {
   it("offers an accessible privacy reset action only when diagnostics are enabled", () => {
     const disabled = sidebarSections(snapshot).flatMap(group => group.items);
     expect(disabled.find(item => item.id === "reset-privacy-timings")).toBeUndefined();
+    expect(disabled.find(item => item.id === "reset-inference-timings")).toBeUndefined();
     const enabled = sidebarSections({ ...snapshot, performanceDiagnosticsEnabled: true })
       .flatMap(group => group.items);
     const reset = enabled.find(item => item.id === "reset-privacy-timings");
+    expect(enabled.find(item => item.id === "reset-inference-timings")).toMatchObject({
+      label: "Reset Inference Timing Samples",
+      command: "lineloom.resetInferenceTimings"
+    });
     expect(reset).toMatchObject({
       label: "Reset Privacy Timing Statistics",
       command: "lineloom.resetPrivacyTimings",
@@ -62,6 +74,24 @@ describe("LineLoom local sidebar model", () => {
     expect(entries.find(item => item.id === "state")?.description).toBe("Generating");
     expect(entries.find(item => item.id === "cancel")?.description).toContain("Stop the current Ollama request");
     expect(entries.find(item => item.id === "latency")?.description).toBe("13 ms");
+    const recent = sidebarSections({
+      ...snapshot,
+      performanceDiagnosticsEnabled: true,
+      averageLatencyMs: 12.6,
+      recentLatencySamples: 4,
+      recentLatencyP50Ms: 9.4,
+      recentLatencyP95Ms: 101.8
+    }).flatMap(group => group.items);
+    expect(recent.find(item => item.id === "latency-p50")?.description)
+      .toBe("9 ms (4 sample(s))");
+    expect(recent.find(item => item.id === "latency-p95")?.description)
+      .toBe("102 ms (last 64 max)");
+    const optedOut = sidebarSections({
+      ...snapshot, performanceDiagnosticsEnabled: false,
+      recentLatencySamples: 4, recentLatencyP50Ms: 9, recentLatencyP95Ms: 101
+    }).flatMap(group => group.items);
+    expect(optedOut.some(item => item.id === "latency-p95")).toBe(false);
+    expect(optedOut.some(item => item.id === "latency-p50")).toBe(false);
     const unavailable = sidebarSections({ ...snapshot, completionState: "unavailable" })
       .flatMap(group => group.items);
     expect(unavailable.find(item => item.id === "state")?.description).toContain("Unavailable");
@@ -93,5 +123,264 @@ describe("LineLoom local sidebar model", () => {
     const entry = sidebarSections({ ...snapshot, model })[1].items[0];
     expect(entry.description?.length).toBeLessThanOrEqual(52);
     expect(entry.description).not.toContain("\n");
+  });
+});
+
+describe("related context sidebar consent disclosure", () => {
+  it("shows opt-in status, never paths, and gives a clear command only for active selections", () => {
+    const off = sidebarSections({ ...snapshot, crossFileContextEnabled: false, relatedFileCount: 2 })
+      .flatMap(s => s.items);
+    expect(off.find(x => x.id === "related-context")?.description).toContain("Off");
+    expect(off.find(x => x.id === "clear-related-context")).toBeUndefined();
+    const on = sidebarSections({ ...snapshot, crossFileContextEnabled: true, relatedFileCount: 2 })
+      .flatMap(s => s.items);
+    expect(on.find(x => x.id === "related-context")?.command).toBe("lineloom.selectRelatedFiles");
+    expect(on.find(x => x.id === "clear-related-context")?.command).toBe("lineloom.clearRelatedFiles");
+    expect(JSON.stringify(on)).not.toContain("/private/");
+  });
+});
+
+describe("native sidebar suggested next step", () => {
+  const next = (patch: Partial<SidebarSnapshot> = {}) => recommendedSidebarAction({ ...snapshot, ...patch });
+  const blocked = (eligibility: string): SidebarSnapshot["activeEditor"] => ({
+    ...snapshot.activeEditor, eligibility
+  });
+
+  it("offers one command only when a user can explicitly take that action", () => {
+    const groups = sidebarSections(snapshot);
+    const items = groups[0].items;
+    expect(items.filter(item => item.id === "next-step")).toHaveLength(1);
+    expect(items.find(item => item.id === "next-step")).toMatchObject({
+      command: "lineloom.trigger", label: "Next: Trigger Completion"
+    });
+    expect(next({ autoTrigger: false })).toMatchObject({
+      command: "lineloom.trigger", label: "Next: Try Manual Completion"
+    });
+    expect(next({ enabled: false, completionState: "generating" })).toMatchObject({
+      command: "lineloom.enable", label: "Next: Enable Autocomplete"
+    });
+  });
+
+  it("prioritizes workspace trust and editor eligibility before model or network actions", () => {
+    expect(next({ workspaceTrusted: false, completionState: "unavailable" }).label)
+      .toBe("Next: Review Workspace Trust");
+    expect(next({ workspaceTrusted: false, completionState: "unavailable" }).command)
+      .toBeUndefined();
+    for (const [eligibility, label] of [
+      ["Open a supported code file", "Next: Open a Source File"],
+      ["No inline provider for this language", "Next: Switch Language"],
+      ["Only local file editors support completion", "Next: Open a Local File"]
+    ]) {
+      const choice = next({ activeEditor: blocked(eligibility), completionState: "unavailable" });
+      expect(choice.label).toBe(label);
+      expect(choice.command).toBeUndefined();
+    }
+    expect(next({ activeEditor: blocked("Language disabled in settings") }).command)
+      .toBe("lineloom.manageLanguages");
+    expect(next({ activeEditor: blocked("No model configured") }).command).toBe("lineloom.selectModel");
+  });
+
+  it.each([
+    ["Invalid inference endpoint", "lineloom.openSettings"],
+    ["Remote endpoint disabled", "lineloom.openSettings"],
+    ["Remote endpoint approval required", "lineloom.checkConnection"]
+  ])("offers an explicit user action for %s", (eligibility, command) => {
+    expect(next({ activeEditor: blocked(eligibility) }).command).toBe(command);
+  });
+
+  it.each([
+    ["generating", "lineloom.cancel"],
+    ["unavailable", "lineloom.checkConnection"],
+    ["error", "lineloom.diagnostics"]
+  ] as const)("routes %s engine state to %s", (state, command) => {
+    expect(next({ completionState: state }).command).toBe(command);
+  });
+
+  it("keeps pending readiness checks non-clickable and distinct from confirmed availability", () => {
+    const active = next({ activeModelReadiness: "checking" });
+    expect(active.label).toBe("Next: Active Model Check Running");
+    expect(active.command).toBeUndefined();
+    const policy = next({ filePrivacy: "checking" });
+    expect(policy.label).toBe("Next: File Rules Check Running");
+    expect(policy.command).toBeUndefined();
+    const current = next({
+      modelReadiness: "checking",
+      activeEditor: { ...snapshot.activeEditor, modelSource: "Default model" }
+    });
+    expect(current.label).toBe("Next: Default Model Check Running");
+    expect(current.command).toBeUndefined();
+    expect(next({ activeModelReadiness: "checking", completionState: "generating" }).command)
+      .toBe("lineloom.cancel");
+    expect(next({ filePrivacy: "checking", workspaceTrusted: false }).label)
+      .toBe("Next: Review Workspace Trust");
+    expect(next({ modelReadiness: "checking" }).command).toBe("lineloom.trigger");
+  });
+
+  it("never passively validates or reveals a URL, filename or user source", () => {
+    for (const endpointState of [
+      "loopback", "remote-approved", "remote-needs-approval", "remote-blocked", "invalid"
+    ] as const) {
+      const entry = next({ endpointState });
+      expect(JSON.stringify(entry)).not.toContain("https://");
+      expect(JSON.stringify(entry)).not.toContain("/private/");
+      expect(JSON.stringify(entry)).not.toContain("127.0.0.1");
+    }
+    // Exactly one click target; the pure model never starts a request.
+    expect(next({ completionState: "unavailable" }).description).toContain("user-initiated");
+  });
+
+  it("distinguishes enabled but empty related-file consent from two selected references", () => {
+    const entries = (value: number) =>
+      sidebarSections({ ...snapshot, crossFileContextEnabled: true, relatedFileCount: value })
+        .flatMap(section => section.items);
+    expect(entries(0).find(item => item.id === "related-context")?.description)
+      .toContain("no files selected");
+    expect(entries(0).some(item => item.id === "clear-related-context")).toBe(false);
+    expect(entries(2).find(item => item.id === "related-context")?.description)
+      .toContain("rechecked before use");
+    expect(entries(2).find(item => item.id === "clear-related-context")?.command)
+      .toBe("lineloom.clearRelatedFiles");
+  });
+});
+
+describe("last user-invoked Ollama model readiness", () => {
+  const entries = (state: NonNullable<SidebarSnapshot["modelReadiness"]>) =>
+    sidebarSections({ ...snapshot, modelReadiness: state }).flatMap(section => section.items);
+
+  it("does not claim availability before a manual check and never exposes an endpoint", () => {
+    const unknown = entries("not-checked").find(item => item.id === "model-readiness");
+    expect(unknown).toMatchObject({ command: "lineloom.checkConnection" });
+    expect(unknown?.description).toContain("Not checked this session");
+    for (const state of ["checking", "available", "missing", "unreachable"] as const) {
+      const readiness = entries(state).find(item => item.id === "model-readiness");
+      expect(readiness?.description).toContain(state === "checking" ? "in progress" : "last manual check");
+      expect(JSON.stringify(readiness)).not.toContain("http");
+      expect(JSON.stringify(readiness)).not.toContain("/private");
+    }
+  });
+
+  it("distinguishes default model validation from active editor language overrides", () => {
+    const missingDefault = sidebarSections({
+      ...snapshot, modelReadiness: "missing",
+      activeEditor: { ...snapshot.activeEditor, modelSource: "Default model" }
+    }).flatMap(section => section.items);
+    expect(missingDefault.find(item => item.id === "next-step")).toMatchObject({
+      label: "Next: Choose Installed Model", command: "lineloom.selectModel"
+    });
+    const overridden = entries("missing");
+    expect(overridden.find(item => item.id === "next-step")?.command).toBe("lineloom.trigger");
+  });
+
+  it("prioritizes failed manual check recovery after editor and trust restrictions", () => {
+    const failed = entries("unreachable");
+    expect(failed.find(item => item.id === "next-step")).toMatchObject({
+      label: "Next: Recheck Ollama", command: "lineloom.checkConnection"
+    });
+    const blocked = sidebarSections({
+      ...snapshot, workspaceTrusted: false, modelReadiness: "unreachable"
+    }).flatMap(section => section.items);
+    expect(blocked.find(item => item.id === "next-step")?.command).toBeUndefined();
+    const generating = sidebarSections({
+      ...snapshot, completionState: "generating", modelReadiness: "missing"
+    }).flatMap(section => section.items);
+    expect(generating.find(item => item.id === "next-step")?.command).toBe("lineloom.cancel");
+  });
+});
+
+describe("explicit active-file privacy check in native sidebar", () => {
+  const all = (filePrivacy: NonNullable<SidebarSnapshot["filePrivacy"]>) =>
+    sidebarSections({ ...snapshot, filePrivacy }).flatMap(section => section.items);
+
+  it("begins unverified and only invokes the existing manual inspection command when clicked", () => {
+    const entries = all("not-checked");
+    const status = entries.find(item => item.id === "last-file-privacy");
+    expect(status).toMatchObject({
+      command: "lineloom.checkActiveFilePrivacy",
+      label: "Last Manual File Check",
+      icon: "shield"
+    });
+    expect(status?.description).toContain("Not checked");
+    expect(entries.find(item => item.id === "check-file-privacy")?.command)
+      .toBe("lineloom.checkActiveFilePrivacy");
+    expect(entries.find(item => item.id === "next-step")?.command).toBe("lineloom.trigger");
+  });
+
+  it("reports only bounded generic statuses, not paths or permissions guaranteed forever", () => {
+    for (const state of ["checking", "allowed", "blocked", "no-editor"] as const) {
+      const status = all(state).find(item => item.id === "last-file-privacy");
+      expect(status?.description).toBeTruthy();
+      expect(JSON.stringify(status)).not.toContain("/home/");
+      expect(JSON.stringify(status)).not.toContain("https://");
+      expect(JSON.stringify(status)).not.toContain(".env");
+      expect(JSON.stringify(status)).not.toContain("user.ts");
+    }
+    expect(all("allowed").find(item => item.id === "last-file-privacy")?.description)
+      .toContain("rechecked before inference");
+    expect(all("blocked").find(item => item.id === "last-file-privacy")?.description)
+      .toContain("no inference requested");
+  });
+
+  it("prioritizes user-inspected exclusion but never bypasses blocked settings or trust", () => {
+    const blocked = all("blocked").find(item => item.id === "next-step");
+    expect(blocked?.label).toBe("Next: Review File Exclusions");
+    expect(blocked?.command).toBeUndefined();
+    expect(sidebarSections({ ...snapshot, filePrivacy: "blocked", workspaceTrusted: false })
+      .flatMap(s => s.items).find(x => x.id === "next-step")?.label)
+      .toBe("Next: Review Workspace Trust");
+    expect(sidebarSections({
+      ...snapshot, filePrivacy: "blocked", activeEditor: {
+        ...snapshot.activeEditor, eligibility: "Language disabled in settings"
+      }
+    }).flatMap(s => s.items).find(x => x.id === "next-step")?.command)
+      .toBe("lineloom.manageLanguages");
+  });
+});
+
+describe("manual active editor model readiness", () => {
+  const elements = (state: NonNullable<SidebarSnapshot["activeModelReadiness"]>, modelSource = "Language override") =>
+    sidebarSections({
+      ...snapshot, activeModelReadiness: state,
+      activeEditor: { ...snapshot.activeEditor, modelSource }
+    }).flatMap(group => group.items);
+
+  it("exposes a user-invoked active model check with explicit not-monitored label", () => {
+    const fresh = elements("not-checked").find(item => item.id === "active-model-readiness");
+    expect(fresh).toMatchObject({
+      command: "lineloom.checkActiveModel",
+      label: "Last Active Model Check"
+    });
+    expect(fresh?.description).toContain("Not checked");
+    const present = elements("available").find(item => item.id === "active-model-readiness");
+    expect(present?.description).toContain("not monitored");
+    expect(present?.icon).toBe("check");
+  });
+
+  it("routes a missing language override to language-model picker and missing default to default picker", () => {
+    const override = elements("missing").find(item => item.id === "next-step");
+    expect(override).toMatchObject({ command: "lineloom.selectLanguageModel", label: "Next: Change Language Model" });
+    const fallback = elements("missing", "Default model").find(item => item.id === "next-step");
+    expect(fallback).toMatchObject({ command: "lineloom.selectModel", label: "Next: Choose Installed Model" });
+  });
+
+  it("prioritizes disabled/trust/editor and in-progress generation safety gates", () => {
+    const blocked = sidebarSections({
+      ...snapshot, activeModelReadiness: "missing", workspaceTrusted: false
+    }).flatMap(group => group.items);
+    expect(blocked.find(item => item.id === "next-step")?.command).toBeUndefined();
+    const generating = sidebarSections({
+      ...snapshot, activeModelReadiness: "missing", completionState: "generating"
+    }).flatMap(group => group.items);
+    expect(generating.find(item => item.id === "next-step")?.command).toBe("lineloom.cancel");
+    const failed = elements("unreachable");
+    expect(failed.find(item => item.id === "next-step")?.command).toBe("lineloom.checkActiveModel");
+  });
+
+  it("never leaks model details, source, endpoint or paths through the status value", () => {
+    for (const state of ["checking", "available", "missing", "unreachable"] as const) {
+      const status = elements(state).find(item => item.id === "active-model-readiness");
+      expect(JSON.stringify(status)).not.toContain("https://");
+      expect(JSON.stringify(status)).not.toContain("/workspace/");
+      expect(JSON.stringify(status)).not.toContain("rust-local");
+    }
   });
 });

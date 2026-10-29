@@ -108,7 +108,7 @@ async function loadIgnore(folder: vscode.WorkspaceFolder, relative: string, patt
   return rules;
 }
 
-async function checkEligibility(document: vscode.TextDocument, patterns: readonly string[]): Promise<boolean> {
+async function checkEligibility(document: Pick<vscode.TextDocument, "uri" | "isClosed">, patterns: readonly string[]): Promise<boolean> {
   if (!vscode.workspace.isTrusted || document.uri.scheme !== "file" || document.isClosed) return false;
   const startedAtRevision = ignoreRevision;
   const folder = vscode.workspace.getWorkspaceFolder(document.uri);
@@ -127,6 +127,10 @@ async function checkEligibility(document: vscode.TextDocument, patterns: readonl
     // Fail closed when ignore files, canonical paths or rules cannot be trusted.
     return false;
   }
+}
+/** Apply exactly the active-document path gate without opening entire related documents. */
+export async function mayReadRelatedFile(uri: vscode.Uri, patterns: readonly string[]): Promise<boolean> {
+  return checkEligibility({ uri, isClosed: false }, patterns);
 }
 export function clearIgnoreCache(): void {
   ignoreRevision++;

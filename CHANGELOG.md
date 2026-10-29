@@ -2,6 +2,56 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.4.2 — GitHub-only pre-release (published 2026-10-27)
+
+- [#144](https://github.com/sanskarIN/LineLoom/pull/144): opt-in HTML/CSS/Lua with original nine enabled language defaults preserved.
+- [#145](https://github.com/sanskarIN/LineLoom/pull/145): explicit local LineLoom Code FIM routing, no bundled/trained model.
+- [#143](https://github.com/sanskarIN/LineLoom/pull/143), [#147](https://github.com/sanskarIN/LineLoom/pull/147): offline adapter integrity receipts and file-descriptor hardening, no provenance authorization.
+- [#148](https://github.com/sanskarIN/LineLoom/pull/148), [#149](https://github.com/sanskarIN/LineLoom/pull/149): mocked editor-host language and FIM request regressions.
+- [#150](https://github.com/sanskarIN/LineLoom/pull/150), [#151](https://github.com/sanskarIN/LineLoom/pull/151), [#152](https://github.com/sanskarIN/LineLoom/pull/152): v4 synthetic evaluator, reviewed fixture-scope verification and privacy-safe heuristic comparison.
+- **Published:** [GitHub v1.4.2 testing pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2) with VSIX and SHA-256, by [verified release workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40446223653). **No real model inference/quality or physical-device/manual accessibility validation recorded; NOT RUN.** Stable v1.3.0, registries and publisher unchanged. [Release notes](docs/releases/v1.4.2.md) and [manual QA](docs/qa/v1.4.2-preview-acceptance.md).
+
+## v1.4.1 — GitHub-only pre-release (published 2026-10-26)
+
+- Source-free support summary, editor-scoped check invalidation and cancellable manual Ollama discovery (PRs #126–127).
+- LineLoom Code research: deterministic offline synthetic benchmark comparison, strict local data provenance preflight and v2 output-format diagnostics (PRs #129–131). No model weights/training or real Ollama measurements.
+- **Verified** genuine preview-channel VSIX and SHA-256 published by [GitHub Action 40265555223](https://github.com/sanskarIN/LineLoom/actions/runs/40265555223), after locked audits, mocked editor-host, isolated installation and pinned v1.3.0 upgrade. Publisher, stable release and extension registries **not changed**. Physical-editor, accessibility, real-model and training-data acceptance remain **NOT RUN**. [Release notes](docs/releases/v1.4.1.md) and [QA checklist](docs/qa/v1.4.1-preview-acceptance.md).
+
+## Historical post-v1.4.0 development — now bundled in GitHub v1.4.1 preview
+
+- **New manual support tool** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): copy an allowlisted, source-free support summary from the native sidebar, Quick Actions or Command Palette. Counts and last-check states only; optional latency measurements require diagnostics opt-in. No model names, files, endpoint URLs, source snippets, telemetry or network requests. The system clipboard is controlled by the host; review before sharing.
+- **Active-editor status correctness** ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)): clear previous model and file check outcomes on editor switches/edits/closes; reject late results from a former editor.
+- **Efficient explicit model discovery** ([PR #127](https://github.com/sanskarIN/LineLoom/pull/127)): abort stale, manually initiated Ollama model-list queries when superseded or invalidated, without adding background requests.
+- **Publisher unchanged:** `SanskarCodes.lineloom`, Marketplace and Open VSX links preserved. No tag, new VSIX, trained model, migration or registry publication from these changes. Physical editor accessibility and actual model-quality testing remain **NOT RUN**.
+
+## v1.4.0 — GitHub pre-release (published 2026-10-26)
+
+- Bounded, profile-hashed automatic Ollama retry cooldown after transient HTTP/transport/timeout errors; manual inference bypass, no passive retry and no stored source context (PR #121).
+- Confirmation-gated **Reset Session Activity** clears ephemeral counts, timing samples, accepted-item tokens and cooldown, while preserving settings and independently authorized related-file selection (PR #122).
+- Session-only accepted-suggestion callback count distinct from suggestions offered (PR #116); optional bounded 64-sample inference duration p50/p95 and reset (PR #118).
+- Native status bar and sidebar recovery clarity for unverified model/file states and pending manual checks (PR #117).
+- Extend developer-only synthetic FIM evaluation with aggregate repeated-fixture outcomes (PR #119) and a reproducible, privacy-safe local baseline protocol (PR #120). **No trained model weights or real model benchmark results.**
+- **Published:** [GitHub v1.4.0 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) with preview-channel VSIX and SHA-256, verified by [publisher workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) including isolated stable-to-preview upgrade. Four moderate development-only transitive advisories remain under security review. Physical Windows/macOS/Linux, real Ollama model quality and accessibility acceptance remain **NOT RUN**. Stable v1.3.0, Marketplace, Open VSX and separately versioned npm CLI remain unchanged.
+
+
+## v1.3.1 — GitHub pre-release (2026-10-25)
+
+- Reject additional hidden Unicode direction markers, soft hyphens, zero-width separators and invisible operators in model-generated inline suggestions rather than silently deleting characters and changing source. Preserve ZWNJ/ZWJ needed for multilingual identifiers and emoji sequences. Unit regressions included.
+- Native sidebar: add **Check Active Editor Model** to verify the actual language-overridden model on explicit user request; new native Tree View status and priority guidance for missing default vs override, stale-safe after editor/configuration changes, with editor-host integration coverage.
+- Native sidebar: add a **Last Manual File Check** row showing only local path/ignore inspection outcome after an explicit user action; no filesystem reads on ordinary sidebar refresh. Clear it on editor/document, settings, trust and ignore-policy changes, with guarded async results and unit/editor-host regressions.
+- Native sidebar: add an **explicitly checked** default-model readiness row, showing only last-check status (not checked/in progress/found/missing/failed), never auto-probing Ollama. Invalidate the ephemeral status on settings changes, workspace trust updates and newer concurrent checks; add pure tests and mocked real VS Code host checks.
+- Native sidebar: add one contextual, privacy-safe **Next:** action for extension/editor/endpoint and generation states; keep unsupported or untrusted-workspace guidance non-clickable instead of suggesting network actions. Clarify explicitly enabled but empty related-file selection separately from consented file counts. Add pure decision tests and mocked VS Code editor-host accessibility coverage.
+- **Published on GitHub as pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) includes a genuine pre-release-channel VSIX and SHA-256, verified against the published v1.3.0 stable upgrade baseline. **Stable GitHub v1.3.0**, Visual Studio Marketplace, Open VSX and separately versioned npm packages were **not** updated by the v1.3.1 publisher. Actual Ollama model quality, physical desktop/screen-reader and hardware latency QA are still **NOT RUN**; four moderate dev-tool transitive audit findings remain under review.
+
+## v1.3.0 — GitHub stable (2026-10-25)
+
+- **Published:** [GitHub stable v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) with a genuine non-pre-release VS Code VSIX and SHA-256 asset. Visual Studio Marketplace, Open VSX and the npm CLI are published separately and were **not** updated by this workflow.
+- **New (default OFF):** explicit user selection of at most two tiny, supported related source files from the active workspace. Session-only consent, ignore/canonical/sensitive-path gates, bounded UTF-8 reads, no automatic scanning, post-response revalidation and revocation-driven cancellation. These snippets may enter the user's configured Ollama prompt; approved remote hosts may receive them.
+- **Maintenance since v1.2.0:** privacy timing reset and prompt sanitization, active-file privacy inspection, ignore-policy fingerprinting/strict encoding, safer model configuration and source text handling, and stronger editor-host/cancellation tests.
+- **Tooling:** documented compatibility mitigation for high-severity MSAL publishing advisory with a reproducible lockfile, retaining four moderate dev-tool transitive findings under review.
+- **Verified automation:** security, Windows/macOS/Linux tests, Linux VS Code mocked Ollama extension host, stable-channel VSIX and isolated upgrades from independently SHA-256-pinned historical releases. **NOT RUN:** manual actual Ollama quality/performance, physical OS editor interaction, keyboard/screen-reader acceptance and real publisher credential workflows; see [release notes](docs/releases/v1.3.0.md) and [QA matrix](docs/qa/v1.3.0-manual-acceptance.md).
+
+
 ## Unreleased — v1.2.5 development (merged source, not published)
 
 - **CLI v0.2.0 candidate (not published):** add opt-in offline SHA-256 verification for user-downloaded pinned stable/preview VSIX files with local size/file-type checks. This verifies only; it does not install, download, contact Ollama or publish the npm package. GitHub Packages currently serves v0.1.0.

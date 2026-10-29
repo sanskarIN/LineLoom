@@ -9,10 +9,17 @@ function containsUnsafeUnicode(value: string): boolean {
   for (const character of value) {
     const point = character.codePointAt(0);
     if (point === undefined) continue;
+    // Reject additional visually hidden format/direction markers in generated
+    // source. Keep ZWNJ (U+200C) and ZWJ (U+200D): they are meaningful in
+    // international identifiers and joined emoji sequences.
     if ((point <= 0x1f && point !== 0x09 && point !== 0x0a && point !== 0x0d) ||
         (point >= 0x7f && point <= 0x9f) ||
-        (point >= 0x202a && point <= 0x202e) ||
-        (point >= 0x2066 && point <= 0x2069) ||
+        point === 0x00ad || point === 0x061c || point === 0x180e ||
+        point === 0x200b || point === 0x200e || point === 0x200f ||
+        (point >= 0x2028 && point <= 0x202e) ||
+        (point >= 0x2060 && point <= 0x2064) ||
+        (point >= 0x2066 && point <= 0x206f) ||
+        point === 0xfeff ||
         (point >= 0xd800 && point <= 0xdfff)) return true;
   }
   return false;
@@ -55,15 +62,36 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   // Respect code after the cursor: avoid inserting content that is already there.
   const maxOverlap = Math.min(suffix.length, value.length);
   for (let length = maxOverlap; length > 0; length--) {
-    if (value.endsWith(suffix.slice(0, length))) {
-      value = value.slice(0, -length);
-      break;
-    }
+    const overlap = suffix.slice(0, length);
+    if (!value.endsWith(overlap)) continue;
+    // A one-/two-character identifier overlap is often coincidental:
+    // "return value" before "else" must not become "return valu".
+    // Also avoid cutting either identifier *mid-token* on longer matches:
+    // "some" before "omega" or "ome;" must not become "s". Only
+    // complete-word matches of length >= 3 or punctuation can be removed.
+    const identifier = /[\p{L}\p{M}\p{N}_$]/u;
+    const onlyIdentifier = /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap);
+    const cutsGeneratedWord = onlyIdentifier &&
+      identifier.test(value.at(-length - 1) ?? "");
+    const cutsFollowingWord = identifier.test(overlap.at(-1) ?? "") &&
+      length < suffix.length && identifier.test(suffix[length]);
+    if ((length <= 2 && onlyIdentifier) || cutsGeneratedWord || cutsFollowingWord) continue;
+    value = value.slice(0, -length);
+    break;
   }
   // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
   value = value.slice(0, 6000);
   if (/[\uD800-\uDBFF]$/.test(value)) value = value.slice(0, -1);
+  // Code already after the caret may need the generated trailing separator
+  // ("return " + "result") or indentation ("if ready:\n    " + "pass").
+  // Trim completed lines, but keep the final whitespace run if the suffix
+  // starts immediately with non-whitespace source text (which can be a
+  // token, punctuation or a comment). Whitespace-only suggestions still fail.
+  const preserveCursorSpacing = /^\S/u.test(suffix) &&
+    /[\t ]$/.test(value) && /\S/u.test(value);
+  const cursorSpacing = preserveCursorSpacing ? /[\t ]+$/.exec(value)?.[0] ?? "" : "";
   value = value.replace(/[\t ]+$/gm, "");
+  if (cursorSpacing) value += cursorSpacing;
   if (!value.trim()) return "";
   return value;
 }

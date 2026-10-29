@@ -1,0 +1,246 @@
+{
+  "schemaVersion": 1,
+  "description": "Original synthetic insert-at-cursor probes for five languages and five completion categories; never train on these fixtures.",
+  "fixtures": [
+    {
+      "id": "rust-arithmetic",
+      "language": "rust",
+      "prefix": "fn double(value: i32) -> i32 {\n    value * ",
+      "suffix": "\n}\n",
+      "expected": "2",
+      "category": "expression"
+    },
+    {
+      "id": "rust-comparison",
+      "language": "rust",
+      "prefix": "fn is_even(value: i32) -> bool {\n    value % 2 == ",
+      "suffix": "\n}\n",
+      "expected": "0",
+      "category": "expression"
+    },
+    {
+      "id": "c-addition",
+      "language": "c",
+      "prefix": "int add(int a, int b) {\n    return a + ",
+      "suffix": "\n}\n",
+      "expected": "b;",
+      "category": "statement"
+    },
+    {
+      "id": "c-comparison",
+      "language": "c",
+      "prefix": "int is_positive(int value) {\n    return value > ",
+      "suffix": "\n}\n",
+      "expected": "0;",
+      "category": "expression"
+    },
+    {
+      "id": "cpp-conditional",
+      "language": "cpp",
+      "prefix": "int clamp_lower(int value, int minimum) {\n    return value < minimum ? minimum : ",
+      "suffix": "\n}\n",
+      "expected": "value;",
+      "category": "expression"
+    },
+    {
+      "id": "cpp-boolean",
+      "language": "cpp",
+      "prefix": "bool is_zero(int value) {\n    return value == ",
+      "suffix": "\n}\n",
+      "expected": "0;",
+      "category": "expression"
+    },
+    {
+      "id": "python-multiply",
+      "language": "python",
+      "prefix": "def square(value: int) -> int:\n    return value * ",
+      "suffix": "\n",
+      "expected": "value",
+      "category": "expression"
+    },
+    {
+      "id": "python-string",
+      "language": "python",
+      "prefix": "def greet(name: str) -> str:\n    return \"Hello, \" + ",
+      "suffix": "\n",
+      "expected": "name",
+      "category": "expression"
+    },
+    {
+      "id": "typescript-multiply",
+      "language": "typescript",
+      "prefix": "export function double(value: number): number {\n  return value * ",
+      "suffix": "\n}\n",
+      "expected": "2;",
+      "category": "statement"
+    },
+    {
+      "id": "typescript-comparison",
+      "language": "typescript",
+      "prefix": "export const isEmpty = (value: string): boolean => value.length === ",
+      "suffix": "\n",
+      "expected": "0;",
+      "category": "expression"
+    },
+    {
+      "id": "rust-option",
+      "language": "rust",
+      "category": "suffix",
+      "prefix": "fn first(items: &[i32]) -> Option<i32> {\n    items.first().",
+      "suffix": "\n}\n",
+      "expected": "copied()"
+    },
+    {
+      "id": "rust-iterator",
+      "language": "rust",
+      "category": "suffix",
+      "prefix": "fn count_even(items: &[i32]) -> usize {\n    items.iter().filter(|value| **value % 2 == 0).",
+      "suffix": "\n}\n",
+      "expected": "count()"
+    },
+    {
+      "id": "rust-branch",
+      "language": "rust",
+      "category": "indentation",
+      "prefix": "fn non_negative(value: i32) -> i32 {\n    if value < 0 {\n        ",
+      "suffix": "\n    } else {\n        value\n    }\n}\n",
+      "expected": "0"
+    },
+    {
+      "id": "rust-string",
+      "language": "rust",
+      "category": "suffix",
+      "prefix": "fn trimmed(value: &str) -> &str {\n    value.",
+      "suffix": "\n}\n",
+      "expected": "trim()"
+    },
+    {
+      "id": "c-null-pointer",
+      "language": "c",
+      "category": "type",
+      "prefix": "#include <stddef.h>\nint is_null(const char *ptr) {\n    return ptr == ",
+      "suffix": "\n}\n",
+      "expected": "NULL;"
+    },
+    {
+      "id": "c-index",
+      "language": "c",
+      "category": "suffix",
+      "prefix": "int first(const int *items) {\n    return items[",
+      "suffix": "\n}\n",
+      "expected": "0];"
+    },
+    {
+      "id": "c-branch",
+      "language": "c",
+      "category": "indentation",
+      "prefix": "int abs_value(int value) {\n    if (value < 0) {\n        return ",
+      "suffix": "\n    }\n    return value;\n}\n",
+      "expected": "-value;"
+    },
+    {
+      "id": "c-pointer",
+      "language": "c",
+      "category": "type",
+      "prefix": "int read_value(const int *ptr) {\n    return ",
+      "suffix": "\n}\n",
+      "expected": "*ptr;"
+    },
+    {
+      "id": "cpp-vector",
+      "language": "cpp",
+      "category": "suffix",
+      "prefix": "#include <vector>\nstd::size_t length(const std::vector<int>& items) {\n    return items.",
+      "suffix": "\n}\n",
+      "expected": "size();"
+    },
+    {
+      "id": "cpp-optional",
+      "language": "cpp",
+      "category": "statement",
+      "prefix": "#include <optional>\nstd::optional<int> maybe_value(bool flag) {\n    if (!flag) return std::nullopt;\n    return ",
+      "suffix": "\n}\n",
+      "expected": "42;"
+    },
+    {
+      "id": "cpp-move",
+      "language": "cpp",
+      "category": "type",
+      "prefix": "#include <utility>\n#include <string>\nstd::string take(std::string value) {\n    return std::",
+      "suffix": "\n}\n",
+      "expected": "move(value);"
+    },
+    {
+      "id": "cpp-container",
+      "language": "cpp",
+      "category": "type",
+      "prefix": "#include <vector>\nstd::vector<int> make_values() {\n    return std::vector<int>{",
+      "suffix": "\n}\n",
+      "expected": "1, 2, 3};"
+    },
+    {
+      "id": "python-list",
+      "language": "python",
+      "category": "suffix",
+      "prefix": "def last(items: list[int]) -> int:\n    return items[",
+      "suffix": "\n",
+      "expected": "-1]"
+    },
+    {
+      "id": "python-optional",
+      "language": "python",
+      "category": "type",
+      "prefix": "def safe_name(name: str | None) -> str:\n    return name if name is not None else ",
+      "suffix": "\n",
+      "expected": "\"\""
+    },
+    {
+      "id": "python-branch",
+      "language": "python",
+      "category": "indentation",
+      "prefix": "def non_negative(value: int) -> int:\n    if value < 0:\n        return ",
+      "suffix": "\n    return value\n",
+      "expected": "0"
+    },
+    {
+      "id": "python-join",
+      "language": "python",
+      "category": "suffix",
+      "prefix": "def join_words(words: list[str]) -> str:\n    return \", \".",
+      "suffix": "\n",
+      "expected": "join(words)"
+    },
+    {
+      "id": "typescript-array",
+      "language": "typescript",
+      "category": "suffix",
+      "prefix": "export const first = (items: number[]): number | undefined => items[",
+      "suffix": "\n",
+      "expected": "0];"
+    },
+    {
+      "id": "typescript-nullish",
+      "language": "typescript",
+      "category": "type",
+      "prefix": "export const label = (value: string | undefined): string => value ?? ",
+      "suffix": "\n",
+      "expected": "\"\";"
+    },
+    {
+      "id": "typescript-generic",
+      "language": "typescript",
+      "category": "type",
+      "prefix": "export function identity<T>(value: T): T {\n  return ",
+      "suffix": "\n}\n",
+      "expected": "value;"
+    },
+    {
+      "id": "typescript-optional",
+      "language": "typescript",
+      "category": "type",
+      "prefix": "type User = { name?: string };\nexport function getName(user: User): string {\n  return user.name ?? ",
+      "suffix": "\n}\n",
+      "expected": "\"unknown\";"
+    }
+  ]
+}

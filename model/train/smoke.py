@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""Manual local-only synthetic FIM baseline/adapter smoke.
+
+Default --plan never imports ML packages or contacts a network. Explicit
+--run loads user-provisioned local checkpoint and optional PEFT adapter.
+Generated code is used only in memory; print allowlisted aggregate counts.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import sys
+
+try:
+    from .finetune import (
+        FIM_SUFFIX, LANGUAGES, ROOT, ExperimentRejected, fim_prompt,
+        validate_local_checkpoint, verify_fim_tokenizer
+    )
+except ImportError:
+    from finetune import (
+        FIM_SUFFIX, LANGUAGES, ROOT, ExperimentRejected, fim_prompt,
+        validate_local_checkpoint, verify_fim_tokenizer
+    )
+
+try:
+    from .smoke_report import (
+        fingerprints, hash_local_metadata_file, read_public_fixtures
+    )
+    from .integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
+    )
+except ImportError:
+    from smoke_report import (
+        fingerprints, hash_local_metadata_file, read_public_fixtures
+    )
+    from integrity import (
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
+    )
+
+
+def select_public_fixtures(language: str) -> list[dict]:
+    """Use only strictly validated checked-in synthetic cases."""
+    return read_public_fixtures(language)
+
+
+def normalize_completion(response: str) -> str:
+    """Compare only a hypothetical FIM insertion, never surrounding source.
+
+    The public synthetic exact-string score is not compile correctness:
+    a valid alternative implementation can still fail strict matching.
+    """
+    normalized = response.replace("\r\n", "\n").replace("\r", "\n")
+    for marker in ("<|fim_suffix|>", "<|endoftext|>", "<|im_end|>"):
+        normalized = normalized.split(marker, 1)[0]
+    return normalized
+
+
+def summarize(results: list[dict]) -> dict:
+    counts = {language: {"attempts": 0, "strictExactMatches": 0}
+              for language in LANGUAGES}
+    for result in results:
+        if result["language"] not in counts:
+            raise ExperimentRejected("invalid-result-language")
+        if not isinstance(result["exact"], bool):
+            raise ExperimentRejected("invalid-result")
+        counts[result["language"]]["attempts"] += 1
+        if result["exact"]:
+            counts[result["language"]]["strictExactMatches"] += 1
+    return {
+        "syntheticAttempts": len(results),
+        "strictExactMatches": sum(x["strictExactMatches"] for x in counts.values()),
+        "perLanguage": counts
+    }
+
+
+def validate_local_adapter(path: Path) -> Path:
+    adapter = path.expanduser().resolve()
+    if (not adapter.is_dir() or
+        not (adapter / "adapter_config.json").is_file() or
+        not (adapter / "adapter_model.safetensors").is_file()):
+        raise ExperimentRejected("local-lora-adapter-required")
+    return adapter
+
+
+def run_local(fixture_set: list[dict], args) -> dict:
+    """Only local model files; optional PEFT adapter is never uploaded/merged."""
+    # Fail closed before importing ML frameworks or loading any weights:
+    # merely having adapter.safetensors is insufficient for comparison.
+    if args.adapter_dir:
+        verify_training_receipt(
+            Path(args.adapter_dir), Path(args.base_dir), args.base_revision
+        )
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    os.environ["HF_DATASETS_OFFLINE"] = "1"
+    os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+    except ImportError:
+        raise ExperimentRejected("optional-local-ml-dependencies-missing") from None
+
+    if args.device == "cuda" and not torch.cuda.is_available():
+        raise ExperimentRejected("cuda-unavailable")
+    base_dir = validate_local_checkpoint(Path(args.base_dir))
+    if args.adapter_dir:
+        adapter_dir = validate_local_adapter(Path(args.adapter_dir))
+        try:
+            from peft import PeftModel
+        except ImportError:
+            raise ExperimentRejected("optional-peft-dependency-missing") from None
+
+    dtype = (torch.bfloat16 if args.device == "cuda" and
+             torch.cuda.is_bf16_supported() else torch.float32)
+    tokenizer = AutoTokenizer.from_pretrained(
+        str(base_dir), local_files_only=True, trust_remote_code=False, use_fast=True
+    )
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    verify_fim_tokenizer(tokenizer)
+    model = AutoModelForCausalLM.from_pretrained(
+        str(base_dir), local_files_only=True, trust_remote_code=False,
+        use_safetensors=True, torch_dtype=dtype
+    )
+    if args.adapter_dir:
+        model = PeftModel.from_pretrained(
+            model, str(adapter_dir), is_trainable=False, local_files_only=True
+        )
+    model.to(args.device)
+    model.eval()
+    stop_ids = [tokenizer.eos_token_id]
+    fim_end = tokenizer.convert_tokens_to_ids(FIM_SUFFIX)
+    if isinstance(fim_end, int) and fim_end >= 0 and fim_end not in stop_ids:
+        stop_ids.append(fim_end)
+    result = []
+    with torch.inference_mode():
+        for fixture in fixture_set:
+            prompt_ids = tokenizer.encode(fim_prompt(fixture), add_special_tokens=False)
+            if not prompt_ids or len(prompt_ids) > 2048:
+                raise ExperimentRejected("synthetic-input-too-long")
+            inputs = torch.tensor([prompt_ids], dtype=torch.long, device=args.device)
+            attention = torch.ones_like(inputs)
+            generated = model.generate(
+                input_ids=inputs,
+                attention_mask=attention,
+                do_sample=False,
+                max_new_tokens=args.max_new_tokens,
+                eos_token_id=stop_ids,
+                pad_token_id=tokenizer.pad_token_id
+            )
+            tokens = generated[0, inputs.shape[1]:].tolist()
+            # Raw completion remains in memory only; no IDs/code/special
+            # model errors written into the console or an artifact.
+            completion = tokenizer.decode(tokens, skip_special_tokens=False)
+            exact = normalize_completion(completion) == fixture["expected"]
+            result.append({"language": fixture["language"], "exact": exact})
+    return {
+        "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
+        "realModelInferenceExecuted": True,
+        "artifactKind": "local-lora-adapter" if args.adapter_dir else "local-base-model",
+        "adapterReceiptVerified": bool(args.adapter_dir),
+        "adapterReceiptProtocol": (
+            ADAPTER_RECEIPT_PROTOCOL if args.adapter_dir else "not-applicable"
+        ),
+        **fingerprints(fixture_set, args.max_new_tokens),
+        "selectedLanguage": args.language,
+        "baseRevisionDeclared": args.base_revision,
+        "baseConfigSha256": hash_local_metadata_file(base_dir / "config.json"),
+        "tokenizerSha256": hash_local_metadata_file(base_dir / "tokenizer.json"),
+        "maxNewTokens": args.max_new_tokens,
+        **summarize(result),
+        "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
+    }
+
+
+def parser() -> argparse.ArgumentParser:
+    cli = argparse.ArgumentParser(
+        description="Source-free, local-only FIM baseline or LoRA adapter smoke"
+    )
+    cli.add_argument("--language", choices=("all",) + LANGUAGES, default="all")
+    cli.add_argument("--run", action="store_true", help="Load locally provisioned weights (default: plan)")
+    cli.add_argument("--approve-checkpoint", action="store_true")
+    cli.add_argument("--base-dir")
+    cli.add_argument("--base-revision")
+    cli.add_argument("--adapter-dir", help="Optional directory holding an independently trained local LoRA adapter")
+    cli.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
+    cli.add_argument("--max-new-tokens", type=int, default=64)
+    return cli
+
+
+def main() -> int:
+    args = parser().parse_args()
+    try:
+        if not 1 <= args.max_new_tokens <= 128:
+            raise ExperimentRejected("invalid-token-cap")
+        fixtures = select_public_fixtures(args.language)
+        if not args.run:
+            print(json.dumps({
+                "stage": "OFFLINE_SYNTHETIC_PLAN_ONLY",
+                "realModelInferenceExecuted": False,
+                **fingerprints(fixtures, args.max_new_tokens),
+                "selectedLanguage": args.language,
+                "perLanguage": {language: sum(f["language"] == language for f in fixtures)
+                                for language in LANGUAGES},
+                "networkCalls": 0,
+                "maxNewTokens": args.max_new_tokens,
+                "warning": "Real model quality, latency, compilation and model license review NOT RUN."
+            }, indent=2))
+            return 0
+        if not (args.approve_checkpoint and args.base_dir and args.base_revision and
+                re.fullmatch(r"[a-f0-9]{40}", args.base_revision)):
+            raise ExperimentRejected("independent-checkpoint-review-required")
+        validate_local_checkpoint(Path(args.base_dir))
+        if args.adapter_dir:
+            validate_local_adapter(Path(args.adapter_dir))
+        print(json.dumps(run_local(fixtures, args), indent=2))
+        return 0
+    except (ExperimentRejected, OSError, ValueError, KeyError, RuntimeError):
+        print("LineLoom Code local synthetic smoke was rejected or failed; inspect local prerequisites.", file=sys.stderr)
+        return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

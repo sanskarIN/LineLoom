@@ -14,22 +14,22 @@ const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
-  // Development version changes independently of the latest stable GitHub
-  // download. v1.2.4 is the latest published GitHub preview; v1.2.5 is a draft.
-  // Keep the website's v1.2.0 stable links fixed until an actual new stable
-  // release is verified, rather than equating package.json with deployment.
-  assert.match(pkg.version, /^1\.2\.[1-9]\d*$/);
-  assert.ok(page.includes("v1.2.4 GitHub pre-release"),
+  // The development manifest may be newer than publicly published builds.
+  // Verify public stable and preview links separately from this source version.
+  assert.match(pkg.version, /^1\.(?:2\.[1-9]\d*|3\.\d+|4\.\d+)$/);
+  assert.ok(page.includes("Latest GitHub testing preview: v1.4.2"),
     "Current published GitHub preview must be discoverable alongside stable.");
-  assert.ok(page.includes("LineLoom-1.2.4.vsix"), "Published preview VSIX must be linked");
-  assert.ok(page.includes("LineLoom-1.2.4.sha256"), "Published preview checksum must be linked");
-  assert.ok(!page.includes("v1.2.4 development (not released)"),
+  assert.ok(page.includes("LineLoom-1.4.2.vsix"), "Published preview VSIX must be linked");
+  assert.ok(page.includes("LineLoom-1.4.2.sha256"), "Published preview checksum must be linked");
+  assert.ok(!page.includes("v1.4.0 development (not released)"),
     "Do not describe a published preview as unreleased.");
   assert.ok(page.includes("v1.1.1 pre-release"));
-  assert.ok(page.includes("v1.2.0 GitHub stable"), "Latest GitHub stable version must be visible");
+  assert.ok(page.includes("v1.3.0 GitHub stable"), "Latest GitHub stable version must be visible");
   assert.ok(page.includes("v1.0.0"), "Historical v1.0.0 milestone should remain visible");
-  assert.ok(page.includes("LineLoom-1.2.0.vsix"));
-  assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.2.0/LineLoom-1.2.0.vsix"));
+  assert.ok(page.includes("LineLoom-1.3.0.vsix"));
+  assert.ok(page.includes("LineLoom-1.3.0.sha256"));
+  assert.ok(page.includes("LineLoom-1.2.0.vsix") || page.includes("v1.2.0"), "Historical stable version must remain discoverable");
+  assert.ok(page.includes("https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix"));
   assert.ok(page.includes("v1.2.0"));
   assert.ok(!page.includes("LineLoom-0.9.5.vsix"), "obsolete download link");
   assert.match(page, /github\.com\/sanskarIN\/LineLoom/);
@@ -53,7 +53,7 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     'GitHub stable release',
     "does <strong>not</strong> provide comprehensive content-level secret detection",
     "no built-in telemetry",
-    "not implemented in this release",
+    "lineloom.crossFileContext",
     "Go, Java, C and C++ remain experimental",
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
@@ -100,12 +100,12 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /(?:do not|don\x27t) double-click/i);
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
-  assert.ok(guide.includes("LineLoom-1.2.0.vsix"));
-  assert.ok(guide.includes("GitHub v1.2.4 pre-release"),
+  assert.ok(guide.includes("LineLoom-1.3.0.vsix"), "Install guide must offer the latest GitHub stable VSIX");
+  assert.ok(guide.includes("Latest GitHub testing preview: v1.4.2"),
     "Current GitHub preview must appear in the install guide");
-  assert.ok(guide.includes("LineLoom-1.2.4.vsix"),
+  assert.ok(guide.includes("LineLoom-1.4.2.vsix"),
     "Install guide must link the current preview VSIX");
-  assert.ok(guide.includes("LineLoom-1.2.4.sha256"),
+  assert.ok(guide.includes("LineLoom-1.4.2.sha256"),
     "Install guide must link the current preview checksum");
   assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
@@ -135,8 +135,8 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.match(readme, /Website: \[sanskarin\.github\.io\]\(https:\/\/sanskarin\.github\.io\/\)/);
   assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
   assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
-  assert.match(pagesGuide, /GitHub v1\.2\.0 stable remains the stable download/);
-  assert.match(pagesGuide, /GitHub .*v1\.2\.4.*latest published pre-release/);
+  assert.match(pagesGuide, /GitHub v1\.3\.0 stable is the latest publicly verified GitHub stable download/);
+  assert.match(pagesGuide, /GitHub .*v1\.3\.1.*latest published pre-release/);
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });
 
@@ -152,6 +152,19 @@ test("published GitHub Packages CLI is correctly distinguished from editor regis
   assert.match(guide, /authenticated read access/);
   assert.match(guide, /not.*published to npmjs\.com/i);
   assert.ok(page.includes("GitHub Packages"));
+});
+
+test("public registry evidence and stable versus preview stay distinct", () => {
+  const pub = readFileSync(resolve(root, "docs/publishing.md"), "utf8");
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  assert.match(pub, /40201081119/);
+  assert.match(pub, /preRelease: false/);
+  assert.ok(page.includes("Open VSX v1.3.0 Stable"));
+  assert.ok(guide.includes("Open VSX v1.3.0 Stable"));
+  assert.ok(readme.includes("latest GitHub") || readme.includes("v1.3.1"));
+  assert.ok(!page.includes("Open VSX v1.2.0 Stable"));
+  assert.ok(!guide.includes("Open VSX v1.2.0 Stable"));
 });
 
 test("official Marketplace and Open VSX listings are visible throughout published resources", () => {
@@ -186,8 +199,8 @@ test("official Marketplace and Open VSX listings are visible throughout publishe
   assert.ok(guide.includes('id="open-vsx"'), "Installation guide should explain Open VSX");
   assert.ok(readme.includes("code --install-extension SanskarCodes.lineloom"), "VS Code CLI install command must be documented");
   assert.ok(readme.includes("LineLoom-1.2.0.vsix"), "GitHub stable VSIX fallback should remain available");
-  assert.ok(page.includes("Open VSX v1.2.0 Stable"), "Homepage must state the verified Open VSX stable version");
-  assert.ok(guide.includes("Open VSX v1.2.0 Stable"), "Installation guide must show the current Open VSX stable version");
+  assert.ok(page.includes("Open VSX v1.3.0 Stable"), "Homepage must state the verified Open VSX stable version");
+  assert.ok(guide.includes("Open VSX v1.3.0 Stable"), "Installation guide must show the current Open VSX stable version");
   assert.ok(publisherGuide.includes("verified: true"), "Publishing guide must reflect the verified Open VSX registry response");
   assert.ok(!page.includes("Open VSX currently shows no publisher verification badge"), "Do not preserve obsolete publisher status");
   assert.ok(!page.includes("Open VSX publication has not yet been verified"), "Remove old unlaunched registry language");

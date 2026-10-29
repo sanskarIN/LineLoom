@@ -7,8 +7,8 @@ describe("LineLoom Quick Actions", () => {
     const disabled = quickActions(false, true);
     expect(enabled[0].command).toBe("lineloom.disable");
     expect(disabled[0].command).toBe("lineloom.enable");
-    expect(enabled).toHaveLength(12);
-    expect(new Set(enabled.map(action => action.id)).size).toBe(12);
+    expect(enabled).toHaveLength(14);
+    expect(new Set(enabled.map(action => action.id)).size).toBe(14);
   });
   it("offers an automatic pause/resume toggle, keeping manual triggering accessible", () => {
     expect(quickActions(true, true)[1].label).toMatch(/Pause Automatic/);
@@ -18,17 +18,22 @@ describe("LineLoom Quick Actions", () => {
   it("shows privacy timing reset in Quick Actions only after diagnostics opt-in", () => {
     for (const off of [quickActions(true, false), quickActions(true, true, false)]) {
       expect(off.some(item => item.command === "lineloom.resetPrivacyTimings")).toBe(false);
-      expect(off).toHaveLength(12);
+      expect(off).toHaveLength(14);
     }
     const on = quickActions(true, true, true);
     const reset = on.find(item => item.command === "lineloom.resetPrivacyTimings");
-    expect(on).toHaveLength(13);
+    expect(on).toHaveLength(16);
     expect(reset).toMatchObject({
       id: "resetPrivacyTimings",
       label: "$(trash) Reset Privacy Timing Statistics"
     });
     expect(reset?.description).not.toMatch(/path|prompt|source/i);
-    expect(new Set(on.map(item => item.id)).size).toBe(13);
+    expect(new Set(on.map(item => item.id)).size).toBe(16);
+    expect(on.find(item => item.command === "lineloom.resetInferenceTimings")).toMatchObject({
+      id: "resetInferenceTimings",
+      label: "$(trash) Reset Inference Timing Samples"
+    });
+    expect(quickActions(true, true, false).every(action => action.command !== "lineloom.resetInferenceTimings")).toBe(true);
   });
   it("has only known LineLoom commands, with no implicit network side effects", () => {
     const actions = quickActions(false, false);
@@ -41,8 +46,23 @@ describe("LineLoom Quick Actions", () => {
       label: "$(shield) Check Active File Privacy"
     });
     expect(actions.some(action => action.command === "lineloom.openSidebar")).toBe(true);
+    expect(actions.some(action => action.command === "lineloom.resetSessionActivity")).toBe(true);
+    expect(actions.some(action => action.command === "lineloom.copySupportSummary")).toBe(true);
     const cancel = actions.find(action => action.command === "lineloom.cancel");
     expect(cancel?.description).toMatch(/without disabling future suggestions/);
     expect(cancel?.label).toMatch(/Stop Current Generation/);
+  });
+});
+
+describe("opt-in related-file Quick Actions", () => {
+  it("adds no actions when cross-file context is off, but exposes selective commands when enabled", () => {
+    expect(quickActions(true, true, false, false, 2).some(a =>
+      a.command === "lineloom.selectRelatedFiles")).toBe(false);
+    const enabled = quickActions(true, true, false, true, 2);
+    expect(enabled.some(a => a.command === "lineloom.selectRelatedFiles")).toBe(true);
+    expect(enabled.some(a => a.command === "lineloom.clearRelatedFiles")).toBe(true);
+    expect(new Set(enabled.map(a => a.id)).size).toBe(enabled.length);
+    expect(quickActions(true, true, false, true, 0).some(a =>
+      a.command === "lineloom.clearRelatedFiles")).toBe(false);
   });
 });

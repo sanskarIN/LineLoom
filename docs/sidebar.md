@@ -1,72 +1,212 @@
-# LineLoom sidebar (v1.2.0 GitHub stable and v1.2.1 development)
+# LineLoom Control Center — native VS Code sidebar
 
-LineLoom's next-release control center is a **native VS Code Activity Bar Tree View**.
-Open the LineLoom icon in the Activity Bar and select **Control Center**, or run
-**LineLoom: Open Control Center** from the Command Palette/status-bar Quick Actions. The feature
-was introduced in [v1.1.0 GitHub **pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.0),
-with an extended Active Editor section in the published
-[v1.1.1 GitHub preview](https://github.com/sanskarIN/LineLoom/releases/tag/v1.1.1). The
-published v1.0.0 stable extension does not include this view.
+**Available in the published [GitHub v1.3.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0).** The sidebar was introduced in the v1.1.x preview series and stabilized in v1.2.0. You can open it using the **LineLoom** icon in VS Code's Activity Bar or the Command Palette's **LineLoom: Open Control Center**. The VS Code Marketplace and Open VSX may serve different versions; verify the installed extension before expecting this view.
 
-## What is visible
+This is a **native VS Code Tree View**, not a web app, separate chat service or background Ollama process.
 
-- **Completion:** turn autocomplete on or off, pause/resume automatic suggestions,
-  manually trigger a suggestion, or use **Stop Current Generation** (available
-  in the unreleased v1.2.1 candidate) to abort a queued/in-flight request
-  without changing the persistent enable/automatic settings.
-- **Models & Languages:** show the configured default Ollama model, count language
-  overrides and enabled languages, and open existing selection commands.
-- **Active Editor (v1.1.1 preview):** display only the current VS Code
-  language ID's friendly name, effective default/override model and a provisional
-  settings-level completion status. It reacts to editor changes. Unsupported
-  languages and missing editors are clearly labeled, without reading filenames,
-  paths or source content. A non-identifying document URI scheme is also
-  used so untitled and virtual documents are not shown as eligible.
-- **Privacy & Connection:** report workspace trust, and whether the inference
-  endpoint is loopback, remote approved, remote blocked/pending approval, or invalid.
-  Use Check Ollama Connection for an explicit user-initiated model-list request.
-- **Session Activity:** request, suggestion, cancellation, failure, cache-hit,
-  continuation reuse and empty-response totals from in-memory aggregates,
-  plus optional measured average latency when performance diagnostics are
-  enabled. Nothing is persisted or sent to a telemetry service.
-- **Completion (v1.2.0 candidate):** a local-only runtime status describing
-  ready, generating, unavailable, disabled or error. "Ready" means the UI is
-  ready, **not** that a configured model is installed or Ollama is reachable.
-- **More Actions:** settings, setup instructions, and Quick Actions.
+## On `main` after v1.3.0 — contextual next step (unreleased)
 
-The title-bar refresh icon refreshes the tree without querying Ollama. Sidebar
-section and action labels also provide explicit screen-reader names; manual
-keyboard/high-contrast acceptance is tracked separately.
+The in-development Control Center adds one **Next:** action near Engine Status. It prioritizes disabled autocomplete, restricted workspace trust, unsupported/non-local editors, disabled languages, invalid or unapproved endpoint settings, and unavailable models before offering actions for generation or diagnostics. When no safe command can perform the required step (for example, opening a supported file or changing Workspace Trust), it displays guidance **without a clickable command**.
 
-## Privacy and behavior
+Where a native LineLoom command already exists, clicking the recommendation performs that **explicit user action**: Enable Autocomplete, Manage Autocomplete Languages, Select Model, Open Settings, Check Ollama Connection, Stop Current Generation, Open Diagnostics or Trigger Completion. The recommendation itself never sends a prompt, reads file contents or contacts Ollama; it does not claim the configured model is reachable or that the file passed privacy inspection. Engine Status remains independent of model availability and permission checks.
 
-Rendering or refreshing the sidebar never reads other files, constructs inference
-prompts, contacts Ollama, or initiates endpoint consent. It does not display the
-endpoint host/port, source text, file paths, prompt/response bodies, secrets or
-session history. Choosing an existing model or connection command is an explicit
-user action and uses the existing remote HTTPS approval flow. The view does not
-bypass workspace trust or the completion engine's private-file exclusions.
+The Related-File Context entry now distinguishes **setting enabled but no files chosen** from session-only selected references. Enabling the setting alone is not consent to read additional files, and selection remains bounded to two user-chosen files.
 
-The new Active Editor status deliberately cannot guarantee that the current
-file is eligible for completion: sensitive-file exclusions and ignore rules
-are checked only by the completion engine just before inference. That design
-avoids filesystem access while merely rendering the sidebar.
+**Release status:** This sidebar refinement is source work proposed for a future maintenance build, **not part of the published v1.3.0 VSIX or either marketplace version**. Physical keyboard/screen-reader testing and real Ollama acceptance remain open.
 
-The sidebar intentionally reuses commands instead of duplicating VS Code's
-configuration persistence and request logic. Settings changes refresh the view;
-counters refresh after completion engine state notifications or on demand.
+## Post-v1.3.0 development: last manual model check (unreleased)
 
-## Developer QA
+After the user explicitly invokes **LineLoom: Check Ollama Connection**—from the sidebar, Command Palette, or Setup Guide—the model section can show a **Last Manual Model Check** line. Its statuses distinguish **Not checked**, **Checking**, **Default model found**, **Default model missing**, and **Connection failed**.
 
-1. Install dependencies with `npm ci`, then run `npm run check`.
-2. Launch the extension host with `F5`; open the LineLoom Activity Bar item.
-3. Test enable/disable and pause/resume, with and without an editor open.
-4. Configure a remote HTTPS Ollama origin and confirm the sidebar does **not**
-   connect until an explicit connection/model action, with approval enforced.
-5. Switch between trusted and restricted workspaces. Inspect the tree for
-   accurate status and no file contents or sensitive endpoint details.
-6. Confirm the existing status bar Quick Actions and inline provider still work.
-7. Run `npm run test:integration` in a compatible desktop/test environment.
+This is a snapshot of the **configured default model's presence in Ollama's returned model list at the time of that action**, not automatic availability monitoring or proof that the model can generate useful code. Per-language model overrides remain independent; a successful default-model check does not verify a language-specific override. If the last check reports a missing default model, the sidebar suggests selecting an installed one; if a connection failed, it suggests an explicit retry.
 
-Release readiness also requires Windows/macOS/Linux host verification,
-packaged VSIX checks and real-model acceptance; these are not claimed here.
+- Sidebar rendering, refreshing and navigation **never trigger model discovery**, inference, file access or remote approval.
+- A check is initiated only after a deliberate command; remote HTTPS hosts still require the existing separate opt-in and origin approval.
+- Only one of five non-sensitive status values is retained **in memory for the active session**. No model names, endpoint URLs, server responses or timestamps are stored by the readiness tracker.
+- A second manual check supersedes the first; late results from a previous check cannot overwrite the current status. Changing any LineLoom configuration or workspace trust clears the previous result. A dismissed approval is not treated as a successful check.
+- The code is a **future release candidate**, not included in the already published v1.3.0 VSIX, Marketplace or Open VSX packages. Actual physical-device accessibility and real-model quality remain outstanding.
+
+## Post-v1.3.0 development: last manual file privacy check (unreleased)
+
+The sidebar now displays a **Last Manual File Check** row below **Check Active File Privacy** in the Privacy & Connection section. The row starts **Not checked**, changes to **Checking** only after a person invokes the command, and then displays the previous local path-and-ignore inspection outcome (**Passed**, **Blocked**, or **No active editor**). The normal **Next:** hint also explains an explicitly blocked file, without offering an unsafe bypass.
+
+This is **not continuous monitoring**, a file-content scanner, or a guarantee of future completion eligibility. A **Passed** result means only that existing path and ignore checks succeeded *at that instant*; the completion engine independently revalidates privacy before inference. Model readiness, language settings, endpoint approval and eventual prompt safety are separate checks.
+
+- No filename, absolute path, file content, actual ignore-rule pattern or secret enters the sidebar's stored status. The status lives only in extension memory.
+- The sidebar's normal refresh, focus and rendering perform **no file reads, prompt construction or Ollama requests**.
+- The command runs the pre-existing local inspector only after a deliberate click. A second inspection supersedes any older pending result.
+- Active editor changes, active document edits/closures, extension configuration, workspace trust and ignore-file watcher changes clear the previous result. Late asynchronous results cannot restore an old approval after these events.
+- The change is **source-only** until a future version is explicitly tested and released; it is not in the published GitHub v1.3.0 VSIX or either extension marketplace.
+
+## Unreleased development: verify the **active editor's effective model**
+
+The default-model check introduced after v1.3.0 reports only the configured default tag. If a language-specific override is enabled (for example TypeScript using another local model), a successful default check **does not** verify the model used for suggestions in that editor.
+
+The **Last Active Model Check** entry in the **Active Editor** section now offers an explicit **Check Active Editor Model** action (Command Palette: `LineLoom: Check Active Editor Model`). It checks which model is resolved for the active supported local editor, including a configured language override. After an authorized user click, the existing Ollama approval boundary applies and the extension requests the bounded model listing. The result is **Not checked**, **Checking**, **Found**, **Missing**, or **Connection failed**. It is only a historical model-list snapshot, not a guarantee of generation quality or live availability.
+
+- Rendering or refreshing the sidebar performs no network request, prompts, source reads or path inspection.
+- Only a supported, enabled local file in a trusted workspace can be used. A command on another editor reports an action hint, not a network operation.
+- The status is session-only and stores no filenames, prompts, endpoint URLs or model tags. Switching editors, editing the active document, changing LineLoom settings or changing workspace trust clears the status. Obsolete concurrent network results are ignored.
+- When an override is missing at the last manual check, **Next: Change Language Model** opens the existing explicit model assignment dialog; when the default is missing, **Next: Choose Installed Model** is offered instead.
+- This is source development and has not been published into v1.3.0 or the editor marketplaces.
+
+## What the Control Center shows
+
+| Section | Visible information and actions |
+| --- | --- |
+| **Completion** | Engine state, enable/disable, pause/resume automatic suggestions, manual trigger and **Stop Current Generation**. The future maintenance candidate adds one contextual **Next:** recommendation |
+| **Models & Languages** | Current default model, count of per-language overrides, enabled-language count, and native selection commands; an unreleased enhancement adds the last user-triggered default-model check |
+| **Active Editor** | Language, effective model and **provisional settings-level** eligibility; an upcoming preview adds explicit active-editor model verification (including overrides), never a passive model request |
+| **Privacy & Connection** | Workspace trust, endpoint *category*, **Check Active File Privacy**, selected related-file count, and manual **Check Ollama Connection**; a future source candidate adds the last explicit file-inspection status |
+| **Session Activity** | In-memory counts for requests, **suggestions offered and accepted**, failures, cancellations, cache hits, continuation reuse and empty responses; optional measured latency, diagnostics and privacy-timing reset when enabled |
+| **More Actions** | Settings, setup guide, Quick Actions |
+
+**Engine status = Ready does not establish model availability.** The model may be missing or Ollama may be offline. Use the explicit **Check Ollama Connection** action instead of interpreting the sidebar's settings-derived status as a live health check.
+
+**Active Editor status = Allowed by settings is NOT a file privacy clearance.** To evaluate a specific file's current path and ignore-policy status, invoke **Check Active File Privacy**. The command checks local rules without reading source text or requesting a completion; privacy is independently checked again just before inference.
+
+## Explicitly selected related-file context
+
+This feature ships in GitHub stable v1.3.0, but is **OFF by default**.
+
+1. In LineLoom Settings, enable `lineloom.crossFileContext`. The setting itself does **not** read additional files.
+2. Open a supported local source file in a trusted workspace.
+3. Select **Related-File Context** in the sidebar or run **LineLoom: Select Related Files for Context**.
+4. Select one or two **distinct supported source files** from the same workspace folder (not the active file). Each selected file must be nonempty and no larger than **2,048 bytes**.
+5. Read and accept the modal disclosure before extra snippets may enter Ollama prompts. If you configured and separately approved a remote HTTPS endpoint, those snippets may leave the device.
+6. The sidebar shows the number selected, **not filenames**. Choose **Clear Related Files** or use **LineLoom: Clear Selected Related Files** to revoke selection. Changing LineLoom settings, active editors or ignore rules also clears it.
+
+Selected paths/snippets are kept only in current-session memory; hard exclusions and nested ignore policies are checked before and after use. No repository scan, automatic reference discovery or persistent code index occurs. **The tool cannot detect every secret in an otherwise allowed file**—choose only source you are comfortable sending to the configured Ollama endpoint. See [privacy and resource boundaries](privacy/selected-context.md).
+
+## Opt-in rolling inference p50/p95 (unreleased)
+
+When `lineloom.performanceDiagnostics` is **OFF** (default), the extension neither stores nor displays inference timing samples. After explicit opt-in, the native Session Activity sidebar and source-free Diagnostics include **nearest-rank p50/p95 of the last 64 completed, authorized Ollama requests**, alongside the existing session-wide average. The fixed-size rolling window stores **only finite elapsed milliseconds**—not source code, document paths, model names, prompts, responses, endpoint identities, or per-request timestamps. These measurements cover completion generation and privacy revalidation and **do not establish model accuracy, user acceptance rate, or hardware-quality benchmarks**.
+
+**Reset Inference Timing Samples**, accessible from the sidebar, Quick Actions and Command Palette when enabled, erases the rolling samples, current/average durations and sample count without clearing request, offered-suggestion or accepted-callback counters, changing settings, stopping current inference, or touching the separate privacy-rule timing statistics. Outstanding requests from the prior timing epoch cannot restore cleared measurements; disabling diagnostics also clears them. The reset command can be invoked from the Command Palette while diagnostics are disabled and still performs a safe erase.
+
+Pure unit tests cover bounds, invalid timings, nearest-rank math and reset. Mocked VS Code editor-host tests cover the opt-out boundary and late results. Manual actual Ollama local-model performance, Windows/macOS/Linux hardware and accessibility acceptance remain **NOT RUN**. The feature is development-only, not in the published v1.3.0 stable or v1.3.1 GitHub preview.
+
+## Clearer status bar and pending check messages (unreleased)
+
+The native status bar no longer claims **Ready for local code completion** merely because autocomplete is enabled. Its tooltip explicitly says that the Ollama model and active-file rules are **not automatically verified**. Manual-only mode identifies paused automatic suggestions while allowing manual completion. Unavailable and error states direct users to manual checks and source-free diagnostics.
+
+The sidebar **Next:** recommendation distinguishes user-invoked checks currently running (default model, effective active-editor model, local file privacy) from successful outcomes. These in-progress notices have no command, do not trigger duplicate requests, and remain lower priority than blocked editor/workspace states or actively generating suggestions. Refresh is still offline and does not inspect source or approve a remote origin.
+
+Pure unit tests cover status wording and pending-state priorities. Actual Windows/macOS/Linux keyboard-only, high-contrast, screen-reader and human model acceptance remain **NOT RUN**. These are unreleased source changes; published v1.3.0 Stable and v1.3.1 preview are unchanged.
+
+## Session-only accepted-suggestion counter (unreleased)
+
+**Suggestions Offered** counts ghost-text items returned by LineLoom, including cached results. **Accepted Suggestions** counts one-shot VS Code item acceptance callbacks. No text, filename, document identifier, model output, or individual acceptance event is stored or logged; only an in-memory aggregate counter and up to 128 opaque random pending callback tokens are retained. Duplicate and invalid tokens do not count. Editor refresh does not issue inference or send network requests.
+
+These counts are **not proof of quality**, human usefulness, or an accurate acceptance *rate*: the editor can show or discard items repeatedly, and some interaction paths may not invoke the callback. Unit and mocked VS Code-host tests exercise the callback wiring, but manual acceptance and actual Windows/macOS/Linux accessibility tests remain **NOT RUN**. This source feature is **not** in the already published v1.3.0 stable or GitHub v1.3.1 preview.
+
+## Privacy of the view
+
+Rendering/refreshing the tree does **not** contact Ollama, issue a prompt, read related file contents, or automatically request remote approval. Its labels omit raw document paths, code, prompts, response bodies and full endpoint URLs. Model discovery or an Ollama connection check is a separate action initiated by the user.
+
+Diagnostics are aggregate and in-memory by default. Optional performance timing collection is controlled by `lineloom.performanceDiagnostics`; disabling it clears collected latency measurements. The reset command erases privacy eligibility timing statistics without changing model or completion settings.
+
+The status and consent interactions are designed for native VS Code accessibility; however **physical keyboard-only, high-contrast and screen-reader acceptance remains unverified** and is tracked in [v1.3.0 manual QA](qa/v1.3.0-manual-acceptance.md).
+
+## Troubleshooting
+
+- **No suggestions:** confirm the extension is enabled; open a supported local file in a trusted workspace; check configured language/model and use the explicit Ollama connection command.
+- **Editor says allowed but nothing appears:** settings-only eligibility does not bypass ignore rules, unsupported editors or missing models. Run **Check Active File Privacy** and inspect the non-sensitive diagnostics.
+- **Related files count returns to zero:** settings changes, switching active editors or ignore-rule edits intentionally revoke the earlier selection.
+- **Remote inference unavailable:** remote HTTPS origins require both the relevant setting and explicit per-origin approval. Opening the sidebar does not grant permission.
+- **Suggestion feels stale:** use **Stop Current Generation**; do not assume an already-dispatched prompt can be recalled from a server.
+
+## Developer validation
+
+Run `npm ci`, `npm run check` and (on a supported VS Code test setup) `npm run test:integration`. Verify keyboard interactions and consent with an actual editor; observe that a sidebar refresh does not cause a model request. For release/OS-specific evidence and installed VSIX checks, use the [evidence protocol](qa/release-evidence.md) and [manual acceptance checklist](qa/v1.3.0-manual-acceptance.md). Automated tests are not a substitute for physical platform acceptance.
+
+
+## v1.4 development: bounded transient Ollama retry cooldown (unreleased)
+
+Repeated **automatic** completion requests after a temporary Ollama error no longer
+hammer an overloaded or unreachable server on every keystroke. For HTTP 429,
+HTTP 5xx, transport failures or request timeouts, an in-memory cooldown grows
+from 1 to 2, 4, 8 seconds up to 30 seconds for the same **hashed**
+endpoint/model profile. Other endpoint/model profiles remain independent.
+Only 16 hashed profiles can be retained in memory. A successful generation
+clears the profile's streak; configuration or authorization changes reset
+the cooldown. No content, file paths, source snippets, raw endpoint URLs or
+model names are recorded by the cooldown.
+
+The guard applies **only** to automatic Ollama network generations, after
+normal editor eligibility and privacy checks. It never bypasses exclusions,
+workspace trust, cancellation or remote approval. Manual **Trigger Completion**
+is allowed even during the cooldown; no timer or background retry is started.
+A session-only `Automatic Requests Deferred` counter appears in the native
+Session Activity section and source-free Diagnostics. This counter is not a
+measure of model quality, completion acceptance or server recovery.
+
+Unit tests cover TTL, escalating delay, capacity, error classification and
+reset. The mocked VS Code extension-host checks temporary HTTP 503 suppression
+and immediate manual recovery. Actual physical-editor, local-model and
+accessibility acceptance remain **NOT RUN**. This source change has no published
+VSIX until a separately verified release.
+
+
+## v1.4 development: reset session activity (unreleased)
+
+The explicit **Reset Session Activity** command is available from Quick Actions
+and Session Activity in the native Control Center. It presents a confirmation
+dialog, then stops queued/in-flight generation, invalidates pending one-shot
+acceptance callbacks, clears all in-memory completion counts, recent inference
+durations and automatic failure cooldowns. It **does not change** the user's
+model, language enablement, endpoint/consent preferences, or explicitly chosen
+related-file selection. Local privacy timing statistics are independent and
+remain controlled by **Reset Privacy Timing Statistics**.
+
+The reset never contacts Ollama, scans files or uploads data. Old cancelled
+generations cannot repopulate counters after reset. The development tests
+cover registration, counter erasure, stale accepted-item tokens and untouched
+preferences with a mocked VS Code extension host. Physical accessibility
+and real Ollama validation remain **NOT RUN**.
+
+
+## v1.4.0 public preview status (2026-10-26)
+
+The features described above as post-v1.3.1 development—including accepted-item
+counters, status clarification, opt-in latency percentiles, transient retry
+cooldown and session-activity reset—are now bundled in the verified
+[GitHub v1.4.0 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0).
+Earlier historical notes retain their original implementation-stage wording.
+They do **not** mean these features are absent from v1.4.0. The latest
+GitHub stable is still v1.3.0; the extension marketplaces were not updated.
+Physical keyboard/screen-reader testing and real model-quality acceptance
+remain **NOT RUN**.
+
+
+## Upcoming development: Copy Sanitized Support Summary (not in v1.4.0)
+
+A new explicit **Copy Sanitized Support Summary** action in the native Session
+Activity panel, Quick Actions, and Command Palette copies only session-level
+counters, bounded configuration *counts*, endpoint category (not URL),
+and the previous user-requested model/file-check status. It never reads
+document text, includes filenames or model tags, contacts Ollama, or writes
+a permanent report. Optional latency p50/p95 appears only while performance
+diagnostics are enabled. A successful copy uses the operating-system clipboard:
+**review the report before sharing it**, and be aware that other local
+applications may be able to read clipboard contents.
+
+The editor-scoped last manual model/file statuses are now reset together
+on editor switch, edit or close. In-flight checks from the prior editor
+cannot restore an obsolete result. This fixes stale manual readiness
+information after moving between files with different language overrides.
+Unit and mocked editor-host coverage guard these privacy boundaries.
+Real desktop and screen-reader acceptance remains **NOT RUN**.
+
+
+## Post-v1.4.0 development: cancellation of outdated model checks (unreleased)
+
+**Check Ollama Connection** and **Check Active Editor Model** now send a
+cancellable signal with each explicitly requested model-list check. Starting
+another check, changing editor, changing settings, or invalidating the manual
+status aborts the outdated request instead of leaving unnecessary discovery
+work running. Previously returned status remains session-only; a late check
+cannot reintroduce a prior editor's model result. Cancellation does not undo
+bytes a remote service has already received. There are no automatic network
+checks, downloads, or telemetry. Automated tests verify abort and stale-token
+behavior; real physical-device/model acceptance remains **NOT RUN**.

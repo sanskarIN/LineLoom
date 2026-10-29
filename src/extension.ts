@@ -1,11 +1,17 @@
 import * as vscode from "vscode";
-import { LANGUAGES } from "./languages/registry";
-import { normalizeLanguageModels } from "./settings/language-models";
+import { LANGUAGES, getLanguage, isLanguageEnabled } from "./languages/registry";
+import { normalizeLanguageModels, resolveLanguageModel } from "./settings/language-models";
 import { CompletionEngine, type CompletionState } from "./completion/engine";
 import { LineLoomStatus } from "./ui/status";
-import { LineLoomSidebar } from "./ui/sidebar";
+import { LineLoomSidebar, endpointState } from "./ui/sidebar";
+import { formatSupportSummary } from "./ui/support-summary";
+import { invalidateEditorChecks } from "./ui/editor-checks";
+import { ModelReadinessSession } from "./ui/model-readiness";
+import { FilePrivacySession } from "./ui/file-privacy-session";
 import { quickActions } from "./ui/actions";
-import { clearIgnoreCache } from "./privacy/exclusions";
+import { clearIgnoreCache, mayReadRelatedFile } from "./privacy/exclusions";
+import { isSupportedRelatedCandidate } from "./context/related-editor";
+import { hasBoundedRelatedMetadata, validateRelatedSelection } from "./context/related";
 import { inspectFilePrivacy } from "./privacy/inspect";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "./privacy/timings";
 import { readConfig, validateEndpoint } from "./settings/config";
@@ -52,22 +58,116 @@ function selectionOriginCurrent(context: vscode.ExtensionContext, origin: string
   return isEndpointSelectionCurrent(origin, latest.endpoint, latest.allowRemoteEndpoints,
     (target) => context.globalState.get<string>("approvedRemoteOrigin") === target);
 }
-async function checkConnection(context: vscode.ExtensionContext): Promise<void> {
+async function checkConnection(
+  context: vscode.ExtensionContext,
+  readiness: ModelReadinessSession,
+  refresh: () => void
+): Promise<void> {
+  // Only this command and the explicitly clicked Setup Guide action can
+  // contact /api/tags. The native sidebar merely renders the session result.
+  const token = readiness.begin();
+  refresh();
   const origin = await approveEndpoint(context, true);
-  if (!origin) return;
+  if (!readiness.isCurrent(token)) return;
+  if (!origin) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    return;
+  }
+  const selected = readConfig().model;
+  const isValid = (): boolean => readiness.isCurrent(token) &&
+    selectionOriginCurrent(context, origin) && readConfig().model === selected;
   try {
-    const models = await listModels(origin);
-    if (!selectionOriginCurrent(context, origin)) return;
-    const selected = readConfig().model;
+    const models = await listModels(origin, readiness.signalFor(token));
+    if (!isValid()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
     const present = models.some((model) => model.name === selected);
+    readiness.finish(token, present ? "available" : "missing");
+    refresh();
     vscode.window.showInformationMessage(
       "LineLoom: Ollama reachable; " + models.length + " installed model(s). " +
-      (present ? "Selected model is available." : "Selected model is not installed. Use LineLoom: Select Model.")
+      (present ? "Selected model is available at this check." : "Selected model is not installed. Use LineLoom: Select Model.")
     );
   } catch (error) {
+    if (!isValid()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    readiness.finish(token, "unreachable");
+    refresh();
     vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
   }
 }
+/**
+ * Inspect the actual effective (potentially language-overridden) model,
+ * exclusively after the user invokes the command. No source/path is read;
+ * /api/tags is called only after the existing endpoint approval boundary.
+ */
+async function checkActiveModel(
+  context: vscode.ExtensionContext, readiness: ModelReadinessSession, refresh: () => void
+): Promise<void> {
+  const token = readiness.begin();
+  refresh();
+  const editor = vscode.window.activeTextEditor;
+  const document = editor?.document;
+  const language = document && getLanguage(document.languageId);
+  const config = readConfig();
+  if (!document || !language || document.uri.scheme !== "file" ||
+      !vscode.workspace.isTrusted || !config.enabled ||
+      !isLanguageEnabled(language, config.enabledLanguages)) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    void vscode.window.showInformationMessage(
+      "LineLoom: Open a supported, enabled local code file in a trusted workspace first."
+    );
+    return;
+  }
+  const selected = resolveLanguageModel(config.model, language.id, config.languageModels);
+  if (!selected) {
+    readiness.finish(token, "not-checked");
+    refresh();
+    void vscode.window.showInformationMessage("LineLoom: Configure a model before checking.");
+    return;
+  }
+  const origin = await approveEndpoint(context, true);
+  if (!readiness.isCurrent(token)) return;
+  if (!origin) { readiness.finish(token, "not-checked"); refresh(); return; }
+  const isCurrent = (): boolean => readiness.isCurrent(token) &&
+    vscode.window.activeTextEditor?.document === document &&
+    !document.isClosed && vscode.workspace.isTrusted &&
+    selectionOriginCurrent(context, origin) &&
+    (() => {
+      const latest = readConfig();
+      const currentLanguage = getLanguage(document.languageId);
+      return latest.enabled && currentLanguage?.id === language.id &&
+        isLanguageEnabled(language, latest.enabledLanguages) &&
+        resolveLanguageModel(latest.model, language.id, latest.languageModels) === selected;
+    })();
+  try {
+    const models = await listModels(origin, readiness.signalFor(token));
+    if (!isCurrent()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    const present = models.some(model => model.name === selected);
+    readiness.finish(token, present ? "available" : "missing");
+    refresh();
+    void vscode.window.showInformationMessage(present
+      ? "LineLoom: Active editor model found at this manual check (not a generation test)."
+      : "LineLoom: Active editor model not installed on the approved Ollama endpoint.");
+  } catch (error) {
+    if (!isCurrent()) {
+      if (readiness.isCurrent(token)) { readiness.clear(); refresh(); }
+      return;
+    }
+    readiness.finish(token, "unreachable");
+    refresh();
+    void vscode.window.showWarningMessage("LineLoom: " + ollamaFailureMessage(error));
+  }
+}
+
 async function selectModel(context: vscode.ExtensionContext): Promise<void> {
   const origin = await approveEndpoint(context, true);
   if (!origin) return;
@@ -149,44 +249,77 @@ async function selectLanguageModel(context: vscode.ExtensionContext): Promise<vo
  * Inspect the current editor's existing path and ignore policies on demand.
  * This never constructs prompts, sends requests, logs files or changes settings.
  */
-async function checkActiveFilePrivacy(): Promise<void> {
+async function checkActiveFilePrivacy(
+  privacy: FilePrivacySession, refresh: () => void
+): Promise<void> {
+  // Called only from an explicit command; the sidebar itself never touches
+  // active-document paths or invokes the filesystem privacy checker.
+  const token = privacy.begin();
+  refresh();
   const document = vscode.window.activeTextEditor?.document;
   const version = document?.version;
   const config = readConfig();
   const patternSnapshot = JSON.stringify(config.excludedPaths);
+  const trustSnapshot = vscode.workspace.isTrusted;
   const isCurrent = (): boolean =>
-    Boolean(document && !document.isClosed && vscode.workspace.isTrusted &&
+    Boolean(privacy.isCurrent(token) && document && !document.isClosed &&
+      vscode.workspace.isTrusted === trustSnapshot &&
       vscode.window.activeTextEditor?.document === document &&
       document.version === version &&
       JSON.stringify(readConfig().excludedPaths) === patternSnapshot);
-  const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
-  switch (result) {
-    case "no-editor":
-      void vscode.window.showInformationMessage("LineLoom: Open a local file to check its privacy exclusions.");
-      return;
-    case "stale":
-      void vscode.window.showWarningMessage("LineLoom: Editor or privacy settings changed during the check. Run it again.");
-      return;
-    case "blocked":
+  try {
+    const result = await inspectFilePrivacy(document, config.excludedPaths, isCurrent);
+    // An older check can never restore a success badge after an editor,
+    // document, trust or policy change (or after a newer check has begun).
+    if (!privacy.isCurrent(token)) return;
+    if (result === "stale" || (result !== "no-editor" && !isCurrent())) {
+      privacy.clear();
+      refresh();
       void vscode.window.showWarningMessage(
-        "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
+        "LineLoom: Editor or privacy settings changed during the check. Run it again."
       );
       return;
-    case "allowed":
-      void vscode.window.showInformationMessage(
-        "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
-      );
-      return;
+    }
+    if (!privacy.finish(token, result)) return;
+    refresh();
+    switch (result) {
+      case "no-editor":
+        void vscode.window.showInformationMessage(
+          "LineLoom: Open a local file to check its privacy exclusions."
+        );
+        return;
+      case "blocked":
+        void vscode.window.showWarningMessage(
+          "LineLoom: This file is excluded or inaccessible under current path and ignore policies. No inference request was made."
+        );
+        return;
+      case "allowed":
+        void vscode.window.showInformationMessage(
+          "LineLoom: File passes current path and ignore checks. Model, language and endpoint readiness are checked separately. No inference request was made."
+        );
+        return;
+    }
+  } catch {
+    // A failed inspection must not leave a reassuring "allowed" status or
+    // include underlying filesystem paths in user-visible diagnostics.
+    if (!privacy.isCurrent(token)) return;
+    privacy.clear();
+    refresh();
+    void vscode.window.showWarningMessage(
+      "LineLoom: File privacy inspection could not finish. No inference request was made."
+    );
   }
 }
 
-async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
+async function setupGuide(
+  context: vscode.ExtensionContext, readiness: ModelReadinessSession, refresh: () => void
+): Promise<void> {
   const action = await vscode.window.showInformationMessage(
     "Welcome to LineLoom. Install and start Ollama, run 'ollama pull qwen2.5-coder:1.5b', then check your connection.",
     "Check Connection", "Select Model", "Open Settings", "Ollama Website"
   );
   switch (action) {
-    case "Check Connection": await checkConnection(context); break;
+    case "Check Connection": await checkConnection(context, readiness, refresh); break;
     case "Select Model": await selectModel(context); break;
     case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER); break;
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
@@ -195,7 +328,8 @@ async function setupGuide(context: vscode.ExtensionContext): Promise<void> {
 async function openQuickActions(): Promise<void> {
   const config = readConfig();
   const choice = await vscode.window.showQuickPick(
-    quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics).map((action) => ({
+    quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics,
+      config.crossFileContext, engine?.getRelatedFileCount() ?? 0).map((action) => ({
       label: action.label, description: action.description, command: action.command
     })),
     { placeHolder: "LineLoom Quick Actions — choose an action" }
@@ -235,17 +369,27 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
   output.appendLine("Model: " + config.model);
   output.appendLine("Language model overrides: " + Object.keys(config.languageModels).length + " configured (inspect VS Code settings to review model tags)");
   output.appendLine("Enabled: " + config.enabled + "; automatic: " + config.autoTrigger);
-  output.appendLine("Cross-file context: not implemented (no cross-file reads)");
+  output.appendLine("Cross-file context: " + (config.crossFileContext ? "opt-in enabled" : "off") +
+    "; explicitly selected related files: " + (engine?.getRelatedFileCount() ?? 0) + " (session only)");
   output.appendLine("Registered languages: " + LANGUAGES.map((lang) => lang.label).join(", "));
   output.appendLine("Enabled language IDs: " + config.enabledLanguages.join(", "));
-  output.appendLine("Requests: " + (stats?.requests ?? 0) + "; completions: " + (stats?.completions ?? 0) +
+  output.appendLine("Requests: " + (stats?.requests ?? 0) + "; suggestions offered: " + (stats?.completions ?? 0) +
+     "; acceptance callbacks: " + (stats?.accepted ?? 0) +
     "; cancelled: " + (stats?.cancelled ?? 0) + "; failed: " + (stats?.failed ?? 0) +
     "; empty responses: " + (stats?.emptySuggestions ?? 0) +
     "; suppressed empty retries: " + (stats?.suppressedEmptyRetries ?? 0) +
+    "; deferred transient automatic retries: " + (stats?.suppressedTransientRetries ?? 0) +
     "; typed continuation reuses: " + (stats?.continuationHits ?? 0));
   if (config.performanceDiagnostics && stats) {
     output.appendLine("Last duration: " + stats.lastLatencyMs.toFixed(0) + "ms");
     output.appendLine("Average duration: " + (stats.measuredRequests ? stats.totalLatencyMs / stats.measuredRequests : 0).toFixed(0) + "ms (completed measured requests only)");
+    output.appendLine("Recent completed Ollama duration: " +
+      (stats.recentLatencySamples && stats.recentLatencyP50Ms !== undefined &&
+        stats.recentLatencyP95Ms !== undefined
+        ? "p50 " + stats.recentLatencyP50Ms.toFixed(1) + "ms; p95 " +
+          stats.recentLatencyP95Ms.toFixed(1) + "ms (" + stats.recentLatencySamples +
+          " most recent sample(s); max 64)"
+        : "not measured (opt in and complete a request)"));
     const eligibility = getEligibilityTimingSummary();
     output.appendLine("Privacy eligibility checks: " + eligibility.checks +
       "; allowed: " + eligibility.allowed + "; denied: " + eligibility.denied);
@@ -260,10 +404,19 @@ export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
   const status = new LineLoomStatus();
   let currentState: CompletionState = "ready";
+  // Invalidate overlapping pickers when privacy, settings or editor state changes.
+  let relatedPickerRevision = 0;
+  const modelReadiness = new ModelReadinessSession();
+  const activeModelReadiness = new ModelReadinessSession();
+  const filePrivacy = new FilePrivacySession();
   const sidebar = new LineLoomSidebar(
     () => engine?.getStats(),
     (endpoint) => context.globalState.get<string>("approvedRemoteOrigin") === endpoint,
-    () => currentState
+    () => currentState,
+    () => engine?.getRelatedFileCount() ?? 0,
+    () => modelReadiness.state,
+    () => filePrivacy.state,
+    () => activeModelReadiness.state
   );
   engine = new CompletionEngine(
     (state) => {
@@ -277,9 +430,13 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(vscode.window.registerTreeDataProvider("lineloom.dashboard", sidebar));
   const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
-  function command(id: string, fn: () => unknown): void {
+  function command(id: string, fn: (...args: unknown[]) => unknown): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, fn));
   }
+  // One-shot, random, source-free token issued to each inline completion item.
+  command("lineloom.recordSuggestionAccepted", (token: unknown) => {
+    if (engine?.recordAcceptance(token)) sidebar.refresh();
+  });
   command("lineloom.enable", async () => {
     await vscode.workspace.getConfiguration("lineloom").update("enabled", true, vscode.ConfigurationTarget.Global);
     status.set("ready", readConfig().autoTrigger);
@@ -311,27 +468,150 @@ export function activate(context: vscode.ExtensionContext): void {
   command("lineloom.selectModel", () => selectModel(context));
   command("lineloom.selectLanguageModel", () => selectLanguageModel(context));
   command("lineloom.manageLanguages", () => manageLanguages());
-  command("lineloom.checkConnection", () => checkConnection(context));
-  command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy());
+  command("lineloom.checkConnection", () => checkConnection(context, modelReadiness, () => sidebar.refresh()));
+  command("lineloom.checkActiveModel", () => checkActiveModel(context, activeModelReadiness, () => sidebar.refresh()));
+  command("lineloom.checkActiveFilePrivacy", () => checkActiveFilePrivacy(filePrivacy, () => sidebar.refresh()));
+  command("lineloom.clearRelatedFiles", () => {
+    relatedPickerRevision++;
+    engine?.setRelatedFiles([]);
+    sidebar.refresh();
+    vscode.window.showInformationMessage("LineLoom: session-only related file selection cleared.");
+  });
+  command("lineloom.selectRelatedFiles", async () => {
+    const revision = ++relatedPickerRevision;
+    const config = readConfig();
+    const configurationSnapshot = JSON.stringify(config);
+    const editor = vscode.window.activeTextEditor;
+    if (!config.crossFileContext) {
+      vscode.window.showWarningMessage("Enable lineloom.crossFileContext in Settings before choosing related files.");
+      return;
+    }
+    if (!editor || editor.document.uri.scheme !== "file" || !vscode.workspace.isTrusted) return;
+    const document = editor.document;
+    const version = document.version;
+    const folder = vscode.workspace.getWorkspaceFolder(document.uri);
+    if (!folder) return;
+    const isCurrent = (): boolean => revision === relatedPickerRevision &&
+      vscode.workspace.isTrusted && !document.isClosed && document.version === version &&
+      vscode.window.activeTextEditor?.document === document &&
+      JSON.stringify(readConfig()) === configurationSnapshot;
+    const chosen = await vscode.window.showOpenDialog({
+      canSelectMany: true, canSelectFiles: true, canSelectFolders: false, defaultUri: folder.uri,
+      openLabel: "Select related source files"
+    });
+    if (!chosen || !isCurrent()) return;
+    if (!validateRelatedSelection(document.uri.toString(), chosen.map(uri => uri.toString())) ||
+        !chosen.every(uri => isSupportedRelatedCandidate(document.uri, uri))) {
+      vscode.window.showWarningMessage(
+        "Choose one or two distinct supported source files inside the active workspace folder, not the active file.");
+      return;
+    }
+    // No related-file content is read until the user accepts this disclosure.
+    const agreed = await vscode.window.showWarningMessage(
+      "LineLoom may include up to 2 KiB from each chosen file in completion prompts. " +
+      "A separately approved remote Ollama endpoint could receive these snippets. " +
+      "Selections stay in memory only for this editor session.",
+      { modal: true }, "Use Selected Files"
+    );
+    if (agreed !== "Use Selected Files" || !isCurrent()) return;
+    // Preflight metadata/ignore checks without reading any chosen source.
+    // The engine rechecks all permissions before inference and after response.
+    for (const uri of chosen) {
+      if (!isCurrent()) return;
+      if (!await mayReadRelatedFile(uri, config.excludedPaths) ||
+          !await hasBoundedRelatedMetadata(uri.fsPath)) {
+        if (isCurrent()) vscode.window.showWarningMessage(
+          "LineLoom refused a selected file: it is excluded, unreadable, linked or outside the 2 KiB limit.");
+        return;
+      }
+    }
+    if (!isCurrent()) return;
+    engine?.setRelatedFiles(chosen);
+    sidebar.refresh();
+    vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
+      " related file(s). Privacy rules are rechecked before every model request.");
+  });
   command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
+  command("lineloom.copySupportSummary", async () => {
+    const config = readConfig();
+    // Explicit local snapshot: never pass filenames, URI strings, actual model
+    // tags or endpoint origins into the report builder or clipboard.
+    const report = formatSupportSummary({
+      enabled: config.enabled,
+      autoTrigger: config.autoTrigger,
+      trustedWorkspace: vscode.workspace.isTrusted,
+      endpointState: endpointState(origin =>
+        context.globalState.get<string>("approvedRemoteOrigin") === origin),
+      engineState: currentState,
+      defaultModelCheck: modelReadiness.state,
+      activeModelCheck: activeModelReadiness.state,
+      activeFileCheck: filePrivacy.state,
+      diagnosticsEnabled: config.performanceDiagnostics,
+      relatedContextEnabled: config.crossFileContext,
+      relatedFileCount: engine?.getRelatedFileCount() ?? 0,
+      enabledLanguageCount: config.enabledLanguages.length,
+      languageOverrideCount: Object.keys(config.languageModels).length,
+      stats: engine?.getStats()
+    });
+    try {
+      await vscode.env.clipboard.writeText(report);
+      void vscode.window.showInformationMessage(
+        "LineLoom: sanitized, source-free session summary copied. Review before sharing."
+      );
+    } catch {
+      void vscode.window.showWarningMessage("LineLoom: clipboard copy failed; no report was saved.");
+    }
+  });
   // Privacy eligibility measurements are in memory only. Permit an immediate
   // user-initiated reset without changing the diagnostics opt-in preference.
+  command("lineloom.resetSessionActivity", async () => {
+    const choice = await vscode.window.showWarningMessage(
+      "Reset LineLoom's in-memory completion session statistics? Active generation will stop. Model, privacy and language settings remain unchanged.",
+      { modal: true }, "Reset Session Activity"
+    );
+    if (choice !== "Reset Session Activity") return;
+    engine?.resetSessionActivity();
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage("LineLoom: session activity cleared; configuration retained.");
+  });
+  command("lineloom.resetInferenceTimings", () => {
+    engine?.clearLatencyMeasurements();
+    sidebar.refresh();
+    vscode.window.showInformationMessage(
+      "LineLoom: inference duration samples cleared for this session; suggestion counters retained."
+    );
+  });
   command("lineloom.resetPrivacyTimings", () => {
     resetEligibilityTimings();
     sidebar.refresh();
     vscode.window.showInformationMessage("LineLoom privacy eligibility timing counters cleared for this session.");
   });
-  command("lineloom.setup", () => setupGuide(context));
+  command("lineloom.setup", () => setupGuide(context, modelReadiness, () => sidebar.refresh()));
   command("lineloom.performance", () => {
     const stats = engine?.getStats();
     if (!stats) return;
     vscode.window.showInformationMessage("LineLoom: " + stats.requests + " requests, " +
-      stats.completions + " nonempty suggestions, " + stats.cancelled + " cancelled, " + stats.failed + " failed.");
+      stats.completions + " suggestions offered, " + stats.accepted + " accepted callbacks, " +
+      stats.cancelled + " cancelled, " + stats.failed + " failed." +
+      (readConfig().performanceDiagnostics && stats.recentLatencySamples &&
+        stats.recentLatencyP50Ms !== undefined && stats.recentLatencyP95Ms !== undefined
+        ? " Recent Ollama p50/p95: " + Math.round(stats.recentLatencyP50Ms) +
+          "/" + Math.round(stats.recentLatencyP95Ms) + " ms (last " +
+          stats.recentLatencySamples + " samples)." : ""));
   });
   context.subscriptions.push(vscode.workspace.onDidChangeConfiguration((event) => {
     if (event.affectsConfiguration("lineloom")) {
-      engine?.cancel();
+      modelReadiness.clear();
+      activeModelReadiness.clear();
+      filePrivacy.clear();
+      relatedPickerRevision++;
+      // Requiring a fresh selection after any configuration change prevents
+      // old consent being reused with new endpoint or exclusion settings.
+      engine?.setRelatedFiles([]);
+      engine?.resetTransientFailures();
       clearIgnoreCache();
       const config = readConfig();
       if (!config.performanceDiagnostics) {
@@ -345,16 +625,34 @@ export function activate(context: vscode.ExtensionContext): void {
   }));
   context.subscriptions.push(
     vscode.window.onDidChangeActiveTextEditor((editor) => {
+      invalidateEditorChecks(activeModelReadiness, filePrivacy);
+      relatedPickerRevision++;
+      engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
       sidebar.refresh();
     }),
     vscode.window.onDidChangeTextEditorSelection((event) => {
       if (event.textEditor === vscode.window.activeTextEditor) engine?.cancelIfEditorChanged(event.textEditor);
     }),
-    vscode.workspace.onDidChangeTextDocument((event) => engine?.onDocumentChanged(event)),
-    vscode.workspace.onDidCloseTextDocument(() => engine?.cancelIfEditorChanged(vscode.window.activeTextEditor))
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      if (event.document === vscode.window.activeTextEditor?.document) {
+        invalidateEditorChecks(activeModelReadiness, filePrivacy);
+        sidebar.refresh();
+      }
+      engine?.onDocumentChanged(event);
+    }),
+    vscode.workspace.onDidCloseTextDocument(() => {
+      invalidateEditorChecks(activeModelReadiness, filePrivacy);
+      engine?.cancelIfEditorChanged(vscode.window.activeTextEditor);
+      sidebar.refresh();
+    })
   );
   context.subscriptions.push(vscode.workspace.onDidGrantWorkspaceTrust(() => {
+    modelReadiness.clear();
+    activeModelReadiness.clear();
+    filePrivacy.clear();
+    relatedPickerRevision++;
+    engine?.resetTransientFailures();
     clearIgnoreCache();
     sidebar.refresh();
   }));
@@ -362,8 +660,10 @@ export function activate(context: vscode.ExtensionContext): void {
   // async rule scans and any queued/in-flight generation, so suggestions
   // authorized under the old policy cannot be surfaced after the change.
   const onIgnoreRulesChanged = (): void => {
+    filePrivacy.clear();
+    relatedPickerRevision++;
     clearIgnoreCache();
-    engine?.cancel();
+    engine?.setRelatedFiles([]);
     const latest = readConfig();
     currentState = latest.enabled ? "ready" : "disabled";
     status.set(currentState, latest.autoTrigger);

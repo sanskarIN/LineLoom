@@ -133,18 +133,29 @@ export async function parseNdjson(
       if (streamedBytes > MAX_STREAM_BYTES) throw new Error("Ollama stream exceeded safety limit.");
       carry += decodeResponseChunk(decoder, value);
       let newline = carry.indexOf("\n");
-      while (newline >= 0 && !sawDone) {
+      while (newline >= 0) {
         // A transport chunk may contain many small events; limit each event,
         // not the aggregate decoded chunk, before processing delimiters.
         if (newline > 50_000) throw new Error("Invalid oversized Ollama event.");
         handle(carry.slice(0, newline).trim());
         carry = carry.slice(newline + 1);
+        if (sawDone) {
+          // The terminal event ends the stream. Do not silently accept a
+          // contradictory error, second terminal event or partial JSON
+          // already delivered in this same transport chunk.
+          if (carry.trim()) throw new Error("Invalid trailing Ollama event.");
+          break;
+        }
         newline = carry.indexOf("\n");
       }
       if (!sawDone && carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
     }
     carry += decodeResponseChunk(decoder);
-    if (!sawDone && carry.trim()) handle(carry.trim());
+    if (sawDone && carry.trim()) throw new Error("Invalid trailing Ollama event.");
+    if (!sawDone && carry.trim()) {
+      if (carry.length > 50_000) throw new Error("Invalid oversized Ollama event.");
+      handle(carry.trim());
+    }
     if (!sawDone) throw new Error("Incomplete Ollama response stream.");
     return result;
   } finally {

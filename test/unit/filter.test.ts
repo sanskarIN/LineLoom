@@ -5,6 +5,53 @@ describe("completion filtering", () => {
   it("discards empty whitespace", () => expect(cleanCompletion("   ", "", "", true)).toBe(""));
   it("supports optional single-line suggestions", () => expect(cleanCompletion("abc\ndef", "", "", false)).toBe("abc"));
   it("removes exact suffix overlap", () => expect(cleanCompletion("return value\n}", "", "\n}", true)).toBe("return value"));
+  it("keeps short incidental identifier matches across the cursor", () => {
+    // Previously even one matching letter was removed from the model's code.
+    expect(cleanCompletion("return value", "", "else {", true)).toBe("return value");
+    expect(cleanCompletion("type", "", "peers", true)).toBe("type");
+    expect(cleanCompletion("const answer", "", "return count;", true)).toBe("const answer");
+    expect(cleanCompletion("let имя", "", "язык", true)).toBe("let имя");
+    expect(cleanCompletion("const code42", "", "42foo", true)).toBe("const code42");
+    expect(cleanCompletion("var $", "", "$foo", true)).toBe("var $");
+    expect(cleanCompletion("some", "", "omega", true)).toBe("some");
+    expect(cleanCompletion("return name", "", "nameSpace", true)).toBe("return name");
+    expect(cleanCompletion("scope", "", "pearl", true)).toBe("scope");
+    expect(cleanCompletion("const λambda", "", "ambdaExtra", true)).toBe("const λambda");
+    expect(cleanCompletion("some", "", "ome;", true)).toBe("some");
+    expect(cleanCompletion("const alpha", "", "pha;", true)).toBe("const alpha");
+    expect(cleanCompletion("myCounter", "", "Counter;", true)).toBe("myCounter");
+  });
+  it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
+    expect(cleanCompletion("call(x))", "", ")", true)).toBe("call(x)");
+    expect(cleanCompletion("fn main() {}}", "", "}", true)).toBe("fn main() {}");
+    expect(cleanCompletion("answer;;", "", ";", true)).toBe("answer;");
+  });
+  it("preserves a generated separator before existing identifier text", () => {
+    // The caret is directly before "result;"; concatenating "return" without
+    // the original space would produce the invalid token "returnresult".
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
+    expect(cleanCompletion("return ", "", "result;", true)).toBe("return ");
+    expect(cleanCompletion("let имя ", "", "значение;", true)).toBe("let имя ");
+    expect(cleanCompletion("const count  ", "", "value", true)).toBe("const count  ");
+  });
+  it("preserves indentation before an existing first token on the next line", () => {
+    expect(cleanCompletion("if ready:\n    ", "", "pass", true)).toBe("if ready:\n    ");
+    expect(cleanCompletion("if ready:\n    ", "", "# existing", true)).toBe("if ready:\n    ");
+    expect(cleanCompletion("if ready:\n\t", "", "return x", true)).toBe("if ready:\n\t");
+  });
+  it("trims trailing whitespace only when no source character is adjacent", () => {
+    expect(cleanCompletion("return   ", "", ";", true)).toBe("return   ");
+    expect(cleanCompletion("return   ", "", "\nresult", true)).toBe("return");
+    expect(cleanCompletion("return   ", "", "", true)).toBe("return");
+    expect(cleanCompletion("return  ", "", "// existing comment", true)).toBe("return  ");
+    expect(cleanCompletion("   ", "", "result", true)).toBe("");
+    expect(cleanCompletion("return   \n  done  ", "", "", true)).toBe("return\n  done");
+  });
+  it("prefers a longer repeated suffix to a one-character identifier coincidence", () => {
+    expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
+    expect(cleanCompletion("return value\n}", "", "\n}", true)).toBe("return value");
+  });
   it("removes echoed current line", () => expect(cleanCompletion("let x = 3;", "let x = ", "", true)).toBe("3;"));
   it("rejects conversational responses", () => expect(cleanCompletion("Certainly, I can help", "", "", true)).toBe(""));
   it("preserves meaningful Python indentation", () =>
@@ -29,6 +76,23 @@ describe("completion filtering", () => {
       expect(cleanCompletion("const x = 1; // " + String.fromCharCode(codePoint), "", "", true),
         codePoint.toString(16)).toBe("");
     }
+  });
+  it("rejects hidden directional marks and invisible formatting characters", () => {
+    // Do not silently strip a character that could change how generated
+    // source appears relative to the code that an editor actually runs.
+    const hidden = [
+      0x00ad, 0x061c, 0x180e, 0x200b, 0x200e, 0x200f,
+      0x2028, 0x2029, 0x2060, 0x2061, 0x2062, 0x2063, 0x2064,
+      0x206a, 0x206b, 0x206c, 0x206d, 0x206e, 0x206f, 0xfeff
+    ];
+    for (const codePoint of hidden) {
+      const raw = "const answer = 42; // " + String.fromCodePoint(codePoint) + " hidden";
+      expect(cleanCompletion(raw, "", "", true), codePoint.toString(16)).toBe("");
+    }
+  });
+  it("preserves Unicode joiners for international identifiers and emoji", () => {
+    const source = "const नाम\u200cसूची = '👩\u200d💻';";
+    expect(cleanCompletion(source, "", "", true)).toBe(source);
   });
   it("allows ordinary newline, tabs and valid non-ASCII characters", () => {
     expect(cleanCompletion("    return 😀\r\n\tvalue", "", "", true)).toBe("    return 😀\n\tvalue");

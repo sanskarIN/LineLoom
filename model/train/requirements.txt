@@ -1,0 +1,7 @@
+# Optional ONLY for an explicitly approved local model-training experiment.
+# Pin exact lockfile and model revision in an approved experiment before QA/release.
+torch>=2.3,<3
+transformers>=4.45,<5
+peft>=0.13,<1
+safetensors>=0.4.3,<1
+accelerate>=1.0,<2

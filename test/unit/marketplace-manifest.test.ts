@@ -29,8 +29,9 @@ describe("Marketplace release manifest", () => {
   });
 
   it("keeps lockfile and extension version synchronized", () => {
-    expect(pkg.version).toBe("1.2.5");
-    expect(pkg.version.split(".")).toHaveLength(3);
+    // Exact versions are checked by version-specific publisher workflows;
+    // this general manifest contract must also work for later previews.
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(lock.version).toBe(pkg.version);
     expect(lock.packages[""].name).toBe(pkg.name);
     expect(lock.packages[""].version).toBe(pkg.version);
@@ -54,6 +55,21 @@ describe("Marketplace release manifest", () => {
     expect(manifest.contributes.commands.find(item =>
       item.command === "lineloom.checkActiveFilePrivacy"
     )).toMatchObject({ title: "Check Active File Privacy", category: "LineLoom" });
+  });
+
+  it("keeps the v1.3.0 related-source feature opt-in with explicit commands", () => {
+    const manifest = pkg as typeof pkg & {
+      contributes: {
+        commands: Array<{ command: string; title: string }>;
+        configuration: { properties: Record<string, { type: string; default: unknown }> };
+      };
+    };
+    const commands = manifest.contributes.commands.map(item => item.command);
+    expect(commands).toContain("lineloom.selectRelatedFiles");
+    expect(commands).toContain("lineloom.clearRelatedFiles");
+    expect(manifest.contributes.configuration.properties["lineloom.crossFileContext"]).toMatchObject({
+      type: "boolean", default: false
+    });
   });
 
   it("packages stable by default and keeps preview packaging explicit", () => {

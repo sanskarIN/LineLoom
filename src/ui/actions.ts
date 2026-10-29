@@ -5,7 +5,10 @@ export interface QuickAction {
   description: string;
   command: string;
 }
-export function quickActions(enabled: boolean, automatic: boolean, performanceDiagnostics = false): QuickAction[] {
+export function quickActions(
+  enabled: boolean, automatic: boolean, performanceDiagnostics = false,
+  crossFileContextEnabled = false, relatedFileCount = 0
+): QuickAction[] {
   return [
     {
       id: "toggleEnabled",
@@ -29,9 +32,31 @@ export function quickActions(enabled: boolean, automatic: boolean, performanceDi
     { id: "filePrivacy", label: "$(shield) Check Active File Privacy",
       description: "Check local workspace and ignore rules without contacting Ollama",
       command: "lineloom.checkActiveFilePrivacy" },
+    ...(crossFileContextEnabled ? [{
+      id: "relatedFiles", label: "$(files) Select Related Files",
+      description: "Explicitly choose at most two bounded source files for this session",
+      command: "lineloom.selectRelatedFiles"
+    }] : []),
+    ...(crossFileContextEnabled && relatedFileCount > 0 ? [{
+      id: "clearRelatedFiles", label: "$(clear-all) Clear Related Files",
+      description: "Immediately revoke session-only additional context selection",
+      command: "lineloom.clearRelatedFiles"
+    }] : []),
     { id: "connection", label: "$(plug) Check Ollama Connection", description: "Contact the current endpoint only when selected", command: "lineloom.checkConnection" },
     { id: "sidebar", label: "$(layout-sidebar-left) Open Control Center", description: "Open the LineLoom Activity Bar sidebar", command: "lineloom.openSidebar" },
     { id: "diagnostics", label: "$(output) Open Diagnostics", description: "View configuration and aggregate counters, never source text", command: "lineloom.diagnostics" },
+    { id: "copySupportSummary", label: "$(clippy) Copy Sanitized Support Summary",
+      description: "Copy a source-free, local-only snapshot of session counters and readiness states",
+      command: "lineloom.copySupportSummary" },
+    { id: "resetSessionActivity", label: "$(trash) Reset Session Activity",
+      description: "Erase session counters and timings; cancel generation, retain configuration",
+      command: "lineloom.resetSessionActivity" },
+    ...(performanceDiagnostics ? [{
+      id: "resetInferenceTimings",
+      label: "$(trash) Reset Inference Timing Samples",
+      description: "Clear opt-in Ollama duration samples without resetting suggestion counts",
+      command: "lineloom.resetInferenceTimings"
+    }] : []),
     ...(performanceDiagnostics ? [{
       id: "resetPrivacyTimings",
       label: "$(trash) Reset Privacy Timing Statistics",

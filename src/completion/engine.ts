@@ -2,9 +2,14 @@ import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
 import { EmptySuggestionBackoff } from "./backoff";
+import { TransientFailureBackoff, isTransientGenerationFailure } from "./failure-backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
+import { AcceptanceTracker } from "./acceptance";
+import { LatencyWindow } from "./latency-window";
 import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
+import { collectRelatedText } from "../context/related-editor";
+import { RELATED_FILE_LIMIT, validateRelatedSelection } from "../context/related";
 import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
@@ -16,35 +21,91 @@ import { resolveLanguageModel } from "../settings/language-models";
 
 export type CompletionState = "ready" | "generating" | "disabled" | "unavailable" | "error";
 export interface CompletionStats {
-  requests: number; completions: number; cancelled: number; failed: number;
+  requests: number; completions: number; accepted: number; cancelled: number; failed: number;
   totalLatencyMs: number; lastLatencyMs: number; measuredRequests: number; cacheHits: number;
-  emptySuggestions: number; suppressedEmptyRetries: number; continuationHits: number;
+  emptySuggestions: number; suppressedEmptyRetries: number; suppressedTransientRetries: number; continuationHits: number;
+  recentLatencySamples: number; recentLatencyP50Ms?: number; recentLatencyP95Ms?: number;
 }
 export class CompletionEngine implements vscode.InlineCompletionItemProvider, vscode.Disposable {
   private generation = 0;
+  // Epoch prevents old in-flight cancellation results resurrecting reset counters.
+  private activityEpoch = 0;
+  private relatedRevision = 0;
+  private relatedFiles: vscode.Uri[] = [];
   // Increment on opt-out to reject measurements from already-running requests.
   private latencyEpoch = 0;
   private readonly suggestions = new SuggestionCache();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
+  private readonly transientFailures = new TransientFailureBackoff();
   private readonly continuations = new ContinuationCache();
+  private readonly acceptance = new AcceptanceTracker();
+  private readonly latencyWindow = new LatencyWindow();
   private controller: AbortController | undefined;
   private target: { uri: string; version: number; position: vscode.Position } | undefined;
-  private readonly metrics: CompletionStats = {
-    requests: 0, completions: 0, cancelled: 0, failed: 0,
+  private readonly metrics: Omit<CompletionStats, "recentLatencySamples" | "recentLatencyP50Ms" | "recentLatencyP95Ms"> = {
+    requests: 0, completions: 0, accepted: 0, cancelled: 0, failed: 0,
     totalLatencyMs: 0, lastLatencyMs: 0, measuredRequests: 0, cacheHits: 0,
-    emptySuggestions: 0, suppressedEmptyRetries: 0, continuationHits: 0
+    emptySuggestions: 0, suppressedEmptyRetries: 0, suppressedTransientRetries: 0, continuationHits: 0
   };
   constructor(
     private readonly onState: (state: CompletionState) => void,
     private readonly remoteApproved: (endpoint: string) => boolean
   ) {}
-  getStats(): Readonly<CompletionStats> { return { ...this.metrics }; }
+  getStats(): Readonly<CompletionStats> {
+    const recent = this.latencyWindow.summary();
+    return {
+      ...this.metrics,
+      recentLatencySamples: recent.samples,
+      recentLatencyP50Ms: recent.p50Ms,
+      recentLatencyP95Ms: recent.p95Ms
+    };
+  }
+  /** Only the one-shot VS Code acceptance callback can increase this count. */
+  recordAcceptance(token: unknown): boolean {
+    if (!this.acceptance.acknowledge(token)) return false;
+    this.metrics.accepted++;
+    return true;
+  }
+  private makeInlineItem(value: string, position: vscode.Position): vscode.InlineCompletionItem {
+    const item = new vscode.InlineCompletionItem(value, new vscode.Range(position, position));
+    item.command = {
+      command: "lineloom.recordSuggestionAccepted",
+      title: "Record LineLoom Suggestion Acceptance",
+      arguments: [this.acceptance.issue()]
+    };
+    return item;
+  }
+  getRelatedFileCount(): number { return this.relatedFiles.length; }
+  /** Reset only in-memory activity; do not modify settings or related-file consent. */
+  resetSessionActivity(): void {
+    this.cancel(); // Invalidates queued and in-flight generations first.
+    this.activityEpoch++;
+    this.acceptance.clear(); // Old inline-item commands cannot restore counts.
+    this.clearLatencyMeasurements();
+    this.resetTransientFailures();
+    for (const key of Object.keys(this.metrics) as Array<keyof typeof this.metrics>) {
+      this.metrics[key] = 0;
+    }
+  }
+  /** Configuration and authorization changes revoke old automatic failure cooldowns. */
+  resetTransientFailures(): void { this.transientFailures.clear(); }
+  /** Explicit selection exists only for the current extension session. */
+  setRelatedFiles(files: readonly vscode.Uri[]): void {
+    if (files.length > RELATED_FILE_LIMIT ||
+        (files.length > 0 && !validateRelatedSelection("", files.map(uri => uri.toString())))) {
+      throw new Error("Invalid related-file selection");
+    }
+    this.relatedFiles = [...files];
+    this.relatedRevision++;
+    this.cancel();
+  }
   /** An opt-out erases only inference durations, retaining non-sensitive counts. */
   clearLatencyMeasurements(): void {
     this.latencyEpoch++;
     this.metrics.totalLatencyMs = 0;
     this.metrics.lastLatencyMs = 0;
     this.metrics.measuredRequests = 0;
+    this.latencyWindow.clear();
   }
   cancel(preserveContinuation = false): void {
     this.generation++;
@@ -79,7 +140,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     );
     this.cancelIfEditorChanged(vscode.window.activeTextEditor);
   }
-  dispose(): void { this.cancel(); }
+  dispose(): void { this.cancel(); this.acceptance.clear(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
     if (ms === 0) return !token.isCancellationRequested;
     return new Promise((resolve) => {
@@ -117,6 +178,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     const activeLine = document.lineAt(position.line).text;
     if (!shouldAutoComplete(activeLine.slice(0, position.character), config.minAutoTriggerChars, manual)) return;
     if (!shouldRequestAtCursor(activeLine.slice(position.character), manual, config.suppressMidTokenAuto)) return;
+    const activityEpoch = this.activityEpoch;
     const requestId = ++this.generation;
     this.controller?.abort();
     this.target = { uri: document.uri.toString(), version: initialVersion, position };
@@ -160,10 +222,18 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         offset, totalLength, config.maxContextChars
       );
       if (!extracted.prefix.trim() && !extracted.suffix.trim()) return;
+      const relatedRevision = this.relatedRevision;
+      const selected = config.crossFileContext ? [...this.relatedFiles] : [];
+      const relatedCurrent = (): boolean => requestId === this.generation &&
+        relatedRevision === this.relatedRevision && isTargetCurrent() && !token.isCancellationRequested &&
+        mayUseCurrentConfiguration();
+      const related = await collectRelatedText(document, selected, config.excludedPaths, relatedCurrent);
+      if (!related || !relatedCurrent()) return;
+      const relatedDigest = createHash("sha256").update(JSON.stringify(related)).digest("hex");
       const profileDigest = createHash("sha256").update(JSON.stringify([
         url.origin, model, config.temperature, config.contextSize,
         config.maxOutputTokens, config.multiLine, config.maxSuggestionLines,
-        config.maxContextChars
+        config.maxContextChars, relatedDigest, relatedRevision
       ])).digest("hex");
       const continuationPoint: ContinuationPoint = {
         documentId: document.uri.toString(), languageId: document.languageId,
@@ -179,12 +249,12 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.metrics.continuationHits++;
         this.metrics.completions++;
         this.onState("ready");
-        return [new vscode.InlineCompletionItem(remainder, new vscode.Range(position, position))];
+        return [this.makeInlineItem(remainder, position)];
       }
       const key = createHash("sha256").update(JSON.stringify([
         document.uri.toString(), document.languageId, document.version, offset, url.origin, model,
         config.temperature, config.contextSize, config.maxOutputTokens, config.multiLine,
-        config.maxSuggestionLines, extracted.prefix, extracted.suffix
+        config.maxSuggestionLines, extracted.prefix, extracted.suffix, relatedDigest, relatedRevision
       ])).digest("hex");
       const cached = this.suggestions.get(key);
       const active = vscode.window.activeTextEditor;
@@ -194,7 +264,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         this.metrics.completions++;
         this.continuations.remember(continuationPoint, cached);
-        return [new vscode.InlineCompletionItem(cached, new vscode.Range(position, position))];
+        return [this.makeInlineItem(cached, position)];
       }
       if (token.isCancellationRequested || requestId !== this.generation ||
           !isTargetCurrent() || !mayUseCurrentConfiguration()) return;
@@ -205,7 +275,16 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.onState("ready");
         return;
       }
-      const prompt = buildPrompt(language, extracted, model);
+      // A temporary server/transport failure should not cause a request on
+      // every keystroke. This profile hash contains no source or path; manual
+      // requests bypass the cooldown but retain every normal privacy gate.
+      const failureProfile = createHash("sha256").update(JSON.stringify([url.origin, model])).digest("hex");
+      if (!manual && this.transientFailures.shouldSkip(failureProfile)) {
+        this.metrics.suppressedTransientRetries++;
+        this.onState("ready");
+        return;
+      }
+      const prompt = buildPrompt(language, extracted, model, related);
       const controller = new AbortController();
       this.controller = controller;
       const cancelSubscription = token.onCancellationRequested(() => controller.abort());
@@ -231,19 +310,27 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
             (!url.remote || this.remoteApproved(url.origin)),
           (patterns, collectTiming) => mayComplete(document, patterns, collectTiming)
         );
+        // Selected sources must still be eligible and byte-identical after inference.
+        const relatedAfter = stillAllowed && relatedCurrent()
+          ? await collectRelatedText(document, selected, config.excludedPaths, relatedCurrent)
+          : undefined;
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation ||
-            document.version !== version || !isTargetCurrent() || !stillAllowed) {
-          this.metrics.cancelled++;
+            document.version !== version || !isTargetCurrent() || !stillAllowed ||
+            !relatedAfter || JSON.stringify(relatedAfter) !== JSON.stringify(related) ||
+            !relatedCurrent()) {
+          if (activityEpoch === this.activityEpoch) this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;
         }
+        this.transientFailures.recordSuccess(failureProfile);
         const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines);
         const latency = performance.now() - start;
         // Diagnostics consent may have been revoked while Ollama responded.
         // Preserve neither a late sample nor an old session's measurements
         // after the user opts out, even if they opted back in meanwhile.
         if (config.performanceDiagnostics && readConfig().performanceDiagnostics &&
-            recordingEpoch === this.latencyEpoch) {
+            recordingEpoch === this.latencyEpoch &&
+            this.latencyWindow.record(latency)) {
           this.metrics.totalLatencyMs += latency;
           this.metrics.lastLatencyMs = latency;
           this.metrics.measuredRequests++;
@@ -257,20 +344,23 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         this.metrics.completions++;
         this.continuations.remember(continuationPoint, suggestion);
         this.suggestions.put(key, suggestion);
-        const insertion = new vscode.Range(position, position);
-        return [new vscode.InlineCompletionItem(suggestion, insertion)];
+        return [this.makeInlineItem(suggestion, position)];
       } catch (error: unknown) {
-        if (timedOut && requestId === this.generation) {
-          this.metrics.failed++;
+        if (timedOut && requestId === this.generation && !token.isCancellationRequested) {
+          if (mayUseCurrentConfiguration()) this.transientFailures.recordFailure(failureProfile);
+          if (activityEpoch === this.activityEpoch) this.metrics.failed++;
           this.onState("unavailable");
           return;
         }
         if (controller.signal.aborted || token.isCancellationRequested || requestId !== this.generation) {
-          this.metrics.cancelled++;
+          if (activityEpoch === this.activityEpoch) this.metrics.cancelled++;
           if (requestId === this.generation) this.onState("ready");
           return;
         }
-        this.metrics.failed++;
+        if (isTransientGenerationFailure(error) && mayUseCurrentConfiguration()) {
+          this.transientFailures.recordFailure(failureProfile);
+        }
+        if (activityEpoch === this.activityEpoch) this.metrics.failed++;
         this.onState("unavailable");
         // No source code, prompts, generated response or token-bearing URLs are logged.
         if (error instanceof Error && /Invalid Ollama|Incomplete Ollama|safety limit/.test(error.message)) {
@@ -283,7 +373,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         if (this.controller === controller) this.controller = undefined;
       }
     } catch {
-      this.metrics.failed++;
+      if (activityEpoch === this.activityEpoch) this.metrics.failed++;
       this.onState("error");
       return;
     }

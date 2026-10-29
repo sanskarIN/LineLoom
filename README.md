@@ -2,14 +2,109 @@
 
 [![Visual Studio Marketplace](https://img.shields.io/visual-studio-marketplace/v/SanskarCodes.lineloom?label=VS%20Code%20Marketplace&logo=visualstudiocode)](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)
 [![Open VSX Registry](https://img.shields.io/open-vsx/v/SanskarCodes/lineloom?label=Open%20VSX)](https://open-vsx.org/extension/SanskarCodes/lineloom)
-[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0)
+[![GitHub release](https://img.shields.io/github/v/release/sanskarIN/LineLoom?label=GitHub%20release)](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0)
 [![MIT license](https://img.shields.io/badge/license-MIT-70d6ce)](LICENSE)
 
 **Write less. Build more. Stay in control.**
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-> **Latest stable GitHub release: v1.2.0.** Cross-platform automated checks, mocked-Ollama integration and isolated VSIX install passed; real-model and hands-on OS/accessibility QA remain outstanding. Open VSX publicly serves v1.2.0 Stable; the Visual Studio Marketplace rollout is independent.
+> **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
+
+**Stable registry distribution (2026-10-25):** [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) is independently confirmed as its public downloadable `latest` version (`preRelease: false`, `verified: true`); the [version-pinned publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119) reused the existing stable GitHub VSIX. The maintainer also manually published v1.3.0 to [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom). The separate GitHub v1.3.1 preview was **not** uploaded to either registry. Real-model and physical-device QA remain unverified.
+
+## v1.3.1 GitHub pre-release — native sidebar reliability (published 2026-10-25)
+
+The [**v1.3.1 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1) is available with a genuine VS Code preview-channel [**LineLoom-1.3.1.vsix**](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.1/LineLoom-1.3.1.sha256).
+
+It adds privacy-safe native Control Center **Next:** recommendations, a manual check for the active editor's actual configured Ollama model (including language overrides), explicit last-check states for default-model readiness and local file privacy, and Unicode completion filtering. Checks remain opt-in and session-only; no passive network polling or workspace scanning was introduced.
+
+**For testers only:** the [GitHub publisher passed](https://github.com/sanskarIN/LineLoom/actions/runs/40192010209) locked audit/build, mocked VS Code editor-host, pre-release packaging and checksum, clean install and pinned v1.3.0 stable-to-preview upgrade checks. Real Ollama quality, physical OS keyboard/screen-reader and latency acceptance are **NOT RUN**. **GitHub stable remains v1.3.0**, and this preview does not update either extension registry or the npm CLI. See [preview notes](docs/releases/v1.3.1.md) and [manual QA checklist](docs/qa/v1.3.1-preview-acceptance.md).
+
+## v1.4.2 GitHub-only preview — published 2026-10-27
+
+The [**GitHub v1.4.2 testing preview**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2)
+is published with a genuine [preview-channel VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.2/LineLoom-1.4.2.vsix)
+and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.2/LineLoom-1.4.2.sha256).
+The [version-pinned release workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40446223653)
+passed locked audits, Linux VS Code mocked editor-host tests, pre-release
+packaging, digest validation, a clean install and independently pinned upgrades
+from published v1.3.0 stable and v1.4.1 preview.
+
+New in this preview: experimental **HTML/CSS/Lua opt-in completions**,
+explicit **LineLoom Code native local FIM routing**, offline adapter
+integrity checks, v4 synthetic benchmark scope verification and source-free
+regression review. These are development features, **not trained first-party
+weights or measured model-quality improvements**. The original nine
+default-enabled languages and `SanskarCodes.lineloom` ID remain unchanged.
+See [release notes](docs/releases/v1.4.2.md) and
+[manual QA checklist](docs/qa/v1.4.2-preview-acceptance.md).
+Manual Ollama and physical desktop acceptance remain **NOT RUN**.
+The GitHub stable version remains **v1.3.0**; external extension registries
+and npm distributions were not updated.
+
+## v1.4.1 GitHub preview — published 2026-10-26
+
+**[Download v1.4.1 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.1)**: verified genuine VS Code [LineLoom-1.4.1.vsix](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.1/LineLoom-1.4.1.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.1/LineLoom-1.4.1.sha256). The version-pinned [GitHub publisher](https://github.com/sanskarIN/LineLoom/actions/runs/40265555223) passed tests, security audits, preview-channel manifest validation, clean installation and pinned stable-to-preview upgrade.
+
+**Changes from v1.4.0:** explicit source-free support-report copy, editor-scoped readiness fixes, cancellable manual model discovery, synthetic benchmark comparison, offline dataset governance screening and v2 formatting signals across Rust, C, C++, Python and TypeScript. **No LineLoom-trained weights or real Ollama quality results** are claimed. Real physical-editor/accessibility testing is **NOT RUN**. See [release notes](docs/releases/v1.4.1.md) and [manual QA checklist](docs/qa/v1.4.1-preview-acceptance.md). **GitHub stable stays v1.3.0**; publisher `SanskarCodes.lineloom`, Marketplace, Open VSX and npm distribution remain unchanged.
+
+## After v1.4.0 — changes incorporated into v1.4.1 preview
+
+The ongoing development branch now includes **Copy Sanitized Support Summary**
+in the native Control Center, Quick Actions and Command Palette, using only
+allowlisted session counters and coarse last-check statuses—never model names,
+files, prompts or endpoint URLs ([PR #126](https://github.com/sanskarIN/LineLoom/pull/126)).
+Switching editors also invalidates the previous editor's manually checked
+model and file status. Obsolete user-initiated Ollama model-list requests now
+receive cancellation signals when a new check starts or their status is
+invalidated ([PR #127](https://github.com/sanskarIN/LineLoom/pull/127)).
+
+These changes are **included in GitHub v1.4.1 testing preview**, but **not** in the
+earlier published GitHub v1.4.0 preview or v1.3.0 stable. The extension publisher
+remains **`SanskarCodes`** with ID **`SanskarCodes.lineloom`**.
+No publisher-ID or registry migration is authorized or underway.
+
+## v1.4.0 GitHub pre-release — published 2026-10-26
+
+[**Download GitHub v1.4.0 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.0) with its genuine VS Code preview-channel [**VSIX**](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.0/LineLoom-1.4.0.sha256). The [publisher completed successfully](https://github.com/sanskarIN/LineLoom/actions/runs/40257458416) after audits, mocked editor-host testing, digest validation, clean installation and a pinned v1.3.0 stable-to-preview upgrade.
+
+**What's new:** bounded transient Ollama automatic retry cooldowns, confirmation-gated session-activity reset, source-free acceptance and inference timing aggregates, clearer model-readiness wording, and dedicated model evaluation tooling. See [versioned release notes](docs/releases/v1.4.0.md) and [manual QA checklist](docs/qa/v1.4.0-preview-acceptance.md). Physical Windows/macOS/Linux human accessibility and actual Ollama quality are still **NOT RUN**. The latest stable remains **v1.3.0**, and Marketplace/Open VSX/npm were not updated by this GitHub preview.
+
+## Inference latency percentiles — in GitHub v1.4.0 preview
+
+With `lineloom.performanceDiagnostics` enabled, LineLoom now computes **rolling p50/p95** from up to 64 successful Ollama request durations, exposes them in native Session Activity and Diagnostics, and offers **Reset Inference Timing Samples**. Values are source-free, never persisted, erased on opt-out and protected from stale in-flight results. Suggestion counters remain unchanged after a timing reset. **No real-model latency benchmark has been run**, and this feature is included in the GitHub v1.4.0 preview, not in v1.3.0 stable or either independent registry. See [sidebar timing/privacy documentation](docs/sidebar.md).
+
+## Native readiness clarity — in GitHub v1.4.0 preview
+
+The status bar differentiates **autocomplete enabled** from **model availability actually checked**. While explicit local model or file-policy checks are running, the sidebar displays non-clickable progress wording. No passive Ollama calls, file reads or new endpoint consent are introduced. See [sidebar documentation](docs/sidebar.md). This feature is in the GitHub v1.4.0 preview, but not the v1.3.0 stable or independent registries.
+
+## Session acceptance metrics — in GitHub v1.4.0 preview
+
+The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview. See [sidebar privacy and status](docs/sidebar.md).
+
+## Changes after v1.4.1 — included in GitHub v1.4.2 preview
+
+The following work is now **included in the GitHub v1.4.2 testing preview**
+but **not** in the v1.3.0 stable build or external extension registries:
+
+- [PR #144](https://github.com/sanskarIN/LineLoom/pull/144) recognizes HTML, CSS and Lua as **experimental, explicit opt-in** languages. The original nine default-enabled modes are unchanged; locally installed model overrides may be assigned separately.
+- [PR #145](https://github.com/sanskarIN/LineLoom/pull/145) recognizes an explicitly selected, locally installed `lineloom-code` FIM model tag, with bounded Ollama prefix/suffix completion. This is request routing only, not trained or shipped weights.
+- [PR #143](https://github.com/sanskarIN/LineLoom/pull/143) adds SHA-256 local LoRA adapter artifact receipts and a read-only verification gate before research smoke runs. The checks do **not** prove provenance, permission to train, or model usefulness.
+
+These changes have verified v1.4.2 GitHub pre-release packaging and automated
+CI evidence, **not** real Ollama quality, physical-editor accessibility or a
+stable/registry update. The publisher ID and independent registries are unchanged.
+
+## Dedicated code-completion model — development track (not released)
+
+A separate, optional **LineLoom Code** research track now has an opt-in local Ollama evaluation harness and **30 original categorized synthetic fixtures** for **Rust, C, C++, Python and TypeScript**. The evaluator has strict bounded stream decoding and language/category-level aggregate results. No custom model has been trained, downloaded or bundled, and no editor defaults change. Use `npm run model:eval:dry` to inspect the offline fixture scope or `npm run model:eval -- --model qwen2.5-coder:1.5b --runs 3` to run a voluntary **localhost-only** comparison against an already installed model. Results report strict synthetic exact matches and latency, **not** proven quality, correctness or human acceptance. See [model research](model/README.md), [training milestones](model/TRAINING_PLAN.md) and [data governance](model/DATA_POLICY.md).
+
+The latest **GitHub preview v1.4.2** was published on 2026-10-27 with its own [VSIX and checksum](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2). This does **not** include a trained first-party model; v1.3.0 remains stable.
+
+## v1.3.0 stable on GitHub (released 2026-10-25)
+
+The published v1.3.0 stable build adds opt-in, session-only **explicitly selected related-file context**: at most two tiny supported, same-workspace source files (2,048 bytes each), subject to existing canonical-path/ignore checks and post-response validation. The feature is **disabled by default**, never automatically scans other files, and requires explicit consent before reference snippets reach Ollama. A reviewed dev-time VSIX packager mitigation clears the high-severity audit gate, but four moderate transitive dev-tool findings remain. [Download the verified GitHub v1.3.0 stable VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix) and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256). See [release notes](docs/releases/v1.3.0.md) and [manual acceptance](docs/qa/v1.3.0-manual-acceptance.md). Physical-device, actual local-model, accessible UI and publisher-authentication QA remain **NOT RUN**, and registries are not updated by the GitHub release.
 
 ## v1.2.0 stable on GitHub (released 2026-10-20)
 
@@ -56,8 +151,7 @@ The [GitHub v1.2.2 pre-release](https://github.com/sanskarIN/LineLoom/releases/t
 adds stricter Ollama settings validation, fail-closed malformed path exclusions,
 and a preview-channel VSIX. [Download the preview VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.2/LineLoom-1.2.2.vsix)
 and [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.2.2/LineLoom-1.2.2.sha256).
-This is a GitHub-only preview. **v1.2.0 remains the stable GitHub release**,
-with Open VSX and VS Code Marketplace on independently managed channels.
+This was a GitHub-only preview; **v1.2.0 was the current GitHub stable release at the time**. The latest GitHub stable is now v1.3.0 (2026-10-25), while Open VSX and Visual Studio Marketplace remain independently managed.
 Real model performance, full manual desktop acceptance and accessibility remain unverified.
 
 ## v1.2.3 GitHub pre-release (published 2026-10-23)
@@ -98,15 +192,15 @@ QA remain unverified in [issue #54](https://github.com/sanskarIN/LineLoom/issues
 Use the [v1.2.4 manual acceptance checklist](docs/qa/v1.2.4-manual-acceptance.md)
 to record reproducible, sanitized evidence before considering a stable rollout.
 This **GitHub-only pre-release** did not update either extension registry.
-The latest GitHub stable release remains **v1.2.0**.
+At the time this preview was published, GitHub stable was v1.2.0; the latest stable is now **v1.3.0**.
 
-## v1.2.5 source ready for manual acceptance (not released)
+## v1.2.5 development milestone (source integrated into v1.3.0; no v1.2.5 release)
 
 The [v1.2.5 implementation PR #56](https://github.com/sanskarIN/LineLoom/pull/56)
 has been **merged into `main`**, alongside
 [privacy-hardening PR #59](https://github.com/sanskarIN/LineLoom/pull/59)
 and [CI-safety PR #58](https://github.com/sanskarIN/LineLoom/pull/58).
-The unreleased v1.2.5 candidate also includes **LineLoom: Check Active File Privacy**
+This v1.2.5 source milestone, now incorporated into the published v1.3.0 stable VSIX, includes **LineLoom: Check Active File Privacy**
 (`lineloom.checkActiveFilePrivacy`): a user-triggered local inspection of
 workspace, sensitive-path and root/nested ignore policies. It is available
 from the Command Palette, Quick Actions and the Privacy & Connection sidebar,
@@ -130,10 +224,7 @@ real-model or physical-device acceptance. The
 and [release readiness tracker #60](https://github.com/sanskarIN/LineLoom/issues/60)
 track the remaining gates.
 
-**v1.2.5 is not publicly released:** no GitHub v1.2.5 tag, public VSIX,
-Visual Studio Marketplace or Open VSX update has been published. The
-latest stable GitHub release remains **v1.2.0** and latest public GitHub
-pre-release remains **v1.2.4**.
+**No standalone v1.2.5 GitHub release was published.** Its merged source changes were included in the later **v1.3.0 GitHub stable VSIX**. The latest GitHub testing preview is **v1.4.0**; the older v1.2.4 preview remains available. GitHub publication did not update either external extension marketplace.
 
 ## Install LineLoom
 
@@ -141,7 +232,7 @@ Install the currently published version from your editor's supported registry:
 
 - **[Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom)** — for VS Code users.
 - **[Open VSX Registry](https://open-vsx.org/extension/SanskarCodes/lineloom)** — for compatible editors using the Open VSX extension registry.
-- Both listings use publisher `SanskarCodes` and extension ID `SanskarCodes.lineloom`. Open VSX serves **1.2.0 Stable**; check Visual Studio Marketplace independently for its currently available version.
+- Both listings use publisher `SanskarCodes` and extension ID `SanskarCodes.lineloom`. **v1.3.0 Stable is now available in both extension registries**; Open VSX v1.3.0 was verified independently, and the maintainer updated Marketplace separately.
 
 In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify the publisher **SanskarCodes**, and choose **Install**. You can also use the Command Palette's **Extensions: Install Extensions** action, or the VS Code CLI:
 
@@ -149,15 +240,15 @@ In VS Code, open Extensions (`Ctrl+Shift+X`), search for **LineLoom**, verify th
 code --install-extension SanskarCodes.lineloom
 ```
 
-If your editor obtains extensions from Open VSX, open its Extensions view, search for **LineLoom**, and verify the publisher **SanskarCodes**. Open VSX publicly serves [stable v1.2.0](https://open-vsx.org/extension/SanskarCodes/lineloom). Its registry API confirms `version: 1.2.0`, `preRelease: false`, `downloadable: true`, and `verified: true`.
+If your editor obtains extensions from Open VSX, open its Extensions view, search for **LineLoom**, and verify the publisher **SanskarCodes**. The independently verified Open VSX publication is now [stable v1.3.0](https://open-vsx.org/extension/SanskarCodes/lineloom); check the live listing for later updates.
 
 ### Alternative: install the GitHub stable VSIX
 
-The [GitHub v1.2.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.2.0) includes `LineLoom-1.2.0.vsix` for offline/manual installation. Download the VSIX and use **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.2.0.vsix`).
+The latest [GitHub v1.3.0 stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) includes [**LineLoom-1.3.0.vsix**](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.vsix) and its [SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.3.0/LineLoom-1.3.0.sha256). Verify the downloaded file and choose **VS Code → Extensions → ... → Install from VSIX** (or `code --install-extension LineLoom-1.3.0.vsix`).
 
 **Important for Windows:** Do not double-click the VSIX file. Windows may open **Visual Studio VSIX Installer**, which correctly rejects VS Code extensions and displays “One or more extensions are for Visual Studio Code.” Open **Visual Studio Code** and select **Extensions → … → Install from VSIX…** instead. [Step-by-step installation and troubleshooting](https://sanskarin.github.io/LineLoom/install.html).
 
-**Registry status (2026-10-20):** [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) lists **v1.2.0 Stable** as downloadable with a verified namespace. The [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) is separately managed; its v1.2.0 rollout has not been verified here. GitHub owner `sanskarIN` and publisher `SanskarCodes` are intentionally different. [Publisher instructions](docs/publishing.md).
+**Distribution status:** GitHub [v1.3.0 stable](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) is published. [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) was independently published and verified on 2026-10-25 ([publishing run](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119)); Marketplace v1.3.0 was updated manually by the maintainer. GitHub releases never synchronize registries automatically. GitHub owner `sanskarIN` and publisher `SanskarCodes` are intentionally different. [Publisher instructions](docs/publishing.md).
 
 ## Project website and documentation
 
@@ -165,22 +256,28 @@ The [LineLoom website](https://sanskarin.github.io/LineLoom/) is live and mainta
 
 Website content is excluded from the extension VSIX package. This does not add hosted inference, an account requirement or telemetry.
 
+**Documentation index:** [Browse all guides](docs/README.md).
+
+**Development and upcoming features:** [forward-looking roadmap](docs/roadmap.md) · [v1.3.1 maintenance plan](docs/releases/v1.3.1-plan.md) · [proposed future features](docs/feature-proposals.md) · [native sidebar guide](docs/sidebar.md) · [package-manager distribution](docs/packages.md) · [sanitized release evidence](docs/qa/release-evidence.md). These plans describe **unreleased ideas**, not features already in the installed extension.
+
 ## Release verification status
 
-The v1.2.0 GitHub stable packaging workflow checks archive integrity **and** installs the packaged VSIX in an isolated real VS Code command-line profile. This is stronger than ZIP validation, but it does not prove real Ollama inference or interactive ghost-text acceptance. [Manual verification matrix](docs/qa/v0.9.5-readiness.md) tracks the remaining Windows, macOS, Linux, privacy, offline and model-performance tests. **Visual Studio Marketplace and Open VSX are live; hands-on real-model QA remains ongoing.**
+The [v1.3.0 GitHub stable publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40184578980) passed cross-platform checks, Linux mocked VS Code editor-host integration, stable VSIX identity, checksum and isolated installation/upgrade tests. These do **not** demonstrate real Ollama quality, physical operating-system interaction or accessibility. The [v1.3.0 manual acceptance checklist](docs/qa/v1.3.0-manual-acceptance.md) and [evidence protocol](docs/qa/release-evidence.md) record remaining work.
 
 ## Features
 
+This section describes the **current development source**. Some features may not yet be in the published stable/preview VSIX; see the version-specific notes above.
+
 - **Stricter send-time privacy controls:** rechecks active model, file exclusions, workspace trust and remote-endpoint permission before sending completion context. Pending model-picker choices are also discarded if the Ollama endpoint or remote approval changes.
 - **Per-language Ollama models:** assign a different installed model to each supported language using **LineLoom: Assign Language Model** or the status-bar Quick Actions picker. Unassigned languages use the default `lineloom.model`; JSX/TSX use the JavaScript/TypeScript override. No automatic model downloads.
-- Native VS Code inline suggestions for **nine language IDs**: Python, JavaScript/JSX, TypeScript/TSX, Rust, Kotlin, **Go, Java, C and C++**. Go, Java, C and C++ remain experimental.
+- Native VS Code inline suggestions for **12 recognized language IDs** in current source. The original **nine defaults** are Python, JavaScript/JSX, TypeScript/TSX, Rust, Kotlin, Go, Java, C and C++. **HTML, CSS and Lua are additional experimental opt-in modes, not enabled by default** and not yet part of a published VSIX. See [language controls](docs/languages/README.md).
 - **Smarter automatic request timing:** suppresses background inference directly before existing identifier characters (including Unicode letters, combining marks, connector punctuation and joiners). Configure `lineloom.suppressMidTokenAuto` (default on) to opt out; manual requests always work, and skip the typing debounce.
 - **Typed suggestion continuation:** when you type the beginning of an inline suggestion, LineLoom can offer the remaining text immediately from short-lived memory without another Ollama generation. Context, settings, active editor, workspace privacy **and the actual single-insertion edit event** must all match. Multi-edit changes, selection replacements and edits elsewhere invalidate reuse. No cross-file reads.
-- Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family. Improved cleanup removes common model control tokens and explanations outside leading fenced code blocks. Ollama streams have total-byte, event-count and per-event safety limits.
+- Multi-line continuation, bounded prefix/suffix context, and optional FIM using a recognized Qwen2.5 Coder model family or, in unreleased source, an explicitly configured `lineloom-code` tag for an independently installed FIM-capable model. Improved cleanup removes common model control tokens and explanations outside leading fenced code blocks. Ollama streams have total-byte, event-count and per-event safety limits.
 - **Quick Actions from the status bar:** enable/disable completion, pause/resume automatic suggestions, trigger manually, choose a default or per-language model, manage languages, check connection, open diagnostics or settings. Model discovery and connection checks run only when selected by the user.
 - User-selected installed model, endpoint, timeouts, output limits, temperature, automatic-trigger controls and **per-language opt-in/out settings**.
 - Cancellation on newer requests, active cursor/editor changes and timeouts; a short-lived backoff stops repeatedly sending identical automatic requests after an empty model result. Explicit user-triggered requests bypass this backoff. Additional checks run before sending code or reusing a cached suggestion. No insertion is attempted for selected text or multiple cursors, and automatic suggestions defer to active native IntelliSense completions.
-- Only the active trusted-workspace document is used for completion; rejects symlinks escaping the workspace and excludes sensitive filenames and nested `.gitignore`, `.lineloomignore` and user-specified patterns.
+- The active trusted-workspace document is used **by default**. Optional v1.3.0 related-file context remains OFF until explicitly selected and consented (maximum two tiny eligible same-workspace source files). Symlink escapes, sensitive names and nested `.gitignore`, `.lineloomignore` and user exclusions are blocked.
 - Local loopback by default; remote HTTPS needs both a setting and per-origin interactive approval. **HTTP redirects are rejected** to prevent transferring code to an unapproved destination. No background model downloads.
 - Automatic completion requires two non-whitespace characters on the active line by default (configurable 0–32); manual triggers bypass this threshold. Active-document context is read through bounded editor ranges, even in large files.
 
@@ -200,7 +297,7 @@ Open the Command Palette and run **LineLoom: Show Setup Guide** for the short in
 
 Quick Actions · Pause or Resume Automatic Suggestions · Enable Autocomplete · Disable Autocomplete · Trigger Completion · Select Model · Manage Autocomplete Languages · Check Ollama Connection · Open Settings · Open Diagnostics · Show Setup Guide · Show Completion Performance.
 
-Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists which of the nine language IDs can receive suggestions; the JSX and TSX editor modes follow the JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v1.0.0 even if the reserved setting is enabled.
+Settings are under `lineloom.*` in VS Code Settings. `lineloom.enabledLanguages` lists the enabled editor modes (12 recognized in unreleased source; original nine selected by default). HTML, CSS and Lua must be explicitly enabled; JSX and TSX follow JavaScript and TypeScript choices. An empty list disables suggestions for all languages. Defaults: model `qwen2.5-coder:1.5b`, endpoint `http://127.0.0.1:11434`, debounce 250 ms, timeout 12 s, 8,000 context characters, 128 generated tokens, eight maximum suggestion lines (configurable 1–20), two minimum automatic-trigger characters (configurable 0–32), and mid-token auto-suppression enabled. Cross-file context is **not implemented** in v1.0.0 even if the reserved setting is enabled.
 
 ## Privacy and safety
 
@@ -237,3 +334,9 @@ LineLoom is free and has **no subscription or paywall**. If useful, you may supp
 ## License
 
 [MIT License](LICENSE). [Licensing history and third-party notices](docs/licensing.md). LineLoom is an independent project; no affiliation or endorsement by Microsoft, GitHub, Ollama or model providers is implied.
+
+## v1.3.0 selected-context design and limitations
+
+The [v1.3.0 GitHub stable release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) includes a default-off, explicitly user-selected **related-file context** feature, originally prepared in [PR #93](https://github.com/sanskarIN/LineLoom/pull/93). It permits at most two small (2 KiB each), policy-eligible source files to be used as anonymous untrusted reference snippets in a completion prompt. There is no repository scanning, persistent index or hidden background file selection. The user must enable the setting, pick files and confirm the disclosure each session; a separately approved remote Ollama host could receive those extra snippets.
+
+**Published on GitHub, but not manually accepted across physical OSs.** See the [privacy/threat model](docs/privacy/selected-context.md), [release notes](docs/releases/v1.3.0.md), and [manual QA matrix](docs/qa/v1.3.0-manual-acceptance.md). v1.2.4 remains the most recent separate GitHub preview. A compatibility mitigation for high-severity [issue #79](https://github.com/sanskarIN/LineLoom/issues/79) is included; four moderate transitive publisher-tool findings remain for review.

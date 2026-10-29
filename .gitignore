@@ -6,3 +6,21 @@ coverage/
 .env*
 !.env.example
 .vscode-test/
+
+# Local model training input/output must never enter commits.
+model/runs/
+model/cache/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/*.safetensors
+**/*.gguf
+
+# Keep all local model datasets/checkpoints/adapters out of Git.
+model/runs/
+model/cache/
+**/__pycache__/
+**/*.pyc
+**/.venv/
+**/*.safetensors
+**/*.gguf

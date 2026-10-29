@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "1.2.5",
+  "version": "1.4.2",
   "publisher": "SanskarCodes",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "MIT",
@@ -25,7 +25,10 @@
     "go",
     "java",
     "c",
-    "cpp"
+    "cpp",
+    "html",
+    "css",
+    "lua"
   ],
   "repository": {
     "type": "git",
@@ -88,8 +91,23 @@
         "category": "LineLoom"
       },
       {
+        "command": "lineloom.selectRelatedFiles",
+        "title": "Select Related Files for Context",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.clearRelatedFiles",
+        "title": "Clear Selected Related Files",
+        "category": "LineLoom"
+      },
+      {
         "command": "lineloom.checkConnection",
         "title": "Check Ollama Connection",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.checkActiveModel",
+        "title": "Check Active Editor Model",
         "category": "LineLoom"
       },
       {
@@ -100,6 +118,21 @@
       {
         "command": "lineloom.diagnostics",
         "title": "Open Diagnostics",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.copySupportSummary",
+        "title": "Copy Sanitized Support Summary",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.resetSessionActivity",
+        "title": "Reset Session Activity",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.resetInferenceTimings",
+        "title": "Reset Inference Timing Samples",
         "category": "LineLoom"
       },
       {
@@ -155,7 +188,10 @@
               "go",
               "java",
               "c",
-              "cpp"
+              "cpp",
+              "html",
+              "css",
+              "lua"
             ]
           },
           "default": [
@@ -170,7 +206,7 @@
             "cpp"
           ],
           "uniqueItems": true,
-          "description": "Language IDs permitted for inline suggestions. Empty array disables completion for every language. JSX/TSX follow JavaScript/TypeScript."
+          "description": "Language IDs permitted for inline suggestions. HTML, CSS, and Lua are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
         },
         "lineloom.autoTrigger": {
           "type": "boolean",
@@ -261,7 +297,7 @@
         "lineloom.crossFileContext": {
           "type": "boolean",
           "default": false,
-          "description": "Reserved for a future version; cross-file reads are not implemented in this preview."
+          "description": "Experimental, disabled by default. Only explicitly selected, same-workspace, privacy-eligible small source files may enter local Ollama prompts; any remote inference requires separate approval. Selection is session-only."
         },
         "lineloom.performanceDiagnostics": {
           "type": "boolean",
@@ -279,7 +315,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional installed Ollama model tags for specific language IDs (python, javascript, typescript, rust, kotlin, go, java, c, cpp). Empty or unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. Other languages use lineloom.model. No model downloads are performed."
+          "description": "Optional installed Ollama model tags for each supported language ID. HTML, CSS, and Lua remain disabled until explicitly added to lineloom.enabledLanguages. Unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. No model downloads are performed."
         }
       }
     },
@@ -319,7 +355,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:source-tree && npm run test:site && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -332,23 +368,36 @@
     "test:install-vsix": "node scripts/smoke-install-vsix.mjs",
     "test:upgrade-vsix": "node scripts/smoke-upgrade-vsix.mjs",
     "package:stable": "npm run package",
-    "test:source-tree": "node --test scripts/check-source-tree.mjs && node scripts/verify-source-tree.mjs"
+    "test:source-tree": "node --test scripts/check-source-tree.mjs && node scripts/verify-source-tree.mjs",
+    "test:packager-security": "node --test scripts/check-packager-deps.test.mjs && node scripts/check-packager-deps.mjs",
+    "test:model-eval": "node --test scripts/model-eval.test.mjs scripts/model-eval-stream.test.mjs scripts/model-eval-compare.test.mjs scripts/model-eval-quality.test.mjs scripts/model-eval-runner.test.mjs",
+    "model:eval": "node scripts/model-eval.mjs",
+    "model:eval:dry": "node scripts/model-eval.mjs --dry-run",
+    "model:compare": "node scripts/model-eval-compare.mjs",
+    "model:data-audit": "node scripts/model-data-audit.mjs",
+    "test:model-data-audit": "node --test scripts/model-data-audit.test.mjs",
+    "model:adapter:verify": "python model/train/verify_adapter.py",
+    "model:smoke:compare": "python model/train/compare_smoke.py",
+    "test:model-training": "python -m unittest discover -s model/train -p test_*.py"
   },
   "dependencies": {
-    "ignore": "^7.0.5"
+    "ignore": "^7.0.13"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.5",
     "@types/vscode": "^1.96.0",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/vsce": "^4.0.0",
+    "@vscode/vsce": "3.9.2",
     "esbuild": "^0.28.0",
-    "eslint": "^10.12.0",
+    "eslint": "^10.13.0",
     "prettier": "^3.5.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.0.0",
+    "typescript-eslint": "^8.72.0",
     "vitest": "^5.0.5"
   },
-  "icon": "assets/icons/lineloom.png"
+  "icon": "assets/icons/lineloom.png",
+  "overrides": {
+    "@azure/identity": "4.2.1"
+  }
 }

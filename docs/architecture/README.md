@@ -30,7 +30,7 @@ Successful nonempty completions use the existing short-lived eight-entry result 
 
 ## v0.5.1 bounded Ollama streaming
 
-In addition to the generated-output character cap, `parseNdjson` rejects a response after **1,000,000 transferred bytes** or **4,096 decoded NDJSON events**. Transport chunks may contain multiple independent small events; the **50,000-character event-line limit** applies to each event or partial event, not the full transport chunk. Events with invalid `response` or `done` field types are rejected. Parsing stops at the first `done: true`, and the stream reader is cancelled in cleanup. These are defensive resource limits, not language-model correctness guarantees.
+In addition to the generated-output character cap, `parseNdjson` rejects a response after **1,000,000 transferred bytes** or **4,096 decoded NDJSON events**. Transport chunks may contain multiple independent small events; the **50,000-character event-line limit** applies to each event or partial event, not the full transport chunk. Events with invalid `response` or `done` field types are rejected. Parsing stops promptly at the first `done: true`, but rejects any contradictory extra non-whitespace frames **already buffered in that transport chunk** (including duplicate final events and errors). It then cancels the stream reader, rather than waiting for a remote server to close. Future unobserved chunks are not authenticated; this guard is not a complete wire-level attestation. These are defensive resource limits, not language-model correctness guarantees.
 
 ## v0.6.0 Quick Actions workflow
 

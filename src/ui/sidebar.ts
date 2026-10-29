@@ -1,5 +1,7 @@
 import * as vscode from "vscode";
 import type { CompletionState, CompletionStats } from "../completion/engine";
+import type { ModelReadiness } from "./model-readiness";
+import type { ManualFilePrivacy } from "./file-privacy-session";
 import { summarizeActiveEditor } from "./editor-context";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { sidebarSections, type SidebarEndpointState, type SidebarEntry, type SidebarSection } from "./sidebar-model";
@@ -8,7 +10,7 @@ type SidebarNode =
   | { kind: "section"; section: SidebarSection }
   | { kind: "item"; item: SidebarEntry };
 
-function endpointState(isApproved: (origin: string) => boolean): SidebarEndpointState {
+export function endpointState(isApproved: (origin: string) => boolean): SidebarEndpointState {
   const config = readConfig();
   try {
     const endpoint = validateEndpoint(config.endpoint);
@@ -28,7 +30,11 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
   constructor(
     private readonly getStats: () => Readonly<CompletionStats> | undefined,
     private readonly isApproved: (origin: string) => boolean,
-    private readonly getState: () => CompletionState = () => "ready"
+    private readonly getState: () => CompletionState = () => "ready",
+    private readonly getRelatedFileCount: () => number = () => 0,
+    private readonly getModelReadiness: () => ModelReadiness = () => "not-checked",
+    private readonly getFilePrivacy: () => ManualFilePrivacy = () => "not-checked",
+    private readonly getActiveModelReadiness: () => ModelReadiness = () => "not-checked"
   ) {}
 
   refresh(): void { this.changes.fire(undefined); }
@@ -65,14 +71,24 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       completionState: this.getState(),
       requests: stats?.requests ?? 0,
       completions: stats?.completions ?? 0,
+      accepted: stats?.accepted ?? 0,
       cancelled: stats?.cancelled ?? 0,
       failed: stats?.failed ?? 0,
       cacheHits: stats?.cacheHits ?? 0,
       continuationHits: stats?.continuationHits ?? 0,
       emptySuggestions: stats?.emptySuggestions ?? 0,
+      suppressedTransientRetries: stats?.suppressedTransientRetries ?? 0,
       performanceDiagnosticsEnabled: config.performanceDiagnostics,
+      modelReadiness: this.getModelReadiness(),
+      filePrivacy: this.getFilePrivacy(),
+      activeModelReadiness: this.getActiveModelReadiness(),
+      crossFileContextEnabled: config.crossFileContext,
+      relatedFileCount: this.getRelatedFileCount(),
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
-        ? stats.totalLatencyMs / stats.measuredRequests : undefined
+        ? stats.totalLatencyMs / stats.measuredRequests : undefined,
+      recentLatencySamples: config.performanceDiagnostics ? stats?.recentLatencySamples : undefined,
+      recentLatencyP50Ms: config.performanceDiagnostics ? stats?.recentLatencyP50Ms : undefined,
+      recentLatencyP95Ms: config.performanceDiagnostics ? stats?.recentLatencyP95Ms : undefined
     }).map((section): SidebarNode => ({ kind: "section", section }));
   }
 

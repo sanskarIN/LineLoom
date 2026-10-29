@@ -1,5 +1,5 @@
 /** VS Code language IDs, not filename-only inference. */
-export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp";
+export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua";
 export interface LanguageSpec {
   id: SupportedLanguage;
   label: string;
@@ -15,20 +15,26 @@ export const LANGUAGES: readonly LanguageSpec[] = [
   { id: "go", label: "Go", extensions: [".go"], guidance: "Preserve idiomatic Go error handling, packages and formatting." },
   { id: "java", label: "Java", extensions: [".java"], guidance: "Respect Java class scope, imports, types and checked exceptions." },
   { id: "c", label: "C", extensions: [".c", ".h"], guidance: "Respect C syntax, pointer safety, allocation and error conventions." },
-  { id: "cpp", label: "C++", extensions: [".cc", ".cpp", ".cxx", ".hpp", ".hxx", ".hh"], guidance: "Respect C++ standard, RAII, headers, templates and visible namespaces." }
+  { id: "cpp", label: "C++", extensions: [".cc", ".cpp", ".cxx", ".hpp", ".hxx", ".hh"], guidance: "Respect C++ standard, RAII, headers, templates and visible namespaces." },
+  { id: "html", label: "HTML", extensions: [".html", ".htm"], guidance: "Respect document structure, matching tags, attribute quoting and accessible markup." },
+  { id: "css", label: "CSS", extensions: [".css"], guidance: "Respect existing selectors, cascade conventions, property syntax and brace matching." },
+  { id: "lua", label: "Lua", extensions: [".lua"], guidance: "Respect Lua local scope, tables, block endings and the existing runtime version." }
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
 const aliases: Record<string, SupportedLanguage> = { javascriptreact: "javascript", typescriptreact: "typescript" };
 export function getLanguage(id: string): LanguageSpec | undefined {
   return byId.get((aliases[id] ?? id) as SupportedLanguage);
 }
-export const DEFAULT_ENABLED_LANGUAGES: readonly SupportedLanguage[] = LANGUAGES.map((language) => language.id);
+/** Preserve the nine previously enabled languages; experimental additions require an explicit opt-in. */
+export const DEFAULT_ENABLED_LANGUAGES: readonly SupportedLanguage[] = [
+  "python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"
+];
 
 /** Reject unknown configuration IDs rather than accidentally enabling a new language. */
 export function normalizeEnabledLanguages(configured: unknown): SupportedLanguage[] {
   if (configured === undefined) return [...DEFAULT_ENABLED_LANGUAGES];
   if (!Array.isArray(configured)) return [];
-  const allowed = new Set(DEFAULT_ENABLED_LANGUAGES);
+  const allowed = new Set(LANGUAGES.map((language) => language.id));
   return [...new Set(configured.filter((id): id is SupportedLanguage => typeof id === "string" && allowed.has(id as SupportedLanguage)))];
 }
 export function isLanguageEnabled(language: LanguageSpec, enabled: readonly SupportedLanguage[]): boolean {

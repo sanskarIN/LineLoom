@@ -1,0 +1,163 @@
+name: Publish LineLoom v1.3.0 stable to Open VSX (owner authorized)
+
+# Only a change to the exact reviewed authorization flag on protected main
+# can publish. Never publish the current development manifest or v1.3.1 preview.
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/openvsx-v1.3.0.flag'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lineloom-openvsx-v1.3.0-stable
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    name: Verify and publish pinned GitHub v1.3.0 stable VSIX
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout owner-approved main and verify authorization
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Verify explicit version-scoped owner flag
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/openvsx-v1.3.0.flag)" = "OWNER_AUTHORIZED_OPENVSX_STABLE_V1.3.0_FROM_GITHUB_RELEASE"
+          test "$GITHUB_REPOSITORY" = 'sanskarIN/LineLoom'
+
+      - name: Checkout immutable source of published GitHub stable release
+        uses: actions/checkout@v7
+        with:
+          ref: d6c0d92b018bf5b52db70a5859e4417ba6d51590
+          path: stable-source
+          persist-credentials: false
+
+      - name: Ensure published release identity, classification and exact assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/sanskarIN/LineLoom/releases/tags/v1.3.0 --jq '
+            if .prerelease == false and .draft == false and
+               .target_commitish == "d6c0d92b018bf5b52db70a5859e4417ba6d51590" and
+               ([.assets[].name] | sort) == ["LineLoom-1.3.0.sha256", "LineLoom-1.3.0.vsix"]
+            then "PASS: exact published GitHub stable v1.3.0"
+            else error("Unexpected GitHub release identity or asset set") end
+          '
+          node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const p = JSON.parse(readFileSync('stable-source/package.json','utf8'));
+          const lock = JSON.parse(readFileSync('stable-source/package-lock.json','utf8'));
+          if (p.name !== 'lineloom' || p.publisher !== 'SanskarCodes' ||
+              p.version !== '1.3.0' || lock.version !== '1.3.0' ||
+              lock.packages?.['']?.version !== '1.3.0')
+            throw new Error('Stable source version, publisher or lockfile mismatch');
+          NODE
+
+      - name: Download exact public GitHub v1.3.0 VSIX and checksum
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p stable-assets
+          gh release download v1.3.0 --repo "$GITHUB_REPOSITORY" \
+            --pattern 'LineLoom-1.3.0.vsix' --pattern 'LineLoom-1.3.0.sha256' \
+            --dir stable-assets
+          test -s stable-assets/LineLoom-1.3.0.vsix
+          test -s stable-assets/LineLoom-1.3.0.sha256
+
+      - name: Verify immutable digest, public checksum and stable VSIX metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '6af67d3caab5ae7a86dda574870cccb210fc20fbf105e014ce6532c0ff793e25  stable-assets/LineLoom-1.3.0.vsix' | sha256sum --check
+          (cd stable-assets && sha256sum --check LineLoom-1.3.0.sha256)
+          (cd stable-source && LINELOOM_EXPECT_STABLE=1 node scripts/verify-vsix.mjs ../stable-assets/LineLoom-1.3.0.vsix)
+
+      - name: Check Open VSX version before publication
+        id: present
+        shell: bash
+        run: |
+          set -euo pipefail
+          url='https://open-vsx.org/api/SanskarCodes/lineloom/1.3.0'
+          status="$(curl -sS --max-time 20 --retry 3 --retry-all-errors -o openvsx-before.json -w '%{http_code}' "$url")"
+          case "$status" in
+            200)
+              node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const p = JSON.parse(readFileSync('openvsx-before.json', 'utf8'));
+          if (p.namespace !== 'SanskarCodes' || p.name !== 'lineloom' ||
+              p.version !== '1.3.0' || p.preRelease !== false || p.downloadable !== true)
+            throw new Error('Existing Open VSX version is not a valid stable release');
+          NODE
+              echo 'already=true' >> "$GITHUB_OUTPUT"
+              echo 'Open VSX stable 1.3.0 is already published; do not upload again.'
+              ;;
+            404)
+              echo 'already=false' >> "$GITHUB_OUTPUT"
+              echo 'Open VSX 1.3.0 not published. Proceed with owner-authorized release.'
+              ;;
+            *)
+              echo "::error::Unexpected Open VSX API status $status; publication not attempted."
+              exit 1
+              ;;
+          esac
+
+      - name: Require configured Open VSX publisher credential
+        if: steps.present.outputs.already == 'false'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${OVSX_PAT}" ]]; then
+            echo '::error::OVSX_PAT secret is not configured. No publication attempted.'
+            exit 1
+          fi
+
+      - name: Publish the exact pinned stable GitHub release VSIX
+        if: steps.present.outputs.already == 'false'
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes ovsx@1.2.0 publish stable-assets/LineLoom-1.3.0.vsix \
+            --registryUrl https://open-vsx.org
+
+      - name: Confirm public stable 1.3.0 and latest registry version
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in {1..18}; do
+            status="$(curl -sS --max-time 20 -o openvsx-after.json -w '%{http_code}' 'https://open-vsx.org/api/SanskarCodes/lineloom/1.3.0')"
+            latest="$(curl -sS --max-time 20 -o openvsx-latest.json -w '%{http_code}' 'https://open-vsx.org/api/SanskarCodes/lineloom')"
+            if [[ "$status" == '200' && "$latest" == '200' ]]; then
+              if node --input-type=module - <<'NODE'
+          import { readFileSync } from 'node:fs';
+          const valid = p => p.namespace === 'SanskarCodes' && p.name === 'lineloom' &&
+            p.version === '1.3.0' && p.preRelease === false && p.downloadable === true;
+          const released = JSON.parse(readFileSync('openvsx-after.json','utf8'));
+          const root = JSON.parse(readFileSync('openvsx-latest.json','utf8'));
+          if (!valid(released) || !valid(root)) process.exit(1);
+          NODE
+              then
+                echo 'PASS: Open VSX publicly serves SanskarCodes.lineloom@1.3.0 as latest stable.'
+                exit 0
+              fi
+            fi
+            sleep 10
+          done
+          echo '::error::Open VSX public stable/latest status not independently confirmed.'
+          exit 1

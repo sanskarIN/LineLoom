@@ -5,10 +5,10 @@ import {
 } from "../../src/languages/registry";
 
 describe("language registry", () => {
-  it("registers all nine preview language IDs exactly once", () => {
+  it("registers original and experimental language IDs exactly once", () => {
     expect(LANGUAGES.map(x => x.id)).toEqual([
       "python", "javascript", "typescript", "rust", "kotlin",
-      "go", "java", "c", "cpp"
+      "go", "java", "c", "cpp", "html", "css", "lua"
     ]);
     expect(new Set(LANGUAGES.map(x => x.id)).size).toBe(LANGUAGES.length);
   });

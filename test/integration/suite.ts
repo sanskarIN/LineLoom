@@ -5,8 +5,12 @@ import { utimes } from "node:fs/promises";
 import { generateCompletion, listModels, showModel } from "../../src/models/ollama";
 import { CompletionEngine } from "../../src/completion/engine";
 import { LineLoomSidebar } from "../../src/ui/sidebar";
+import { ModelReadinessSession } from "../../src/ui/model-readiness";
+import { FilePrivacySession } from "../../src/ui/file-privacy-session";
+import { invalidateEditorChecks } from "../../src/ui/editor-checks";
 import { clearIgnoreCache, mayComplete } from "../../src/privacy/exclusions";
 import { inspectFilePrivacy } from "../../src/privacy/inspect";
+import { collectRelatedText, isSupportedRelatedCandidate } from "../../src/context/related-editor";
 import { getEligibilityTimingSummary, resetEligibilityTimings } from "../../src/privacy/timings";
 
 
@@ -17,10 +21,11 @@ export async function run(): Promise<void> {
   const required = [
     "lineloom.enable", "lineloom.disable", "lineloom.trigger",
     "lineloom.selectModel", "lineloom.manageLanguages", "lineloom.checkConnection", "lineloom.checkActiveFilePrivacy", "lineloom.openSettings",
-    "lineloom.diagnostics", "lineloom.resetPrivacyTimings", "lineloom.setup", "lineloom.performance",
+    "lineloom.diagnostics", "lineloom.copySupportSummary", "lineloom.resetPrivacyTimings", "lineloom.resetInferenceTimings", "lineloom.resetSessionActivity",
+    "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
-    "lineloom.cancel",
-    "lineloom.refreshSidebar", "lineloom.openSidebar"
+    "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
+    "lineloom.refreshSidebar", "lineloom.openSidebar", "lineloom.checkActiveModel"
   ];
   const commands = await vscode.commands.getCommands(true);
   for (const name of required) assert.ok(commands.includes(name), "Missing command: " + name);
@@ -28,14 +33,39 @@ export async function run(): Promise<void> {
   await vscode.commands.executeCommand("lineloom.refreshSidebar");
   // Test the actual extension command even with no Ollama server running.
   await vscode.commands.executeCommand("lineloom.resetPrivacyTimings");
+  await vscode.commands.executeCommand("lineloom.resetInferenceTimings");
+  await vscode.commands.executeCommand("lineloom.clearRelatedFiles");
   // Inspect the native Tree View API without invoking model discovery or reading
   // editor source, and ensure keyboard/screen-reader names are populated.
-  const offlineSidebar = new LineLoomSidebar(() => undefined, () => false);
+  const readiness = new ModelReadinessSession();
+  const privacyStatus = new FilePrivacySession();
+  const activeReadiness = new ModelReadinessSession();
+  const offlineSidebar = new LineLoomSidebar(
+    () => undefined, () => false, () => "ready", () => 0,
+    () => readiness.state, () => privacyStatus.state, () => activeReadiness.state
+  );
   const roots = offlineSidebar.getChildren();
+  // The recommendation must be computed locally and exposed through a native
+  // accessible TreeItem, without asking Ollama or inspecting code.
+  const completionSection = roots.find(node => node.kind === "section" && node.section.id === "status");
+  assert.ok(completionSection && completionSection.kind === "section", "Missing completion section");
+  const nextSteps = offlineSidebar.getChildren(completionSection).filter(
+    node => node.kind === "item" && node.item.id === "next-step"
+  );
+  assert.equal(nextSteps.length, 1, "Exactly one contextual next step should be visible");
+  const nextTreeItem = offlineSidebar.getTreeItem(nextSteps[0]);
+  assert.ok(nextTreeItem.accessibilityInformation?.label?.includes("Next:"),
+    "Suggested next step must have a screen-reader name");
+  assert.ok(nextTreeItem.tooltip, "Suggested next step must explain its behavior");
   const activeSection = roots.find(node => node.kind === "section" && node.section.id === "editor");
   assert.ok(activeSection && activeSection.kind === "section", "Missing active editor section");
   const activeItems = offlineSidebar.getChildren(activeSection);
   assert.ok(activeItems.some(node => node.kind === "item" && node.item.id === "editor-language"));
+  const activeReadinessNode = activeItems.find(node => node.kind === "item" &&
+    node.item.id === "active-model-readiness");
+  assert.ok(activeReadinessNode?.kind === "item" &&
+    activeReadinessNode.item.command === "lineloom.checkActiveModel");
+  assert.ok(offlineSidebar.getTreeItem(activeReadinessNode).accessibilityInformation?.label);
   for (const node of activeItems) {
     const item = offlineSidebar.getTreeItem(node);
     assert.ok(item.accessibilityInformation?.label, "Tree item needs a screen-reader label");
@@ -45,26 +75,104 @@ export async function run(): Promise<void> {
   offlineSidebar.refresh();
   assert.equal(refreshEvents, 1, "Sidebar refresh should fire one tree change");
   sidebarSubscription.dispose();
+  const modelsSection = roots.find(node => node.kind === "section" && node.section.id === "models");
+  assert.ok(modelsSection && modelsSection.kind === "section");
+  const modelItems = offlineSidebar.getChildren(modelsSection);
+  assert.ok(modelItems.some(node => node.kind === "item" &&
+    node.item.id === "model-readiness" && node.item.description?.includes("Not checked")));
+  // Refresh rebuilds section nodes; a previously fetched section is a
+  // snapshot and must not be reused after the underlying readiness changes.
+  const readinessEntry = () => {
+    const modelSection = offlineSidebar.getChildren().find(
+      node => node.kind === "section" && node.section.id === "models"
+    );
+    assert.ok(modelSection && modelSection.kind === "section");
+    return offlineSidebar.getChildren(modelSection).find(
+      node => node.kind === "item" && node.item.id === "model-readiness"
+    );
+  };
+  const checkToken = readiness.begin();
+  offlineSidebar.refresh();
+  const checkingStatus = readinessEntry();
+  assert.ok(checkingStatus?.kind === "item" && checkingStatus.item.description?.includes("in progress"));
+  assert.equal(readiness.finish(checkToken, "available"), true);
+  offlineSidebar.refresh();
+  const checkedStatus = readinessEntry();
+  assert.ok(checkedStatus?.kind === "item" && checkedStatus.item.description?.includes("last manual check"));
+  readiness.clear();
+  const privacySection = () => {
+    const root = offlineSidebar.getChildren().find(
+      node => node.kind === "section" && node.section.id === "privacy"
+    );
+    assert.ok(root && root.kind === "section");
+    return root;
+  };
+  const privacyEntry = () => offlineSidebar.getChildren(privacySection()).find(
+    node => node.kind === "item" && node.item.id === "last-file-privacy"
+  );
+  const notChecked = privacyEntry();
+  assert.ok(notChecked?.kind === "item" && notChecked.item.description?.includes("Not checked"));
+  assert.ok(notChecked?.kind === "item" &&
+    offlineSidebar.getTreeItem(notChecked).accessibilityInformation?.label);
+  const privacyToken = privacyStatus.begin();
+  offlineSidebar.refresh();
+  const checkingPrivacy = privacyEntry();
+  assert.ok(checkingPrivacy?.kind === "item" &&
+    checkingPrivacy.item.description?.includes("Checking"));
+  assert.equal(privacyStatus.finish(privacyToken, "allowed"), true);
+  offlineSidebar.refresh();
+  const allowedPrivacy = privacyEntry();
+  assert.ok(allowedPrivacy?.kind === "item" &&
+    allowedPrivacy.item.description?.includes("rechecked before inference"));
+  privacyStatus.clear();
+  offlineSidebar.refresh();
+  const resetPrivacy = privacyEntry();
+  assert.ok(resetPrivacy?.kind === "item" && resetPrivacy.item.description?.includes("Not checked"));
+  // Verify that switching/closing an editor resets both session-only manual
+  // statuses and makes old asynchronous readiness responses obsolete.
+  const obsoleteModelToken = activeReadiness.begin();
+  const obsoleteSignal = activeReadiness.signalFor(obsoleteModelToken);
+  const obsoletePrivacyToken = privacyStatus.begin();
+  invalidateEditorChecks(activeReadiness, privacyStatus);
+  assert.equal(obsoleteSignal.aborted, true, "Editor invalidation aborts obsolete model check");
+  assert.equal(activeReadiness.state, "not-checked");
+  assert.equal(privacyStatus.state, "not-checked");
+  assert.equal(activeReadiness.finish(obsoleteModelToken, "available"), false);
+  assert.equal(privacyStatus.finish(obsoletePrivacyToken, "allowed"), false);
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
+  let mockTransientFailure = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
   let releaseHeldGeneration: (() => void) | undefined;
   let generationCalls = 0;
+  let modelListCalls = 0;
   let lastModelSent = "";
+  let lastPromptSent = "";
+  let lastSuffixSent: string | undefined;
   const server = http.createServer(async (request, response) => {
     response.setHeader("Content-Type", "application/json");
     if (request.url === "/api/tags") {
+      modelListCalls++;
       response.end(JSON.stringify({ models: [{ name: "lineloom-test:latest" }] }));
     } else if (request.url === "/api/show") {
       response.end(JSON.stringify({ details: { family: "test" } }));
     } else if (request.url === "/api/generate") {
       const parts: Buffer[] = [];
       for await (const chunk of request) parts.push(Buffer.from(chunk));
-      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as { model?: string };
+      const payload = JSON.parse(Buffer.concat(parts).toString("utf8")) as {
+        model?: string; prompt?: string; suffix?: string
+      };
       lastModelSent = payload.model ?? "";
+      lastPromptSent = payload.prompt ?? ""; // kept only inside synthetic test server; never logged
+      lastSuffixSent = payload.suffix; // synthetic test-only context, never logged
       generationCalls++;
+      if (mockTransientFailure) {
+        response.statusCode = 503;
+        response.end(JSON.stringify({ error: "temporary" }));
+        return;
+      }
       if (holdGeneration) {
         heldGenerationStarted?.();
         await new Promise<void>((resolve) => { releaseHeldGeneration = resolve; });
@@ -225,7 +333,8 @@ export async function run(): Promise<void> {
       autoTrigger: configuration.get<boolean>("autoTrigger"),
       suppressMidTokenAuto: configuration.get<boolean>("suppressMidTokenAuto"),
       enabledLanguages: configuration.get<string[]>("enabledLanguages"),
-      performanceDiagnostics: configuration.get<boolean>("performanceDiagnostics")
+      performanceDiagnostics: configuration.get<boolean>("performanceDiagnostics"),
+      crossFileContext: configuration.get<boolean>("crossFileContext")
     };
     const engine = new CompletionEngine(() => undefined, () => false);
     // Subscribe to VS Code's genuine change events, matching production wiring.
@@ -246,15 +355,50 @@ export async function run(): Promise<void> {
     try {
       await configuration.update("endpoint", endpoint, vscode.ConfigurationTarget.Global);
       await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+      const baselineModelListCalls = modelListCalls;
+      await vscode.commands.executeCommand("lineloom.refreshSidebar");
+      assert.equal(modelListCalls, baselineModelListCalls, "Sidebar refresh must not probe Ollama");
+      await vscode.commands.executeCommand("lineloom.checkConnection");
+      assert.equal(modelListCalls, baselineModelListCalls + 1,
+        "The explicit Check Ollama Connection command must query the model list once");
+      const baselineGenerationCalls = generationCalls;
+      await vscode.commands.executeCommand("lineloom.checkActiveFilePrivacy");
+      assert.equal(generationCalls, baselineGenerationCalls,
+        "An explicit file privacy inspection must not generate model completions");
       await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
       await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
       await configuration.update("excludedPaths", [], vscode.ConfigurationTarget.Global);
       await configuration.update("autoTrigger", true, vscode.ConfigurationTarget.Global);
       await configuration.update("suppressMidTokenAuto", true, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", ["python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"], vscode.ConfigurationTarget.Global);
+      await configuration.update("languageModels", { typescript: "uninstalled-active-model:latest" }, vscode.ConfigurationTarget.Global);
+      await vscode.window.showTextDocument(permitted);
+      const activeCheckCalls = modelListCalls;
+      const beforeCheckGenerations = generationCalls;
+      await vscode.commands.executeCommand("lineloom.refreshSidebar");
+      assert.equal(modelListCalls, activeCheckCalls, "Sidebar rendering must not inspect active model remotely");
+      await vscode.commands.executeCommand("lineloom.checkActiveModel");
+      assert.equal(modelListCalls, activeCheckCalls + 1,
+        "The explicit active-model command must list models once, even with an override");
+      assert.equal(generationCalls, beforeCheckGenerations, "Checking the active model must not send source");
+      await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+      // The user-invoked clipboard action should never probe Ollama or
+      // contain filenames, endpoint URLs, prompts or model identity.
+      const beforeCopyGenerations = generationCalls;
+      const beforeCopyLists = modelListCalls;
+      await vscode.commands.executeCommand("lineloom.copySupportSummary");
+      const supportText = await vscode.env.clipboard.readText();
+      assert.ok(supportText.includes("LineLoom sanitized support summary"));
+      assert.ok(supportText.includes("Endpoint category: loopback"));
+      assert.ok(!supportText.includes(endpoint), "Do not copy the loopback URL or port");
+      assert.ok(!supportText.includes("lineloom-test:latest"), "Do not copy actual model tags");
+      assert.ok(!supportText.includes("allowed.ts"), "Do not copy document identities");
+      assert.equal(generationCalls, beforeCopyGenerations, "Clipboard copy must not infer");
+      assert.equal(modelListCalls, beforeCopyLists, "Clipboard copy must not discover models");
       // Diagnostics must capture only aggregate timings after explicit opt-in.
       resetEligibilityTimings();
       await configuration.update("performanceDiagnostics", true, vscode.ConfigurationTarget.Global);
+      await configuration.update("crossFileContext", false, vscode.ConfigurationTarget.Global);
       assert.equal(await mayComplete(permitted, [], true), true);
       const timingReport = getEligibilityTimingSummary();
       assert.equal(timingReport.checks, 1);
@@ -288,11 +432,131 @@ export async function run(): Promise<void> {
         const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(first?.length, "Expected inline completion from the mocked model");
         assert.equal(first[0].insertText, "42");
+        const callback = first[0].command;
+        assert.equal(callback?.command, "lineloom.recordSuggestionAccepted");
+        assert.equal(callback?.arguments?.length, 1);
+        const oneTimeToken = callback.arguments?.[0];
+        assert.equal(typeof oneTimeToken, "string");
+        assert.equal(engine.getStats().accepted, 0, "Offering ghost text does not imply acceptance");
+        assert.equal(engine.recordAcceptance("invented-token"), false);
+        assert.equal(engine.recordAcceptance(oneTimeToken), true);
+        assert.equal(engine.recordAcceptance(oneTimeToken), false, "Replay cannot double-count");
+        assert.equal(engine.getStats().accepted, 1);
         assert.equal(lastModelSent, "lineloom-typed:latest", "TypeScript must use its assigned Ollama model");
         const second = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(second?.length, "Expected reuse of the cached inline completion");
         assert.equal(second[0].insertText, "42");
+        assert.equal(second[0].command?.command, "lineloom.recordSuggestionAccepted");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Real editor-host privacy regression: no cross-file source enters the
+        // request while the preference is disabled, even with a stored selection.
+        engine.setRelatedFiles([permitted.uri]);
+        const disabledContext = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(disabledContext?.length);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false,
+          "Opted-out completion must not include selected related source");
+
+        // The only additional source is the user's explicit, bounded,
+        // same-workspace selection, checked with the real editor privacy gate.
+        await configuration.update("crossFileContext", true, vscode.ConfigurationTarget.Global);
+        engine.setRelatedFiles([permitted.uri]);
+        const selectedContext = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(selectedContext?.length, "Allowed user-selected related file should complete");
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), true,
+          "Opted-in related file must be passed as untrusted reference text");
+        assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
+        assert.equal(isSupportedRelatedCandidate(document.uri, permitted.uri), true);
+        assert.equal(isSupportedRelatedCandidate(document.uri, document.uri), false);
+        assert.equal(await collectRelatedText(document, [document.uri], [], () => true), undefined,
+          "Active source must not be duplicated as an extra reference");
+        assert.equal(await collectRelatedText(document, [permitted.uri, permitted.uri], [], () => true), undefined,
+          "Duplicate selected file must fail closed instead of repeating source");
+        assert.equal(await collectRelatedText(document,
+          [permitted.uri, deniedByApp.uri, deniedByGit.uri], [], () => true), undefined,
+          "Oversized selection must be refused before any selected file read");
+        assert.equal(await collectRelatedText(document, [permitted.uri], [], () => false), undefined,
+          "Cancelled selection must not read or send source");
+
+        // A related file may be edited while a genuine Ollama request is in
+        // flight. Re-read and discard the now-stale response before display.
+        const originalRelatedBytes = await vscode.workspace.fs.readFile(permitted.uri);
+        engine.setRelatedFiles([permitted.uri]);
+        const relatedRequestStarted = new Promise<void>(resolve => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const obsoleteRelatedRequest = engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        try {
+          await Promise.race([
+            relatedRequestStarted,
+            new Promise<never>((_resolve, reject) =>
+              setTimeout(() => reject(new Error("Selected-file mock request did not start")), 8000))
+          ]);
+          await vscode.workspace.fs.writeFile(permitted.uri, Buffer.from("export const changed = 7;\n"));
+          releaseHeldGeneration?.();
+          assert.equal(await obsoleteRelatedRequest, undefined,
+            "Model output using superseded related-file bytes must not be displayed");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          // Retain the callback type: the mock server assigns it asynchronously.
+          // Resetting it here narrows later optional calls to 'never' in TypeScript.
+          await vscode.workspace.fs.writeFile(permitted.uri, originalRelatedBytes);
+          clearIgnoreCache();
+          engine.cancel();
+        }
+
+        // Clearing consent while inference is still in flight must abort the
+        // model response even if both the editor bytes and selected source
+        // contents are unchanged. The old response must not fill the cache.
+        engine.setRelatedFiles([permitted.uri]);
+        const revokedStart = new Promise<void>(resolve => { heldGenerationStarted = resolve; });
+        holdGeneration = true;
+        const revokedRequest = engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        try {
+          await Promise.race([
+            revokedStart,
+            new Promise<never>((_resolve, reject) =>
+              setTimeout(() => reject(new Error("Consent-revocation request did not start")), 8000))
+          ]);
+          engine.setRelatedFiles([]);
+          releaseHeldGeneration?.();
+          assert.equal(await revokedRequest, undefined,
+            "Revoked related-file consent must discard any in-flight response");
+          assert.equal(engine.getRelatedFileCount(), 0,
+            "Revoked consent must erase selection immediately");
+        } finally {
+          holdGeneration = false;
+          releaseHeldGeneration?.();
+          engine.cancel();
+        }
+
+        // An excluded related file must suppress the request, not silently
+        // drop only that reference and still send a prompt.
+        engine.setRelatedFiles([deniedByApp.uri]);
+        const requestsBeforeRelatedDeny = generationCalls;
+        const refusedRelated = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.equal(refusedRelated, undefined);
+        assert.equal(generationCalls, requestsBeforeRelatedDeny,
+          "Excluded selected related file must not cause a model request");
+
+        // Clearing selection or opting out restores ordinary cursor-only context.
+        engine.setRelatedFiles([]);
+        await configuration.update("crossFileContext", false, vscode.ConfigurationTarget.Global);
+        const clearedRelated = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(clearedRelated?.length);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false);
 
         // Inference duration diagnostics are opt-in, unlike source-free
         // request counters. Opt-out must clear measurements without disabling
@@ -304,6 +568,9 @@ export async function run(): Promise<void> {
         const measured = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(measured?.length, "Opted-in completion should remain available");
         assert.equal(engine.getStats().measuredRequests, 1);
+        assert.equal(engine.getStats().recentLatencySamples, 1);
+        assert.ok((engine.getStats().recentLatencyP50Ms ?? -1) >= 0);
+        assert.equal(engine.getStats().recentLatencyP95Ms, engine.getStats().recentLatencyP50Ms);
         const requestsBeforeOptOut = engine.getStats().requests;
         const completedBeforeOptOut = engine.getStats().completions;
         await configuration.update("performanceDiagnostics", false, vscode.ConfigurationTarget.Global);
@@ -313,6 +580,8 @@ export async function run(): Promise<void> {
         assert.equal(engine.getStats().measuredRequests, 0);
         assert.equal(engine.getStats().lastLatencyMs, 0);
         assert.equal(engine.getStats().totalLatencyMs, 0);
+        assert.equal(engine.getStats().recentLatencySamples, 0);
+        assert.equal(engine.getStats().recentLatencyP95Ms, undefined);
         assert.equal(engine.getStats().requests, requestsBeforeOptOut);
         assert.equal(engine.getStats().completions, completedBeforeOptOut);
         engine.cancel();
@@ -340,6 +609,8 @@ export async function run(): Promise<void> {
           await lateSample;
           assert.equal(engine.getStats().measuredRequests, 0,
             "A response started before opt-out must not repopulate a new opt-in session");
+          assert.equal(engine.getStats().recentLatencySamples, 0,
+            "Late response must not restore cleared percentile samples");
         } finally {
           holdGeneration = false;
           releaseHeldGeneration?.();
@@ -562,6 +833,28 @@ export async function run(): Promise<void> {
         assert.equal(generationCalls, callsAfterEmpty + 1, "Manual invocation must bypass empty-result backoff");
         assert.equal(engine.getStats().suppressedEmptyRetries, 1);
         mockEmptyResponses = false;
+        // A mocked transient 503 should back off automatic *network* attempts,
+        // but a manual invocation bypasses the cooldown immediately. Success
+        // on that manual retry clears the profile's cooldown.
+        await configuration.update("model", "lineloom-transient:latest", vscode.ConfigurationTarget.Global);
+        mockTransientFailure = true;
+        engine.resetTransientFailures();
+        engine.cancel();
+        const transientFirst = await engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token);
+        assert.equal(transientFirst, undefined);
+        const transientCalls = generationCalls;
+        const transientAgain = await engine.provideInlineCompletionItems(
+          document, position, automatic, cancellation.token);
+        assert.equal(transientAgain, undefined);
+        assert.equal(generationCalls, transientCalls, "Automatic retry should defer during transient cooldown");
+        assert.ok(engine.getStats().suppressedTransientRetries >= 1);
+        mockTransientFailure = false;
+        const transientManual = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token);
+        assert.ok(transientManual?.length, "Manual completion must bypass and clear transient cooldown");
+        assert.equal(generationCalls, transientCalls + 1);
+        // Keep other model profiles independent of the failed endpoint/model.
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         // Exercise preview language providers with actual VS Code file modes.
         for (const [filename, languageId] of [
@@ -576,6 +869,94 @@ export async function run(): Promise<void> {
           const suggested = await engine.provideInlineCompletionItems(previewDoc, previewPos, trigger, cancellation.token);
           assert.ok(suggested?.length, "Expected mocked provider suggestion in " + languageId);
         }
+        // Exercise experimental opt-in modes in a real extension host,
+        // including the default-deny inference boundary and model overrides.
+        // Lua language mode is not built into all editor distributions, so
+        // only test it when this host actually registers it.
+        const registeredModes = new Set(await vscode.languages.getLanguages());
+        for (const [filename, languageId, languageLabel] of [
+          ["editor-optin.html", "html", "HTML"],
+          ["editor-optin.css", "css", "CSS"],
+          ["editor-optin.lua", "lua", "Lua"]
+        ] as const) {
+          if (!registeredModes.has(languageId)) {
+            assert.equal(languageId, "lua", "HTML/CSS built-in language mode missing");
+            continue;
+          }
+          let optDocument: vscode.TextDocument = await vscode.workspace.openTextDocument(
+            vscode.Uri.joinPath(folder.uri, filename));
+          if (optDocument.languageId !== languageId) {
+            optDocument = await vscode.languages.setTextDocumentLanguage(optDocument, languageId);
+          }
+          assert.equal(optDocument.languageId, languageId);
+          const optEditor = await vscode.window.showTextDocument(optDocument);
+          const optPosition = optDocument.positionAt(optDocument.getText().length);
+          optEditor.selection = new vscode.Selection(optPosition, optPosition);
+          assert.equal(configuration.get<string[]>("enabledLanguages")?.includes(languageId),
+            false, languageLabel + " must be disabled by default");
+          const callsWhileDisabled = generationCalls;
+          const disabled = await engine.provideInlineCompletionItems(
+            optDocument, optPosition, trigger, cancellation.token);
+          assert.equal(disabled, undefined, "Disabled " + languageLabel + " must not suggest");
+          assert.equal(generationCalls, callsWhileDisabled,
+            "Disabled " + languageLabel + " sent source to the mock Ollama server");
+          await configuration.update("enabledLanguages", [
+            "python", "javascript", "typescript", "rust", "kotlin",
+            "go", "java", "c", "cpp", languageId
+          ], vscode.ConfigurationTarget.Global);
+          await configuration.update("languageModels", {
+            [languageId]: "lineloom-optin:latest"
+          }, vscode.ConfigurationTarget.Global);
+          const enabled = await engine.provideInlineCompletionItems(
+            optDocument, optPosition, trigger, cancellation.token);
+          assert.equal(enabled?.[0]?.insertText, "42",
+            "Explicitly enabled " + languageLabel + " should receive a mocked suggestion");
+          assert.equal(generationCalls, callsWhileDisabled + 1,
+            "Enabled " + languageLabel + " must generate exactly once");
+          assert.equal(lastModelSent, "lineloom-optin:latest",
+            "Experimental mode must use its explicit model override");
+          assert.ok(lastPromptSent.includes("Language: " + languageLabel + "."),
+            "Experimental mode must use language-specific instructions");
+          await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+          await configuration.update("enabledLanguages", [
+            "python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"
+          ], vscode.ConfigurationTarget.Global);
+        }
+        // Exercise the complete local FIM HTTP request, not only buildPrompt()
+        // unit tests. The recognized LineLoom Code tag must send a bounded
+        // prefix and a separate suffix, while unknown models use instructions.
+        const fimDocument = await vscode.workspace.openTextDocument(
+          vscode.Uri.joinPath(folder.uri, "editor-fim.ts"));
+        const fimPosition = fimDocument.positionAt("const answer = ".length);
+        const fimEditor = await vscode.window.showTextDocument(fimDocument);
+        fimEditor.selection = new vscode.Selection(fimPosition, fimPosition);
+        await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
+        await configuration.update("languageModels", {}, vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const callsBeforeFim = generationCalls;
+        const nativeFim = await engine.provideInlineCompletionItems(
+          fimDocument, fimPosition, trigger, cancellation.token);
+        assert.equal(nativeFim?.[0]?.insertText, "42",
+          "Mocked LineLoom Code FIM should offer only missing insertion text");
+        assert.equal(generationCalls, callsBeforeFim + 1);
+        assert.equal(lastModelSent, "lineloom-code:dev");
+        assert.equal(lastPromptSent, "const answer = ",
+          "Native FIM must send the bounded cursor prefix, not chat instructions");
+        assert.equal(lastSuffixSent, "/* preserved suffix */",
+          "Native FIM must keep code after the cursor as a separate Ollama suffix");
+
+        await configuration.update("model", "generic-local:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const generic = await engine.provideInlineCompletionItems(
+          fimDocument, fimPosition, trigger, cancellation.token);
+        assert.equal(generic?.[0]?.insertText, "42");
+        assert.equal(lastSuffixSent, undefined,
+          "Unrecognized models must never receive an assumed FIM suffix");
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+          "Generic models must retain the bounded instruction prompt");
+        await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+
         const goDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "editor-test.go"));
         const goEditor = await vscode.window.showTextDocument(goDoc);
         const goPosition = goDoc.positionAt(goDoc.getText().length);
@@ -724,6 +1105,31 @@ export async function run(): Promise<void> {
         privateEditor.selection = new vscode.Selection(privateCursor, privateCursor);
         const blocked = await engine.provideInlineCompletionItems(privateDoc, privateCursor, trigger, cancellation.token);
         assert.equal(blocked, undefined, "Never provide inline completions from .env");
+        // Session reset erases counters, cooldown and pending acceptance
+        // acknowledgements without affecting model/language/privacy settings.
+        const oldAcceptedItem = manualMidToken?.[0];
+        const oldToken = oldAcceptedItem?.command?.arguments?.[0];
+        assert.equal(typeof oldToken, "string");
+        assert.ok(engine.getStats().requests > 0);
+        const previousEnabled = configuration.get("enabled", true);
+        const previousModel = configuration.get("model");
+        const previousLanguages = configuration.get("enabledLanguages");
+        engine.resetSessionActivity();
+        const blank = engine.getStats();
+        assert.equal(blank.requests, 0);
+        assert.equal(blank.completions, 0);
+        assert.equal(blank.accepted, 0);
+        assert.equal(blank.failed, 0);
+        assert.equal(blank.cancelled, 0);
+        assert.equal(blank.suppressedTransientRetries, 0);
+        assert.equal(blank.recentLatencySamples, 0);
+        assert.equal(engine.recordAcceptance(oldToken), false,
+          "Stale suggestion acceptance must not repopulate reset counters");
+        assert.equal(configuration.get("enabled", true), previousEnabled);
+        assert.equal(configuration.get("model"), previousModel);
+        assert.deepEqual(configuration.get("enabledLanguages"), previousLanguages);
+        assert.equal(engine.getRelatedFileCount(), 0);
+
       } finally {
         cancellation.dispose();
       }
@@ -739,6 +1145,7 @@ export async function run(): Promise<void> {
       await configuration.update("suppressMidTokenAuto", oldValues.suppressMidTokenAuto, vscode.ConfigurationTarget.Global);
       await configuration.update("enabledLanguages", oldValues.enabledLanguages, vscode.ConfigurationTarget.Global);
       await configuration.update("performanceDiagnostics", oldValues.performanceDiagnostics, vscode.ConfigurationTarget.Global);
+      await configuration.update("crossFileContext", oldValues.crossFileContext, vscode.ConfigurationTarget.Global);
     }
     await vscode.commands.executeCommand("lineloom.disable");
     assert.equal(vscode.workspace.getConfiguration("lineloom").get("enabled"), false);
