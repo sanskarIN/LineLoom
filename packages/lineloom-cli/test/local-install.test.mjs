@@ -47,6 +47,11 @@ test("offline install rejects tampered, invalid and oversized files without invo
     await assert.rejects(installLocalRelease(spec, input, { runner }), /size/);
     await assert.rejects(installLocalRelease(spec, dir, { runner }), /\.vsix/);
     await assert.rejects(installLocalRelease(spec, input, { editor: "bash", runner }), /editor CLI/);
+    // A raw library caller must not be able to influence the staging path
+    // with a malformed version, even when the checksum is well formed.
+    for (const version of ["../escape", "1.2.0/../escape", "1.2.0\\\\evil", "1.2", ""]) {
+      await assert.rejects(installLocalRelease({ ...spec, version }, input, { runner }), /version/);
+    }
     assert.equal(calls, 0);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
