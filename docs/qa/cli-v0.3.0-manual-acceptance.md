@@ -9,7 +9,7 @@ The `0.3.0` source is **not** a published npm command. No package release or ext
 
 - [x] PR #92 completed root cross-platform CI, Linux mocked extension-host integration, dependency security, and independent npm CLI tests on Windows/macOS/Linux before merging.
 - [x] The PR checks package contents, pinned release hashes, invalid CLI options, size bounds, checksum mismatches, no-shell editor invocation and private temporary file cleanup using synthetic files and mocked runners.
-- [ ] Record independent successful post-merge `main` checks by **exact commit SHA**.
+- [x] Post-merge `main` commit [`21317bc`](https://github.com/sanskarIN/LineLoom/commit/21317bc858e7e8c51fe060ef3e64b667cbd35faa): [root CI](https://github.com/sanskarIN/LineLoom/actions/runs/40883724776), [CLI Windows/macOS/Linux](https://github.com/sanskarIN/LineLoom/actions/runs/40883724611), and [dependency security](https://github.com/sanskarIN/LineLoom/actions/runs/40883724839) completed successfully. These are automated checks, not physical QA.
 - [ ] Perform actual physical-editor tests. Automated CLI mocks and VSIX upgrade smoke tests **do not** establish successful interactive installation with real editor binaries.
 - [ ] Confirm GitHub Packages scope ownership, visibility, install authentication and end-user permissions before authorizing a new version-specific publisher.
 
