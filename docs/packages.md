@@ -5,7 +5,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 ## GitHub Packages npm installer
 
 - GitHub scope/name: `@sanskarin/lineloom-cli`.
-- Published GitHub Packages version: **`0.1.0`**. Source-only CLI **`0.2.0`** (offline verify) is merged but unpublished; **`0.3.0`** (offline install) is implemented in [development PR #92](https://github.com/sanskarIN/LineLoom/pull/92), not a published command. CLI versions are independent of the extension version.
+- Published GitHub Packages version: **`0.1.0`**. Source-only CLI **`0.2.0`** (offline verify) is merged but unpublished; **`0.3.0`** (offline install) is merged in [PR #92](https://github.com/sanskarIN/LineLoom/pull/92), but is not a published command. CLI versions are independent of the extension version.
 - Source: `packages/lineloom-cli/`.
 - Target: GitHub's npm registry, `https://npm.pkg.github.com`; GitHub Packages attaches it to this repository via package metadata after a successful publish.
 - No dependencies or automatic installation lifecycle scripts.
@@ -20,7 +20,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 | GitHub extension VSIX | **v1.3.0 stable published** | Explicitly selected related-file context, native sidebar, privacy controls |
 | GitHub Packages `@sanskarin/lineloom-cli` | **v0.1.0 published** | Checksum-pinned download/install for older release VSIX versions; not automatically v1.3.0 |
 | CLI `verify` | **v0.2.0 source only, unpublished** | Verify a manually downloaded pinned VSIX |
-| CLI `install --file` | **v0.3.0 development-source candidate (unpublished)** | Offline installation from a manually downloaded, checksum-verified official VSIX |
+| CLI `install --file` | **v0.3.0 merged source (unpublished)** | Offline installation from a manually downloaded, checksum-verified official VSIX |
 | npmjs.com / Marketplace / Open VSX | **Independent registries** | Verify each live listing; no publication implied by GitHub release or GitHub Packages |
 
 The [future release roadmap](roadmap.md) tracks upgrades and acceptance; consult [PR #92 checks](https://github.com/sanskarIN/LineLoom/pull/92) for integration evidence. Distribution remains independently gated.
@@ -51,7 +51,18 @@ lineloom verify ./LineLoom-1.2.0.vsix
 lineloom verify ./LineLoom-1.2.4.vsix --preview
 ```
 
-The v0.2.0 **source-only** verify command reads a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with an existing pinned stable/preview digest. It cannot download, install or contact Ollama. The [v0.3.0 development PR #92](https://github.com/sanskarIN/LineLoom/pull/92) adds a separate offline `install --file ./LineLoom-1.2.0.vsix` operation using a bounded staged copy and checksum verification. For local development builds of CLI v0.3.0, `--file` installs only the byte-for-byte pinned official VSIX already on disk. It does not download anything:\n\n```sh\nlineloom install --file ./LineLoom-1.2.0.vsix\nlineloom install --file ./LineLoom-1.2.4.vsix --preview\n```\n\nFile verification occurs on a private staged copy before the supported editor CLI runs; neither a missing file nor a checksum mismatch can fall back to an online download. The source still pins **extension v1.2.0 stable and v1.2.4 preview**; it does not silently follow the latest GitHub releases. These commands require building/running the unpublished development source, and have **not** been included in the published package.\n\n**Neither CLI 0.2.0 nor 0.3.0 is available in the published v0.1.0 GitHub Packages artifact.** Do not copy or run the proposed commands using the published v0.1.0 package. Publication of either later CLI version requires independent package/security validation, real-editor installation evidence, a new authorization and a new version-specific publishing gate.
+The v0.2.0 **source-only** verify command reads a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with an existing pinned stable/preview digest. It cannot download, install or contact Ollama. The merged [v0.3.0 source PR #92](https://github.com/sanskarIN/LineLoom/pull/92) adds a separate offline `install --file ./LineLoom-1.2.0.vsix` operation using a bounded staged copy and checksum verification. For local development builds of CLI v0.3.0, `--file` installs only the byte-for-byte pinned official VSIX already on disk. It does not download anything:
+
+```sh
+lineloom install --file ./LineLoom-1.2.0.vsix
+lineloom install --file ./LineLoom-1.2.4.vsix --preview
+```
+
+File verification occurs on a private staged copy before the supported editor CLI runs; neither a missing file nor a checksum mismatch can fall back to an online download. The source still pins **extension v1.2.0 stable and v1.2.4 preview**; it does not silently follow the latest GitHub releases. These commands require building/running the unpublished development source, and have **not** been included in the published package.
+
+**Neither CLI 0.2.0 nor 0.3.0 is available in the published v0.1.0 GitHub Packages artifact.** Do not expect these development-only commands to work in the published v0.1.0 package. Publication of either later CLI version requires independent package/security validation, real-editor installation evidence, a new authorization and a new version-specific publishing gate.
+
+See the [CLI v0.3.0 manual acceptance checklist](qa/cli-v0.3.0-manual-acceptance.md) for real Windows/macOS/Linux editor checks and the separate publishing gate. Automated tests are not physical-editor acceptance.
 
 ## CI and release process
 
