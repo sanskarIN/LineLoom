@@ -1,6 +1,6 @@
 {
   "name": "@sanskarin/lineloom-cli",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Checksum-verified installer for official LineLoom VS Code extension releases",
   "type": "module",
   "bin": {
