@@ -37,12 +37,14 @@ describe("completion filtering", () => {
   });
   it("preserves indentation before an existing first token on the next line", () => {
     expect(cleanCompletion("if ready:\n    ", "", "pass", true)).toBe("if ready:\n    ");
+    expect(cleanCompletion("if ready:\n    ", "", "# existing", true)).toBe("if ready:\n    ");
     expect(cleanCompletion("if ready:\n\t", "", "return x", true)).toBe("if ready:\n\t");
   });
-  it("still removes trailing whitespace when no adjacent identifier follows", () => {
-    expect(cleanCompletion("return   ", "", ";", true)).toBe("return");
+  it("trims trailing whitespace only when no source character is adjacent", () => {
+    expect(cleanCompletion("return   ", "", ";", true)).toBe("return   ");
     expect(cleanCompletion("return   ", "", "\nresult", true)).toBe("return");
     expect(cleanCompletion("return   ", "", "", true)).toBe("return");
+    expect(cleanCompletion("return  ", "", "// existing comment", true)).toBe("return  ");
     expect(cleanCompletion("   ", "", "result", true)).toBe("");
     expect(cleanCompletion("return   \n  done  ", "", "", true)).toBe("return\ndone");
   });
