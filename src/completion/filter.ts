@@ -82,7 +82,16 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   // A UTF-16 code-unit cap must not cut a valid astral Unicode character.
   value = value.slice(0, 6000);
   if (/[\uD800-\uDBFF]$/.test(value)) value = value.slice(0, -1);
+  // Code already after the caret may need the generated trailing separator
+  // ("return " + "result") or indentation ("if ready:\n    " + "pass").
+  // Trim completed lines, but keep the final whitespace run if the suffix
+  // starts immediately with an identifier character. No new whitespace is
+  // synthesized, and whitespace-only suggestions are still discarded.
+  const preserveCursorSpacing = /^[\p{L}\p{M}\p{N}_$]/u.test(suffix) &&
+    /[\t ]$/.test(value) && /\S/u.test(value);
+  const cursorSpacing = preserveCursorSpacing ? /[\t ]+$/.exec(value)?.[0] ?? "" : "";
   value = value.replace(/[\t ]+$/gm, "");
+  if (cursorSpacing) value += cursorSpacing;
   if (!value.trim()) return "";
   return value;
 }
