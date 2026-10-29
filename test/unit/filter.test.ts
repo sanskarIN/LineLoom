@@ -22,10 +22,29 @@ describe("completion filtering", () => {
     expect(cleanCompletion("myCounter", "", "Counter;", true)).toBe("myCounter");
   });
   it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
-    expect(cleanCompletion("return result", "", "result;", true)).toBe("return");
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
     expect(cleanCompletion("call(x))", "", ")", true)).toBe("call(x)");
     expect(cleanCompletion("fn main() {}}", "", "}", true)).toBe("fn main() {}");
     expect(cleanCompletion("answer;;", "", ";", true)).toBe("answer;");
+  });
+  it("preserves a generated separator before existing identifier text", () => {
+    // The caret is directly before "result;"; concatenating "return" without
+    // the original space would produce the invalid token "returnresult".
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
+    expect(cleanCompletion("return ", "", "result;", true)).toBe("return ");
+    expect(cleanCompletion("let имя ", "", "значение;", true)).toBe("let имя ");
+    expect(cleanCompletion("const count  ", "", "value", true)).toBe("const count  ");
+  });
+  it("preserves indentation before an existing first token on the next line", () => {
+    expect(cleanCompletion("if ready:\\n    ", "", "pass", true)).toBe("if ready:\\n    ");
+    expect(cleanCompletion("if ready:\\n\\t", "", "return x", true)).toBe("if ready:\\n\\t");
+  });
+  it("still removes trailing whitespace when no adjacent identifier follows", () => {
+    expect(cleanCompletion("return   ", "", ";", true)).toBe("return");
+    expect(cleanCompletion("return   ", "", "\\nresult", true)).toBe("return");
+    expect(cleanCompletion("return   ", "", "", true)).toBe("return");
+    expect(cleanCompletion("   ", "", "result", true)).toBe("");
+    expect(cleanCompletion("return   \\n  done  ", "", "", true)).toBe("return\\ndone");
   });
   it("prefers a longer repeated suffix to a one-character identifier coincidence", () => {
     expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
