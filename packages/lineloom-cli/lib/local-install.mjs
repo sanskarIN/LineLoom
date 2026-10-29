@@ -23,7 +23,7 @@ export async function installLocalRelease(spec, sourcePath, { editor = "code", r
   // accepts explicit specifications in tests, so reject path separators and
   // malformed version identifiers rather than relying solely on getRelease().
   if (typeof spec.version !== "string" ||
-      !/^\\d+\\.\\d+\\.\\d+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?$/.test(spec.version)) {
+      !/^[0-9]+[.][0-9]+[.][0-9]+(?:-[A-Za-z0-9][A-Za-z0-9.-]*)?$/.test(spec.version)) {
     throw new Error("Invalid pinned release version");
   }
   const entry = await lstat(sourcePath);
