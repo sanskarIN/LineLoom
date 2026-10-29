@@ -36,15 +36,15 @@ describe("completion filtering", () => {
     expect(cleanCompletion("const count  ", "", "value", true)).toBe("const count  ");
   });
   it("preserves indentation before an existing first token on the next line", () => {
-    expect(cleanCompletion("if ready:\\n    ", "", "pass", true)).toBe("if ready:\\n    ");
-    expect(cleanCompletion("if ready:\\n\\t", "", "return x", true)).toBe("if ready:\\n\\t");
+    expect(cleanCompletion("if ready:\n    ", "", "pass", true)).toBe("if ready:\n    ");
+    expect(cleanCompletion("if ready:\n\t", "", "return x", true)).toBe("if ready:\n\t");
   });
   it("still removes trailing whitespace when no adjacent identifier follows", () => {
     expect(cleanCompletion("return   ", "", ";", true)).toBe("return");
-    expect(cleanCompletion("return   ", "", "\\nresult", true)).toBe("return");
+    expect(cleanCompletion("return   ", "", "\nresult", true)).toBe("return");
     expect(cleanCompletion("return   ", "", "", true)).toBe("return");
     expect(cleanCompletion("   ", "", "result", true)).toBe("");
-    expect(cleanCompletion("return   \\n  done  ", "", "", true)).toBe("return\\ndone");
+    expect(cleanCompletion("return   \n  done  ", "", "", true)).toBe("return\ndone");
   });
   it("prefers a longer repeated suffix to a one-character identifier coincidence", () => {
     expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
