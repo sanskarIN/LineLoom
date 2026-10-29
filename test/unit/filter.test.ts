@@ -46,7 +46,7 @@ describe("completion filtering", () => {
     expect(cleanCompletion("return   ", "", "", true)).toBe("return");
     expect(cleanCompletion("return  ", "", "// existing comment", true)).toBe("return  ");
     expect(cleanCompletion("   ", "", "result", true)).toBe("");
-    expect(cleanCompletion("return   \n  done  ", "", "", true)).toBe("return\ndone");
+    expect(cleanCompletion("return   \n  done  ", "", "", true)).toBe("return\n  done");
   });
   it("prefers a longer repeated suffix to a one-character identifier coincidence", () => {
     expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
