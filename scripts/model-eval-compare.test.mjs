@@ -219,11 +219,13 @@ test("rejects forged TypeScript grammar counts and reports parser regressions wi
   worse.generatedSyntax.passed -= 2;
   worse.generatedSyntax.failed += 2;
   const comparison = compareModelReports(baseline, worse);
-  assert.equal(comparison.generatedTypeScriptSyntax.checkedPerModel, 12);
+  assert.equal(comparison.generatedTypeScriptSyntax.baselineChecked, 12);
+  assert.equal(comparison.generatedTypeScriptSyntax.candidateChecked, 12);
+  assert.equal(comparison.generatedTypeScriptSyntax.candidateUnchecked, 48);
   assert.equal(comparison.generatedTypeScriptSyntax.passedDelta, -2);
   assert.equal(comparison.generatedTypeScriptSyntax.failedDelta, 2);
   assert.ok(comparison.regressionReview.flags.includes("more-typescript-syntax-failures"));
-  assert.equal(comparison.generatedTypeScriptSyntax.uncheckedPerModel, 48);
+  assert.equal(comparison.generatedTypeScriptSyntax.baselineUnchecked, 48);
   assert.ok(!JSON.stringify(comparison).includes(baseline.model));
   for (const mutation of [
     report => { delete report.generatedSyntax; },
@@ -244,8 +246,8 @@ test("rejects forged TypeScript grammar counts and reports parser regressions wi
   }
   const rustScope = report({ selected: fixtures.filter(f => f.language === "rust") });
   const result = compareModelReports(rustScope, rustScope);
-  assert.equal(result.generatedTypeScriptSyntax.checkedPerModel, 0);
-  assert.equal(result.generatedTypeScriptSyntax.uncheckedPerModel, 12);
+  assert.equal(result.generatedTypeScriptSyntax.baselineChecked, 0);
+  assert.equal(result.generatedTypeScriptSyntax.baselineUnchecked, 12);
   assert.equal(result.generatedTypeScriptSyntax.passedDelta, 0);
 });
 
