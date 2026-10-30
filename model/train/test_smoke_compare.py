@@ -25,7 +25,7 @@ except ImportError:
 
 
 def simulated_report(kind: str, language: str = "all", tokens: int = 64,
-                     score: int = 2) -> dict:
+                     score: int = 2, token_cap_exits: int = 0) -> dict:
     """Test-only synthetic counts; never claim these represent real inference."""
     selected = read_public_fixtures(language)
     groups = {}
@@ -38,9 +38,13 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
     timings = generation_latency_summary([
         {"language": item["language"],
          "generationMs": (index + 1) * (2 if kind == "local-lora-adapter" else 1),
-         "generationTokens": (index % 3) + (2 if kind == "local-lora-adapter" else 1)}
+         "generationTokens": (
+             tokens if index < token_cap_exits else
+             (index % 3) + (2 if kind == "local-lora-adapter" else 1)),
+         "terminationReason": (
+             "token-limit" if index < token_cap_exits else "stop-token")}
         for index, item in enumerate(selected)
-    ])
+    ], tokens)
     return {
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
@@ -133,7 +137,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v5")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v6")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
@@ -147,6 +151,11 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["generatedTokenDelta"], 30)
         self.assertEqual(result["generatedTokenCountStatus"], "DIFFERENT_GENERATED_TOKEN_TOTALS")
         self.assertEqual(result["perLanguage"]["rust"]["generatedTokenDelta"], 6)
+        self.assertEqual(result["terminationAccounting"], "stop-token-or-token-limit-v1")
+        self.assertEqual(result["baseTokenLimitExits"], 0)
+        self.assertEqual(result["adapterTokenLimitExits"], 0)
+        self.assertEqual(result["terminationReview"], "NO_TOKEN_LIMIT_EXITS_RECORDED")
+        self.assertEqual(result["perLanguage"]["rust"]["tokenLimitExitDelta"], 0)
 
         self.assertNotIn("fixtureSetSha256", result)
         self.assertNotIn("baseRevisionDeclared", result)
@@ -293,6 +302,65 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["generatedTokenCountStatus"], "AGGREGATE_TOKEN_TOTALS_MATCH_ONLY")
         self.assertEqual(result["generatedTokenDelta"], 0)
         self.assertIn("even equal totals", result["limitation"])
+
+    def test_token_limit_exits_trigger_review_without_code_or_ids(self):
+        base = simulated_report("local-base-model", token_cap_exits=1)
+        adapter = simulated_report("local-lora-adapter", token_cap_exits=2)
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertEqual(result["baseTokenLimitExits"], 1)
+        self.assertEqual(result["adapterTokenLimitExits"], 2)
+        self.assertEqual(result["tokenLimitExitDelta"], 1)
+        self.assertEqual(result["perLanguage"]["rust"]["tokenLimitExitDelta"], 1)
+        self.assertEqual(result["terminationReview"], "TOKEN_LIMIT_EXITS_REQUIRE_REVIEW")
+        self.assertNotIn("runtimeProfile", result)
+        self.assertNotIn("generationTokens", result)
+        self.assertNotIn("fixtureSetSha256", result)
+        self.assertNotIn("fn ", json.dumps(result))
+        single = compare_smoke.compare_reports(
+            simulated_report("local-base-model", language="cpp", token_cap_exits=1),
+            simulated_report("local-lora-adapter", language="cpp", token_cap_exits=0))
+        self.assertEqual(single["perLanguage"]["cpp"]["tokenLimitExitDelta"], -1)
+        self.assertEqual(single["perLanguage"]["python"]["tokenLimitExitDelta"], 0)
+
+    def test_invalid_termination_counts_and_inconsistent_totals_rejected(self):
+        for field, value in (
+            ("terminationAccounting", "unknown"),
+            ("terminationCounts", {}),
+            ("terminationByLanguage", {}),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate[field] = value
+            with self.subTest(field=field), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for field, value in (
+            ("stopToken", True),
+            ("stopToken", -1),
+            ("tokenLimit", 31),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate["terminationCounts"][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for field, value in (
+            ("attempts", 5), ("stopToken", 5),
+            ("tokenLimit", 1), ("tokenLimit", True),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate["terminationByLanguage"]["rust"][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        candidate = copy.deepcopy(self.adapter)
+        candidate["terminationByLanguage"]["rust"]["rawSource"] = "private"
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
+        candidate = copy.deepcopy(self.adapter)
+        candidate["terminationCounts"] = {"stopToken": 29, "tokenLimit": 1}
+        candidate["terminationByLanguage"]["rust"].update({
+            "stopToken": 5, "tokenLimit": 1
+        })
+        # Merely inventing an exit cannot explain output shorter than cap.
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
 
     def test_runtime_profiles_block_cross_environment_comparisons(self):
         profile = self.adapter["runtimeProfile"]
