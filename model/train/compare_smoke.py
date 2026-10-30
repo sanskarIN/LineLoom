@@ -81,7 +81,7 @@ def _validated_report(report: dict, kind: str) -> dict:
             not REVISION.fullmatch(report["baseRevisionDeclared"]) or
             any(not isinstance(report.get(key), str) or
                 not SHA256.fullmatch(report[key])
-                for key in ("baseConfigSha256", "tokenizerSha256"))):
+                for key in ("baseConfigSha256", "tokenizerSha256", "baseWeightsSha256"))):
         raise SmokeReportRejected("ineligible-real-smoke-report")
     if kind == "local-lora-adapter":
         if (report.get("adapterReceiptVerified") is not True or
@@ -90,6 +90,8 @@ def _validated_report(report: dict, kind: str) -> dict:
     elif (report.get("adapterReceiptVerified") is not False or
           report.get("adapterReceiptProtocol") != "not-applicable"):
         raise SmokeReportRejected("invalid-base-receipt")
+    if type(report.get("baseWeightFiles")) is not int or not 1 <= report["baseWeightFiles"] <= 64:
+        raise SmokeReportRejected("invalid-base-weight-count")
     attempts = report.get("syntheticAttempts")
     exact = report.get("strictExactMatches")
     if (type(attempts) is not int or attempts != expected["syntheticFixtures"] or
@@ -122,7 +124,8 @@ def compare_reports(base: dict, adapter: dict) -> dict:
     same = (
         "selectedLanguage", "maxNewTokens", "fixtureSetSha256",
         "requestSpecSha256", "baseRevisionDeclared",
-        "baseConfigSha256", "tokenizerSha256", "syntheticAttempts",
+        "baseConfigSha256", "tokenizerSha256", "baseWeightsSha256",
+        "baseWeightFiles", "syntheticAttempts",
     )
     if any(left[field] != right[field] for field in same):
         raise SmokeReportRejected("incomparable-smoke-reports")
@@ -138,7 +141,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             "adapterMinusBase": after - before,
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v1",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v2",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
@@ -147,7 +150,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "adapterMinusBase": delta,
         "perLanguage": by_language,
         "verdict": "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY",
-        "limitation": ("Same declared base metadata and synthetic request hashes "
+        "limitation": ("Matching locally hashed base weight bytes and synthetic requests "
                        "do not verify real weights, compute environment, code "
                        "correctness, latency, acceptance or release readiness."),
     }
