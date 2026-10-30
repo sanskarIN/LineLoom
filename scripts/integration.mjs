@@ -51,6 +51,8 @@ try {
   await writeFile(path.join(fixture, "editor-test.java"), "class Example { int answer() { return ", "utf8");
   await writeFile(path.join(fixture, "editor-test.c"), "int answer(void) { return ", "utf8");
   await writeFile(path.join(fixture, "editor-test.cpp"), "int answer() { return ", "utf8");
+  await writeFile(path.join(fixture, "editor-rust.rs"),
+    "fn parse(value: Option<&str>) -> Result<usize, Error> {\n    match value { Some(item) =>  /* preserved Rust suffix */ }\n}\n", "utf8");
   await writeFile(path.join(fixture, "editor-optin.html"), "<main><p>", "utf8");
   await writeFile(path.join(fixture, "editor-optin.css"), ".card { padding: ", "utf8");
   await writeFile(path.join(fixture, "editor-optin.lua"), "local answer = ", "utf8");
