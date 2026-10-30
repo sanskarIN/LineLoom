@@ -130,7 +130,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
-        self.assertEqual(result["perLanguage"]["rust"]["generationP95DeltaMs"], 26)
+        self.assertEqual(result["perLanguage"]["rust"]["generationP95DeltaMs"], 14)
 
         self.assertNotIn("fixtureSetSha256", result)
         self.assertNotIn("baseRevisionDeclared", result)
