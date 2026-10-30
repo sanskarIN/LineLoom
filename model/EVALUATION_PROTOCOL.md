@@ -368,6 +368,12 @@ afterward. Compiler stdout and stderr are suppressed; reports include
 only allowlisted totals and the fixture fingerprint, never source,
 diagnostics, temporary paths or usernames.
 
+The regular Linux GitHub CI now runs this public-reference audit with
+actual `rustc`, `cc`, `c++`, and the locked `tsc` from `npm ci`, alongside
+Python's AST parser. VSIX candidate packaging requires that real syntax
+check to pass. This is a per-commit Linux reference-fixture validation,
+not evidence of candidate-model correctness or cross-platform parity.
+
 An absent compiler makes the scope **incomplete** and the run exits
 nonzero. A zero-exit reference syntax check establishes only that these
 specific references were accepted by the local tools under their selected
