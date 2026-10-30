@@ -134,12 +134,13 @@ def _validated_report(report: dict, kind: str) -> dict:
                     for key in ("checked", "passed", "failed", "unchecked")) or
                 entry["checked"] + entry["unchecked"] != expected_count or
                 entry["passed"] + entry["failed"] != entry["checked"] or
-                (lang == "python" and
+                (lang in ("python", "typescript") and
                  (entry["checked"] != expected_count or entry["unchecked"] != 0 or
                   groups[lang]["strictExactMatches"] > entry["passed"])) or
-                (lang != "python" and (entry["checked"] != 0 or
-                 entry["passed"] != 0 or entry["failed"] != 0 or
-                 entry["unchecked"] != expected_count))):
+                (lang not in ("python", "typescript") and
+                 (entry["checked"] != 0 or entry["passed"] != 0 or
+                  entry["failed"] != 0 or
+                  entry["unchecked"] != expected_count))):
             raise SmokeReportRejected("invalid-syntax-language-metrics")
         for name, key in (
             ("syntaxChecked", "checked"), ("syntaxPassed", "passed"),
@@ -260,11 +261,11 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             "attemptsPerModel": left["perLanguage"][language]["attempts"],
             "syntaxCheckedPerModel": base_syntax["checked"],
             "syntaxUncheckedPerModel": base_syntax["unchecked"],
-            "basePythonAstPassed": base_syntax["passed"],
-            "adapterPythonAstPassed": adapter_syntax["passed"],
-            "pythonAstPassedDelta": adapter_syntax["passed"] - base_syntax["passed"],
-            "basePythonAstFailed": base_syntax["failed"],
-            "adapterPythonAstFailed": adapter_syntax["failed"],
+            "baseSyntaxPassed": base_syntax["passed"],
+            "adapterSyntaxPassed": adapter_syntax["passed"],
+            "syntaxPassedDelta": adapter_syntax["passed"] - base_syntax["passed"],
+            "baseSyntaxFailed": base_syntax["failed"],
+            "adapterSyntaxFailed": adapter_syntax["failed"],
             "baseStrictExactMatches": before,
             "adapterStrictExactMatches": after,
             "adapterMinusBase": after - before,
@@ -291,7 +292,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v7",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v8",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "runtimeProfileComparable": True,
@@ -300,17 +301,28 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "syntaxAccounting": SYNTAX_ACCOUNTING,
         "syntaxCheckedPerModel": left["syntaxChecked"],
         "syntaxUncheckedPerModel": left["syntaxUnchecked"],
-        "basePythonAstPassed": left["syntaxPassed"],
-        "adapterPythonAstPassed": right["syntaxPassed"],
-        "pythonAstPassedDelta": right["syntaxPassed"] - left["syntaxPassed"],
-        "basePythonAstFailed": left["syntaxFailed"],
-        "adapterPythonAstFailed": right["syntaxFailed"],
+        "basePythonAstPassed": left["syntaxByLanguage"]["python"]["passed"],
+        "adapterPythonAstPassed": right["syntaxByLanguage"]["python"]["passed"],
+        "pythonAstPassedDelta": (
+            right["syntaxByLanguage"]["python"]["passed"] -
+            left["syntaxByLanguage"]["python"]["passed"]
+        ),
+        "basePythonAstFailed": left["syntaxByLanguage"]["python"]["failed"],
+        "adapterPythonAstFailed": right["syntaxByLanguage"]["python"]["failed"],
+        "baseTypeScriptParserPassed": left["syntaxByLanguage"]["typescript"]["passed"],
+        "adapterTypeScriptParserPassed": right["syntaxByLanguage"]["typescript"]["passed"],
+        "typeScriptParserPassedDelta": (
+            right["syntaxByLanguage"]["typescript"]["passed"] -
+            left["syntaxByLanguage"]["typescript"]["passed"]
+        ),
+        "baseTypeScriptParserFailed": left["syntaxByLanguage"]["typescript"]["failed"],
+        "adapterTypeScriptParserFailed": right["syntaxByLanguage"]["typescript"]["failed"],
         "syntaxReview": (
-            "PYTHON_AST_FAILURES_REQUIRE_REVIEW"
+            "GENERATED_SYNTAX_FAILURES_REQUIRE_REVIEW"
             if left["syntaxFailed"] or right["syntaxFailed"] else
             "NO_SYNTAX_CHECKS_FOR_SCOPE"
             if left["syntaxChecked"] == 0 else
-            "PYTHON_AST_ONLY_OTHER_LANGUAGES_UNCHECKED"
+            "PYTHON_TYPESCRIPT_PARSERS_ONLY_OTHER_LANGUAGES_UNCHECKED"
         ),
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
@@ -357,8 +369,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "even equal totals do not prove per-probe length parity. "
                        "A token-limit exit may truncate an otherwise valid completion; "
                        "a stop-token exit does not establish code correctness. "
-                       "Python AST parses syntax only and never executes code; "
-                       "Rust, C, C++ and TypeScript generated outputs remain unchecked."),
+                       "Python AST and TypeScript parser only check grammar and never "
+                       "execute generated code; Rust, C and C++ generated outputs "
+                       "remain unchecked. No type or semantic correctness is established."),
     }
 
 
