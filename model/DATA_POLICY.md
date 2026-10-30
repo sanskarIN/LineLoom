@@ -86,6 +86,26 @@ between checks. Neither the schema nor file checks validate actual copyright,
 dataset lineage, author consent, hidden duplicates or live opt-outs; the
 independent human approval gates still apply.
 
+### Duplicate JSON declarations and training consent
+
+The offline Node preflight rejects **repeated JSON object keys at every
+nesting level** before applying the reviewed sample schema. It compares
+decoded key identities, including escaped spellings that refer to the same
+property. This matters because ordinary `JSON.parse` silently keeps the
+last value, allowing a later `rightsReviewed: true` declaration to hide an
+earlier `false`, or a later train split to replace a holdout split.
+
+The optional Python LoRA plan independently rejects repeated object keys
+when it parses the checked manifest. The two checks are fail-closed:
+they do not guess which declaration was intended, and error messages never
+print source code, key values or manifest paths. Other malformed JSON,
+oversized files, unrecognized metadata and missing explicit review flags
+still fail the existing gates.
+
+Passing these parser checks **does not** verify that consent, licenses,
+attribution, opt-outs or source provenance are truthful. The independent
+human and legal review gates remain mandatory before any local training.
+
 ### Model-control delimiter contamination
 
 The mechanical preflight also blocks exact FIM/chat control markers from
