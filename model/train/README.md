@@ -313,7 +313,7 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
-## Comparing local HF base-versus-adapter smoke reports (protocol v8)
+## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same
 machine with the *same* base revision, tokenizer, fixtures and generation
@@ -335,7 +335,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v8` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v9` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -363,25 +363,29 @@ A natural stop is not proof of syntactic or semantic correctness.
 Only aggregate counts are stored; per-case tokens and completions remain
 in memory for the local synthetic exact-match check.
 
-The v8 smoke runner adds an **in-memory Python AST-only syntax check**
-for each actual generated Python continuation inserted between the
-30 fixed public probes' prefix and suffix (six are Python). It calls
-Python's standard-library `ast.parse` and never executes, compiles or
-imports the generated program. A bound of 8192 characters prevents
-oversized synthetic parse requests; a bound violation rejects the run.
-The result is counted only as `passed` or `failed` for Python;
-**Rust, C, C++ and TypeScript generated outputs are expressly
-`unchecked`**. The separate CI reference syntax compiler gate validates
-known fixture reference answers, NOT generated suggestions.
+The v9 smoke runner validates the **actual generated Python and TypeScript
+insertions** on fixed public synthetic FIM probes (six per language).
+Python uses standard-library `ast.parse` in memory. TypeScript uses
+the same pinned `typescript` parser as the local Ollama benchmark, called
+through an explicit offline Node subprocess on a bounded stdin JSON
+request. The child only accepts a checked-in TypeScript fixture ID and
+the in-memory insertion, reconstructing the public prefix/suffix itself.
+It does not execute code, write model output to disk, use a shell, send a
+network request or include generated source, AST or diagnostics in
+stdout/stderr. Missing Node/pinned parser support, a malformed response
+or subprocess timeout **rejects the smoke run**, never silently
+classifying it as unchecked or passed.
 
-The offline comparator requires a new `python-ast-only-v1` accounting
-contract. It verifies exact per-language checked/passed/failed/unchecked
-totals, refuses fabricated successes for unparsed languages, and
-rejects Python strict-exact counts exceeding AST passes. It includes
-only source-free Python AST pass/fail deltas and a review flag;
-syntax errors, source text, AST nodes and fixture identities are
-never included. AST syntax success does not establish semantic
-correctness, execution safety, human acceptance or release readiness.
+The `python-ast-typescript-parser-v1` contract validates per-language
+checked/passed/failed/unchecked totals and rejects fabricated successes.
+Python and TypeScript exact matches must not exceed their parser pass
+counts. **Rust, C and C++ model-generated outputs remain explicitly
+unchecked.** The separate CI compiler gate validates the known reference
+answers only; it is NOT a generated-code check. The offline comparator
+reports separate source-free Python AST and TypeScript parser pass/fail
+deltas and a fixed review flag. Grammar acceptance does not establish
+type correctness, semantics, code safety, human usefulness or release
+readiness.
 
 Each real run also records a strictly validated source-free eight-field
 runtime profile: CPU/CUDA, FP32/BF16, OS family, Python, PyTorch and
@@ -409,12 +413,12 @@ GPU settings, tokenizer runtime behavior, hidden sampling defaults,
 compiler correctness, editor acceptance, equivalent timing conditions or whether reports were
 truthfully generated. **The six probes per language are not a production
 model evaluation**, and a strict exact-match improvement does not establish
-quality. Prior HF v1–v7 reports must be rerun; HF protocol v8 remains
+quality. Prior HF v1–v8 reports must be rerun; HF protocol v9 remains
 incomparable with the Ollama `lineloom-synthetic-v4` protocol.
 
-Tests are run automatically by `npm run test:model-training` using Python
-standard library only; they use invented in-memory count summaries and
-perform **no inference**.
+Tests are run automatically by `npm run test:model-training` using standard-library Python and the pinned local Node TypeScript parser;
+they use invented synthetic insertions and count summaries and perform
+**no inference**.
 
 ## Local checkpoint weight identity (development, no model publication)
 
