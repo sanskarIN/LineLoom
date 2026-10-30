@@ -14,14 +14,14 @@ try:
     from . import integrity as integrity_module
     from .integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
-        base_metadata_hashes, base_weight_fingerprint,
+        base_metadata_hashes, base_weight_fingerprint, base_checkpoint_fingerprint,
         read_training_receipt, verify_training_receipt
     )
 except ImportError:
     import integrity as integrity_module
     from integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
-        base_metadata_hashes, base_weight_fingerprint,
+        base_metadata_hashes, base_weight_fingerprint, base_checkpoint_fingerprint,
         read_training_receipt, verify_training_receipt
     )
 
@@ -96,6 +96,27 @@ class AdapterIntegrityTests(unittest.TestCase):
             self.assertNotEqual(base_weight_fingerprint(base), baseline)
             with self.assertRaises(IntegrityRejected):
                 verify_training_receipt(adapter, base, REVISION)
+
+    def test_combined_base_identity_catches_metadata_and_weight_drift(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base, _ = fabricated_local_experiment(Path(temp))
+            initial = base_checkpoint_fingerprint(base)
+            self.assertEqual(initial, base_checkpoint_fingerprint(base))
+            self.assertEqual(set(initial), {
+                "baseConfigSha256", "baseTokenizerSha256",
+                "baseWeightsSha256", "baseWeightFiles"
+            })
+            for filename in ("config.json", "tokenizer.json", "model.safetensors"):
+                path = base / filename
+                original = path.read_bytes()
+                try:
+                    path.write_bytes(original + b"changed")
+                    self.assertNotEqual(
+                        initial, base_checkpoint_fingerprint(base), filename
+                    )
+                finally:
+                    path.write_bytes(original)
+                self.assertEqual(initial, base_checkpoint_fingerprint(base))
 
     def test_sharded_checkpoint_index_is_checked_and_hashed(self):
         with tempfile.TemporaryDirectory() as temp:
