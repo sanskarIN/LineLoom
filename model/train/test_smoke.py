@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 try:
     from . import smoke
@@ -58,6 +59,50 @@ class LocalSmokeTests(unittest.TestCase):
                 smoke.validate_local_adapter(path)
             (path / "adapter_model.safetensors").write_bytes(b"test-only-no-weights")
             self.assertEqual(smoke.validate_local_adapter(path), path.resolve())
+
+    def test_post_smoke_checkpoint_verification_rejects_disk_changes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            initial_bytes = {
+                "config.json": b'{"model_type":"synthetic"}',
+                "tokenizer.json": b'{"test":true}',
+                "model.safetensors": b"dummy local weights",
+            }
+            for filename, data in initial_bytes.items():
+                (base / filename).write_bytes(data)
+            identity = smoke.base_checkpoint_fingerprint(base)
+            smoke.verify_smoke_inputs_unchanged(base, identity, None, "a" * 40)
+            for filename, data in initial_bytes.items():
+                with self.subTest(filename=filename):
+                    (base / filename).write_bytes(data + b"mutated")
+                    with self.assertRaises(ExperimentRejected):
+                        smoke.verify_smoke_inputs_unchanged(
+                            base, identity, None, "a" * 40
+                        )
+                    (base / filename).write_bytes(data)
+            self.assertEqual(smoke.base_checkpoint_fingerprint(base), identity)
+
+    def test_post_smoke_adapter_receipt_is_checked_again(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            (base / "config.json").write_bytes(b"dummy-config")
+            (base / "tokenizer.json").write_bytes(b"dummy-tokenizer")
+            (base / "model.safetensors").write_bytes(b"dummy-weights")
+            identity = smoke.base_checkpoint_fingerprint(base)
+            adapter = base / "experiment" / "adapter"
+            with mock.patch.object(smoke, "verify_training_receipt") as verify:
+                smoke.verify_smoke_inputs_unchanged(
+                    base, identity, adapter, "a" * 40
+                )
+                verify.assert_called_once_with(adapter, base, "a" * 40)
+            with mock.patch.object(
+                smoke, "verify_training_receipt",
+                side_effect=ExperimentRejected("adapter-changed")
+            ):
+                with self.assertRaises(ExperimentRejected):
+                    smoke.verify_smoke_inputs_unchanged(
+                        base, identity, adapter, "a" * 40
+                    )
 
     def test_default_smoke_is_offline_plan_without_checkpoint_or_framework_import(self):
         script = str(Path(smoke.__file__).resolve())
