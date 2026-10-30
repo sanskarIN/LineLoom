@@ -114,6 +114,12 @@ npm run model:reference:syntax -- --run --approve-local-compilers
 npm run model:reference:syntax -- --language python --run --approve-local-compilers
 ```
 
+The `Public reference syntax (Linux)` CI job runs the same checked-in 30
+synthetic references through installed toolchains using explicit approval
+flags. VSIX candidate packaging now depends on that job. These results
+apply only to public reference syntax on the CI runner, not model output,
+training or correctness on other systems.
+
 The runner uses Python's standard-library `ast.parse` for Python and
 locally installed `rustc` (Rust 2021 metadata-only), `cc` (C11
 syntax-only), `c++` (C++17 syntax-only), and `tsc` (strict, no emit) for
