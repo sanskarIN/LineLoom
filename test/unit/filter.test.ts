@@ -79,6 +79,14 @@ describe("completion filtering", () => {
     expect(cleanCompletion("        return x\n    # note", "def compute():\n    ", "", true))
       .toBe("    return x\n    # note");
   });
+  it("constructs a correctly indented document after accepting ghost text", () => {
+    const prefix = "def compute():\n    ";
+    const suffix = "\n";
+    const candidate = cleanCompletion("    return 42", prefix, suffix, true);
+    expect(prefix + candidate + suffix).toBe("def compute():\n    return 42\n");
+    const nested = cleanCompletion("        if ready:\n            return 42", prefix, suffix, true);
+    expect(prefix + nested + suffix).toBe("def compute():\n        if ready:\n            return 42\n");
+  });
   it("keeps genuine new-line indentation and non-blank cursor spacing", () => {
     expect(cleanCompletion("    return value", "def compute():\n", "", true)).toBe("    return value");
     expect(cleanCompletion("\n    return value", "def compute():\n    ", "", true))
