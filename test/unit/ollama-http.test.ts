@@ -4,7 +4,61 @@ import { generateCompletion, listModels, showModel } from "../../src/models/olla
 
 afterEach(() => vi.unstubAllGlobals());
 
+async function withDeadline<T>(request: Promise<T>): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      request,
+      new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("cancel-cleanup-stalled")), 1500);
+      })
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 describe("Ollama endpoint requests", () => {
+  it("rejects a bounded catalog overflow even when stream cancellation never settles", async () => {
+    let cancelStarted = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new Uint8Array(256_001).fill(65));
+        // Malicious transport leaves the response open forever.
+      },
+      cancel() {
+        cancelStarted = true;
+        return new Promise<void>(() => {});
+      }
+    });
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body)));
+    await expect(withDeadline(listModels("http://127.0.0.1:11434")))
+      .rejects.toThrow("Ollama model list exceeded safety limit.");
+    expect(cancelStarted).toBe(true);
+  });
+
+  it("does not hang model lookup or HTTP failure on unacknowledged stream cleanup", async () => {
+    for (const status of [200, 404, 503]) {
+      let cancelStarted = false;
+      const body = new ReadableStream<Uint8Array>({
+        start() { /* No bytes are needed to decide the HTTP/lookup status. */ },
+        cancel() {
+          cancelStarted = true;
+          return new Promise<void>(() => {});
+        }
+      });
+      vi.stubGlobal("fetch", vi.fn(async () => new Response(body, { status })));
+      if (status === 503) {
+        await expect(withDeadline(listModels("http://127.0.0.1:11434")))
+          .rejects.toThrow("Ollama returned HTTP 503.");
+      } else {
+        expect(await withDeadline(showModel("http://127.0.0.1:11434", "local:latest")))
+          .toBe(status === 200);
+      }
+      expect(cancelStarted).toBe(true);
+    }
+  });
+
   it("rejects overlarge model-list responses without parsing them", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: ["x".repeat(260_000)] }))));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/safety limit/);
