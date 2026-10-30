@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import sys
@@ -28,7 +29,8 @@ except ImportError:
 
 try:
     from .smoke_report import (
-        fingerprints, read_public_fixtures, generation_latency_summary
+        fingerprints, read_public_fixtures, generation_latency_summary,
+        checked_runtime_profile
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
@@ -36,7 +38,8 @@ try:
     )
 except ImportError:
     from smoke_report import (
-        fingerprints, read_public_fixtures, generation_latency_summary
+        fingerprints, read_public_fixtures, generation_latency_summary,
+        checked_runtime_profile
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
@@ -116,7 +119,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
     os.environ["HF_HUB_DISABLE_TELEMETRY"] = "1"
     try:
         import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from transformers import AutoModelForCausalLM, AutoTokenizer, __version__ as transformers_version
     except ImportError:
         raise ExperimentRejected("optional-local-ml-dependencies-missing") from None
 
@@ -133,6 +136,19 @@ def run_local(fixture_set: list[dict], args) -> dict:
 
     dtype = (torch.bfloat16 if args.device == "cuda" and
              torch.cuda.is_bf16_supported() else torch.float32)
+    # Allowlisted, source-free environment details catch obvious CPU/GPU,
+    # precision and framework differences before comparing local reports.
+    # They cannot attest same hardware or process load.
+    runtime_profile = checked_runtime_profile({
+        "device": args.device,
+        "precision": "bfloat16" if dtype == torch.bfloat16 else "float32",
+        "operatingSystem": platform.system(),
+        "pythonVersion": ".".join(str(v) for v in sys.version_info[:3]),
+        "torchVersion": str(torch.__version__),
+        "transformersVersion": str(transformers_version),
+        "cudaRuntimeVersion": torch.version.cuda,
+        "hipRuntimeVersion": getattr(torch.version, "hip", None),
+    })
     tokenizer = AutoTokenizer.from_pretrained(
         str(base_dir), local_files_only=True, trust_remote_code=False, use_fast=True
     )
@@ -206,6 +222,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "tokenizerSha256": base_identity["baseTokenizerSha256"],
         "baseWeightsSha256": base_identity["baseWeightsSha256"],
         "baseWeightFiles": base_identity["baseWeightFiles"],
+        "runtimeProfile": runtime_profile,
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
         **generation_latency_summary(result, args.max_new_tokens),
