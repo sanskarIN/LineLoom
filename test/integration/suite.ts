@@ -957,6 +957,43 @@ export async function run(): Promise<void> {
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         engine.cancel();
 
+        // Check the actual editor-to-Ollama path for Rust-specific generic
+        // prompts, then confirm native FIM remains byte-identical and does
+        // not inject advice into the suffix-aware request.
+        const rustDocument = await vscode.workspace.openTextDocument(
+          vscode.Uri.joinPath(folder.uri, "editor-rust.rs"));
+        assert.equal(rustDocument.languageId, "rust");
+        const rustBefore = "fn parse(value: Option<&str>) -> Result<usize, Error> {\n    match value { Some(item) => ";
+        const rustPosition = rustDocument.positionAt(rustBefore.length);
+        const rustEditor = await vscode.window.showTextDocument(rustDocument);
+        rustEditor.selection = new vscode.Selection(rustPosition, rustPosition);
+        await configuration.update("model", "generic-local:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const rustCalls = generationCalls;
+        const rustGeneric = await engine.provideInlineCompletionItems(
+          rustDocument, rustPosition, trigger, cancellation.token);
+        assert.equal(rustGeneric?.[0]?.insertText, "42");
+        assert.equal(generationCalls, rustCalls + 1, "Rust generic request must reach local mock exactly once");
+        assert.equal(lastModelSent, "generic-local:latest");
+        assert.equal(lastSuffixSent, undefined, "Generic Rust request must use instruction mode");
+        assert.ok(lastPromptSent.includes("Rust match arms:"), "Rust match guidance must be present");
+        assert.ok(lastPromptSent.includes("Rust Result/Option:"),
+          "Rust Result/Option guidance must be present");
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+          "Rust suffix must remain visible as untrusted context");
+        await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+        const nativeRust = await engine.provideInlineCompletionItems(
+          rustDocument, rustPosition, trigger, cancellation.token);
+        assert.equal(nativeRust?.[0]?.insertText, "42");
+        assert.equal(lastPromptSent, rustBefore,
+          "Native Rust FIM must use the unchanged prefix without inserted instructions");
+        assert.ok(lastSuffixSent?.includes("preserved Rust suffix"),
+          "Native Rust FIM must preserve the exact existing suffix");
+        assert.ok(!lastPromptSent.includes("Rust match arms:"));
+        await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
+        engine.cancel();
+
         const goDoc = await vscode.workspace.openTextDocument(vscode.Uri.joinPath(folder.uri, "editor-test.go"));
         const goEditor = await vscode.window.showTextDocument(goDoc);
         const goPosition = goDoc.positionAt(goDoc.getText().length);
