@@ -180,7 +180,7 @@ def checked_runtime_profile(profile: dict) -> dict:
             (device == "cpu" and precision != "float32") or
             profile["operatingSystem"] not in ("Linux", "Windows", "Darwin")):
         raise SmokeReportRejected("invalid-runtime-compute")
-    version = re.compile(r"[0-9][A-Za-z0-9.+_-]{0,63}\\Z")
+    version = re.compile(r"[0-9][A-Za-z0-9.+_-]{0,63}\Z")
     for key in ("pythonVersion", "torchVersion", "transformersVersion"):
         value = profile[key]
         if not isinstance(value, str) or not version.fullmatch(value):
