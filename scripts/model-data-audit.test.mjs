@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { readFileSync, mkdtempSync, writeFileSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -167,6 +167,15 @@ test("case-only repository-family changes cannot cross holdout splits", () => {
   assert.ok(!JSON.stringify(report).includes("REVIEWED-PROJECT"));
 });
 
+const readFileSyncSafeLinkExists = path => {
+  try {
+    readFileSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 test("bounded CLI is offline, does not echo source/paths on success or rejection", () => {
   const root = mkdtempSync(join(tmpdir(), "lineloom-private-corpus-"));
   const file = join(root, "private-source-with-names.json");
@@ -176,6 +185,20 @@ test("bounded CLI is offline, does not echo source/paths on success or rejection
     const ok = spawnSync(process.execPath, [script, "--manifest", file], { encoding: "utf8", timeout: 5000 });
     assert.equal(ok.status, 0, ok.stderr);
     assert.equal(JSON.parse(ok.stdout).samples, 15);
+    const alias = join(root, "alias-of-private-manifest.json");
+    try {
+      symlinkSync(file, alias);
+    } catch {
+      // Unprivileged Windows hosts may disallow symbolic links.
+    }
+    if (readFileSyncSafeLinkExists(alias)) {
+      const linked = spawnSync(process.execPath, [script, "--manifest", alias],
+        { encoding: "utf8", timeout: 5000 });
+      assert.equal(linked.status, 1);
+      assert.equal(linked.stdout, "");
+      assert.ok(!linked.stderr.includes(file));
+      assert.ok(!linked.stderr.includes(alias));
+    }
     assert.ok(!ok.stdout.includes(root));
     assert.ok(!ok.stdout.includes("synthetic_variant_"));
     const withSecret = good(); withSecret.samples[0].middle += " person@example.org";
