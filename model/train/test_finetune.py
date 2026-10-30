@@ -264,6 +264,38 @@ class LocalGateTests(unittest.TestCase):
                 self.assertNotIn(str(path), result.stderr)
                 self.assertNotIn("secret", result.stderr)
 
+    def test_python_manifest_decoder_rejects_duplicate_rights_and_splits(self):
+        for original in (
+            '{"rightsReviewed":false,"rightsReviewed":true}',
+            '{"samples":[{"split":"validation","split":"train"}]}',
+            '{"samples":[],"samples":[]}',
+        ):
+            with self.subTest(raw=original), self.assertRaises(finetune.ExperimentRejected):
+                json.loads(original, object_pairs_hook=finetune.unique_manifest_fields)
+        self.assertEqual(
+            json.loads('{"items":[{"id":"a"},{"id":"a"}]}',
+                       object_pairs_hook=finetune.unique_manifest_fields),
+            {"items": [{"id": "a"}, {"id": "a"}]})
+
+    def test_training_plan_rejects_duplicate_rights_without_private_output(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "private-duplicate-rights.json"
+            source = json.dumps(synthetic_manifest())
+            self.assertIn('"rightsReviewed": true', source)
+            altered = source.replace(
+                '"rightsReviewed": true',
+                '"rightsReviewed": false, "rightsReviewed": true', 1)
+            path.write_text(altered, encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(Path(finetune.__file__).resolve()),
+                 "--manifest", str(path)],
+                capture_output=True, text=True, timeout=25
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn(str(path), result.stderr)
+            self.assertNotIn("private-duplicate", result.stderr)
+
     def test_train_cannot_start_without_approval_or_base_revision(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "private.json"
