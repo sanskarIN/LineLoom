@@ -182,6 +182,25 @@ differences between language-balanced example exposure and token exposure.
 The pure-Python regression tests require no checkpoint, GPU or data
 download. **Actual fine-tuning and measured model gains remain NOT RUN.**
 
+### Checkpoint and adapter drift during local experiments
+
+The optional LoRA trainer now snapshots both base checkpoint **metadata**
+(`config.json`, `tokenizer.json`) and the actual safetensors **weight bytes**
+before model loading, and compares them again after optimization. A change in
+any of those checked files rejects the experiment before its adapter or receipt
+is written. Previously, only weight changes were compared at that point.
+
+The optional synthetic smoke runner also compares the combined base checkpoint
+fingerprint before and after inference and, for adapter runs, **repeats the
+local adapter/receipt verification** after generating all completions. A
+changed adapter or checkpoint prevents a successful report. Checks are
+performed at discrete times: they cannot prevent a hostile concurrent process
+from mutating and restoring files between checks, and do not attest checkpoint
+authenticity, dataset rights, model accuracy or release readiness.
+
+These checks run only for explicitly authorized local experiments. Default
+plan mode remains offline, without model loading or generated code output.
+
 ### Target-token-weighted validation (development)
 
 The trainer also measures **token-weighted validation loss** before and
