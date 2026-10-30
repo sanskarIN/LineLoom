@@ -271,7 +271,7 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
-## Comparing local HF base-versus-adapter smoke reports (protocol v4)
+## Comparing local HF base-versus-adapter smoke reports (protocol v5)
 
 After **independently approved** local base and adapter runs on the same
 machine with the *same* base revision, tokenizer, fixtures and generation
@@ -293,7 +293,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v4` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v5` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -302,14 +302,20 @@ and refuses plans, legacy reports, corrupted counts, mixed base revisions,
 different settings, or comparisons without a local base report followed by
 a local adapter report.
 
-The comparison output contains **allowlisted strict-match counts and
-generation-only latency p50/p95** by language and total, including
-adapter-minus-base deltas, plus fixed caveats. The timer uses a monotonic
-clock around `model.generate()` only (and synchronizes CUDA on each side).
+The comparison output contains **allowlisted strict-match counts,
+generation-only latency p50/p95, and generated-token totals** by language
+and overall, with adapter-minus-base deltas. Generated-token totals
+count actual output token IDs, including a stop token when present, but
+never include raw tokens, private source, individual probe identities
+or decoded text. The timer uses a monotonic clock around
+`model.generate()` only (and synchronizes CUDA on each side).
 It excludes model loading, tokenization, decoding, and VS Code/editor time.
 Positive latency deltas mean the adapter was slower in the recorded run;
-negative deltas mean faster. Six probes per language produce unstable p95
-values. Compare only on the same reviewed machine in controlled conditions:
+negative deltas mean faster. If the models produce **different numbers of
+generated tokens**, those latency differences do not represent a
+same-length throughput comparison. Even identical aggregate token totals
+cannot prove matching lengths for individual probes. Six probes per
+language produce unstable p95 values. Compare only on controlled conditions:
 the report hashes do **not** prove hardware or runtime equivalence.
 It never prints prompts, completions, model checkpoint paths, private
 metadata, filenames or user-supplied report fields.
@@ -321,7 +327,7 @@ GPU settings, tokenizer runtime behavior, hidden sampling defaults,
 compiler correctness, editor acceptance, equivalent timing conditions or whether reports were
 truthfully generated. **The six probes per language are not a production
 model evaluation**, and a strict exact-match improvement does not establish
-quality. Prior HF v1–v3 reports must be rerun; HF protocol v4 remains
+quality. Prior HF v1–v4 reports must be rerun; HF protocol v5 remains
 incomparable with the Ollama `lineloom-synthetic-v4` protocol.
 
 Tests are run automatically by `npm run test:model-training` using Python
@@ -352,7 +358,8 @@ checkpoint weights cannot now be compared as if they were the same base.
 receipts and HF smoke `lineloom-hf-synthetic-smoke-v2` reports are
 not accepted by the new versioned verification/comparator workflow.
 New receipts use `lineloom-local-adapter-receipt-v2`; new HF reports use
-`lineloom-hf-synthetic-smoke-v4` with generation-only timing. Do not alter old receipts to make them
+`lineloom-hf-synthetic-smoke-v5` with generation-only timing and
+generated-token totals. Do not alter old receipts to make them
 pass or imply that a local SHA-256 digest authenticates a declared
 upstream revision, provenance, permissions or loaded model state. Independent
 checkpoint review, safe isolation, and actual inference/quality checks
