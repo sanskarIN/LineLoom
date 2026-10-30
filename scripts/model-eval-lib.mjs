@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
+import { GENERATED_SYNTAX_METHOD } from "./model-eval-syntax.mjs";
 
 /**
  * Pure, dependency-free helpers for an opt-in, loopback-only synthetic benchmark.
@@ -9,7 +10,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v4";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v5";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -142,6 +143,21 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
   const completedWithoutFormatSignals = completed.filter(x =>
     Array.isArray(x.formatSignals) && x.formatSignals.length === 0).length;
   const perLanguage = breakdown(EVAL_LANGUAGES, "language");
+  const syntaxByLanguage = Object.fromEntries(EVAL_LANGUAGES.map(language => {
+    const entries = completed.filter(item => item.language === language);
+    const checked = entries.filter(item =>
+      item.syntaxOutcome === "passed" || item.syntaxOutcome === "failed");
+    return [language, {
+      completed: entries.length,
+      checked: checked.length,
+      passed: checked.filter(item => item.syntaxOutcome === "passed").length,
+      failed: checked.filter(item => item.syntaxOutcome === "failed").length,
+      unchecked: entries.length - checked.length
+    }];
+  }));
+  const syntaxSum = key => Object.values(syntaxByLanguage).reduce(
+    (total, item) => total + item[key], 0
+  );
   const perCategory = breakdown(EVAL_CATEGORIES, "category");
   return {
     model, mode, syntheticFixtures: fixtureCount, attempts: results.length,
@@ -151,6 +167,14 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
     firstTokenP50Ms: percentile(tokenTimes, 0.5), firstTokenP95Ms: percentile(tokenTimes, 0.95),
     perLanguage, perCategory, fixtureOutcomes,
     formatDiagnostics: { inspectedCompleted, completedWithoutFormatSignals, signals: formatSignalCounts },
-    disclaimer: "Strict synthetic continuation equality only; repeated attempts are not an independent quality study, human acceptance, compile correctness or model readiness."
+    generatedSyntax: {
+      method: GENERATED_SYNTAX_METHOD,
+      checked: syntaxSum("checked"),
+      passed: syntaxSum("passed"),
+      failed: syntaxSum("failed"),
+      unchecked: syntaxSum("unchecked"),
+      byLanguage: syntaxByLanguage
+    },
+    disclaimer: "Strict synthetic equality and parser-only TypeScript grammar checks; other generated languages unchecked. No type correctness, execution, human acceptance, compiler QA or model readiness."
   };
 }
