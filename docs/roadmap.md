@@ -1,6 +1,6 @@
 # LineLoom roadmap
 
-**Updated 2026-10-29 · Planned milestones are not implementation or release commitments.**
+**Updated 2026-10-30 · Planned milestones are not implementation or release commitments.**
 
 ## Current state (verified repository and GitHub release)
 
@@ -8,7 +8,7 @@
 - **Latest GitHub preview: [v1.4.2](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.2)**, published 2026-10-27 with a genuine preview-channel VSIX and SHA-256 after locked checks, a mocked editor-host test, clean install and pinned upgrades from stable v1.3.0 and preview v1.4.1. It adds optional HTML/CSS/Lua language modes, local FIM tag routing and synthetic model-research safeguards; **no first-party trained weights or real model benchmarks** are included. v1.3.0 remains GitHub stable; neither extension marketplace is updated by the GitHub release. No standalone v1.2.5 release exists.
 - **Shipped in preview:** [PR #99](https://github.com/sanskarIN/LineLoom/pull/99) added invisible-Unicode completion hardening, now included in the v1.3.1 pre-release VSIX.
 - **Independent distribution:** [Visual Studio Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom) and [Open VSX](https://open-vsx.org/extension/SanskarCodes/lineloom) listings use `SanskarCodes.lineloom` and are **not automatically updated by GitHub**. Open VSX v1.3.0 Stable was independently published and verified on 2026-10-25; the maintainer separately updated Marketplace to v1.3.0. Verify live registry versions before giving future install advice. GitHub Packages npm installer `@sanskarin/lineloom-cli` is independently published at **v0.1.0**; merged CLI v0.3.0 source includes offline verification and installation, but neither feature exists in the published package.
-- **Newer source than the preview:** [PR #162](https://github.com/sanskarIN/LineLoom/pull/162) preserves necessary cursor spacing in completion insertions and [PR #92](https://github.com/sanskarIN/LineLoom/pull/92) merged the CLI v0.3.0 offline installer; neither change creates a new public extension release or npm package version.
+- **Newer source than the preview:** [PR #162](https://github.com/sanskarIN/LineLoom/pull/162) preserves cursor spacing, and [PR #164](https://github.com/sanskarIN/LineLoom/pull/164) avoids truncating valid generated identifiers during prefix echo cleanup (automated CI and isolated VSIX candidate checks passed). Separately, [PR #92](https://github.com/sanskarIN/LineLoom/pull/92) merged the CLI v0.3.0 offline installer. These are **merged source**, not a new GitHub release, extension registry upload or npm package publication.
 - **Outstanding quality evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows are not verified by the automated release. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60), [#79](https://github.com/sanskarIN/LineLoom/issues/79), and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
 
 ## v1.4.2 GitHub-only pre-release — published
