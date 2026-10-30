@@ -71,8 +71,9 @@ reports are intentionally rejected by the offline comparator. The v5 `model:eval
 in memory with the locally installed TypeScript parser, reporting only
 per-language aggregate parser-pass/fail/unchecked counts. Rust, C, C++
 and Python generated suggestions are explicitly unchecked in the Ollama
-path. Python-only AST syntax analysis exists separately in the approved
-local Hugging Face smoke runner. Neither path executes generated code,
+path. Python AST and TypeScript parser-only grammar analysis exist separately
+in the explicitly approved local Hugging Face smoke runner; generated
+Rust, C and C++ remain unchecked. Neither path executes generated code,
 and neither is equivalent to model quality, type correctness or manual
 editor acceptance. The new source-free comparator rejects fabricated
 TypeScript syntax metrics and flags increased parser failures.
