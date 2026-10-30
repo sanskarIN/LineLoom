@@ -274,28 +274,39 @@ and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
 
 
-## 14. Local HF synthetic generation timing (v4 current protocol)
+## 14. Local HF synthetic generation timing and output length (v5 current protocol)
 
 For actual reviewed local `smoke.py --run` trials, protocol
-`lineloom-hf-synthetic-smoke-v4` adds nearest-rank **p50/p95 generation
+`lineloom-hf-synthetic-smoke-v5` reports nearest-rank **p50/p95 generation
 latency in milliseconds**, overall and per target language. Measurement
 uses a monotonic clock surrounding only the `model.generate()` call,
-with explicit GPU synchronization before and after when using CUDA.
-Model loading, prompt tokenization, decoding, VS Code integration and all
-editor-side delays are **outside this timing**. Unselected languages report
-zero attempts and null percentiles.
+with explicit CUDA synchronization on both sides. Loading, prompt
+tokenization, decoding, VS Code integration and all editor-side delays
+are **outside this timing**. Unselected languages report zero attempts
+and null latency percentiles.
 
-Offline `compare_smoke.py` now requires the same fixed timing scheme and
-matching fixture/request/checkpoint scope and reports base, adapter and
-adapter-minus-base latency differences. A **positive difference** is slower
-generation in that particular run, but is not an independently verified
-regression; compare only with controlled hardware, load, thermal state,
-execution order and reproducible conditions. With only six examples per
-language, these p95 measurements are highly unstable.
+V5 additionally counts **actual generated token IDs** (including a stop
+token when generated), aggregated globally and per language, with at
+most `maxNewTokens` IDs per attempt. It does **not** print tokens, decoded
+text, fixture identities or individual token counts. The source-free
+comparator validates count bounds and five-language sums, then reports
+base, adapter and adapter-minus-base generation-token totals. If token
+totals differ, raw generation-duration deltas are especially unsuitable
+for a speed comparison: one model may simply produce more code. Even
+equal totals do **not** establish matching per-probe output lengths.
+The runner intentionally does not claim throughput, first-token latency,
+identical hardware, compiler correctness or editor acceptance.
 
-This v4 contract intentionally rejects older v1–v3 HF reports in the
-comparator; rerun both from the same reviewed checkout. The separate
-Ollama benchmark uses `lineloom-synthetic-v4` and remains incomparable.
-Offline unit tests use invented timings, without GPU, training or any
-model-generation measurements. No real HF inference has been executed
-or claimed by this development change.
+Offline `compare_smoke.py` requires identical fixture/request/checkpoint
+scope and reports only descriptive base-versus-adapter differences. A
+**positive duration difference** is slower in that particular run, not
+an independently verified regression. Compare only on controlled
+hardware, load, thermal state, quantization and execution order.
+With six examples per language, p95 is highly unstable.
+
+V5 rejects previous v1–v4 HF smoke protocols in the comparator; rerun
+both base and adapter from the same reviewed checkout. The separate
+Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
+comparable. Offline tests use invented timing and token counts without
+GPU, model inference, training, generated private source or network
+access. No real HF inference is claimed by this development change.
