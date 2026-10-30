@@ -48,7 +48,7 @@ def classify_typescript_syntax(fixture: dict, insertion: str,
         completed = invoke(
             ["node", str(PARSER)], input=request, text=True,
             encoding="utf-8", errors="strict", cwd=ROOT,
-            env=parser_environment(), stdin=None,
+            env=parser_environment(),
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             timeout=TIMEOUT_SECONDS, check=False, shell=False,
         )
