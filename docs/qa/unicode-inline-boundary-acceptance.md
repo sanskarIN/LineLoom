@@ -30,7 +30,16 @@ and trigger rules.
    contains `𐐀a`. Confirm that the completion cleaner does not
    mistake the next Deseret letter for punctuation and cut a partial
    identifier. Repeat around a trailing suffix overlap.
-5. Repeat in Rust, C, C++, Python, and TypeScript; check that the original
+5. Type only the **complete** astral character at the start of a previously
+   shown synthetic suggestion (e.g. `🚀launch()`). Verify the inline
+   continuation offers only `launch()` and does not request fresh
+   model output when the cached context is otherwise unchanged.
+6. Through an editor test harness, insert only the **high surrogate**
+   of an astral character from a cached suggestion. The continuation
+   must not display its isolated low surrogate or a malformed ghost
+   fragment. Repeat with an edit of several ordinary letters followed
+   by a high surrogate; the cache must reject it.
+7. Repeat in Rust, C, C++, Python, and TypeScript; check that the original
    Unicode characters remain byte-for-byte intact after any accepted edit.
 
 ## Evidence to record
@@ -40,7 +49,8 @@ language, privacy/consent settings and whether each scenario passed.
 Use invented example code; **do not attach real editor buffers, prompts,
 remote endpoint credentials, or generated completions from private projects**.
 
-The tests in `test/unit/trigger.test.ts` and `test/unit/filter.test.ts`
-cover deterministic boundary math. Cross-platform CI and mocked extension
+The tests in `test/unit/trigger.test.ts`, `test/unit/filter.test.ts`
+and `test/unit/continuation.test.ts` cover deterministic boundary math,
+including typed-continuation UTF-16 integrity and malformed cached suggestions. Cross-platform CI and mocked extension
 host checks do not constitute physical editor/model QA. A first-party
 trained LineLoom Code model is not supplied by this change.
