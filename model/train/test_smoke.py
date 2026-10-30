@@ -91,6 +91,37 @@ class LocalSmokeTests(unittest.TestCase):
                 {"language": "rust", "generationMs": 10, "generationTokens": 3}
             ], max_new_tokens=2)
 
+    def test_source_free_runtime_profile_is_bounded_and_exact(self):
+        from copy import deepcopy
+        from_synthetic = {
+            "device": "cpu", "precision": "float32",
+            "operatingSystem": "Linux", "pythonVersion": "3.11.8",
+            "torchVersion": "2.5.1+cpu", "transformersVersion": "4.47.1",
+            "cudaRuntimeVersion": None, "hipRuntimeVersion": None,
+        }
+        profile = smoke.checked_runtime_profile(from_synthetic)
+        self.assertEqual(profile, from_synthetic)
+        self.assertIsNot(profile, from_synthetic)
+        self.assertNotIn("source", json.dumps(profile))
+        self.assertNotIn("hostname", json.dumps(profile))
+        for field, value in (
+            ("device", "cuda"), ("precision", "bfloat16"),
+            ("pythonVersion", ""), ("torchVersion", "x version"),
+            ("transformersVersion", "4.47.1\\nprivate"),
+            ("cudaRuntimeVersion", "private/device"),
+        ):
+            candidate = deepcopy(from_synthetic)
+            candidate[field] = value
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                smoke.checked_runtime_profile(candidate)
+        candidate = deepcopy(from_synthetic)
+        candidate["host"] = "private-host"
+        with self.assertRaises(ValueError):
+            smoke.checked_runtime_profile(candidate)
+        cuda = dict(from_synthetic, device="cuda", precision="bfloat16",
+                    cudaRuntimeVersion="12.4")
+        self.assertEqual(smoke.checked_runtime_profile(cuda), cuda)
+
     def test_adapter_validation_requires_local_peft_files(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)
@@ -159,7 +190,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 6)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v5")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v6")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
