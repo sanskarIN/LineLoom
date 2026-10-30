@@ -18,15 +18,19 @@ import subprocess
 import sys
 
 try:
-    from .sampling import balanced_sample_indices, validation_metrics, compare_validation_losses,
+    from .sampling import (
+        balanced_sample_indices, validation_metrics, compare_validation_losses,
         optimizer_step_token_scales, training_token_exposure
+    )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
     )
 except ImportError:
-    from sampling import balanced_sample_indices, validation_metrics, compare_validation_losses,
+    from sampling import (
+        balanced_sample_indices, validation_metrics, compare_validation_losses,
         optimizer_step_token_scales, training_token_exposure
+    )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
