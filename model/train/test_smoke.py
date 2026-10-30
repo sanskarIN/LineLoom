@@ -105,7 +105,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertNotIn("source", json.dumps(profile))
         self.assertNotIn("hostname", json.dumps(profile))
         for field, value in (
-            ("device", "cuda"), ("precision", "bfloat16"),
+            ("device", "unreviewed-backend"), ("precision", "bfloat16"),
             ("pythonVersion", ""), ("torchVersion", "x version"),
             ("transformersVersion", "4.47.1\\nprivate"),
             ("cudaRuntimeVersion", "private/device"),
