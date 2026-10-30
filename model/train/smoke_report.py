@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v8"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v9"
 GENERATION_POLICY = "greedy-fim-v2"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
