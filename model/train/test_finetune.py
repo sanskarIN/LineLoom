@@ -222,6 +222,48 @@ class LocalGateTests(unittest.TestCase):
             self.assertNotIn("supersecret", again.stderr)
             self.assertEqual(again.stdout, "")
 
+    def test_manifest_reader_rejects_oversize_symlink_and_invalid_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "reviewed-test-manifest.json"
+            source.write_text(json.dumps(synthetic_manifest()), encoding="utf-8")
+            self.assertGreater(len(finetune.read_bounded_manifest_bytes(source)), 0)
+            alias = Path(tmp) / "alias.json"
+            try:
+                alias.symlink_to(source)
+            except OSError:
+                # Symlink creation may require privileges on Windows.
+                pass
+            else:
+                with self.assertRaises(finetune.ExperimentRejected):
+                    finetune.read_bounded_manifest_bytes(alias)
+            source.write_bytes(b"x" * (finetune.MAX_MANIFEST_BYTES + 1))
+            with self.assertRaises(finetune.ExperimentRejected):
+                finetune.read_bounded_manifest_bytes(source)
+            source.write_bytes(b"")
+            with self.assertRaises(finetune.ExperimentRejected):
+                finetune.read_bounded_manifest_bytes(source)
+
+    def test_python_gate_rejects_numeric_identity_and_extra_fields(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "reviewed-synthetic.json"
+            for change in (
+                lambda document: document["samples"][0].update({"id": 123}),
+                lambda document: document["samples"][0].update({"repositoryGroup": 123}),
+                lambda document: document["samples"][0].update({"undocumented": "secret"}),
+            ):
+                document = synthetic_manifest()
+                change(document)
+                path.write_text(json.dumps(document), encoding="utf-8")
+                result = subprocess.run(
+                    [sys.executable, str(Path(finetune.__file__).resolve()),
+                     "--manifest", str(path)],
+                    capture_output=True, text=True, timeout=25
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, "")
+                self.assertNotIn(str(path), result.stderr)
+                self.assertNotIn("secret", result.stderr)
+
     def test_train_cannot_start_without_approval_or_base_revision(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "private.json"
