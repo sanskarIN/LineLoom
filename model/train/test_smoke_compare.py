@@ -37,7 +37,8 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         }
     timings = generation_latency_summary([
         {"language": item["language"],
-         "generationMs": (index + 1) * (2 if kind == "local-lora-adapter" else 1)}
+         "generationMs": (index + 1) * (2 if kind == "local-lora-adapter" else 1),
+         "generationTokens": (index % 3) + (2 if kind == "local-lora-adapter" else 1)}
         for index, item in enumerate(selected)
     ])
     return {
@@ -126,11 +127,17 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v3")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v4")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
         self.assertEqual(result["perLanguage"]["rust"]["generationP95DeltaMs"], 14)
+        self.assertEqual(result["generatedTokenAccounting"], "new-token-ids-including-stop-v1")
+        self.assertEqual(result["baseGeneratedTokens"], 60)
+        self.assertEqual(result["adapterGeneratedTokens"], 90)
+        self.assertEqual(result["generatedTokenDelta"], 30)
+        self.assertEqual(result["generatedTokenCountStatus"], "DIFFERENT_GENERATED_TOKEN_TOTALS")
+        self.assertEqual(result["perLanguage"]["rust"]["generatedTokenDelta"], 6)
 
         self.assertNotIn("fixtureSetSha256", result)
         self.assertNotIn("baseRevisionDeclared", result)
@@ -145,6 +152,8 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["perLanguage"]["rust"]["generationP50DeltaMs"], None)
         self.assertEqual(result["perLanguage"]["cpp"]["generationP95DeltaMs"], 6)
+        self.assertEqual(result["generatedTokenDelta"], 6)
+        self.assertEqual(result["perLanguage"]["rust"]["generatedTokenDelta"], 0)
 
     def test_mismatched_identity_scope_and_generation_rejected(self):
         for field, other in (
@@ -234,6 +243,47 @@ class CompareSmokeTests(unittest.TestCase):
             compare_smoke.compare_reports(
                 simulated_report("local-base-model", language="cpp"), cpp_only
             )
+
+    def test_generated_token_accounting_catches_inconsistent_or_malformed_reports(self):
+        cases = [
+            ("generatedTokenAccounting", "unverified"),
+            ("generatedTokenCount", True),
+            ("generatedTokenCount", -1),
+            ("generatedTokenCount", 30 * 129),
+            ("generatedTokensByLanguage", {}),
+        ]
+        for field, value in cases:
+            candidate = copy.deepcopy(self.adapter)
+            candidate[field] = value
+            with self.subTest(field=field), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for lang in ("rust", "python"):
+            for change in (
+                {"totalTokens": True},
+                {"totalTokens": -1},
+                {"totalTokens": 6 * 65},
+                {"attempts": 7},
+                {"extra": "private source"},
+            ):
+                candidate = copy.deepcopy(self.adapter)
+                candidate["generatedTokensByLanguage"][lang].update(change)
+                with self.subTest(language=lang, change=change), self.assertRaises(SmokeReportRejected):
+                    compare_smoke.compare_reports(self.base, candidate)
+        candidate = copy.deepcopy(self.adapter)
+        candidate["generatedTokensByLanguage"]["cpp"]["totalTokens"] += 1
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
+
+    def test_equal_aggregate_token_totals_do_not_claim_per_probe_parity(self):
+        candidate = copy.deepcopy(self.adapter)
+        candidate["generatedTokenCount"] = self.base["generatedTokenCount"]
+        candidate["generatedTokensByLanguage"] = copy.deepcopy(
+            self.base["generatedTokensByLanguage"]
+        )
+        result = compare_smoke.compare_reports(self.base, candidate)
+        self.assertEqual(result["generatedTokenCountStatus"], "AGGREGATE_TOKEN_TOTALS_MATCH_ONLY")
+        self.assertEqual(result["generatedTokenDelta"], 0)
+        self.assertIn("even equal totals", result["limitation"])
 
     def test_wrong_base_and_adapter_positions_rejected(self):
         with self.assertRaises(SmokeReportRejected):
