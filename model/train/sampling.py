@@ -92,3 +92,61 @@ def validation_metrics(samples: list[dict], losses: list[float],
             language: len(buckets[language]) for language in languages
         },
     }
+
+
+
+def compare_validation_losses(before: dict, after: dict,
+                              languages: tuple[str, ...]) -> dict:
+    """Describe validation loss changes on the SAME samples, never test data.
+
+    This is a diagnostic, not a model promotion gate or code-quality metric.
+    Validate aggregate inputs so malformed reports cannot suggest improvement.
+    """
+    if not languages or len(set(languages)) != len(languages):
+        raise SamplingRejected("invalid-validation-language-scope")
+
+    def checked_metric(report: dict, key: str) -> float:
+        if not isinstance(report, dict):
+            raise SamplingRejected("invalid-validation-report")
+        value = report.get(key)
+        if (isinstance(value, bool) or not isinstance(value, (float, int)) or
+                not math.isfinite(value) or not 0 <= value < 1_000_000):
+            raise SamplingRejected("invalid-validation-report-value")
+        return float(value)
+
+    before_loss = checked_metric(before, "validationLoss")
+    after_loss = checked_metric(after, "validationLoss")
+    before_macro = checked_metric(before, "validationMacroLoss")
+    after_macro = checked_metric(after, "validationMacroLoss")
+    changes = {}
+    raised = []
+    lowered = []
+    for language in languages:
+        a_counts = before.get("validationSamplesByLanguage")
+        b_counts = after.get("validationSamplesByLanguage")
+        a_losses = before.get("validationLossByLanguage")
+        b_losses = after.get("validationLossByLanguage")
+        if (not isinstance(a_counts, dict) or not isinstance(b_counts, dict) or
+                not isinstance(a_losses, dict) or not isinstance(b_losses, dict) or
+                set(a_counts) != set(languages) or set(b_counts) != set(languages) or
+                set(a_losses) != set(languages) or set(b_losses) != set(languages) or
+                type(a_counts.get(language)) is not int or a_counts[language] < 1 or
+                type(b_counts.get(language)) is not int or
+                a_counts[language] != b_counts[language]):
+            raise SamplingRejected("incompatible-validation-scope")
+        change = (checked_metric(b_losses, language) -
+                  checked_metric(a_losses, language))
+        changes[language] = round(change, 6)
+        if change > 0.000001:
+            raised.append(language)
+        elif change < -0.000001:
+            lowered.append(language)
+    return {
+        "validationLossChange": round(after_loss - before_loss, 6),
+        "validationMacroLossChange": round(after_macro - before_macro, 6),
+        "validationLossChangeByLanguage": changes,
+        "validationLanguagesWithHigherLoss": raised,
+        "validationLanguagesWithLowerLoss": lowered,
+        "warning": ("Changes are descriptive validation-only loss differences; "
+                    "not code correctness, unbiased quality or a promotion decision.")
+    }
