@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Offline, source-free comparison of real local base and LoRA smoke reports.
 
-Only accepts protocol v2 reports for identical checked-in synthetic fixtures,
+Only accepts current protocol reports for identical checked-in synthetic fixtures,
 generation settings, base metadata and declared base revision. It cannot
 establish actual weight provenance, hardware parity or model correctness.
 """
@@ -114,6 +114,33 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted += group["strictExactMatches"]
     if counted != exact:
         raise SmokeReportRejected("mismatched-language-totals")
+    if report.get("latencyMeasurement") != "monotonic-generation-only-v1":
+        raise SmokeReportRejected("invalid-latency-method")
+    def checked_latency(value) -> bool:
+        return type(value) is int and 0 <= value <= 3_600_000
+    for key in ("generationP50Ms", "generationP95Ms"):
+        if not checked_latency(report.get(key)):
+            raise SmokeReportRejected("invalid-generation-latency")
+    if report["generationP50Ms"] > report["generationP95Ms"]:
+        raise SmokeReportRejected("inconsistent-generation-latency")
+    timing = report.get("generationLatencyByLanguage")
+    if not isinstance(timing, dict) or set(timing) != set(LANGUAGES):
+        raise SmokeReportRejected("invalid-generation-language-latency")
+    for name in LANGUAGES:
+        group = timing[name]
+        expected_count = groups[name]["attempts"]
+        if (not isinstance(group, dict) or
+                set(group) != {"attempts", "p50Ms", "p95Ms"} or
+                type(group["attempts"]) is not int or
+                group["attempts"] != expected_count):
+            raise SmokeReportRejected("invalid-generation-language-latency")
+        if expected_count:
+            if (not checked_latency(group["p50Ms"]) or
+                    not checked_latency(group["p95Ms"]) or
+                    group["p50Ms"] > group["p95Ms"]):
+                raise SmokeReportRejected("invalid-generation-language-latency")
+        elif group["p50Ms"] is not None or group["p95Ms"] is not None:
+            raise SmokeReportRejected("unexpected-generation-language-latency")
     return report
 
 
@@ -134,25 +161,48 @@ def compare_reports(base: dict, adapter: dict) -> dict:
     for language in LANGUAGES:
         before = left["perLanguage"][language]["strictExactMatches"]
         after = right["perLanguage"][language]["strictExactMatches"]
+        left_timing = left["generationLatencyByLanguage"][language]
+        right_timing = right["generationLatencyByLanguage"][language]
         by_language[language] = {
             "attemptsPerModel": left["perLanguage"][language]["attempts"],
             "baseStrictExactMatches": before,
             "adapterStrictExactMatches": after,
             "adapterMinusBase": after - before,
+            "baseGenerationP50Ms": left_timing["p50Ms"],
+            "adapterGenerationP50Ms": right_timing["p50Ms"],
+            "generationP50DeltaMs": (
+                right_timing["p50Ms"] - left_timing["p50Ms"]
+                if left_timing["p50Ms"] is not None else None
+            ),
+            "baseGenerationP95Ms": left_timing["p95Ms"],
+            "adapterGenerationP95Ms": right_timing["p95Ms"],
+            "generationP95DeltaMs": (
+                right_timing["p95Ms"] - left_timing["p95Ms"]
+                if left_timing["p95Ms"] is not None else None
+            ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v2",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v3",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
         "adapterMinusBase": delta,
+        "latencyMeasurement": "monotonic-generation-only-v1",
+        "baseGenerationP50Ms": left["generationP50Ms"],
+        "adapterGenerationP50Ms": right["generationP50Ms"],
+        "generationP50DeltaMs": right["generationP50Ms"] - left["generationP50Ms"],
+        "baseGenerationP95Ms": left["generationP95Ms"],
+        "adapterGenerationP95Ms": right["generationP95Ms"],
+        "generationP95DeltaMs": right["generationP95Ms"] - left["generationP95Ms"],
         "perLanguage": by_language,
         "verdict": "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY",
         "limitation": ("Matching locally hashed base weight bytes and synthetic requests "
                        "do not verify real weights, compute environment, code "
-                       "correctness, latency, acceptance or release readiness."),
+                       "correctness, hardware parity, editor latency, acceptance "
+                       "or release readiness. Generation-only timings are "
+                       "descriptive, and small samples are unstable."),
     }
 
 
