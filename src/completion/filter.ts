@@ -25,6 +25,31 @@ function containsUnsafeUnicode(value: string): boolean {
   return false;
 }
 
+/**
+ * A response sharing the start of a token with the current line is not
+ * necessarily an echo: "function" before "functionality()" must not turn
+ * the generated identifier into "ality()". Only remove sufficiently
+ * distinctive echoes at a real insertion boundary.
+ */
+function hasCompleteEchoBoundary(value: string, end: number): boolean {
+  const previous = value[end - 1] ?? "";
+  const next = value[end] ?? "";
+  const identifierPart = /[\p{L}\p{M}\p{N}\p{Pc}$\u200c\u200d]/u;
+  // UTF-16 slicing must not divide a valid astral code point.
+  const previousUnit = value.charCodeAt(end - 1);
+  const nextUnit = value.charCodeAt(end);
+  if (previousUnit >= 0xd800 && previousUnit <= 0xdbff &&
+      nextUnit >= 0xdc00 && nextUnit <= 0xdfff) return false;
+  return !(identifierPart.test(previous) && identifierPart.test(next));
+}
+function isConfidentPrefixEcho(value: string, echo: string): boolean {
+  // A single shared character is not evidence that the model echoed code.
+  // Three-or-more characters at a complete token boundary are reliable
+  // enough, including short keywords such as "let" and "for".
+  if (echo.length < 3 || !echo.trim() || !value.startsWith(echo)) return false;
+  return hasCompleteEchoBoundary(value, echo.length);
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
 export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
   // Even a loopback model can return malformed or direction-spoofing text.
@@ -44,14 +69,15 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
   const tail = prefix.slice(-160);
-  if (tail && value.startsWith(tail)) value = value.slice(tail.length);
+  if (isConfidentPrefixEcho(value, tail)) value = value.slice(tail.length);
   const lastLine = prefix.slice(prefix.lastIndexOf("\n") + 1);
-  if (lastLine.trim() && value.startsWith(lastLine)) value = value.slice(lastLine.length);
+  if (isConfidentPrefixEcho(value, lastLine)) value = value.slice(lastLine.length);
   // Some models echo only the end of a line, rather than the complete current line.
   if (value && prefix) {
     const limit = Math.min(160, prefix.length, value.length);
     for (let n = limit; n >= 8; n--) {
-      if (prefix.endsWith(value.slice(0, n)) && value.slice(0, n).trim()) {
+      if (prefix.endsWith(value.slice(0, n)) && value.slice(0, n).trim() &&
+          hasCompleteEchoBoundary(value, n)) {
         value = value.slice(n);
         break;
       }
