@@ -57,6 +57,12 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "tokenizerSha256": "b" * 64,
         "baseWeightsSha256": "c" * 64,
         "baseWeightFiles": 2,
+        "runtimeProfile": {
+            "device": "cpu", "precision": "float32",
+            "operatingSystem": "Linux", "pythonVersion": "3.11.8",
+            "torchVersion": "2.5.1+cpu", "transformersVersion": "4.47.1",
+            "cudaRuntimeVersion": None, "hipRuntimeVersion": None,
+        },
         **fingerprints(selected, tokens),
         "syntheticAttempts": len(selected),
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
@@ -127,11 +133,14 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v4")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v5")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
         self.assertEqual(result["perLanguage"]["rust"]["generationP95DeltaMs"], 14)
+        self.assertTrue(result["runtimeProfileComparable"])
+        self.assertEqual(result["runtimeProfileFieldsChecked"], 8)
+        self.assertNotIn("runtimeProfile", result)
         self.assertEqual(result["generatedTokenAccounting"], "new-token-ids-including-stop-v1")
         self.assertEqual(result["baseGeneratedTokens"], 60)
         self.assertEqual(result["adapterGeneratedTokens"], 90)
@@ -284,6 +293,69 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["generatedTokenCountStatus"], "AGGREGATE_TOKEN_TOTALS_MATCH_ONLY")
         self.assertEqual(result["generatedTokenDelta"], 0)
         self.assertIn("even equal totals", result["limitation"])
+
+    def test_runtime_profiles_block_cross_environment_comparisons(self):
+        profile = self.adapter["runtimeProfile"]
+        cases = (
+            ("device", "cuda"),
+            ("precision", "bfloat16"),
+            ("operatingSystem", "Windows"),
+            ("pythonVersion", "3.12.4"),
+            ("torchVersion", "2.6.0+cu124"),
+            ("transformersVersion", "4.48.2"),
+            ("cudaRuntimeVersion", "12.4"),
+            ("hipRuntimeVersion", "6.3"),
+        )
+        for field, change in cases:
+            candidate = copy.deepcopy(self.adapter)
+            candidate["runtimeProfile"][field] = change
+            with self.subTest(field=field), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        # A valid CUDA profile is comparable ONLY to the same CUDA profile.
+        base = copy.deepcopy(self.base)
+        adapter = copy.deepcopy(self.adapter)
+        for report in (base, adapter):
+            report["runtimeProfile"].update({
+                "device": "cuda", "precision": "bfloat16",
+                "cudaRuntimeVersion": "12.4",
+            })
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertTrue(result["runtimeProfileComparable"])
+
+    def test_runtime_profiles_reject_bad_types_extra_keys_and_leaked_values(self):
+        cases = (
+            ("runtimeProfile", {}),
+            ("runtimeProfile", None),
+            ("runtimeProfile", "cpu"),
+        )
+        for field, value in cases:
+            candidate = copy.deepcopy(self.adapter)
+            candidate[field] = value
+            with self.subTest(value=value), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for field, value in (
+            ("device", True),
+            ("device", "gpu"),
+            ("precision", "float16"),
+            ("operatingSystem", "private-hostname"),
+            ("torchVersion", "2.5.1\\nprivate-code"),
+            ("transformersVersion", ""),
+            ("cudaRuntimeVersion", "secret private path"),
+            ("pythonVersion", 3.11),
+            ("hipRuntimeVersion", 12),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate["runtimeProfile"][field] = value
+            with self.subTest(field=field), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        candidate = copy.deepcopy(self.adapter)
+        candidate["runtimeProfile"]["hostname"] = "sensitive-value"
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
+        candidate = copy.deepcopy(self.adapter)
+        del candidate["runtimeProfile"]["torchVersion"]
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
 
     def test_wrong_base_and_adapter_positions_rejected(self):
         with self.assertRaises(SmokeReportRejected):
