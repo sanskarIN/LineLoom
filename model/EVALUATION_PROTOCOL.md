@@ -274,10 +274,10 @@ and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
 
 
-## 14. Local HF synthetic timing, length, runtime parity and termination (v7 current protocol)
+## 14. Local HF synthetic timing, length, parity and termination (v8 current protocol)
 
 For actual reviewed local `smoke.py --run` trials, protocol
-`lineloom-hf-synthetic-smoke-v7` reports nearest-rank **p50/p95 generation
+`lineloom-hf-synthetic-smoke-v8` reports nearest-rank **p50/p95 generation
 latency in milliseconds**, overall and per target language. Measurement
 uses a monotonic clock surrounding only the `model.generate()` call,
 with explicit CUDA synchronization on both sides. Loading, prompt
@@ -336,7 +336,7 @@ an independently verified regression. Compare only on controlled
 hardware, load, thermal state, quantization and execution order.
 With six examples per language, p95 is highly unstable.
 
-V7 rejects previous v1–v6 HF smoke protocols in the comparator; rerun
+V8 rejects previous v1–v7 HF smoke protocols in the comparator; rerun
 both base and adapter from the same reviewed checkout. The separate
 Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
 comparable. Offline tests use invented timing and token counts without
@@ -384,3 +384,33 @@ a gate for shipping a model or publishing a stable extension. Standard
 offline Python tests use mock compilers plus actual Python AST parsing;
 no optional toolchain is required to run CI.
 
+## 16. Generated Python FIM syntax checks (v8, development)
+
+The optional Hugging Face `smoke.py --run` command now inspects the
+**actual generated Python insertion** for each fixed original public Python
+fixture. It joins `prefix + normalized_insertion + suffix` in memory and
+runs standard-library `ast.parse` under an 8192-character input bound.
+No generated source, AST, parser exception, fixture ID or per-example
+outcome appears in logs, outputs, or report files. The parser **does
+not execute code**; passing the parse only proves Python grammatical
+acceptance in the local interpreter, not runtime safety, semantics,
+correctness or deployability. Empty or invalid Python completions fail
+syntax; a valid alternative can pass AST while failing strict exact match.
+
+The new `syntaxAccounting: python-ast-only-v1` report aggregates
+`syntaxChecked`, `syntaxPassed`, `syntaxFailed`, `syntaxUnchecked`,
+plus all five per-language buckets. **Only Python** is checked here:
+Rust, C, C++ and TypeScript generated code is explicitly **unchecked**,
+even though a separate real Linux CI job validates the **known reference
+answers** for those languages. This distinction is mandatory. The
+offline comparator refuses inconsistent counts, unsupported-language
+syntax success and strict Python matches exceeding Python syntax passes.
+It returns a source-free base/adapter Python pass/fail delta and a
+bounded review flag; a clean result is not a first-party model claim.
+
+Benchmark protocol `lineloom-hf-synthetic-smoke-v8` and
+comparison protocol `lineloom-hf-synthetic-comparison-v7` are
+incompatible with prior reports; both local runs must be regenerated
+after independently approving the checkpoint and rights. All CI tests
+here use invented completions and metadata, not a real ML checkpoint,
+GPU inference, training experiment or manual editor test.
