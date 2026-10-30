@@ -37,6 +37,7 @@ try:
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
         base_checkpoint_fingerprint
     )
+    from .generated_syntax import classify_generated_syntax, generated_syntax_summary
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
@@ -47,6 +48,7 @@ except ImportError:
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
         base_checkpoint_fingerprint
     )
+    from generated_syntax import classify_generated_syntax, generated_syntax_summary
 
 
 def select_public_fixtures(language: str) -> list[dict]:
@@ -203,8 +205,13 @@ def run_local(fixture_set: list[dict], args) -> dict:
             # Raw completion remains in memory only; no IDs/code/special
             # model errors written into the console or an artifact.
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
-            exact = normalize_completion(completion) == fixture["expected"]
+            insertion = normalize_completion(completion)
+            exact = insertion == fixture["expected"]
+            # Standard-library AST only: does not import or execute the
+            # generated program; non-Python languages are explicitly unchecked.
+            syntax_outcome = classify_generated_syntax(fixture, insertion)
             result.append({"language": fixture["language"], "exact": exact,
+                           "syntaxOutcome": syntax_outcome,
                            "generationMs": generation_ms,
                            "generationTokens": len(tokens),
                            "terminationReason": reason})
@@ -231,8 +238,11 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "runtimeProfile": runtime_profile,
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
+        **generated_syntax_summary(result),
         **generation_latency_summary(result, args.max_new_tokens),
-        "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
+        "limitation": ("Strict synthetic equality and Python AST-only syntax; "
+                       "C, C++, Rust and TypeScript generated syntax not checked. "
+                       "No execution, compiler, human, editor or deployment QA.")
     }
 
 
