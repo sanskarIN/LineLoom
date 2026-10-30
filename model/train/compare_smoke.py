@@ -16,13 +16,13 @@ import sys
 try:
     from .smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, read_public_fixtures
+        fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from .integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
 except ImportError:
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, read_public_fixtures
+        fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
 
@@ -114,6 +114,7 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted += group["strictExactMatches"]
     if counted != exact:
         raise SmokeReportRejected("mismatched-language-totals")
+    checked_runtime_profile(report.get("runtimeProfile"))
     if report.get("latencyMeasurement") != "monotonic-generation-only-v1":
         raise SmokeReportRejected("invalid-latency-method")
     def checked_latency(value) -> bool:
@@ -175,7 +176,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "selectedLanguage", "maxNewTokens", "fixtureSetSha256",
         "requestSpecSha256", "baseRevisionDeclared",
         "baseConfigSha256", "tokenizerSha256", "baseWeightsSha256",
-        "baseWeightFiles", "syntheticAttempts",
+        "baseWeightFiles", "syntheticAttempts", "runtimeProfile",
     )
     if any(left[field] != right[field] for field in same):
         raise SmokeReportRejected("incomparable-smoke-reports")
@@ -210,9 +211,11 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v4",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v5",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
+        "runtimeProfileComparable": True,
+        "runtimeProfileFieldsChecked": 8,
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
@@ -240,6 +243,8 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "correctness, hardware parity, editor latency, acceptance "
                        "or release readiness. Generation-only timings are "
                        "descriptive, and small samples are unstable. "
+                       "Runtime fields match but cannot prove physical GPU, "
+                       "driver, thermal, load or execution-order parity. "
                        "Different generated token counts confound absolute latency; "
                        "even equal totals do not prove per-probe length parity."),
     }
