@@ -2,6 +2,7 @@ import { performance } from "node:perf_hooks";
 import { createRequest, normalizeGenerated } from "./model-eval-lib.mjs";
 import { consumeOllamaStream } from "./model-eval-stream.mjs";
 import { classifyCompletionFormat } from "./model-eval-quality.mjs";
+import { classifyGeneratedSyntax } from "./model-eval-syntax.mjs";
 
 /**
  * Developer-only, one-fixture synthetic evaluation.
@@ -45,12 +46,15 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
     if (controller.signal.aborted) throw new Error("evaluation-aborted");
     const elapsed = clock() - started;
     if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error("invalid-timing");
+    const insertion = normalizeGenerated(parsed.output);
+    const syntaxOutcome = classifyGeneratedSyntax(fixture, insertion);
     return {
       fixtureId: fixture.id,
       language: fixture.language,
       category: fixture.category,
       ok: true,
-      exact: normalizeGenerated(parsed.output) === fixture.expected,
+      exact: insertion === fixture.expected,
+      syntaxOutcome,
       formatSignals: classifyCompletionFormat(parsed.output, fixture),
       firstTokenMs: parsed.firstTokenMs,
       totalMs: elapsed
