@@ -112,7 +112,7 @@ runtime validation, editor acceptance or safety testing. A syntactically
 valid alternative can fail exact matching. A syntactically valid program
 can still be incorrect or unsafe. The separate Linux compiler CI checks
 the **public reference answers**, not model-generated text. The separate
-HF Python AST experiment does **not** share this Ollama report protocol.
+HF Python/TypeScript grammar experiment does **not** share this Ollama report protocol.
 No actual model inference or trained first-party checkpoint is implied
 by the synthetic CI tests.
 
@@ -305,10 +305,10 @@ and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
 
 
-## 14. Local HF synthetic timing, length, parity and termination (v8 current protocol)
+## 14. Local HF synthetic timing, length, parity and termination (v9 current protocol)
 
 For actual reviewed local `smoke.py --run` trials, protocol
-`lineloom-hf-synthetic-smoke-v8` reports nearest-rank **p50/p95 generation
+`lineloom-hf-synthetic-smoke-v9` reports nearest-rank **p50/p95 generation
 latency in milliseconds**, overall and per target language. Measurement
 uses a monotonic clock surrounding only the `model.generate()` call,
 with explicit CUDA synchronization on both sides. Loading, prompt
@@ -415,7 +415,7 @@ a gate for shipping a model or publishing a stable extension. Standard
 offline Python tests use mock compilers plus actual Python AST parsing;
 no optional toolchain is required to run CI.
 
-## 16. Generated Python FIM syntax checks (v8, development)
+## 16. Generated Python FIM syntax checks (v8 historical design)
 
 The optional Hugging Face `smoke.py --run` command now inspects the
 **actual generated Python insertion** for each fixed original public Python
@@ -445,3 +445,36 @@ incompatible with prior reports; both local runs must be regenerated
 after independently approving the checkpoint and rights. All CI tests
 here use invented completions and metadata, not a real ML checkpoint,
 GPU inference, training experiment or manual editor test.
+
+## 17. Generated TypeScript syntax in HF local FIM smoke (v9)
+
+HF smoke v9 extends the previous Python AST grammar checks with the
+**actual generated TypeScript continuations**. After local, explicitly
+approved model inference, the runner sends one bounded in-memory
+insertion plus an allowlisted checked-in TypeScript fixture ID to a
+local Node subprocess using stdin. The child retrieves the original
+public fixture and runs the pinned `typescript` parser without emitting
+code, diagnostics, ASTs or file paths. Neither Python `ast.parse` nor
+TypeScript `createSourceFile` executes or type-checks generated code.
+The runner does not invoke C/C++/Rust compilers on generated source.
+
+Only six Python and six TypeScript original synthetic fixtures qualify
+when `--language all` is used. **Rust, C, C++ are unchecked**, not
+passed. Failed or unavailable parser subprocesses reject the whole
+local smoke experiment; a grammar failure from a functioning parser is
+reported separately as a `failed` check.
+
+The v9 `python-ast-typescript-parser-v1` accounting contract reports
+per-language and overall checked/passed/failed/unchecked totals. The
+offline comparator enforces grammar coverage, exact-match upper bounds,
+and returns **separate** Python AST and TypeScript parser base-versus-
+adapter counts and changes. Previous v1–v8 HF reports are incompatible;
+the new comparison protocol is `lineloom-hf-synthetic-comparison-v8`.
+The independent Ollama v5 report uses a different evaluation protocol
+and is not mixed with HF reports.
+
+All automated validation uses fixed synthetic insertions only. No real
+model, private source, external APIs, GPU training or checkpoint was
+executed or published by adding this gate. Syntax correctness is not
+evidence of type correctness, runtime safety, semantic quality,
+acceptable completion latency, editor acceptance, or release readiness.
