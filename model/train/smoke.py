@@ -30,14 +30,16 @@ try:
         fingerprints, hash_local_metadata_file, read_public_fixtures
     )
     from .integrity import (
-        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
+        base_weight_fingerprint
     )
 except ImportError:
     from smoke_report import (
         fingerprints, hash_local_metadata_file, read_public_fixtures
     )
     from integrity import (
-        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt
+        PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
+        base_weight_fingerprint
     )
 
 
@@ -106,6 +108,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
     if args.device == "cuda" and not torch.cuda.is_available():
         raise ExperimentRejected("cuda-unavailable")
     base_dir = validate_local_checkpoint(Path(args.base_dir))
+    base_weights = base_weight_fingerprint(base_dir)
     if args.adapter_dir:
         adapter_dir = validate_local_adapter(Path(args.adapter_dir))
         try:
@@ -157,6 +160,8 @@ def run_local(fixture_set: list[dict], args) -> dict:
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             exact = normalize_completion(completion) == fixture["expected"]
             result.append({"language": fixture["language"], "exact": exact})
+    if base_weight_fingerprint(base_dir) != base_weights:
+        raise ExperimentRejected("base-weights-changed-during-smoke")
     return {
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
@@ -170,6 +175,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "baseRevisionDeclared": args.base_revision,
         "baseConfigSha256": hash_local_metadata_file(base_dir / "config.json"),
         "tokenizerSha256": hash_local_metadata_file(base_dir / "tokenizer.json"),
+        **base_weights,
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
         "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
