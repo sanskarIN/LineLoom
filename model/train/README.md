@@ -97,6 +97,42 @@ local checkpoint and actual human review.
 The stable extension and `SanskarCodes.lineloom` publisher are unaffected.
 
 
+## Public benchmark reference syntax audit (optional, no model inference)
+
+Before attributing strict-match results to a model, independently check that
+the 30 original synthetic **reference continuations** form valid source after
+insertion between their fixed prefixes and suffixes. This is a limited
+baseline-fixture validation, **not** compiler-backed evaluation of model
+outputs, meaningful runtime correctness, security or a trained LineLoom model.
+
+```sh
+# Default: source-free plan, no compiler discovery or subprocesses:
+npm run model:reference:syntax
+
+# Explicit local syntax checks of only checked-in public reference fixtures:
+npm run model:reference:syntax -- --run --approve-local-compilers
+npm run model:reference:syntax -- --language python --run --approve-local-compilers
+```
+
+The runner uses Python's standard-library `ast.parse` for Python and
+locally installed `rustc` (Rust 2021 metadata-only), `cc` (C11
+syntax-only), `c++` (C++17 syntax-only), and `tsc` (strict, no emit) for
+the other languages. It does not install, download or execute any compiler,
+compiled program or generated model response without the explicit run
+switch. No private manifest or workspace files are an input. Each process
+has a timeout, writes only disposable local temporary files, and suppresses
+compiler diagnostics; the report consists of aggregate per-language
+`passed`, `failed` and `unavailable` counts and a public fixture hash.
+Compilation is never treated as proof of correct program behavior.
+
+If a required toolchain is absent, its six cases are marked `unavailable`
+and an explicit run exits nonzero with `REFERENCE_SYNTAX_INCOMPLETE`.
+Install and review local compiler toolchains independently before using
+this command. The command does not use private model weights, GPU or
+inference. Only a real, separately authorized and isolated model-evaluation
+experiment can test syntax on generated suggestions. Run the standard
+library tests with `npm run test:model-training`, no compilers required.
+
 ## Local base-versus-adapter synthetic smoke (no model publishing)
 
 A separate `model/train/smoke.py` lets a developer manually compare
