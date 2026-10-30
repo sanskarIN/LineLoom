@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 
 try:
     from .finetune import (
@@ -27,7 +28,7 @@ except ImportError:
 
 try:
     from .smoke_report import (
-        fingerprints, read_public_fixtures
+        fingerprints, read_public_fixtures, generation_latency_summary
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
@@ -35,7 +36,7 @@ try:
     )
 except ImportError:
     from smoke_report import (
-        fingerprints, read_public_fixtures
+        fingerprints, read_public_fixtures, generation_latency_summary
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
@@ -160,6 +161,9 @@ def run_local(fixture_set: list[dict], args) -> dict:
                 raise ExperimentRejected("synthetic-input-too-long")
             inputs = torch.tensor([prompt_ids], dtype=torch.long, device=args.device)
             attention = torch.ones_like(inputs)
+            if args.device == "cuda":
+                torch.cuda.synchronize()
+            started_ns = time.perf_counter_ns()
             generated = model.generate(
                 input_ids=inputs,
                 attention_mask=attention,
@@ -168,12 +172,19 @@ def run_local(fixture_set: list[dict], args) -> dict:
                 eos_token_id=stop_ids,
                 pad_token_id=tokenizer.pad_token_id
             )
+            if args.device == "cuda":
+                torch.cuda.synchronize()
+            elapsed_ns = time.perf_counter_ns() - started_ns
+            if elapsed_ns < 0:
+                raise ExperimentRejected("invalid-generation-clock")
+            generation_ms = round(elapsed_ns / 1_000_000)
             tokens = generated[0, inputs.shape[1]:].tolist()
             # Raw completion remains in memory only; no IDs/code/special
             # model errors written into the console or an artifact.
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             exact = normalize_completion(completion) == fixture["expected"]
-            result.append({"language": fixture["language"], "exact": exact})
+            result.append({"language": fixture["language"], "exact": exact,
+                           "generationMs": generation_ms})
     verify_smoke_inputs_unchanged(
         base_dir, base_identity,
         Path(args.adapter_dir) if args.adapter_dir else None,
@@ -196,6 +207,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "baseWeightFiles": base_identity["baseWeightFiles"],
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
+        **generation_latency_summary(result),
         "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
     }
 
