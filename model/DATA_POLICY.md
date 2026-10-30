@@ -68,6 +68,24 @@ download, training loop or server request occurs. Training authorization
 is a separate review gate.
 
 
+### Strict manifest identity and read consistency
+
+The offline v1 preflight now requires **exactly the documented manifest and
+sample fields**, with real string types for sample IDs, fork-family identifiers,
+language IDs, SPDX license names and immutable source revisions. Numeric
+values and objects are rejected instead of being silently converted to text.
+Unrecognized or inherited metadata fields are rejected rather than ignored.
+Opaque ASCII `repositoryGroup` identifiers are compared without case, so a
+case-only change cannot put one family in both training and a holdout split.
+
+The auditor accepts only an explicitly named regular, non-symlink local
+manifest. It performs bounded descriptor-backed reads and compares filesystem
+identity/size/change timestamps before and after. This detects ordinary
+concurrent edits, not a hostile process that restores original metadata
+between checks. Neither the schema nor file checks validate actual copyright,
+dataset lineage, author consent, hidden duplicates or live opt-outs; the
+independent human approval gates still apply.
+
 ### Model-control delimiter contamination
 
 The mechanical preflight also blocks exact FIM/chat control markers from
