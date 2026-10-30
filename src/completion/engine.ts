@@ -10,7 +10,7 @@ import { getLanguage, isLanguageEnabled } from "../languages/registry";
 import { extractContextWindow } from "../context/extract";
 import { collectRelatedText } from "../context/related-editor";
 import { RELATED_FILE_LIMIT, validateRelatedSelection } from "../context/related";
-import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "./trigger";
+import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor, isSafeInsertionBoundary } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
 import { mayComplete } from "../privacy/exclusions";
@@ -176,6 +176,9 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     if (!isTargetCurrent()) return;
     const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;
     const activeLine = document.lineAt(position.line).text;
+    // A UTF-16 cursor between the surrogate halves of a valid character
+    // must not be used to send context or insert a completion.
+    if (!isSafeInsertionBoundary(activeLine, position.character)) return;
     if (!shouldAutoComplete(activeLine.slice(0, position.character), config.minAutoTriggerChars, manual)) return;
     if (!shouldRequestAtCursor(activeLine.slice(position.character), manual, config.suppressMidTokenAuto)) return;
     const activityEpoch = this.activityEpoch;
