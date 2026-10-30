@@ -43,10 +43,10 @@ function hasCompleteEchoBoundary(value: string, end: number): boolean {
   return !(identifierPart.test(previous) && identifierPart.test(next));
 }
 function isConfidentPrefixEcho(value: string, echo: string): boolean {
-  if (!echo.trim() || !value.startsWith(echo)) return false;
-  // Short plain identifier matches are too ambiguous to delete.
-  const structured = /[\s=;:(){}.,]/u.test(echo) || echo.includes("[") || echo.includes("]");
-  if (echo.length < 8 && !(echo.length >= 4 && structured)) return false;
+  // A single shared character is not evidence that the model echoed code.
+  // Three-or-more characters at a complete token boundary are reliable
+  // enough, including short keywords such as "let" and "for".
+  if (echo.length < 3 || !echo.trim() || !value.startsWith(echo)) return false;
   return hasCompleteEchoBoundary(value, echo.length);
 }
 
