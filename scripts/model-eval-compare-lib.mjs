@@ -11,6 +11,7 @@ import {
   validateFixtures, fixtureSetSha256, requestSpecSha256
 } from "./model-eval-lib.mjs";
 import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
+import { GENERATED_SYNTAX_METHOD } from "./model-eval-syntax.mjs";
 
 /**
  * Reconstruct the only scopes exposed by the evaluator from the fixed
@@ -156,6 +157,44 @@ export function validateComparableReport(raw) {
         perCategory[key].attempts !== scope.categoryCounts[key] * raw.runsPerFixture)) {
     throw Error("inconsistent-reviewed-scope-counts");
   }
+  const syntax = raw.generatedSyntax;
+  if (!isObject(syntax) || syntax.method !== GENERATED_SYNTAX_METHOD ||
+      !isObject(syntax.byLanguage) ||
+      Object.keys(syntax.byLanguage).length !== EVAL_LANGUAGES.length ||
+      Object.keys(syntax.byLanguage).some(key => !EVAL_LANGUAGES.includes(key)) ||
+      !["checked", "passed", "failed", "unchecked"].every(key =>
+        integer(syntax[key], 0, raw.completed))) {
+    throw Error("invalid-generated-syntax");
+  }
+  const syntaxTotals = { checked: 0, passed: 0, failed: 0, unchecked: 0 };
+  const syntaxByLanguage = {};
+  for (const language of EVAL_LANGUAGES) {
+    const entry = syntax.byLanguage[language];
+    const expected = perLanguage[language];
+    if (!isObject(entry) ||
+        Object.keys(entry).length !== 5 ||
+        !["completed", "checked", "passed", "failed", "unchecked"].every(key =>
+          integer(entry[key], 0, expected.completed)) ||
+        entry.completed !== expected.completed ||
+        entry.checked + entry.unchecked !== entry.completed ||
+        entry.passed + entry.failed !== entry.checked ||
+        (language === "typescript" ?
+          (entry.checked !== entry.completed || entry.unchecked !== 0 ||
+           entry.passed < expected.strictMatches) :
+          (entry.checked !== 0 || entry.unchecked !== entry.completed))) {
+      throw Error("invalid-language-generated-syntax");
+    }
+    syntaxByLanguage[language] = {
+      completed: entry.completed, checked: entry.checked,
+      passed: entry.passed, failed: entry.failed, unchecked: entry.unchecked
+    };
+    for (const key of Object.keys(syntaxTotals)) syntaxTotals[key] += entry[key];
+  }
+  if (Object.keys(syntaxTotals).some(key => syntaxTotals[key] !== syntax[key]) ||
+      syntax.checked + syntax.unchecked !== raw.completed ||
+      syntax.passed + syntax.failed !== syntax.checked) {
+    throw Error("inconsistent-generated-syntax-totals");
+  }
   return {
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     fixtureSetSha256: raw.fixtureSetSha256,
@@ -168,6 +207,10 @@ export function validateComparableReport(raw) {
     completionP50Ms: raw.completionP50Ms, completionP95Ms: raw.completionP95Ms,
     firstTokenP50Ms: raw.firstTokenP50Ms, firstTokenP95Ms: raw.firstTokenP95Ms,
     perLanguage, perCategory,
+    generatedSyntax: {
+      method: GENERATED_SYNTAX_METHOD,
+      ...syntaxTotals, byLanguage: syntaxByLanguage
+    },
     formatDiagnostics: {
       inspectedCompleted: format.inspectedCompleted,
       completedWithoutFormatSignals: format.completedWithoutFormatSignals,
@@ -195,6 +238,9 @@ function selectedNumbers(report) {
 export function reviewSyntheticRegressions(baseline, candidate) {
   const flags = [];
   if (candidate.failed > baseline.failed) flags.push("more-failed-requests");
+  if (candidate.generatedSyntax.failed > baseline.generatedSyntax.failed) {
+    flags.push("more-typescript-syntax-failures");
+  }
   if (candidate.strictExactMatches < baseline.strictExactMatches) flags.push("fewer-strict-matches");
   if (candidate.formatDiagnostics.completedWithoutFormatSignals <
       baseline.formatDiagnostics.completedWithoutFormatSignals) {
@@ -272,6 +318,20 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       [k, candidate.perLanguage[k].strictMatches - baseline.perLanguage[k].strictMatches])),
     perCategoryStrictMatchDelta: Object.fromEntries(EVAL_CATEGORIES.map(k =>
       [k, candidate.perCategory[k].strictMatches - baseline.perCategory[k].strictMatches])),
+    generatedTypeScriptSyntax: {
+      method: GENERATED_SYNTAX_METHOD,
+      checkedPerModel: baseline.generatedSyntax.byLanguage.typescript.checked,
+      baselinePassed: baseline.generatedSyntax.byLanguage.typescript.passed,
+      candidatePassed: candidate.generatedSyntax.byLanguage.typescript.passed,
+      passedDelta: candidate.generatedSyntax.byLanguage.typescript.passed -
+        baseline.generatedSyntax.byLanguage.typescript.passed,
+      baselineFailed: baseline.generatedSyntax.byLanguage.typescript.failed,
+      candidateFailed: candidate.generatedSyntax.byLanguage.typescript.failed,
+      failedDelta: candidate.generatedSyntax.byLanguage.typescript.failed -
+        baseline.generatedSyntax.byLanguage.typescript.failed,
+      uncheckedPerModel: baseline.generatedSyntax.unchecked,
+      interpretation: "TypeScript parser grammar only; other generated languages unchecked."
+    },
     completionFormatSignalDelta: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
       [name, candidate.formatDiagnostics.signals[name] - baseline.formatDiagnostics.signals[name]])),
     completedWithoutFormatSignalDelta:
@@ -282,6 +342,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       "Request and fixture hashes match, including explicit settings, but server defaults, model checkpoint revision, hardware, quantization and runtime conditions require manual verification.",
       "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
       "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
+      "Only generated TypeScript grammar was parsed without executing code; parse success is not type correctness or program safety. Other generated languages were not syntax checked.",
       "No real-model comparison was performed by the offline tool."
     ]
   };
