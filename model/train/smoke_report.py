@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v4"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v5"
 GENERATION_POLICY = "greedy-fim-v2"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -97,24 +97,32 @@ def fingerprints(fixtures: list[dict], max_new_tokens: int) -> dict:
 
 
 
-def generation_latency_summary(results: list[dict]) -> dict:
-    """Aggregate completed local generations; never expose per-probe timings.
+def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -> dict:
+    """Source-free generation timing and actual output-length accounting.
 
-    Duration covers model.generate only. It excludes model loading, prompt
-    tokenization and decoding, so it is NOT end-to-end editor latency.
-    CUDA callers must synchronize around generation before recording times.
+    Count actual generated token IDs, including a terminal stop token when
+    present, not UTF-8 characters or decoded text. This avoids interpreting
+    a slower but longer completion as a like-for-like latency regression.
+    Duration covers model.generate only; it is NOT editor latency.
     """
-    if not isinstance(results, list) or not 1 <= len(results) <= 30:
+    if (not isinstance(results, list) or not 1 <= len(results) <= 30 or
+            type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 128):
         raise SmokeReportRejected("invalid-generation-measurements")
     buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
+    token_buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
     all_times: list[int] = []
     for item in results:
         if not isinstance(item, dict) or item.get("language") not in buckets:
             raise SmokeReportRejected("invalid-generation-language")
         duration = item.get("generationMs")
+        generated_tokens = item.get("generationTokens")
         if type(duration) is not int or not 0 <= duration <= 3_600_000:
             raise SmokeReportRejected("invalid-generation-duration")
+        if (type(generated_tokens) is not int or
+                not 1 <= generated_tokens <= max_new_tokens):
+            raise SmokeReportRejected("invalid-generation-token-count")
         buckets[item["language"]].append(duration)
+        token_buckets[item["language"]].append(generated_tokens)
         all_times.append(duration)
 
     def nearest_rank(values: list[int], fraction: float) -> int | None:
@@ -132,6 +140,14 @@ def generation_latency_summary(results: list[dict]) -> dict:
                 "attempts": len(buckets[language]),
                 "p50Ms": nearest_rank(buckets[language], 0.5),
                 "p95Ms": nearest_rank(buckets[language], 0.95),
+            } for language in LANGUAGES
+        },
+        "generatedTokenAccounting": "new-token-ids-including-stop-v1",
+        "generatedTokenCount": sum(sum(values) for values in token_buckets.values()),
+        "generatedTokensByLanguage": {
+            language: {
+                "attempts": len(token_buckets[language]),
+                "totalTokens": sum(token_buckets[language]),
             } for language in LANGUAGES
         },
     }
