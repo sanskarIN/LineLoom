@@ -184,7 +184,8 @@ def run_local(fixture_set: list[dict], args) -> dict:
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             exact = normalize_completion(completion) == fixture["expected"]
             result.append({"language": fixture["language"], "exact": exact,
-                           "generationMs": generation_ms})
+                           "generationMs": generation_ms,
+                           "generationTokens": len(tokens)})
     verify_smoke_inputs_unchanged(
         base_dir, base_identity,
         Path(args.adapter_dir) if args.adapter_dir else None,
@@ -207,7 +208,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "baseWeightFiles": base_identity["baseWeightFiles"],
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
-        **generation_latency_summary(result),
+        **generation_latency_summary(result, args.max_new_tokens),
         "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
     }
 
