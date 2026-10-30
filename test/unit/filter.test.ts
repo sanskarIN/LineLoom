@@ -63,6 +63,8 @@ describe("completion filtering", () => {
   it("still drops genuine echoed prefix and line fragments at code boundaries", () => {
     expect(cleanCompletion("const answer = 42;", "const answer = ", "", true)).toBe("42;");
     expect(cleanCompletion("function() {", "function", "", true)).toBe("() {");
+    expect(cleanCompletion("return value;", "return", "", true)).toBe(" value;");
+    expect(cleanCompletion("foo()", "foo", "", true)).toBe("()");
     expect(cleanCompletion("const answer = 42", "something else; const answer = ", "", true)).toBe("42");
   });
   it("removes echoed current line", () => expect(cleanCompletion("let x = 3;", "let x = ", "", true)).toBe("3;"));
