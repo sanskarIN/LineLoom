@@ -14,7 +14,7 @@ function requestSignal(signal?: AbortSignal): AbortSignal {
 async function readableResponse(response: Response): Promise<Response> {
   if (!response.ok) {
     // Do not consume or log an untrusted server's potentially unbounded error body.
-    await response.body?.cancel().catch(() => undefined);
+    void response.body?.cancel().catch(() => undefined);
     throw new Error("Ollama returned HTTP " + response.status + ".");
   }
   return response;
@@ -50,11 +50,11 @@ export async function showModel(origin: string, model: string, signal?: AbortSig
     body: JSON.stringify({ model }), signal: requestSignal(signal), redirect: "error"
   });
   if (response.status === 404) {
-    await response.body?.cancel().catch(() => undefined);
+    void response.body?.cancel().catch(() => undefined);
     return false;
   }
   await readableResponse(response);
-  await response.body?.cancel().catch(() => undefined);
+  void response.body?.cancel().catch(() => undefined);
   return true;
 }
 /**
@@ -70,6 +70,11 @@ function decodeResponseChunk(decoder: TextDecoder, bytes?: Uint8Array): string {
   }
 }
 
+/**
+ * Cancellation is a best-effort transport cleanup, not part of a successful
+ * response's semantics. In particular a custom stream's cancel callback can
+ * return an unresolved Promise after the response/error was fully parsed.
+ */
 /** Limit model discovery responses before parsing JSON from an untrusted endpoint. */
 async function readBoundedJson(response: Response): Promise<unknown> {
   if (!response.body) throw new Error("Ollama returned an empty model list response.");
@@ -87,7 +92,10 @@ async function readBoundedJson(response: Response): Promise<unknown> {
     }
     return JSON.parse(json + decodeResponseChunk(decoder)) as unknown;
   } finally {
-    await reader.cancel().catch(() => undefined);
+    // Do not wait for a server-controlled stream's cancel() promise.
+    // A malformed stream or successful terminal event must settle even
+    // when the underlying transport never acknowledges cancellation.
+    void reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }
@@ -160,7 +168,10 @@ export async function parseNdjson(
     return result;
   } finally {
     signal?.removeEventListener("abort", onAbort);
-    await reader.cancel().catch(() => undefined);
+    // Do not wait for a server-controlled stream's cancel() promise.
+    // A malformed stream or successful terminal event must settle even
+    // when the underlying transport never acknowledges cancellation.
+    void reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }
