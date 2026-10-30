@@ -14,13 +14,15 @@ try:
     from . import integrity as integrity_module
     from .integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
-        base_metadata_hashes, read_training_receipt, verify_training_receipt
+        base_metadata_hashes, base_weight_fingerprint,
+        read_training_receipt, verify_training_receipt
     )
 except ImportError:
     import integrity as integrity_module
     from integrity import (
         PROTOCOL, IntegrityRejected, adapter_artifact_hashes,
-        base_metadata_hashes, read_training_receipt, verify_training_receipt
+        base_metadata_hashes, base_weight_fingerprint,
+        read_training_receipt, verify_training_receipt
     )
 
 REVISION = "0123456789abcdef" * 2 + "01234567"
@@ -34,6 +36,7 @@ def fabricated_local_experiment(root: Path) -> tuple[Path, Path]:
     adapter.mkdir(parents=True)
     (base / "config.json").write_text('{"architectures":["dummy"]}', encoding="utf-8")
     (base / "tokenizer.json").write_text('{"dummy":true}', encoding="utf-8")
+    (base / "model.safetensors").write_bytes(b"dummy synthetic local base weights")
     (adapter / "adapter_config.json").write_text('{"r":8}', encoding="utf-8")
     (adapter / "adapter_model.safetensors").write_bytes(b"synthetic test weights only")
     (adapter / "README.md").write_text("Dummy, not a trained model\n", encoding="utf-8")
@@ -49,6 +52,7 @@ def fabricated_local_experiment(root: Path) -> tuple[Path, Path]:
         "validationSamples": 5,
         "adapterFileSha256": adapter_artifact_hashes(adapter),
         **base_metadata_hashes(base),
+        **base_weight_fingerprint(base),
     }
     (adapter.parent / "experiment.json").write_text(
         json.dumps(receipt, sort_keys=True), encoding="utf-8"
@@ -63,6 +67,7 @@ class AdapterIntegrityTests(unittest.TestCase):
             result = verify_training_receipt(adapter, base, REVISION)
             self.assertEqual(result["status"], "LOCAL_ADAPTER_INTEGRITY_CHECK_PASS")
             self.assertTrue(result["baseMetadataVerified"])
+            self.assertTrue(result["baseWeightsVerified"])
             self.assertEqual(result["adapterFilesVerified"], 3)
             self.assertNotIn(str(base), json.dumps(result))
             self.assertNotIn(str(adapter), json.dumps(result))
@@ -80,6 +85,72 @@ class AdapterIntegrityTests(unittest.TestCase):
             (adapter / "injected.bin").write_bytes(b"other content")
             with self.assertRaises(IntegrityRejected):
                 verify_training_receipt(adapter, base, REVISION)
+
+    def test_base_weight_mutation_is_rejected_even_if_metadata_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base, adapter = fabricated_local_experiment(Path(temp))
+            baseline = base_weight_fingerprint(base)
+            self.assertEqual(baseline["baseWeightFiles"], 1)
+            self.assertEqual(baseline, base_weight_fingerprint(base))
+            (base / "model.safetensors").write_bytes(b"different checkpoint bytes")
+            self.assertNotEqual(base_weight_fingerprint(base), baseline)
+            with self.assertRaises(IntegrityRejected):
+                verify_training_receipt(adapter, base, REVISION)
+
+    def test_sharded_checkpoint_index_is_checked_and_hashed(self):
+        with tempfile.TemporaryDirectory() as temp:
+            base = Path(temp)
+            first = "model-00001-of-00002.safetensors"
+            second = "model-00002-of-00002.safetensors"
+            (base / first).write_bytes(b"synthetic first shard")
+            (base / second).write_bytes(b"synthetic second shard")
+            index = base / "model.safetensors.index.json"
+            index.write_text(json.dumps({"metadata": {},
+                        "weight_map": {"a.weight": first, "b.weight": second}}),
+                        encoding="utf-8")
+            fingerprint = base_weight_fingerprint(base)
+            self.assertEqual(fingerprint["baseWeightFiles"], 2)
+            index.write_text(json.dumps({"metadata": {"variation": 1},
+                        "weight_map": {"a.weight": first, "b.weight": second}}),
+                        encoding="utf-8")
+            self.assertNotEqual(fingerprint, base_weight_fingerprint(base))
+            index.write_text(json.dumps({"weight_map": {"a.weight": first}}),
+                             encoding="utf-8")
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(base)
+            index.write_text('{"weight_map":{"a":"../outside.safetensors"}}',
+                             encoding="utf-8")
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(base)
+            index.unlink()
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(base)
+
+    def test_rejects_symlinked_extra_and_invalid_base_weight_layouts(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(root)
+            (root / "unreviewed.safetensors").write_bytes(b"fake")
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(root)
+            (root / "unreviewed.safetensors").unlink()
+            (root / "model.safetensors").write_bytes(b"fake")
+            (root / "extra.safetensors").write_bytes(b"fake")
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(root)
+            (root / "extra.safetensors").unlink()
+            (root / "model.safetensors.index.json").write_text("{}", encoding="utf-8")
+            with self.assertRaises(IntegrityRejected):
+                base_weight_fingerprint(root)
+            (root / "model.safetensors.index.json").unlink()
+            try:
+                (root / "linked.safetensors").symlink_to(root / "model.safetensors")
+            except (OSError, NotImplementedError):
+                pass
+            else:
+                with self.assertRaises(IntegrityRejected):
+                    base_weight_fingerprint(root)
 
     def test_mismatched_checkpoint_revision_or_tokenizer_rejected(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -110,6 +181,8 @@ class AdapterIntegrityTests(unittest.TestCase):
             {"baseRevisionDeclared": "f" * 40},
             {"baseConfigSha256": "f" * 64},
             {"baseTokenizerSha256": "f" * 64},
+            {"baseWeightsSha256": "f" * 64},
+            {"baseWeightFiles": True},
             {"adapterReceiptProtocol": "legacy"},
             {"adapterFileSha256": {"adapter_model.safetensors": "f" * 64}},
         ):
