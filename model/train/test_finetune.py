@@ -64,6 +64,16 @@ class FimEncodingTests(unittest.TestCase):
         self.assertEqual(encoded["labels"], [-100] * len(prefix) + target + [2])
         self.assertEqual(encoded["attention_mask"], [1] * len(encoded["input_ids"]))
 
+    def test_target_token_weights_exclude_masked_prompt_but_include_eos(self):
+        item = finetune.encode_fim(self.sample, self.tokenizer, 1024)
+        supervised = sum(label != -100 for label in item["labels"])
+        middle = self.tokenizer.encode(self.sample["middle"], add_special_tokens=False)
+        self.assertEqual(supervised, len(middle) + 1)
+        self.assertEqual(item["labels"][-1], self.tokenizer.eos_token_id)
+        self.assertEqual(item["labels"].count(-100),
+                         len(self.tokenizer.encode(
+                             finetune.fim_prompt(self.sample), add_special_tokens=False)))
+
     def test_suffix_cannot_leak_loss_into_prompt(self):
         encoded = finetune.encode_fim(self.sample, self.tokenizer, 1024)
         suffix_marker = encoded["input_ids"].index(101)
