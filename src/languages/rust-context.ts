@@ -1,0 +1,158 @@
+/**
+ * Deterministic Rust-only prompt hints. Never execute, compile, parse files,
+ * traverse imports, read Cargo metadata or quote editor content into hints.
+ * The caller already owns an approved bounded context window.
+ */
+const MAX_SCAN_CHARS = 30_000;
+const MAX_HINTS = 4;
+
+type LexicalState = "code" | "line-comment" | "block-comment" |
+  "string" | "raw-string";
+interface RustScan { code: string; state: LexicalState }
+
+/**
+ * Mask comment and literal payloads before looking for Rust constructs.
+ * Preserve newlines so the active line can be recognized. Nested
+ * block comments and raw strings need their own delimiters; an apostrophe
+ * starting a lifetime ('a, 'static) must not be mistaken for a char literal.
+ */
+export function scanRustCode(source: string): RustScan {
+  const text = source.slice(-MAX_SCAN_CHARS);
+  const masked: string[] = [];
+  let state: LexicalState = "code";
+  let blockDepth = 0;
+  let rawHashes = "";
+  let index = 0;
+  const mask = (part: string): void => {
+    for (const c of part) masked.push(c === "\n" ? "\n" : " ");
+  };
+  while (index < text.length) {
+    const rest = text.slice(index);
+    const current = text[index];
+    if (state === "line-comment") {
+      if (current === "\n") {
+        masked.push("\n");
+        state = "code";
+      } else masked.push(" ");
+      index++;
+      continue;
+    }
+    if (state === "block-comment") {
+      if (rest.startsWith("/*")) {
+        blockDepth++;
+        mask("/*");
+        index += 2;
+      } else if (rest.startsWith("*/")) {
+        blockDepth--;
+        mask("*/");
+        index += 2;
+        if (blockDepth === 0) state = "code";
+      } else {
+        mask(current);
+        index++;
+      }
+      continue;
+    }
+    if (state === "raw-string") {
+      const end = '"' + rawHashes;
+      if (rest.startsWith(end)) {
+        mask(end);
+        index += end.length;
+        state = "code";
+      } else {
+        mask(current);
+        index++;
+      }
+      continue;
+    }
+    if (state === "string") {
+      if (current === "\\") {
+        mask(text.slice(index, index + 2));
+        index += Math.min(2, text.length - index);
+        continue;
+      }
+      mask(current);
+      if (current === '"') state = "code";
+      index++;
+      continue;
+    }
+    if (rest.startsWith("//")) {
+      mask("//");
+      index += 2;
+      state = "line-comment";
+      continue;
+    }
+    if (rest.startsWith("/*")) {
+      mask("/*");
+      index += 2;
+      state = "block-comment";
+      blockDepth = 1;
+      continue;
+    }
+    // Recognize Rust r-string and br-string delimiters, not raw identifiers.
+    const raw = /^(?:br|r)(#{0,16})"/u.exec(rest);
+    if (raw && raw[0]) {
+      rawHashes = raw[1] ?? "";
+      mask(raw[0]);
+      index += raw[0].length;
+      state = "raw-string";
+      continue;
+    }
+    if (current === '"' || (current === "b" && text[index + 1] === '"')) {
+      const opening = current === "b" ? 'b"' : '"';
+      mask(opening);
+      index += opening.length;
+      state = "string";
+      continue;
+    }
+    // Complete Rust char or byte-char tokens are masked; lifetimes are not.
+    const character = /^(?:b)?'(?:\\.|[^'\\\n])'/u.exec(rest);
+    if (character && character[0]) {
+      mask(character[0]);
+      index += character[0].length;
+      continue;
+    }
+    masked.push(current);
+    index++;
+  }
+  return { code: masked.join(""), state };
+}
+
+const HINTS = {
+  match: "Rust match arms: preserve pattern bindings and guards; use =>, comma separators and existing braces correctly.",
+  results: "Rust Result/Option: respect return types and use ? only when error/absence propagation is type-compatible; do not invent unwraps.",
+  async: "Rust async code: preserve Future and .await placement, Send constraints and borrowing across suspension points.",
+  traits: "Rust traits and impl blocks: respect associated types, self receivers, trait method signatures and existing where bounds.",
+  borrow: "Rust ownership: preserve lifetimes, mutability and borrowed/owned values; avoid unnecessary clones or moves.",
+  iter: "Rust iterators and closures: preserve item/reference types, closure captures, iterator adapters and collection targets.",
+  macro: "Rust macros: preserve macro_rules! or invocation delimiter structure and Rust token-tree syntax.",
+  generics: "Rust generics: preserve type parameters, lifetimes, trait bounds and where clauses without guessing missing types."
+} as const;
+
+/** Fixed instructions only; never interpolate source, paths, identifiers or comments. */
+export function rustContextHints(prefix: string): string[] {
+  const scan = scanRustCode(prefix);
+  if (scan.state === "line-comment" || scan.state === "block-comment") {
+    return ["Cursor is inside a Rust comment: continue only comment text, not executable statements."];
+  }
+  if (scan.state === "string" || scan.state === "raw-string") {
+    return ["Cursor is inside a Rust string literal: continue its content without inventing extra closing delimiters."];
+  }
+  const code = scan.code.slice(-2200);
+  const hints: string[] = [];
+  const add = (matched: boolean, hint: string): void => {
+    if (matched && hints.length < MAX_HINTS) hints.push(hint);
+  };
+  // Prioritize local completion patterns. Inspect only code tokens, never
+  // quoted string or nested comment payloads.
+  add(/\bmatch\b[\s\S]{0,650}\{|=>|\b(?:Some|None|Ok|Err)\s*\(/u.test(code.slice(-700)), HINTS.match);
+  add(/\b(?:Result|Option)\s*</u.test(code) || /\b(?:Ok|Err|Some|None)\s*\(/u.test(code.slice(-600)) ||
+      /\?\s*;?\s*$/u.test(code), HINTS.results);
+  add(/\basync\s+(?:move\s+)?(?:fn|\{|move)|\.await\b|\bFuture\b/u.test(code), HINTS.async);
+  add(/\b(?:trait\s+[A-Za-z_]|impl(?:\s*<|\s+[A-Za-z_]|\s*\{|\s*'|\s*&))|\b(?:Self|self)\s*\./u.test(code), HINTS.traits);
+  add(/(?:&\s*(?:'\w+\s*)?mut\b|&'\w+\b|\b(?:ref\s+mut|move\s*\|)\b)/u.test(code), HINTS.borrow);
+  add(/\.(?:iter|iter_mut|into_iter|map|filter|collect|fold|enumerate|flat_map)\s*(?:\(|::<)|\bmove\s*\|/u.test(code), HINTS.iter);
+  add(/\bmacro_rules\s*!|\b[A-Za-z_]\w*!\s*[([{]/u.test(code), HINTS.macro);
+  add(/\bwhere\b|\bfn\s+\w+\s*<|\bimpl\s*<|\b(?:dyn|impl)\s+[A-Z]\w*/u.test(code), HINTS.generics);
+  return hints;
+}
