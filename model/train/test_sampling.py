@@ -4,9 +4,15 @@ from __future__ import annotations
 import unittest
 
 try:
-    from .sampling import SamplingRejected, balanced_sample_indices, validation_metrics, compare_validation_losses
+    from .sampling import (
+        SamplingRejected, balanced_sample_indices, validation_metrics,
+        compare_validation_losses, optimizer_step_token_scales, training_token_exposure
+    )
 except ImportError:
-    from sampling import SamplingRejected, balanced_sample_indices, validation_metrics, compare_validation_losses
+    from sampling import (
+        SamplingRejected, balanced_sample_indices, validation_metrics,
+        compare_validation_losses, optimizer_step_token_scales, training_token_exposure
+    )
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
 
@@ -58,6 +64,48 @@ class BalancedSamplingTests(unittest.TestCase):
         random.seed(101)
         balanced_sample_indices(self.samples, LANGUAGES, 11, 42)
         self.assertEqual(random.random(), expected)
+
+
+class TrainingObjectiveTests(unittest.TestCase):
+    def test_step_weights_long_completions_by_actual_target_tokens(self):
+        scales = optimizer_step_token_scales([2, 8])
+        self.assertEqual(scales, (0.2, 0.8))
+        # Example-mean training would be 5.0; supervised-token mean is 8.0.
+        losses = (0.0, 10.0)
+        self.assertAlmostEqual(sum(loss * scale for loss, scale
+                                   in zip(losses, scales)), 8.0)
+        self.assertEqual(optimizer_step_token_scales([7]), (1.0,))
+        self.assertAlmostEqual(sum(optimizer_step_token_scales([3, 5, 11])), 1.0)
+
+    def test_rejects_empty_noninteger_excessive_or_zero_target_lengths(self):
+        for counts in ([], [0], [-1], [258], [True], [1.0],
+                       ["2"], [1] * 17, (1, 2), None):
+            with self.subTest(counts=counts), self.assertRaises(SamplingRejected):
+                optimizer_step_token_scales(counts)
+
+    def test_token_exposure_follows_repeated_training_draws_without_source(self):
+        samples = [{"split": "train", "language": language}
+                   for language in LANGUAGES]
+        report = training_token_exposure(
+            samples, [2, 4, 6, 8, 10], [0, 0, 1, 2, 3, 4], LANGUAGES)
+        self.assertEqual(report["trainingSupervisedTokens"], 32)
+        self.assertEqual(report["trainingSupervisedTokensByLanguage"], {
+            "rust": 4, "c": 4, "cpp": 6, "python": 8, "typescript": 10})
+        self.assertNotIn("source", str(report))
+
+    def test_exposure_fails_closed_for_heldouts_bad_indices_or_counts(self):
+        samples = [{"split": "train", "language": language}
+                   for language in LANGUAGES]
+        for order in ([True], [-1], [5], [0.0], [], "0"):
+            with self.subTest(order=order), self.assertRaises(SamplingRejected):
+                training_token_exposure(samples, [2] * 5, order, LANGUAGES)
+        for tokens in ([2] * 4, [0, 2, 2, 2, 2], [True, 2, 2, 2, 2]):
+            with self.subTest(tokens=tokens), self.assertRaises(SamplingRejected):
+                training_token_exposure(samples, tokens, [0], LANGUAGES)
+        bad = [dict(s) for s in samples]
+        bad[0]["split"] = "test"
+        with self.assertRaises(SamplingRejected):
+            training_token_exposure(bad, [2] * 5, [0], LANGUAGES)
 
 
 class ValidationMetricsTests(unittest.TestCase):

@@ -244,3 +244,51 @@ def compare_validation_losses(before: dict, after: dict,
         "warning": ("Changes are descriptive validation-only loss differences; "
                     "not code correctness, unbiased quality or a promotion decision.")
     }
+
+
+def optimizer_step_token_scales(target_counts: list[int]) -> tuple[float, ...]:
+    """Normalize gradient contributions by supervised tokens in ONE step.
+
+    Transformers returns a per-example mean causal-LM loss. Equal weighting
+    of those means incorrectly gives short and long completions equal
+    influence. Scaling each mean by its target-token fraction recovers the
+    mean loss over the supervised tokens in this optimizer step. This does
+    not weight *different* optimizer steps by corpus token count.
+    """
+    if (not isinstance(target_counts, list) or
+            not 1 <= len(target_counts) <= 16 or
+            any(type(count) is not int or not 1 <= count <= 257
+                for count in target_counts)):
+        raise SamplingRejected("invalid-optimizer-target-tokens")
+    total = sum(target_counts)
+    return tuple(count / total for count in target_counts)
+
+
+def training_token_exposure(samples: list[dict], target_counts: list[int],
+                            draw_order: list[int],
+                            languages: tuple[str, ...]) -> dict:
+    """Source-free count of repeated supervised tokens actually scheduled.
+
+    The balanced sampler balances *example draws*, not supervised tokens.
+    Repeated small language buckets are repeated tokens, not new data.
+    """
+    if (not languages or len(set(languages)) != len(languages) or
+            len(samples) != len(target_counts) or
+            not isinstance(draw_order, list) or
+            not 1 <= len(draw_order) <= 1_000_000):
+        raise SamplingRejected("invalid-training-exposure-scope")
+    counts = {language: 0 for language in languages}
+    for sample, count in zip(samples, target_counts):
+        if (not isinstance(sample, dict) or
+                sample.get("language") not in counts or
+                sample.get("split") != "train" or
+                type(count) is not int or not 1 <= count <= 257):
+            raise SamplingRejected("invalid-training-exposure-record")
+    for index in draw_order:
+        if type(index) is not int or not 0 <= index < len(samples):
+            raise SamplingRejected("invalid-training-draw-index")
+        counts[samples[index]["language"]] += target_counts[index]
+    return {
+        "trainingSupervisedTokens": sum(counts.values()),
+        "trainingSupervisedTokensByLanguage": counts,
+    }

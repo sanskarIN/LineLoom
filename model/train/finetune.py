@@ -18,13 +18,19 @@ import subprocess
 import sys
 
 try:
-    from .sampling import balanced_sample_indices, validation_metrics, compare_validation_losses
+    from .sampling import (
+        balanced_sample_indices, validation_metrics, compare_validation_losses,
+        optimizer_step_token_scales, training_token_exposure
+    )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
     )
 except ImportError:
-    from sampling import balanced_sample_indices, validation_metrics, compare_validation_losses
+    from sampling import (
+        balanced_sample_indices, validation_metrics, compare_validation_losses,
+        optimizer_step_token_scales, training_token_exposure
+    )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
@@ -194,6 +200,7 @@ def private_report(audit: dict, digest: str, steps: int, max_tokens: int,
         "plannedTrainingMicrobatches": steps * gradient_accumulation,
         "plannedTrainingMicrobatchesByLanguage": exposure,
         "trainingSampler": "seeded-language-balanced-v1",
+        "plannedTrainingLossObjective": "per-step-supervised-token-mean-v1",
         "seed": seed,
         "maxSequenceTokens": max_tokens,
         "requires": [
@@ -252,6 +259,11 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     exposure = {language: 0 for language in LANGUAGES}
     for index in sample_order:
         exposure[train_samples[index]["language"]] += 1
+    train_target_tokens = [sum(label != -100 for label in item["labels"])
+                           for item in train_set]
+    scheduled_tokens = training_token_exposure(
+        train_samples, train_target_tokens, sample_order, LANGUAGES
+    )
     model = AutoModelForCausalLM.from_pretrained(
         str(model_dir), local_files_only=True, trust_remote_code=False,
         use_safetensors=True, torch_dtype=dtype
@@ -291,14 +303,23 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
                                            validation_target_tokens)
     model.train()
 
+    # Gradient accumulation must respect the number of unmasked target
+    # tokens. Each HF loss is a per-example mean; equal microbatch weights
+    # would overrepresent short completions within an optimizer step.
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
-        for micro in range(args.gradient_accumulation):
-            index = sample_order[step * args.gradient_accumulation + micro]
+        chosen = sample_order[
+            step * args.gradient_accumulation:
+            (step + 1) * args.gradient_accumulation
+        ]
+        scales = optimizer_step_token_scales(
+            [train_target_tokens[index] for index in chosen]
+        )
+        for index, scale in zip(chosen, scales):
             output = model(**tensors(train_set[index]))
             if not torch.isfinite(output.loss).all():
                 raise ExperimentRejected("nonfinite-training-loss")
-            (output.loss / args.gradient_accumulation).backward()
+            (output.loss * scale).backward()
         torch.nn.utils.clip_grad_norm_(parameters, max_norm=1.0)
         optimizer.step()
 
@@ -339,6 +360,8 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         "seed": args.seed,
         "trainingSampler": "seeded-language-balanced-v1",
         "trainingMicrobatchesByLanguage": exposure,
+        "trainingLossObjective": "per-step-supervised-token-mean-v1",
+        **scheduled_tokens,
         **validation,
         "validationBeforeTraining": validation_before,
         **compare_validation_losses(validation_before, validation, LANGUAGES),

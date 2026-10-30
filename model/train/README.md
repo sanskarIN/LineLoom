@@ -151,6 +151,37 @@ test examples or prints source, repository identities or completions.
 The extra validation pass costs local compute and will only run after
 the explicit approvals required by the training CLI.
 
+### Token-normalized optimizer steps (development)
+
+The local LoRA trainer now makes its **training** loss consistent with the
+supervised-token view available in validation. Hugging Face returns a mean
+loss over the non-masked completion tokens for each one-example microbatch.
+Previously, gradient accumulation divided every microbatch loss by the
+number of microbatches: a two-token completion and a twenty-token
+completion therefore had equal influence within the optimizer step.
+
+The new `per-step-supervised-token-mean-v1` objective scales each
+microbatch loss by its **number of supervised middle-plus-EOS tokens divided
+by the total supervised tokens in that optimizer step**. For example,
+with 2 and 8 target tokens, the loss coefficients are 0.2 and 0.8 instead
+of 0.5 and 0.5. Only unmasked labels count. The change does not alter
+FIM prompt formatting, validation, per-language round-robin *example*
+sampling, the LoRA rank, or the sealed `test` split. Different optimizer
+steps still receive equal optimizer-step updates, even when their
+token totals differ. It is therefore **per-step token normalization**,
+not a globally token-proportional optimizer or proof of better code.
+
+The offline planning report identifies the objective but does not
+tokenize private data. An explicitly authorized local training experiment
+will record `trainingLossObjective`,
+`trainingSupervisedTokens` and
+`trainingSupervisedTokensByLanguage` alongside
+`trainingMicrobatchesByLanguage`. These count repeated scheduled
+training draws, not unique source tokens or new data; they expose
+differences between language-balanced example exposure and token exposure.
+The pure-Python regression tests require no checkpoint, GPU or data
+download. **Actual fine-tuning and measured model gains remain NOT RUN.**
+
 ### Target-token-weighted validation (development)
 
 The trainer also measures **token-weighted validation loss** before and

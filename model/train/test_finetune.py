@@ -186,6 +186,8 @@ class LocalGateTests(unittest.TestCase):
             self.assertEqual(summary["samples"], 15)
             self.assertEqual(summary["byLanguageAndSplit"]["cpp"]["test"], 1)
             self.assertEqual(summary["trainingSampler"], "seeded-language-balanced-v1")
+            self.assertEqual(summary["plannedTrainingLossObjective"],
+                             "per-step-supervised-token-mean-v1")
             self.assertEqual(summary["plannedTrainingMicrobatches"], 40)
             self.assertEqual(summary["plannedTrainingMicrobatchesByLanguage"],
                              {language: 8 for language in finetune.LANGUAGES})
