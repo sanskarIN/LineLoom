@@ -28,7 +28,8 @@ except ImportError:
 
 def simulated_report(kind: str, language: str = "all", tokens: int = 64,
                      score: int = 2, token_cap_exits: int = 0,
-                     python_syntax_failures: int = 0) -> dict:
+                     python_syntax_failures: int = 0,
+                     typescript_syntax_failures: int = 0) -> dict:
     """Test-only synthetic counts; never claim these represent real inference."""
     selected = read_public_fixtures(language)
     groups = {}
@@ -39,6 +40,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
             "strictExactMatches": min(score, attempts),
         }
     seen_python = 0
+    seen_typescript = 0
     outcomes = []
     for fixture in selected:
         status = "unchecked"
@@ -46,6 +48,10 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
             status = ("failed" if seen_python < python_syntax_failures
                       else "passed")
             seen_python += 1
+        if fixture["language"] == "typescript":
+            status = ("failed" if seen_typescript < typescript_syntax_failures
+                      else "passed")
+            seen_typescript += 1
         outcomes.append({"language": fixture["language"], "syntaxOutcome": status})
     timings = generation_latency_summary([
         {"language": item["language"],
@@ -150,7 +156,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v7")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v8")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
@@ -168,16 +174,18 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["baseTokenLimitExits"], 0)
         self.assertEqual(result["adapterTokenLimitExits"], 0)
         self.assertEqual(result["terminationReview"], "NO_TOKEN_LIMIT_EXITS_RECORDED")
-        self.assertEqual(result["syntaxAccounting"], "python-ast-only-v1")
-        self.assertEqual(result["syntaxCheckedPerModel"], 6)
-        self.assertEqual(result["syntaxUncheckedPerModel"], 24)
+        self.assertEqual(result["syntaxAccounting"], "python-ast-typescript-parser-v1")
+        self.assertEqual(result["syntaxCheckedPerModel"], 12)
+        self.assertEqual(result["syntaxUncheckedPerModel"], 18)
         self.assertEqual(result["basePythonAstPassed"], 6)
         self.assertEqual(result["adapterPythonAstPassed"], 6)
         self.assertEqual(result["pythonAstPassedDelta"], 0)
         self.assertEqual(result["syntaxReview"],
-                         "PYTHON_AST_ONLY_OTHER_LANGUAGES_UNCHECKED")
+                         "PYTHON_TYPESCRIPT_PARSERS_ONLY_OTHER_LANGUAGES_UNCHECKED")
         self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 0)
-        self.assertEqual(result["perLanguage"]["python"]["basePythonAstPassed"], 6)
+        self.assertEqual(result["perLanguage"]["python"]["baseSyntaxPassed"], 6)
+        self.assertEqual(result["perLanguage"]["typescript"]["baseSyntaxPassed"], 6)
+        self.assertEqual(result["baseTypeScriptParserPassed"], 6)
         self.assertEqual(result["perLanguage"]["rust"]["tokenLimitExitDelta"], 0)
 
         self.assertNotIn("fixtureSetSha256", result)
@@ -393,8 +401,8 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["adapterPythonAstPassed"], 5)
         self.assertEqual(result["pythonAstPassedDelta"], 1)
         self.assertEqual(result["basePythonAstFailed"], 2)
-        self.assertEqual(result["syntaxReview"], "PYTHON_AST_FAILURES_REQUIRE_REVIEW")
-        self.assertEqual(result["perLanguage"]["python"]["adapterPythonAstFailed"], 1)
+        self.assertEqual(result["syntaxReview"], "GENERATED_SYNTAX_FAILURES_REQUIRE_REVIEW")
+        self.assertEqual(result["perLanguage"]["python"]["adapterSyntaxFailed"], 1)
         self.assertNotIn("syntaxByLanguage", result)
         self.assertNotIn("generatedSource", result)
         only_rust = compare_smoke.compare_reports(
@@ -404,6 +412,28 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(only_rust["syntaxCheckedPerModel"], 0)
         self.assertEqual(only_rust["syntaxUncheckedPerModel"], 6)
         self.assertEqual(only_rust["syntaxReview"], "NO_SYNTAX_CHECKS_FOR_SCOPE")
+
+    def test_typescript_syntax_deltas_are_separate_from_python_ast_deltas(self):
+        base = simulated_report("local-base-model", typescript_syntax_failures=2)
+        adapter = simulated_report("local-lora-adapter", typescript_syntax_failures=1)
+        compared = compare_smoke.compare_reports(base, adapter)
+        self.assertEqual(compared["baseTypeScriptParserPassed"], 4)
+        self.assertEqual(compared["adapterTypeScriptParserPassed"], 5)
+        self.assertEqual(compared["typeScriptParserPassedDelta"], 1)
+        self.assertEqual(compared["baseTypeScriptParserFailed"], 2)
+        self.assertEqual(compared["adapterTypeScriptParserFailed"], 1)
+        self.assertEqual(compared["pythonAstPassedDelta"], 0)
+        self.assertEqual(compared["perLanguage"]["typescript"]["syntaxPassedDelta"], 1)
+        self.assertEqual(compared["syntaxReview"], "GENERATED_SYNTAX_FAILURES_REQUIRE_REVIEW")
+
+        selected = compare_smoke.compare_reports(
+            simulated_report("local-base-model", language="typescript"),
+            simulated_report("local-lora-adapter", language="typescript")
+        )
+        self.assertEqual(selected["syntaxCheckedPerModel"], 6)
+        self.assertEqual(selected["syntaxUncheckedPerModel"], 0)
+        self.assertEqual(selected["basePythonAstPassed"], 0)
+        self.assertEqual(selected["baseTypeScriptParserPassed"], 6)
 
     def test_fabricated_ast_totals_and_illegal_non_python_passes_rejected(self):
         for field, value in (
@@ -423,6 +453,10 @@ class CompareSmokeTests(unittest.TestCase):
             ("python", {"passed": 5}),
             ("python", {"checked": 5}),
             ("python", {"failed": 1}),
+            ("typescript", {"checked": 5}),
+            ("typescript", {"unchecked": 1}),
+            ("typescript", {"passed": 5}),
+            ("typescript", {"failed": 1}),
             ("rust", {"passed": 1}),
             ("rust", {"unchecked": 5}),
             ("c", {"unchecked": True}),
@@ -436,6 +470,10 @@ class CompareSmokeTests(unittest.TestCase):
                 compare_smoke.compare_reports(self.base, candidate)
         candidate = simulated_report("local-lora-adapter", python_syntax_failures=5)
         # A fabricated exact-match count cannot exceed Python AST successes.
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
+        candidate = simulated_report("local-lora-adapter",
+                                     typescript_syntax_failures=5)
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(self.base, candidate)
 
