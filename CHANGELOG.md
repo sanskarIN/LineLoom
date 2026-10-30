@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — source after v1.4.2 (not distributed)
+
+- [PR #164](https://github.com/sanskarIN/LineLoom/pull/164): prevent the prefix-echo cleanup from truncating an otherwise valid generated identifier. Match complete UTF-16/Unicode identifier boundaries, preserve genuine short keyword echoes, and cover both cases with focused regression tests.
+- The change passed cross-platform TypeScript/lint/unit/build checks, the mocked Linux VS Code extension host, dependency security, and an isolated VSIX candidate/install/upgrade workflow ([CI](https://github.com/sanskarIN/LineLoom/actions/runs/41006725916)). These are automated source/packaging checks, **not** measured real Ollama quality or physical-editor acceptance.
+- No GitHub tag, public VSIX, npm CLI package, Marketplace/Open VSX version, trained LineLoom Code weights, or publisher-ID migration was made by this PR. The latest published preview remains v1.4.2 and GitHub stable remains v1.3.0.
+
 ## v1.4.2 — GitHub-only pre-release (published 2026-10-27)
 
 - [#144](https://github.com/sanskarIN/LineLoom/pull/144): opt-in HTML/CSS/Lua with original nine enabled language defaults preserved.
