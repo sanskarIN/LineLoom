@@ -69,6 +69,24 @@ describe("completion filtering", () => {
   });
   it("removes echoed current line", () => expect(cleanCompletion("let x = 3;", "let x = ", "", true)).toBe("3;"));
   it("rejects conversational responses", () => expect(cleanCompletion("Certainly, I can help", "", "", true)).toBe(""));
+  it("removes only indentation already typed on an otherwise blank editor line", () => {
+    // On acceptance the editor retains the prefix; repeating its leading
+    // spaces would turn four-space Python indentation into eight spaces.
+    expect(cleanCompletion("    return value", "def compute():\n    ", "", true)).toBe("return value");
+    expect(cleanCompletion("\treturn value", "def compute():\n\t", "", true)).toBe("return value");
+    expect(cleanCompletion(" \tresult = x", "def compute():\n \t", "", true)).toBe("result = x");
+    expect(cleanCompletion("        pass", "if ready:\n    ", "", true)).toBe("    pass");
+    expect(cleanCompletion("        return x\n    # note", "def compute():\n    ", "", true))
+      .toBe("    return x\n    # note");
+  });
+  it("keeps genuine new-line indentation and non-blank cursor spacing", () => {
+    expect(cleanCompletion("    return value", "def compute():\n", "", true)).toBe("    return value");
+    expect(cleanCompletion("\n    return value", "def compute():\n    ", "", true))
+      .toBe("\n    return value");
+    expect(cleanCompletion("    return value", "if ready: ", "", true)).toBe("    return value");
+    expect(cleanCompletion("    return value", "const code = ", "", true)).toBe("    return value");
+    expect(cleanCompletion("    return value", "prefix\n  x", "", true)).toBe("    return value");
+  });
   it("preserves meaningful Python indentation", () =>
     expect(cleanCompletion("    return answer\n", "def calculate():\n", "", true)).toBe("    return answer\n"));
   it("drops partial prefix echo from language models", () =>
