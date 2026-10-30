@@ -111,6 +111,18 @@ test("heuristics reject obvious secrets, emails, unsafe Unicode and control char
     const copy = good(); copy.samples[0].middle += poison; shouldReject(copy);
   }
 });
+test("rejects reserved FIM and chat tokens from any training span", () => {
+  for (const marker of [
+    "<|fim_prefix|>", "<|fim_suffix|>", "<|fim_middle|>",
+    "<|endoftext|>", "<|im_start|>", "<|im_end|>", "<|file_sep|>"
+  ]) {
+    for (const part of ["prefix", "middle", "suffix"]) {
+      const manifest = good();
+      manifest.samples[0][part] += " /*" + marker + "*/";
+      shouldReject(manifest);
+    }
+  }
+});
 test("bounded CLI is offline, does not echo source/paths on success or rejection", () => {
   const root = mkdtempSync(join(tmpdir(), "lineloom-private-corpus-"));
   const file = join(root, "private-source-with-names.json");
