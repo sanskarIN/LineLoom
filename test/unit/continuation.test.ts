@@ -84,6 +84,77 @@ describe("typed suggestion continuation", () => {
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 201)).toBeUndefined();
   });
 
+  it("reuses a whole astral code point only when both UTF-16 units were inserted", () => {
+    const cache = new ContinuationCache();
+    cache.remember(sample(), "🚀launch()", 100);
+    const actualEdit = [{ rangeOffset: 15, rangeLength: 0, text: "🚀" }];
+    cache.invalidateOnEdit("file:///sample.ts", 5, actualEdit);
+    expect(cache.remainder(sample({
+      version: 5, offset: 17, prefix: "const answer = 🚀"
+    }), 200)).toBe("launch()");
+  });
+
+  it("refuses ghost-text remainders split between Unicode surrogate halves", () => {
+    const cache = new ContinuationCache();
+    cache.remember(sample(), "🚀launch()", 100);
+    const high = "🚀".slice(0, 1);
+    // The editor event must immediately revoke this typed continuation.
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: high }
+    ]);
+    expect(cache.remainder(sample({
+      version: 5, offset: 16, prefix: "const answer = " + high
+    }), 200)).toBeUndefined();
+
+    // Do not rely solely on receiving a timely VS Code document event:
+    // the remainder check itself must reject a half-code-point boundary.
+    cache.remember(sample(), "🚀launch()", 300);
+    expect(cache.remainder(sample({
+      version: 5, offset: 16, prefix: "const answer = " + high
+    }), 400)).toBeUndefined();
+  });
+
+  it("never caches malformed Unicode, including lone surrogates within suggestions", () => {
+    for (const invalid of [
+      "hi" + String.fromCharCode(0xd800),
+      String.fromCharCode(0xdc00) + "abc",
+      "a" + String.fromCharCode(0xd800) + "b",
+      "a" + String.fromCharCode(0xdc00) + String.fromCharCode(0xd800)
+    ]) {
+      const cache = new ContinuationCache();
+      cache.remember(sample(), invalid, 100);
+      expect(cache.remainder(sample({
+        version: 5, offset: 16, prefix: "const answer = " + invalid.slice(0, 1)
+      }), 200)).toBeUndefined();
+    }
+    const valid = new ContinuationCache();
+    valid.remember(sample(), "name🚀tail", 100);
+    // Boundary after the letter 'n' remains valid even with an astral character later.
+    expect(valid.remainder(sample({
+      version: 5, offset: 16, prefix: "const answer = n"
+    }), 200)).toBe("ame🚀tail");
+  });
+
+  it("refuses an edit ending at a surrogate split even with other valid text before it", () => {
+    const cache = new ContinuationCache();
+    const original = "let🚀value";
+    cache.remember(sample(), original, 100);
+    const partial = original.slice(0, 4); // 'let' + high surrogate only.
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: partial }
+    ]);
+    expect(cache.remainder(sample({
+      version: 5, offset: 19, prefix: "const answer = " + partial
+    }), 200)).toBeUndefined();
+    cache.remember(sample(), original, 300);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: original.slice(0, 5) }
+    ]);
+    expect(cache.remainder(sample({
+      version: 5, offset: 20, prefix: "const answer = let🚀"
+    }), 400)).toBe("value");
+  });
+
   it("ignores metadata-only VS Code notifications following a valid edit", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "42", 100);
