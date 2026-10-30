@@ -151,6 +151,29 @@ test examples or prints source, repository identities or completions.
 The extra validation pass costs local compute and will only run after
 the explicit approvals required by the training CLI.
 
+### Target-token-weighted validation (development)
+
+The trainer also measures **token-weighted validation loss** before and
+after optimizer updates, alongside its existing per-example loss. For each
+validation example, Hugging Face causal LM loss averages the supervised FIM
+middle **plus EOS** tokens (all prompt and suffix tokens have label `-100`).
+If one completion has two supervised tokens and another has forty, the
+existing per-example metric gives both examples one vote; the new
+`validationTokenWeightedLoss` averages them in proportion to the number
+of supervised target tokens. The `validationMacroTokenWeightedLoss`
+assigns equal importance to each of the five languages after its own
+target-token weighting.
+
+`validationTargetTokens`, `validationTargetTokensByLanguage`,
+`validationTokenWeightedLossByLanguage`, and token-weighted
+before/after deltas are added to the same **private, source-free** experiment
+receipt. The comparison requires identical supervised-token counts per
+language and refuses missing fields or malformed numeric inputs.
+Token-weighted averages are **not** evidence of correct generated code,
+real editor usefulness or target-language parity. A longer target has more
+weight by definition; both per-example and per-token views are needed.
+No samples from the sealed test split are loaded.
+
 All these metrics are **descriptive losses**, not code correctness,
 quality, fairness or acceptance scores. Oversampling a small language
 bucket only repeats the same examples; it does **not** create additional
