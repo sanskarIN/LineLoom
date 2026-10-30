@@ -87,7 +87,11 @@ def audit_public_references(language: str = "all", *, run: bool = False,
 
     # Resolve tools once per language. Missing required tools cause an
     # incomplete result, never an implicitly successful all-language audit.
-    binaries = {key: resolve_tool(tool) for key, tool in TOOLS.items()}
+    # Scoped audits must not even discover unrelated executable names.
+    # This keeps an AST-only Python audit free from compiler discovery.
+    required = {fixture["language"] for fixture in fixtures
+                if fixture["language"] in TOOLS}
+    binaries = {key: resolve_tool(TOOLS[key]) for key in TOOLS if key in required}
     with tempfile.TemporaryDirectory(prefix="lineloom-reference-") as temporary:
         for index, fixture in enumerate(fixtures):
             lang = fixture["language"]
