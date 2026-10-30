@@ -65,14 +65,8 @@ def same_manifest_file(before: os.stat_result, after: os.stat_result) -> bool:
              after.st_mtime_ns, after.st_ctime_ns))
 
 
-def audit_manifest(path: Path) -> tuple[dict, dict, str]:
-    """Run the project's real offline Node audit BEFORE returning any records.
-
-    The SHA-256 before/after rejects ordinary concurrent file changes. This
-    is not a rights/PII attestation or protection against hostile local races.
-    """
-    # Fail before loading file contents. A separately named local symlink
-    # is not an approved manifest; bounded reads prevent giant-file memory use.
+def read_bounded_manifest_bytes(path: Path) -> bytes:
+    """Use checked descriptors and a fixed read cap for both audit snapshots."""
     before = path.lstat()
     if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= MAX_MANIFEST_BYTES:
         raise ExperimentRejected("manifest-size")
@@ -88,6 +82,16 @@ def audit_manifest(path: Path) -> tuple[dict, dict, str]:
             not same_manifest_file(before, closed) or
             not same_manifest_file(before, path.lstat())):
         raise ExperimentRejected("manifest-changed")
+    return raw
+
+
+def audit_manifest(path: Path) -> tuple[dict, dict, str]:
+    """Run the project's real offline Node audit BEFORE returning any records.
+
+    Checked and bounded reads before/after reject ordinary concurrent edits.
+    This is not a rights/PII attestation or hostile-local-race protection.
+    """
+    raw = read_bounded_manifest_bytes(path)
     digest = hashlib.sha256(raw).hexdigest()
     try:
         check = subprocess.run(
@@ -99,14 +103,14 @@ def audit_manifest(path: Path) -> tuple[dict, dict, str]:
             raise ExperimentRejected("data-audit")
         audit = json.loads(check.stdout)
         manifest = json.loads(raw.decode("utf-8", errors="strict"))
-        if hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+        if hashlib.sha256(read_bounded_manifest_bytes(path)).hexdigest() != digest:
             raise ExperimentRejected("manifest-changed")
         if audit.get("status") != "MECHANICAL_CHECKS_PASS_ONLY":
             raise ExperimentRejected("data-audit-status")
         if len(manifest["samples"]) != audit["samples"]:
             raise ExperimentRejected("audit-mismatch")
         return manifest, audit, digest
-    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired) as exc:
+    except (OSError, ValueError, KeyError, subprocess.TimeoutExpired):
         raise ExperimentRejected("dataset-rejected") from None
 
 
