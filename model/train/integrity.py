@@ -246,7 +246,11 @@ def verify_training_receipt(adapter_dir: Path, base_dir: Path, revision: str) ->
             receipt["validationSamples"] <= 0 or
             not isinstance(receipt.get("trainingManifestSha256"), str) or
             not SHA256.fullmatch(receipt["trainingManifestSha256"]) or
-            receipt.get("baseRevisionDeclared") != revision):
+            receipt.get("baseRevisionDeclared") != revision or
+            type(receipt.get("baseWeightFiles")) is not int or
+            not 1 <= receipt["baseWeightFiles"] <= MAX_BASE_WEIGHT_FILES or
+            not isinstance(receipt.get("baseWeightsSha256"), str) or
+            not SHA256.fullmatch(receipt["baseWeightsSha256"])):
         raise IntegrityRejected("adapter-receipt-mismatch")
     metadata = {**base_metadata_hashes(base_dir), **base_weight_fingerprint(base_dir)}
     if any(receipt.get(key) != digest for key, digest in metadata.items()):
