@@ -49,6 +49,30 @@ class LocalSmokeTests(unittest.TestCase):
         with self.assertRaises(ExperimentRejected):
             smoke.summarize([{"language": "python", "exact": "yes"}])
 
+    def test_generation_timing_nearest_rank_and_no_source_output(self):
+        from_smoke = smoke.generation_latency_summary([
+            {"language": "rust", "generationMs": 8},
+            {"language": "rust", "generationMs": 20},
+            {"language": "rust", "generationMs": 11},
+            {"language": "python", "generationMs": 3},
+        ])
+        self.assertEqual(from_smoke["latencyMeasurement"], "monotonic-generation-only-v1")
+        self.assertEqual(from_smoke["generationP50Ms"], 8)
+        self.assertEqual(from_smoke["generationP95Ms"], 20)
+        self.assertEqual(from_smoke["generationLatencyByLanguage"]["rust"],
+                         {"attempts": 3, "p50Ms": 11, "p95Ms": 20})
+        self.assertEqual(from_smoke["generationLatencyByLanguage"]["c"],
+                         {"attempts": 0, "p50Ms": None, "p95Ms": None})
+        self.assertNotIn("prefix", json.dumps(from_smoke))
+        for invalid in (True, 1.5, -1, 3_600_001, float("nan"), "10"):
+            with self.subTest(invalid=invalid), self.assertRaises(ValueError):
+                smoke.generation_latency_summary([
+                    {"language": "rust", "generationMs": invalid}
+                ])
+        for invalid in ([], "invalid", [{"language": "other", "generationMs": 10}]):
+            with self.assertRaises(ValueError):
+                smoke.generation_latency_summary(invalid)
+
     def test_adapter_validation_requires_local_peft_files(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp)
@@ -117,7 +141,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 6)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v3")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v4")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
