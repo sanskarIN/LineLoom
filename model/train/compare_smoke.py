@@ -141,6 +141,29 @@ def _validated_report(report: dict, kind: str) -> dict:
                 raise SmokeReportRejected("invalid-generation-language-latency")
         elif group["p50Ms"] is not None or group["p95Ms"] is not None:
             raise SmokeReportRejected("unexpected-generation-language-latency")
+    if report.get("generatedTokenAccounting") != "new-token-ids-including-stop-v1":
+        raise SmokeReportRejected("invalid-generated-token-method")
+    total = report.get("generatedTokenCount")
+    if (type(total) is not int or
+            not attempts <= total <= attempts * tokens):
+        raise SmokeReportRejected("invalid-generated-token-total")
+    token_groups = report.get("generatedTokensByLanguage")
+    if not isinstance(token_groups, dict) or set(token_groups) != set(LANGUAGES):
+        raise SmokeReportRejected("invalid-generated-token-groups")
+    counted_tokens = 0
+    for name in LANGUAGES:
+        group = token_groups[name]
+        expected_count = groups[name]["attempts"]
+        if (not isinstance(group, dict) or
+                set(group) != {"attempts", "totalTokens"} or
+                type(group["attempts"]) is not int or
+                group["attempts"] != expected_count or
+                type(group["totalTokens"]) is not int or
+                not expected_count <= group["totalTokens"] <= expected_count * tokens):
+            raise SmokeReportRejected("invalid-generated-token-language")
+        counted_tokens += group["totalTokens"]
+    if counted_tokens != total:
+        raise SmokeReportRejected("mismatched-generated-token-total")
     return report
 
 
@@ -163,11 +186,16 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         after = right["perLanguage"][language]["strictExactMatches"]
         left_timing = left["generationLatencyByLanguage"][language]
         right_timing = right["generationLatencyByLanguage"][language]
+        left_tokens = left["generatedTokensByLanguage"][language]["totalTokens"]
+        right_tokens = right["generatedTokensByLanguage"][language]["totalTokens"]
         by_language[language] = {
             "attemptsPerModel": left["perLanguage"][language]["attempts"],
             "baseStrictExactMatches": before,
             "adapterStrictExactMatches": after,
             "adapterMinusBase": after - before,
+            "baseGeneratedTokens": left_tokens,
+            "adapterGeneratedTokens": right_tokens,
+            "generatedTokenDelta": right_tokens - left_tokens,
             "baseGenerationP50Ms": left_timing["p50Ms"],
             "adapterGenerationP50Ms": right_timing["p50Ms"],
             "generationP50DeltaMs": (
@@ -182,13 +210,22 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v3",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v4",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
         "adapterMinusBase": delta,
+        "generatedTokenAccounting": "new-token-ids-including-stop-v1",
+        "baseGeneratedTokens": left["generatedTokenCount"],
+        "adapterGeneratedTokens": right["generatedTokenCount"],
+        "generatedTokenDelta": right["generatedTokenCount"] - left["generatedTokenCount"],
+        "generatedTokenCountStatus": (
+            "AGGREGATE_TOKEN_TOTALS_MATCH_ONLY"
+            if left["generatedTokenCount"] == right["generatedTokenCount"]
+            else "DIFFERENT_GENERATED_TOKEN_TOTALS"
+        ),
         "latencyMeasurement": "monotonic-generation-only-v1",
         "baseGenerationP50Ms": left["generationP50Ms"],
         "adapterGenerationP50Ms": right["generationP50Ms"],
@@ -202,7 +239,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "do not verify real weights, compute environment, code "
                        "correctness, hardware parity, editor latency, acceptance "
                        "or release readiness. Generation-only timings are "
-                       "descriptive, and small samples are unstable."),
+                       "descriptive, and small samples are unstable. "
+                       "Different generated token counts confound absolute latency; "
+                       "even equal totals do not prove per-probe length parity."),
     }
 
 
