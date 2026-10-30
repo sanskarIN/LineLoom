@@ -51,10 +51,14 @@ class LocalSmokeTests(unittest.TestCase):
 
     def test_generation_timing_nearest_rank_and_no_source_output(self):
         from_smoke = smoke.generation_latency_summary([
-            {"language": "rust", "generationMs": 8, "generationTokens": 2},
-            {"language": "rust", "generationMs": 20, "generationTokens": 3},
-            {"language": "rust", "generationMs": 11, "generationTokens": 4},
-            {"language": "python", "generationMs": 3, "generationTokens": 5},
+            {"language": "rust", "generationMs": 8, "generationTokens": 2,
+             "terminationReason": "stop-token"},
+            {"language": "rust", "generationMs": 20, "generationTokens": 3,
+             "terminationReason": "stop-token"},
+            {"language": "rust", "generationMs": 11, "generationTokens": 4,
+             "terminationReason": "stop-token"},
+            {"language": "python", "generationMs": 3, "generationTokens": 5,
+             "terminationReason": "stop-token"},
         ])
         self.assertEqual(from_smoke["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(from_smoke["generationP50Ms"], 8)
@@ -65,6 +69,10 @@ class LocalSmokeTests(unittest.TestCase):
                          {"attempts": 0, "p50Ms": None, "p95Ms": None})
         self.assertEqual(from_smoke["generatedTokenAccounting"], "new-token-ids-including-stop-v1")
         self.assertEqual(from_smoke["generatedTokenCount"], 14)
+        self.assertEqual(from_smoke["terminationAccounting"], "stop-token-or-token-limit-v1")
+        self.assertEqual(from_smoke["terminationCounts"], {"stopToken": 4, "tokenLimit": 0})
+        self.assertEqual(from_smoke["terminationByLanguage"]["rust"],
+                         {"attempts": 3, "stopToken": 3, "tokenLimit": 0})
         self.assertEqual(from_smoke["generatedTokensByLanguage"]["rust"],
                          {"attempts": 3, "totalTokens": 9})
         self.assertEqual(from_smoke["generatedTokensByLanguage"]["c"],
@@ -74,22 +82,58 @@ class LocalSmokeTests(unittest.TestCase):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
                 smoke.generation_latency_summary([
                     {"language": "rust", "generationMs": invalid,
-                     "generationTokens": 1}
+                     "generationTokens": 1, "terminationReason": "stop-token"}
                 ])
         for invalid in ([], "invalid", [{"language": "other", "generationMs": 10,
-                                            "generationTokens": 1}]):
+                                            "generationTokens": 1, "terminationReason": "stop-token"}]):
             with self.assertRaises(ValueError):
                 smoke.generation_latency_summary(invalid)
         for invalid in (None, True, 0, -1, 129, 1.5, float("nan"), "10"):
             with self.subTest(token_count=invalid), self.assertRaises(ValueError):
                 smoke.generation_latency_summary([
                     {"language": "rust", "generationMs": 10,
-                     "generationTokens": invalid}
+                     "generationTokens": invalid, "terminationReason": "stop-token"}
                 ])
         with self.assertRaises(ValueError):
             smoke.generation_latency_summary([
-                {"language": "rust", "generationMs": 10, "generationTokens": 3}
+                {"language": "rust", "generationMs": 10, "generationTokens": 3,
+                 "terminationReason": "stop-token"}
             ], max_new_tokens=2)
+
+    def test_fim_termination_classification_is_exact_and_private(self):
+        classify = smoke.classify_generation_termination
+        stop = [2, 13]
+        self.assertEqual(classify([5, 13], stop, 5), "stop-token")
+        self.assertEqual(classify([5, 6, 7], stop, 3), "token-limit")
+        # Stop at the exact cap is still a stop-token exit, never a truncation.
+        self.assertEqual(classify([3, 13], stop, 2), "stop-token")
+        for ids, endings, cap in (
+            ([], stop, 5), ([3], stop, 5),
+            ([13, 5], stop, 5), ([3, 13, 5], stop, 5),
+            ([4, 5, 6], stop, 2), ([True], stop, 1),
+            ([1], [True], 1), ([1], [], 1),
+            ([1], stop, 0), ([1], stop, True),
+        ):
+            with self.subTest(ids=ids, stop=endings, cap=cap), self.assertRaises(ValueError):
+                classify(ids, endings, cap)
+        values = smoke.generation_latency_summary([
+            {"language": "rust", "generationMs": 10, "generationTokens": 4,
+             "terminationReason": "token-limit"},
+            {"language": "c", "generationMs": 8, "generationTokens": 2,
+             "terminationReason": "stop-token"},
+        ], max_new_tokens=4)
+        self.assertEqual(values["terminationCounts"], {"stopToken": 1, "tokenLimit": 1})
+        self.assertEqual(values["terminationByLanguage"]["rust"]["tokenLimit"], 1)
+        self.assertEqual(values["terminationByLanguage"]["cpp"]["attempts"], 0)
+        self.assertNotIn("generated_ids", json.dumps(values))
+        for reason, count in (
+            ("token-limit", 3), ("invalid", 4), (True, 4),
+        ):
+            with self.subTest(reason=reason), self.assertRaises(ValueError):
+                smoke.generation_latency_summary([
+                    {"language": "rust", "generationMs": 10,
+                     "generationTokens": count, "terminationReason": reason}
+                ], max_new_tokens=4)
 
     def test_source_free_runtime_profile_is_bounded_and_exact(self):
         from copy import deepcopy
@@ -190,7 +234,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 6)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v6")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v7")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
