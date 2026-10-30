@@ -14,13 +14,13 @@ try:
     from . import compare_smoke
     from .smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, hash_local_metadata_file, read_public_fixtures
+        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
     )
 except ImportError:
     import compare_smoke
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, hash_local_metadata_file, read_public_fixtures
+        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
     )
 
 
@@ -35,6 +35,11 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
             "attempts": attempts,
             "strictExactMatches": min(score, attempts),
         }
+    timings = generation_latency_summary([
+        {"language": item["language"],
+         "generationMs": (index + 1) * (2 if kind == "local-lora-adapter" else 1)}
+        for index, item in enumerate(selected)
+    ])
     return {
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
@@ -55,6 +60,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "syntheticAttempts": len(selected),
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
         "perLanguage": groups,
+        **timings,
     }
 
 
@@ -120,6 +126,12 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v3")
+        self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
+        self.assertEqual(result["generationP50DeltaMs"], 15)
+        self.assertEqual(result["generationP95DeltaMs"], 29)
+        self.assertEqual(result["perLanguage"]["rust"]["generationP95DeltaMs"], 26)
+
         self.assertNotIn("fixtureSetSha256", result)
         self.assertNotIn("baseRevisionDeclared", result)
         self.assertNotIn("Qwen", json.dumps(result))
@@ -131,6 +143,8 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["adapterMinusBase"], -2)
         self.assertEqual(result["perLanguage"]["rust"]["attemptsPerModel"], 0)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
+        self.assertEqual(result["perLanguage"]["rust"]["generationP50DeltaMs"], None)
+        self.assertEqual(result["perLanguage"]["cpp"]["generationP95DeltaMs"], 6)
 
     def test_mismatched_identity_scope_and_generation_rejected(self):
         for field, other in (
@@ -190,6 +204,36 @@ class CompareSmokeTests(unittest.TestCase):
         candidate["perLanguage"]["cpp"]["extra"] = "private code"
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(self.base, candidate)
+
+    def test_latency_fields_are_bounded_and_language_scoped(self):
+        cases = (
+            {"latencyMeasurement": "unverified-timer"},
+            {"generationP50Ms": True},
+            {"generationP50Ms": -1},
+            {"generationP95Ms": 3_600_001},
+            {"generationP50Ms": self.adapter["generationP95Ms"] + 1},
+            {"generationLatencyByLanguage": {}},
+        )
+        for changes in cases:
+            candidate = copy.deepcopy(self.adapter)
+            candidate.update(changes)
+            with self.subTest(changes=changes), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for language in ("rust", "python"):
+            candidate = copy.deepcopy(self.adapter)
+            candidate["generationLatencyByLanguage"][language]["attempts"] = 5
+            with self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+            candidate = copy.deepcopy(self.adapter)
+            candidate["generationLatencyByLanguage"][language]["p95Ms"] = True
+            with self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        cpp_only = simulated_report("local-lora-adapter", language="cpp")
+        cpp_only["generationLatencyByLanguage"]["rust"]["p50Ms"] = 0
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(
+                simulated_report("local-base-model", language="cpp"), cpp_only
+            )
 
     def test_wrong_base_and_adapter_positions_rejected(self):
         with self.assertRaises(SmokeReportRejected):
