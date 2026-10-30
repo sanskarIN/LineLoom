@@ -986,11 +986,13 @@ export async function run(): Promise<void> {
         const nativeRust = await engine.provideInlineCompletionItems(
           rustDocument, rustPosition, trigger, cancellation.token);
         assert.equal(nativeRust?.[0]?.insertText, "42");
-        assert.equal(lastPromptSent, rustBefore,
+        const nativeRustPrompt = String(lastPromptSent);
+        const nativeRustSuffix = String(lastSuffixSent ?? "");
+        assert.equal(nativeRustPrompt, rustBefore,
           "Native Rust FIM must use the unchanged prefix without inserted instructions");
-        assert.ok(lastSuffixSent?.includes("preserved Rust suffix"),
+        assert.ok(nativeRustSuffix.includes("preserved Rust suffix"),
           "Native Rust FIM must preserve the exact existing suffix");
-        assert.ok(!lastPromptSent.includes("Rust match arms:"));
+        assert.ok(!nativeRustPrompt.includes("Rust match arms:"));
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         engine.cancel();
 
