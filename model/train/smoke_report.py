@@ -7,10 +7,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v3"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v4"
 GENERATION_POLICY = "greedy-fim-v2"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -92,6 +93,47 @@ def fingerprints(fixtures: list[dict], max_new_tokens: int) -> dict:
         "syntheticFixtures": len(fixtures),
         "fixtureSetSha256": _sha(fixtures),
         "requestSpecSha256": _sha(requests),
+    }
+
+
+
+def generation_latency_summary(results: list[dict]) -> dict:
+    """Aggregate completed local generations; never expose per-probe timings.
+
+    Duration covers model.generate only. It excludes model loading, prompt
+    tokenization and decoding, so it is NOT end-to-end editor latency.
+    CUDA callers must synchronize around generation before recording times.
+    """
+    if not isinstance(results, list) or not 1 <= len(results) <= 30:
+        raise SmokeReportRejected("invalid-generation-measurements")
+    buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
+    all_times: list[int] = []
+    for item in results:
+        if not isinstance(item, dict) or item.get("language") not in buckets:
+            raise SmokeReportRejected("invalid-generation-language")
+        duration = item.get("generationMs")
+        if type(duration) is not int or not 0 <= duration <= 3_600_000:
+            raise SmokeReportRejected("invalid-generation-duration")
+        buckets[item["language"]].append(duration)
+        all_times.append(duration)
+
+    def nearest_rank(values: list[int], fraction: float) -> int | None:
+        if not values:
+            return None
+        ordered = sorted(values)
+        return ordered[max(0, math.ceil(len(ordered) * fraction) - 1)]
+
+    return {
+        "latencyMeasurement": "monotonic-generation-only-v1",
+        "generationP50Ms": nearest_rank(all_times, 0.5),
+        "generationP95Ms": nearest_rank(all_times, 0.95),
+        "generationLatencyByLanguage": {
+            language: {
+                "attempts": len(buckets[language]),
+                "p50Ms": nearest_rank(buckets[language], 0.5),
+                "p95Ms": nearest_rank(buckets[language], 0.95),
+            } for language in LANGUAGES
+        },
     }
 
 
