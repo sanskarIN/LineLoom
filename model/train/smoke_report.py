@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v6"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v7"
 GENERATION_POLICY = "greedy-fim-v2"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -97,6 +97,31 @@ def fingerprints(fixtures: list[dict], max_new_tokens: int) -> dict:
 
 
 
+
+def classify_generation_termination(
+        generated_ids: list[int], stop_ids: list[int], max_new_tokens: int) -> str:
+    """Classify one local generate() result before dropping token IDs.
+
+    Prefer the stop-token label when the model stops precisely at its cap.
+    A short response without an explicit stop token cannot be explained
+    by this fixed greedy FIM generation policy; refuse to report it.
+    """
+    if (type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 128 or
+            not isinstance(generated_ids, list) or
+            not 1 <= len(generated_ids) <= max_new_tokens or
+            not isinstance(stop_ids, list) or not stop_ids or
+            any(type(item) is not int or item < 0 for item in
+                (*generated_ids, *stop_ids))):
+        raise SmokeReportRejected("invalid-generation-termination")
+    if any(token in stop_ids for token in generated_ids[:-1]):
+        raise SmokeReportRejected("unexpected-early-stop-token")
+    if generated_ids[-1] in stop_ids:
+        return "stop-token"
+    if len(generated_ids) == max_new_tokens:
+        return "token-limit"
+    raise SmokeReportRejected("unexplained-short-generation")
+
+
 def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -> dict:
     """Source-free generation timing and actual output-length accounting.
 
@@ -110,6 +135,9 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
         raise SmokeReportRejected("invalid-generation-measurements")
     buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
     token_buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
+    terminations: dict[str, dict[str, int]] = {
+        language: {"stopToken": 0, "tokenLimit": 0} for language in LANGUAGES
+    }
     all_times: list[int] = []
     for item in results:
         if not isinstance(item, dict) or item.get("language") not in buckets:
@@ -121,8 +149,16 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
         if (type(generated_tokens) is not int or
                 not 1 <= generated_tokens <= max_new_tokens):
             raise SmokeReportRejected("invalid-generation-token-count")
+        reason = item.get("terminationReason")
+        if reason not in ("stop-token", "token-limit") or (
+            reason == "token-limit" and generated_tokens != max_new_tokens
+        ):
+            raise SmokeReportRejected("invalid-generation-stop-reason")
         buckets[item["language"]].append(duration)
         token_buckets[item["language"]].append(generated_tokens)
+        terminations[item["language"]][
+            "stopToken" if reason == "stop-token" else "tokenLimit"
+        ] += 1
         all_times.append(duration)
 
     def nearest_rank(values: list[int], fraction: float) -> int | None:
@@ -148,6 +184,17 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
             language: {
                 "attempts": len(token_buckets[language]),
                 "totalTokens": sum(token_buckets[language]),
+            } for language in LANGUAGES
+        },
+        "terminationAccounting": "stop-token-or-token-limit-v1",
+        "terminationCounts": {
+            reason: sum(terminations[language][reason] for language in LANGUAGES)
+            for reason in ("stopToken", "tokenLimit")
+        },
+        "terminationByLanguage": {
+            language: {
+                "attempts": len(buckets[language]),
+                **terminations[language],
             } for language in LANGUAGES
         },
     }
