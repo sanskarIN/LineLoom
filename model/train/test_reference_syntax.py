@@ -129,6 +129,7 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
 
     def test_invalid_synthetic_reference_is_not_echoed(self):
         with mock.patch.object(audit, "read_public_fixtures", return_value=[{
+            "id": "synthetic-broken", "category": "expression",
             "language": "python", "prefix": "def secret(", "expected": "abc",
             "suffix": " ) syntax_error"}]):
             report = audit.audit_public_references("python", run=True, approved=True)
