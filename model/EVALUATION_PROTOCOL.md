@@ -48,13 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v4 also recognizes `lineloom-code` and
+The source benchmark v5 also recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v4`, which does not
-compare with earlier v1–v3 reports; regenerate both reports locally.
+The Ollama report protocol is `lineloom-synthetic-v5`, which does not
+compare with earlier v1–v4 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -84,6 +84,37 @@ results, controlled random-seed repeatability, human acceptance or production
 readiness. A correct alternative implementation may be recorded as a
 non-match. Inspect actual suggestions **locally** before making any claim
 about quality.
+
+## 4a. Generated TypeScript grammar checks (Ollama v5)
+
+The optional loopback-only `model:eval` runner now parses the **actual
+generated TypeScript insertion** in memory, alongside strict exact-match
+and completion-format signals. It uses the pinned local TypeScript parser
+(`typescript` from the reviewed `npm ci` lockfile) and reconstructs
+only the original, checked-in synthetic TypeScript `prefix + insertion +
+suffix`. Parsing is bounded to 16,384 UTF-16 code units. No generated
+code is executed, saved, sent to a compiler process or included in reports.
+The AST and diagnostics are discarded without printing filenames, code
+or errors.
+
+Each successful TypeScript response has a `passed` or `failed` parser
+outcome. All successful **Rust, C, C++ and Python** responses are
+`unchecked`; failed or timed-out Ollama requests are counted separately
+as request failures, not successful syntax checks. The aggregate
+`generatedSyntax` object records checked, passed, failed and unchecked
+counts across languages. The offline comparison refuses impossible
+counts, fabricated successes for unchecked languages and TypeScript
+strict-exact matches exceeding parser passes. It also surfaces a
+`more-typescript-syntax-failures` review flag when applicable.
+
+This is **grammatical parsing only**, not TypeScript type checking,
+runtime validation, editor acceptance or safety testing. A syntactically
+valid alternative can fail exact matching. A syntactically valid program
+can still be incorrect or unsafe. The separate Linux compiler CI checks
+the **public reference answers**, not model-generated text. The separate
+HF Python AST experiment does **not** share this Ollama report protocol.
+No actual model inference or trained first-party checkpoint is implied
+by the synthetic CI tests.
 
 ## 5. Sanitize and review the report
 
@@ -227,7 +258,7 @@ counts and generation-only timing. This is not compile accuracy, editor
 response latency, or proof of model improvement.
 
 These results are a DIFFERENT protocol from the `model:eval`
-loopback Ollama v4 benchmark; do not directly compare scores across
+loopback Ollama v5 benchmark; do not directly compare scores across
 tokenization backends/modes. No real local model run is claimed in the
 repository. Independent human, compiler, rights and editor QA is required.
 
@@ -338,7 +369,7 @@ With six examples per language, p95 is highly unstable.
 
 V8 rejects previous v1–v7 HF smoke protocols in the comparator; rerun
 both base and adapter from the same reviewed checkout. The separate
-Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
+Ollama benchmark uses `lineloom-synthetic-v5` and is not directly
 comparable. Offline tests use invented timing and token counts without
 GPU, model inference, training, generated private source or network
 access. No real HF inference is claimed by this development change.
