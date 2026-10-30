@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor } from "../../src/completion/trigger";
+import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor, isSafeInsertionBoundary } from "../../src/completion/trigger";
 describe("automatic suggestion throttling", () => {
   it("defers suggestions until meaningful text is present", () => {
     expect(shouldAutoComplete("   ", 2, false)).toBe(false);
@@ -44,5 +44,28 @@ describe("mid-token automatic request gate", () => {
   it("allows manual invocation and configurable opt-out", () => {
     expect(shouldRequestAtCursor("identifier", true)).toBe(true);
     expect(shouldRequestAtCursor("identifier", false, false)).toBe(true);
+  });
+});
+
+describe("UTF-16 editor insertion boundaries", () => {
+  it("refuses a cursor between surrogate halves for both manual and automatic use", () => {
+    for (const source of ["a🚀b", "const 𐐀name = 1;", "👩‍💻 = 'developer';"]) {
+      for (let index = 1; index < source.length; index++) {
+        const previous = source.charCodeAt(index - 1);
+        const following = source.charCodeAt(index);
+        const split = previous >= 0xd800 && previous <= 0xdbff &&
+          following >= 0xdc00 && following <= 0xdfff;
+        expect(isSafeInsertionBoundary(source, index)).toBe(!split);
+      }
+    }
+  });
+  it("permits safe ends and ordinary Unicode positions, rejects invalid offsets", () => {
+    const line = "const हिन्दी = '🚀';";
+    expect(isSafeInsertionBoundary(line, 0)).toBe(true);
+    expect(isSafeInsertionBoundary(line, line.length)).toBe(true);
+    expect(isSafeInsertionBoundary(line, line.indexOf("ह"))).toBe(true);
+    for (const bad of [-1, line.length + 1, 1.5, NaN, Infinity, -Infinity]) {
+      expect(isSafeInsertionBoundary(line, bad)).toBe(false);
+    }
   });
 });
