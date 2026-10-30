@@ -342,3 +342,39 @@ Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
 comparable. Offline tests use invented timing and token counts without
 GPU, model inference, training, generated private source or network
 access. No real HF inference is claimed by this development change.
+
+## 15. Optional syntax check of original reference fixtures (source development)
+
+The new `npm run model:reference:syntax` command has an offline **plan-only**
+default. It does not run compilers, read private files, load any model,
+start network requests, or claim compilation success. Only a user-requested
+`--run --approve-local-compilers` executes locally installed toolchains
+against the **original fixed public synthetic reference code**:
+
+| Language | Tool and mode |
+| --- | --- |
+| Rust | `rustc`, edition 2021, library metadata only |
+| C | `cc`, C11 `-fsyntax-only` |
+| C++ | `c++`, C++17 `-fsyntax-only` |
+| Python | Standard-library `ast.parse` (no execution) |
+| TypeScript | `tsc`, strict, `--noEmit` |
+
+The exact source is `prefix + expected + suffix` for each of the 30
+checked-in original fixtures. It never checks or writes generated
+completions from a model, reads private training examples, invokes a
+compiler through a shell, executes compiled programs, or publishes a
+benchmark result externally. A bounded temporary directory is erased
+afterward. Compiler stdout and stderr are suppressed; reports include
+only allowlisted totals and the fixture fingerprint, never source,
+diagnostics, temporary paths or usernames.
+
+An absent compiler makes the scope **incomplete** and the run exits
+nonzero. A zero-exit reference syntax check establishes only that these
+specific references were accepted by the local tools under their selected
+options. It cannot establish runtime semantics, model inference quality,
+human acceptance, reproducible cross-platform compilation, privacy of
+arbitrary candidate code or a first-party trained checkpoint. It is not
+a gate for shipping a model or publishing a stable extension. Standard
+offline Python tests use mock compilers plus actual Python AST parsing;
+no optional toolchain is required to run CI.
+
