@@ -135,6 +135,22 @@ Every real local experiment records:
 - `validationMacroLoss`: unweighted mean of five language means.
 - `validationLossByLanguage` and `validationSamplesByLanguage`.
 
+In the next local training experiment, the same validation samples are
+also evaluated **before** the first optimizer update, with the adapter
+in evaluation mode, and again after the final update. The private
+`experiment.json` receipt stores an allowlisted
+`validationBeforeTraining` aggregate alongside the existing final
+`validationLoss` fields, `validationLossChange`,
+`validationMacroLossChange`, five `validationLossChangeByLanguage`
+values, and fixed-language lists where loss rose or fell. A positive
+loss change means **higher (worse) validation loss**, not necessarily worse
+editor acceptance; a negative number is lower loss, not demonstrated
+code correctness. The comparison refuses unequal sample counts,
+missing language keys, or invalid numbers. It never reads the sealed
+test examples or prints source, repository identities or completions.
+The extra validation pass costs local compute and will only run after
+the explicit approvals required by the training CLI.
+
 All these metrics are **descriptive losses**, not code correctness,
 quality, fairness or acceptance scores. Oversampling a small language
 bucket only repeats the same examples; it does **not** create additional

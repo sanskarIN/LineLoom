@@ -18,13 +18,13 @@ import subprocess
 import sys
 
 try:
-    from .sampling import balanced_sample_indices, validation_metrics
+    from .sampling import balanced_sample_indices, validation_metrics, compare_validation_losses
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes
     )
 except ImportError:
-    from sampling import balanced_sample_indices, validation_metrics
+    from sampling import balanced_sample_indices, validation_metrics, compare_validation_losses
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
         adapter_artifact_hashes, base_metadata_hashes
@@ -261,7 +261,6 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         target_modules=["q_proj", "v_proj"], task_type=TaskType.CAUSAL_LM
     ))
     model.to(args.device)
-    model.train()
     parameters = [p for p in model.parameters() if p.requires_grad]
     if not parameters:
         raise ExperimentRejected("no-trainable-lora-parameters")
@@ -271,6 +270,16 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         batch = pad_examples([example], tokenizer.pad_token_id)
         return {key: torch.tensor(value, device=args.device, dtype=torch.long)
                 for key, value in batch.items()}
+
+    # Evaluate exactly the same validation examples before and after the
+    # optimizer updates. This does not touch the sealed TEST split or
+    # expose any private sample text in the experiment receipt.
+    model.eval()
+    with torch.no_grad():
+        starting_losses = [float(model(**tensors(item)).loss.detach().cpu())
+                           for item in validation_set]
+    validation_before = validation_metrics(validation_samples, starting_losses, LANGUAGES)
+    model.train()
 
     for step in range(args.steps):
         optimizer.zero_grad(set_to_none=True)
@@ -315,6 +324,8 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         "trainingSampler": "seeded-language-balanced-v1",
         "trainingMicrobatchesByLanguage": exposure,
         **validation,
+        "validationBeforeTraining": validation_before,
+        **compare_validation_losses(validation_before, validation, LANGUAGES),
         "trainSamples": len(train_set),
         "validationSamples": len(validation_set),
         "testSamplesUsed": 0,
