@@ -85,6 +85,16 @@ def read_bounded_manifest_bytes(path: Path) -> bytes:
     return raw
 
 
+def unique_manifest_fields(pairs: list[tuple[str, object]]) -> dict:
+    """Never allow a repeated rights, split or identity declaration to win."""
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ExperimentRejected("duplicate-manifest-field")
+        result[key] = value
+    return result
+
+
 def audit_manifest(path: Path) -> tuple[dict, dict, str]:
     """Run the project's real offline Node audit BEFORE returning any records.
 
@@ -102,7 +112,12 @@ def audit_manifest(path: Path) -> tuple[dict, dict, str]:
         if check.returncode != 0:
             raise ExperimentRejected("data-audit")
         audit = json.loads(check.stdout)
-        manifest = json.loads(raw.decode("utf-8", errors="strict"))
+        manifest = json.loads(
+            raw.decode("utf-8", errors="strict"),
+            object_pairs_hook=unique_manifest_fields,
+            parse_constant=lambda _: (_ for _ in ()).throw(
+                ExperimentRejected("invalid-manifest-number"))
+        )
         if hashlib.sha256(read_bounded_manifest_bytes(path)).hexdigest() != digest:
             raise ExperimentRejected("manifest-changed")
         if audit.get("status") != "MECHANICAL_CHECKS_PASS_ONLY":
