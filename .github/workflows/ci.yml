@@ -35,6 +35,30 @@ jobs:
         run: npm ci
       - name: Verify TypeScript, lint, unit tests and build
         run: npm run check
+  reference-syntax:
+    name: Public reference syntax (Linux)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Install locked dependencies
+        run: npm ci
+      - name: Verify genuine local toolchains are available
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v rustc
+          command -v cc
+          command -v c++
+          command -v tsc
+      - name: Syntax check 30 checked-in public references with real compilers
+        run: npm run model:reference:syntax -- --run --approve-local-compilers
   integration:
     name: Extension host (Linux)
     runs-on: ubuntu-latest
@@ -53,7 +77,7 @@ jobs:
   package:
     name: Stable-channel VSIX candidate (manifest version)
     runs-on: ubuntu-latest
-    needs: [check, integration]
+    needs: [check, integration, reference-syntax]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
