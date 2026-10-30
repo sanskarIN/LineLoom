@@ -80,15 +80,16 @@ export class ContinuationCache {
       this.clear();
       return;
     }
+    const verifiedEdit = saved.verifiedEdit;
     if (saved.documentId !== point.documentId || saved.languageId !== point.languageId ||
         saved.profileDigest !== point.profileDigest || point.version !== saved.version + 1 ||
-        saved.verifiedEdit?.version !== point.version ||
+        verifiedEdit?.version !== point.version ||
         digest(point.suffix) !== saved.suffixDigest) return;
     const typed = point.offset - saved.offset;
     // Never return a low-surrogate remainder after a partial astral edit.
     // Such a fragment bypasses normal model-output filtering.
     if (typed < 1 || typed > this.maxTyped || typed >= saved.suggestion.length ||
-        typed !== saved.verifiedEdit.length ||
+        typed !== verifiedEdit.length ||
         splitsSurrogatePair(saved.suggestion, typed)) return;
     if (!point.prefix.endsWith(saved.suggestion.slice(0, typed))) return;
     if (digest(point.prefix.slice(0, -typed)) !== saved.prefixDigest) return;
