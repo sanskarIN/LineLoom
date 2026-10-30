@@ -18,6 +18,20 @@ python -m unittest discover -s model/train -p "test_*.py"
 
 The **default is plan only**: Python + Node required, no GPU/framework imports, no files written, no source printed, no network access or workspace collection. Output is a source-free count/metadata summary and private manifest SHA-256. It is not training authorization.
 
+### Duplicate-key protections for training manifests
+
+Both offline preflight paths now **reject ambiguous JSON with repeated
+object keys**. For example, a sample must not contain two versions of
+`rightsReviewed`, `split`, `sourceRevision` or `repositoryGroup`,
+even if the strings use different JSON escape spellings. The Node scanner
+checks decoded keys at all nesting levels before `JSON.parse` accepts the
+manifest; the Python planner uses its own duplicate-field rejecting loader.
+
+Failure returns the same generic nonzero CLI error without source data or
+private local paths. Tests use invented JSON and run without ML packages.
+These safeguards do not establish real authorization, license compatibility
+or data lineage; no training/model release is triggered.
+
 ### Reviewed manifest handling
 
 The Node preflight and Python trainer now require a regular **non-symlink**
