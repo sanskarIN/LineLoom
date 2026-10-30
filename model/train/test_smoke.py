@@ -234,7 +234,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 6)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v7")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v8")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
