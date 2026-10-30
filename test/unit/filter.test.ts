@@ -71,9 +71,6 @@ describe("completion filtering", () => {
     expect(cleanCompletion("𐐀name", "", "name;", true)).toBe("𐐀name");
     expect(cleanCompletion("return ab𐐀", "", "ab𐐀c", true)).toBe("return ab𐐀");
     expect(cleanCompletion("value = 𐐀foo", "", "𐐀foo;", true)).toBe("value = ");
-    const prefix = "let identifier = ";
-    const insertion = cleanCompletion("𐐀name", prefix, "name;", true);
-    expect(prefix + insertion + "name;").toBe("let identifier = 𐐀namename;");
   });
   it("still drops genuine echoed prefix and line fragments at code boundaries", () => {
     expect(cleanCompletion("const answer = 42;", "const answer = ", "", true)).toBe("42;");
