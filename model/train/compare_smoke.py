@@ -165,6 +165,36 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted_tokens += group["totalTokens"]
     if counted_tokens != total:
         raise SmokeReportRejected("mismatched-generated-token-total")
+    if report.get("terminationAccounting") != "stop-token-or-token-limit-v1":
+        raise SmokeReportRejected("invalid-termination-accounting")
+    counts = report.get("terminationCounts")
+    per_language = report.get("terminationByLanguage")
+    if (not isinstance(counts, dict) or
+            set(counts) != {"stopToken", "tokenLimit"} or
+            not isinstance(per_language, dict) or set(per_language) != set(LANGUAGES)):
+        raise SmokeReportRejected("invalid-termination-counts")
+    for key in ("stopToken", "tokenLimit"):
+        if type(counts[key]) is not int or not 0 <= counts[key] <= attempts:
+            raise SmokeReportRejected("invalid-termination-count")
+    if sum(counts.values()) != attempts:
+        raise SmokeReportRejected("invalid-termination-total")
+    totals = {"stopToken": 0, "tokenLimit": 0}
+    for name in LANGUAGES:
+        item = per_language[name]
+        expected_count = groups[name]["attempts"]
+        if (not isinstance(item, dict) or
+                set(item) != {"attempts", "stopToken", "tokenLimit"} or
+                type(item["attempts"]) is not int or item["attempts"] != expected_count or
+                any(type(item[key]) is not int or not 0 <= item[key] <= expected_count
+                    for key in ("stopToken", "tokenLimit")) or
+                item["stopToken"] + item["tokenLimit"] != expected_count or
+                token_groups[name]["totalTokens"] <
+                item["tokenLimit"] * tokens + item["stopToken"]):
+            raise SmokeReportRejected("invalid-termination-language")
+        for key in totals:
+            totals[key] += item[key]
+    if totals != counts:
+        raise SmokeReportRejected("mismatched-termination-groups")
     return report
 
 
@@ -197,6 +227,12 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             "baseGeneratedTokens": left_tokens,
             "adapterGeneratedTokens": right_tokens,
             "generatedTokenDelta": right_tokens - left_tokens,
+            "baseTokenLimitExits": left["terminationByLanguage"][language]["tokenLimit"],
+            "adapterTokenLimitExits": right["terminationByLanguage"][language]["tokenLimit"],
+            "tokenLimitExitDelta": (
+                right["terminationByLanguage"][language]["tokenLimit"] -
+                left["terminationByLanguage"][language]["tokenLimit"]
+            ),
             "baseGenerationP50Ms": left_timing["p50Ms"],
             "adapterGenerationP50Ms": right_timing["p50Ms"],
             "generationP50DeltaMs": (
@@ -211,7 +247,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v5",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v6",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "runtimeProfileComparable": True,
@@ -220,6 +256,19 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
         "adapterMinusBase": delta,
+        "terminationAccounting": "stop-token-or-token-limit-v1",
+        "baseTokenLimitExits": left["terminationCounts"]["tokenLimit"],
+        "adapterTokenLimitExits": right["terminationCounts"]["tokenLimit"],
+        "tokenLimitExitDelta": (
+            right["terminationCounts"]["tokenLimit"] -
+            left["terminationCounts"]["tokenLimit"]
+        ),
+        "terminationReview": (
+            "TOKEN_LIMIT_EXITS_REQUIRE_REVIEW"
+            if left["terminationCounts"]["tokenLimit"] or
+               right["terminationCounts"]["tokenLimit"] else
+            "NO_TOKEN_LIMIT_EXITS_RECORDED"
+        ),
         "generatedTokenAccounting": "new-token-ids-including-stop-v1",
         "baseGeneratedTokens": left["generatedTokenCount"],
         "adapterGeneratedTokens": right["generatedTokenCount"],
@@ -246,7 +295,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "Runtime fields match but cannot prove physical GPU, "
                        "driver, thermal, load or execution-order parity. "
                        "Different generated token counts confound absolute latency; "
-                       "even equal totals do not prove per-probe length parity."),
+                       "even equal totals do not prove per-probe length parity. "
+                       "A token-limit exit may truncate an otherwise valid completion; "
+                       "a stop-token exit does not establish code correctness."),
     }
 
 
