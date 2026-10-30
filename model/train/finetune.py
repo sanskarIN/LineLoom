@@ -16,6 +16,7 @@ import random
 import re
 import subprocess
 import sys
+import stat
 
 try:
     from .sampling import (
@@ -55,17 +56,38 @@ class ExperimentRejected(ValueError):
     """The local training gate failed; never attach user data to this error."""
 
 
+def same_manifest_file(before: os.stat_result, after: os.stat_result) -> bool:
+    """Reject ordinary metadata, inode and size drift during a bounded read."""
+    return (stat.S_ISREG(after.st_mode) and
+            (before.st_dev, before.st_ino, before.st_size,
+             before.st_mtime_ns, before.st_ctime_ns) ==
+            (after.st_dev, after.st_ino, after.st_size,
+             after.st_mtime_ns, after.st_ctime_ns))
+
+
 def audit_manifest(path: Path) -> tuple[dict, dict, str]:
     """Run the project's real offline Node audit BEFORE returning any records.
 
     The SHA-256 before/after rejects ordinary concurrent file changes. This
     is not a rights/PII attestation or protection against hostile local races.
     """
-    if not path.is_file():
-        raise ExperimentRejected("manifest")
-    raw = path.read_bytes()
-    if not raw or len(raw) > MAX_MANIFEST_BYTES:
+    # Fail before loading file contents. A separately named local symlink
+    # is not an approved manifest; bounded reads prevent giant-file memory use.
+    before = path.lstat()
+    if not stat.S_ISREG(before.st_mode) or not 0 < before.st_size <= MAX_MANIFEST_BYTES:
         raise ExperimentRejected("manifest-size")
+    flags = (os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) |
+             getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0))
+    with os.fdopen(os.open(path, flags), "rb") as stream:
+        opened = os.fstat(stream.fileno())
+        if not same_manifest_file(before, opened):
+            raise ExperimentRejected("manifest-changed")
+        raw = stream.read(MAX_MANIFEST_BYTES + 1)
+        closed = os.fstat(stream.fileno())
+    if (len(raw) != before.st_size or
+            not same_manifest_file(before, closed) or
+            not same_manifest_file(before, path.lstat())):
+        raise ExperimentRejected("manifest-changed")
     digest = hashlib.sha256(raw).hexdigest()
     try:
         check = subprocess.run(
