@@ -60,6 +60,21 @@ describe("completion filtering", () => {
     expect(cleanCompletion("константа", "констан", "", true)).toBe("константа");
     expect(cleanCompletion("identifierMore", "const identifier", "", true)).toBe("identifierMore");
   });
+  it("treats astral Unicode letters as whole identifier characters in prefix echoes", () => {
+    // Deseret (U+10400, U+10401) are genuine non-BMP Unicode letters.
+    // A UTF-16 high surrogate alone must never be mistaken for punctuation.
+    expect(cleanCompletion("𐐀a𐐁()", "𐐀a", "", true)).toBe("𐐀a𐐁()");
+    expect(cleanCompletion("foo𐐀bar", "foo𐐀", "", true)).toBe("foo𐐀bar");
+    expect(cleanCompletion("foo𐐀()", "foo𐐀", "", true)).toBe("()");
+  });
+  it("does not cut Unicode identifiers when cleaning generated suffix overlaps", () => {
+    expect(cleanCompletion("𐐀name", "", "name;", true)).toBe("𐐀name");
+    expect(cleanCompletion("return ab𐐀", "", "ab𐐀c", true)).toBe("return ab𐐀");
+    expect(cleanCompletion("value = 𐐀foo", "", "𐐀foo;", true)).toBe("value = ");
+    const prefix = "let identifier = ";
+    const insertion = cleanCompletion("𐐀name", prefix, "name;", true);
+    expect(prefix + insertion + "name;").toBe("let identifier = 𐐀namename;");
+  });
   it("still drops genuine echoed prefix and line fragments at code boundaries", () => {
     expect(cleanCompletion("const answer = 42;", "const answer = ", "", true)).toBe("42;");
     expect(cleanCompletion("function() {", "function", "", true)).toBe("() {");
