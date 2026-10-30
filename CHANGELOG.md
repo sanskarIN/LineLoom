@@ -6,7 +6,12 @@ All notable changes follow Semantic Versioning.
 
 - [PR #164](https://github.com/sanskarIN/LineLoom/pull/164): prevent the prefix-echo cleanup from truncating an otherwise valid generated identifier. Match complete UTF-16/Unicode identifier boundaries, preserve genuine short keyword echoes, and cover both cases with focused regression tests.
 - The change passed cross-platform TypeScript/lint/unit/build checks, the mocked Linux VS Code extension host, dependency security, and an isolated VSIX candidate/install/upgrade workflow ([CI](https://github.com/sanskarIN/LineLoom/actions/runs/41006725916)). These are automated source/packaging checks, **not** measured real Ollama quality or physical-editor acceptance.
-- No GitHub tag, public VSIX, npm CLI package, Marketplace/Open VSX version, trained LineLoom Code weights, or publisher-ID migration was made by this PR. The latest published preview remains v1.4.2 and GitHub stable remains v1.3.0.
+- [PR #166](https://github.com/sanskarIN/LineLoom/pull/166): reject reserved FIM/chat tokens in approved local training samples, require distinct FIM marker IDs and consistent tokenizer boundaries before assigning supervised labels.
+- [PR #167](https://github.com/sanskarIN/LineLoom/pull/167): record source-free validation losses *before and after* optional local LoRA fine-tuning, separately for Rust, C, C++, Python and TypeScript.
+- [PR #168](https://github.com/sanskarIN/LineLoom/pull/168): report both per-example and target-token-weighted validation losses, including five-language deltas and strict count validation, with no use of the sealed test split.
+- The model changes passed automated Windows/macOS/Linux, mocked extension-host, dependency-security and candidate VSIX checks ([FIM integrity](https://github.com/sanskarIN/LineLoom/actions/runs/41007956124), [paired loss](https://github.com/sanskarIN/LineLoom/actions/runs/41008346590), [token-weighted validation](https://github.com/sanskarIN/LineLoom/actions/runs/41012177902)). No local checkpoint, approved corpus, GPU fine-tune, real quality benchmark or model weights were produced.
+
+- No GitHub tag, public VSIX, npm CLI package, Marketplace/Open VSX version, trained LineLoom Code weights, or publisher-ID migration was made by these source changes. The latest published preview remains v1.4.2 and GitHub stable remains v1.3.0.
 
 ## v1.4.2 — GitHub-only pre-release (published 2026-10-27)
 
