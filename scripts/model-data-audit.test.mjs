@@ -167,15 +167,6 @@ test("case-only repository-family changes cannot cross holdout splits", () => {
   assert.ok(!JSON.stringify(report).includes("REVIEWED-PROJECT"));
 });
 
-const readFileSyncSafeLinkExists = path => {
-  try {
-    readFileSync(path);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 test("bounded CLI is offline, does not echo source/paths on success or rejection", () => {
   const root = mkdtempSync(join(tmpdir(), "lineloom-private-corpus-"));
   const file = join(root, "private-source-with-names.json");
@@ -186,12 +177,14 @@ test("bounded CLI is offline, does not echo source/paths on success or rejection
     assert.equal(ok.status, 0, ok.stderr);
     assert.equal(JSON.parse(ok.stdout).samples, 15);
     const alias = join(root, "alias-of-private-manifest.json");
+    let linkCreated = false;
     try {
       symlinkSync(file, alias);
+      linkCreated = true;
     } catch {
       // Unprivileged Windows hosts may disallow symbolic links.
     }
-    if (readFileSyncSafeLinkExists(alias)) {
+    if (linkCreated) {
       const linked = spawnSync(process.execPath, [script, "--manifest", alias],
         { encoding: "utf8", timeout: 5000 });
       assert.equal(linked.status, 1);
