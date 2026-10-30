@@ -1,4 +1,4 @@
-"""No-network standard-library checks of generated Python synthetic insertions."""
+"""No-network checks of Python/TypeScript synthetic grammar accounting."""
 from __future__ import annotations
 
 import json
@@ -42,7 +42,7 @@ class GeneratedSyntaxTests(unittest.TestCase):
         ), "passed")
 
     def test_unchecked_languages_remain_unchecked_even_for_perfect_reference(self):
-        for lang in ("rust", "c", "cpp", "typescript"):
+        for lang in ("rust", "c", "cpp"):
             fixture = read_public_fixtures(lang)[0]
             with self.subTest(language=lang):
                 self.assertEqual(
@@ -51,6 +51,25 @@ class GeneratedSyntaxTests(unittest.TestCase):
                 )
                 self.assertEqual(classify_generated_syntax(fixture, "???"),
                                  "unchecked")
+
+    def test_typescript_requires_explicit_parser_and_does_not_assume_success(self):
+        case = read_public_fixtures("typescript")[0]
+        with self.assertRaises(SmokeReportRejected):
+            classify_generated_syntax(case, case["expected"])
+        with self.assertRaises(SmokeReportRejected):
+            classify_generated_syntax(case, "private", parse_typescript=lambda _f, _s: "unchecked")
+        requests = []
+        def fake_parser(fixture, insertion):
+            requests.append((fixture["id"], insertion))
+            return "failed" if insertion == "???" else "passed"
+        self.assertEqual(classify_generated_syntax(
+            case, case["expected"], parse_typescript=fake_parser
+        ), "passed")
+        self.assertEqual(classify_generated_syntax(
+            case, "???", parse_typescript=fake_parser
+        ), "failed")
+        self.assertEqual(requests[0][0], case["id"])
+        self.assertEqual(requests[1][1], "???")
 
     def test_rejects_bad_source_and_invalid_scope_without_echoing_code(self):
         fixture = read_public_fixtures("python")[0]
@@ -67,21 +86,25 @@ class GeneratedSyntaxTests(unittest.TestCase):
                 classify_generated_syntax(bad_fixture, bad_insert)
             self.assertNotIn("private", str(context.exception))
 
-    def test_counts_only_python_and_never_outputs_source_or_probe_ids(self):
+    def test_counts_both_parsed_languages_and_never_outputs_source_or_probe_ids(self):
         measurements = [
             {"language": "python", "syntaxOutcome": "passed",
              "secret": "IN_MEMORY_GENERATED_CODE"},
             {"language": "python", "syntaxOutcome": "failed"},
             {"language": "rust", "syntaxOutcome": "unchecked"},
-            {"language": "typescript", "syntaxOutcome": "unchecked"},
+            {"language": "typescript", "syntaxOutcome": "passed"},
         ]
         report = generated_syntax_summary(measurements)
         self.assertEqual(report["syntaxAccounting"], SYNTAX_ACCOUNTING)
         self.assertEqual((report["syntaxChecked"], report["syntaxPassed"],
                           report["syntaxFailed"], report["syntaxUnchecked"]),
-                         (2, 1, 1, 2))
+                         (3, 2, 1, 1))
         self.assertEqual(report["syntaxByLanguage"]["python"], {
             "attempts": 2, "checked": 2, "passed": 1, "failed": 1,
+            "unchecked": 0
+        })
+        self.assertEqual(report["syntaxByLanguage"]["typescript"], {
+            "attempts": 1, "checked": 1, "passed": 1, "failed": 0,
             "unchecked": 0
         })
         self.assertEqual(report["syntaxByLanguage"]["c"], {
@@ -95,6 +118,7 @@ class GeneratedSyntaxTests(unittest.TestCase):
         for results in (
             [], None, "wrong", [{}],
             [{"language": "python", "syntaxOutcome": "unchecked"}],
+            [{"language": "typescript", "syntaxOutcome": "unchecked"}],
             [{"language": "rust", "syntaxOutcome": "passed"}],
             [{"language": "python", "syntaxOutcome": 1}],
             [{"language": "c", "syntaxOutcome": True}],
