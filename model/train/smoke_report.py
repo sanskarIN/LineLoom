@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v5"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v6"
 GENERATION_POLICY = "greedy-fim-v2"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -151,6 +151,47 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
             } for language in LANGUAGES
         },
     }
+
+
+# Deliberately omit hostnames, usernames, environment variables, GPU serials,
+# driver strings, install paths and hardware fingerprints from public reports.
+# This metadata only catches obvious cross-run incompatibility.
+RUNTIME_PROFILE_FIELDS = frozenset({
+    "device", "precision", "operatingSystem", "pythonVersion",
+    "torchVersion", "transformersVersion", "cudaRuntimeVersion",
+    "hipRuntimeVersion"
+})
+
+
+def checked_runtime_profile(profile: dict) -> dict:
+    """Require a fixed, source-free profile before comparing smoke reports.
+
+    Matching strings are NOT evidence of the same physical hardware, GPU
+    driver, process load, thermal limits or actual code-generation quality.
+    """
+    import re
+
+    if not isinstance(profile, dict) or set(profile) != RUNTIME_PROFILE_FIELDS:
+        raise SmokeReportRejected("invalid-runtime-profile")
+    device = profile["device"]
+    precision = profile["precision"]
+    if (device not in ("cpu", "cuda") or
+            precision not in ("float32", "bfloat16") or
+            (device == "cpu" and precision != "float32") or
+            profile["operatingSystem"] not in ("Linux", "Windows", "Darwin")):
+        raise SmokeReportRejected("invalid-runtime-compute")
+    version = re.compile(r"[0-9][A-Za-z0-9.+_-]{0,63}\\Z")
+    for key in ("pythonVersion", "torchVersion", "transformersVersion"):
+        value = profile[key]
+        if not isinstance(value, str) or not version.fullmatch(value):
+            raise SmokeReportRejected("invalid-runtime-version")
+    for key in ("cudaRuntimeVersion", "hipRuntimeVersion"):
+        value = profile[key]
+        if value is not None and (
+            not isinstance(value, str) or not version.fullmatch(value)
+        ):
+            raise SmokeReportRejected("invalid-runtime-accelerator")
+    return dict(profile)
 
 
 def hash_local_metadata_file(path: Path, limit_bytes: int = 32 * 1024 * 1024) -> str:
