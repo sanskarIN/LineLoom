@@ -196,6 +196,7 @@ def private_report(audit: dict, digest: str, steps: int, max_tokens: int,
         "plannedTrainingMicrobatches": steps * gradient_accumulation,
         "plannedTrainingMicrobatchesByLanguage": exposure,
         "trainingSampler": "seeded-language-balanced-v1",
+        "plannedTrainingLossObjective": "per-step-supervised-token-mean-v1",
         "seed": seed,
         "maxSequenceTokens": max_tokens,
         "requires": [
