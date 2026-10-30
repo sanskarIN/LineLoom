@@ -27,19 +27,19 @@ except ImportError:
 
 try:
     from .smoke_report import (
-        fingerprints, hash_local_metadata_file, read_public_fixtures
+        fingerprints, read_public_fixtures
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
-        base_weight_fingerprint
+        base_checkpoint_fingerprint
     )
 except ImportError:
     from smoke_report import (
-        fingerprints, hash_local_metadata_file, read_public_fixtures
+        fingerprints, read_public_fixtures
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, verify_training_receipt,
-        base_weight_fingerprint
+        base_checkpoint_fingerprint
     )
 
 
@@ -87,6 +87,20 @@ def validate_local_adapter(path: Path) -> Path:
     return adapter
 
 
+
+def verify_smoke_inputs_unchanged(base_dir: Path, expected_identity: dict,
+                                  adapter_dir: Path | None, revision: str) -> None:
+    """Recheck reviewed local bytes after inference, before reporting results.
+
+    A preflight alone cannot detect files changed during a long benchmark.
+    This checks disk state at two points, not continuous runtime integrity.
+    """
+    if base_checkpoint_fingerprint(base_dir) != expected_identity:
+        raise ExperimentRejected("base-checkpoint-changed-during-smoke")
+    if adapter_dir is not None:
+        verify_training_receipt(adapter_dir, base_dir, revision)
+
+
 def run_local(fixture_set: list[dict], args) -> dict:
     """Only local model files; optional PEFT adapter is never uploaded/merged."""
     # Fail closed before importing ML frameworks or loading any weights:
@@ -108,7 +122,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
     if args.device == "cuda" and not torch.cuda.is_available():
         raise ExperimentRejected("cuda-unavailable")
     base_dir = validate_local_checkpoint(Path(args.base_dir))
-    base_weights = base_weight_fingerprint(base_dir)
+    base_identity = base_checkpoint_fingerprint(base_dir)
     if args.adapter_dir:
         adapter_dir = validate_local_adapter(Path(args.adapter_dir))
         try:
@@ -160,8 +174,11 @@ def run_local(fixture_set: list[dict], args) -> dict:
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             exact = normalize_completion(completion) == fixture["expected"]
             result.append({"language": fixture["language"], "exact": exact})
-    if base_weight_fingerprint(base_dir) != base_weights:
-        raise ExperimentRejected("base-weights-changed-during-smoke")
+    verify_smoke_inputs_unchanged(
+        base_dir, base_identity,
+        Path(args.adapter_dir) if args.adapter_dir else None,
+        args.base_revision
+    )
     return {
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
@@ -173,9 +190,10 @@ def run_local(fixture_set: list[dict], args) -> dict:
         **fingerprints(fixture_set, args.max_new_tokens),
         "selectedLanguage": args.language,
         "baseRevisionDeclared": args.base_revision,
-        "baseConfigSha256": hash_local_metadata_file(base_dir / "config.json"),
-        "tokenizerSha256": hash_local_metadata_file(base_dir / "tokenizer.json"),
-        **base_weights,
+        "baseConfigSha256": base_identity["baseConfigSha256"],
+        "tokenizerSha256": base_identity["baseTokenizerSha256"],
+        "baseWeightsSha256": base_identity["baseWeightsSha256"],
+        "baseWeightFiles": base_identity["baseWeightFiles"],
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
         "limitation": "Strict original-synthetic equality only; no human, compiler, editor or deployment QA."
