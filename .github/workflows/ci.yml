@@ -56,7 +56,8 @@ jobs:
           command -v rustc
           command -v cc
           command -v c++
-          command -v tsc
+          # npm run places this locked local binary on PATH.
+          test -x node_modules/.bin/tsc
       - name: Syntax check 30 checked-in public references with real compilers
         run: npm run model:reference:syntax -- --run --approve-local-compilers
   integration:
