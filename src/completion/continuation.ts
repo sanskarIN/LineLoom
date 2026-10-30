@@ -20,6 +20,9 @@ interface Stored {
   profileDigest: string;
   suggestion: string;
   expires: number;
+  // The editor must report the exact forward insertion before the
+  // cached remainder can be reused. Store only its shape, never edit text.
+  verifiedEdit?: { version: number; length: number };
 }
 function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -79,11 +82,13 @@ export class ContinuationCache {
     }
     if (saved.documentId !== point.documentId || saved.languageId !== point.languageId ||
         saved.profileDigest !== point.profileDigest || point.version !== saved.version + 1 ||
+        saved.verifiedEdit?.version !== point.version ||
         digest(point.suffix) !== saved.suffixDigest) return;
     const typed = point.offset - saved.offset;
     // Never return a low-surrogate remainder after a partial astral edit.
     // Such a fragment bypasses normal model-output filtering.
     if (typed < 1 || typed > this.maxTyped || typed >= saved.suggestion.length ||
+        typed !== saved.verifiedEdit.length ||
         splitsSurrogatePair(saved.suggestion, typed)) return;
     if (!point.prefix.endsWith(saved.suggestion.slice(0, typed))) return;
     if (digest(point.prefix.slice(0, -typed)) !== saved.prefixDigest) return;
@@ -114,7 +119,12 @@ export class ContinuationCache {
         splitsSurrogatePair(saved.suggestion, edit.text.length) ||
         !saved.suggestion.startsWith(edit.text)) {
       this.clear();
+      return;
     }
+    // This proof is specific to one document version and one inserted span.
+    // A matching version/text snapshot alone cannot establish edit shape:
+    // a replacement, undo or delayed event must never reuse ghost text.
+    saved.verifiedEdit = { version, length: edit.text.length };
   }
 
   clear(): void { this.entry = undefined; }
