@@ -110,7 +110,7 @@ def base_metadata_hashes(base_dir: Path) -> dict:
 MAX_BASE_WEIGHT_FILES = 64
 MAX_BASE_WEIGHT_FILE_BYTES = 8 * 1024 * 1024 * 1024
 MAX_BASE_WEIGHT_TOTAL_BYTES = 32 * 1024 * 1024 * 1024
-WEIGHT_SHARD = re.compile(r"model-[0-9]{5}-of-[0-9]{5}\\.safetensors\\Z")
+WEIGHT_SHARD = re.compile(r"model-[0-9]{5}-of-[0-9]{5}\.safetensors\Z")
 
 
 def base_weight_fingerprint(base_dir: Path) -> dict:
@@ -132,7 +132,7 @@ def base_weight_fingerprint(base_dir: Path) -> dict:
             all(WEIGHT_SHARD.fullmatch(name) for name in names)):
         raise IntegrityRejected("invalid-base-weight-layout")
     total = 0
-    digest = hashlib.sha256(b"lineloom-base-weights-v1\\n")
+    digest = hashlib.sha256(b"lineloom-base-weights-v1\n")
     for path in weights:
         metadata = path.lstat()
         if (not stat.S_ISREG(metadata.st_mode) or
@@ -141,16 +141,16 @@ def base_weight_fingerprint(base_dir: Path) -> dict:
         total += metadata.st_size
         if total > MAX_BASE_WEIGHT_TOTAL_BYTES:
             raise IntegrityRejected("oversized-base-weights")
-        digest.update(path.name.encode("ascii") + b"\\0" +
-                      str(metadata.st_size).encode("ascii") + b"\\0" +
+        digest.update(path.name.encode("ascii") + b"\0" +
+                      str(metadata.st_size).encode("ascii") + b"\0" +
                       _file_hash(path, MAX_BASE_WEIGHT_FILE_BYTES).encode("ascii") +
-                      b"\\n")
+                      b"\n")
 
     index_path = base_dir / "model.safetensors.index.json"
     if names == ["model.safetensors"]:
         if index_path.exists() or index_path.is_symlink():
             raise IntegrityRejected("unexpected-base-weight-index")
-        digest.update(b"single-file\\n")
+        digest.update(b"single-file\n")
     else:
         if not index_path.is_file() or index_path.is_symlink():
             raise IntegrityRejected("missing-base-weight-index")
@@ -170,7 +170,7 @@ def base_weight_fingerprint(base_dir: Path) -> dict:
                 set(document["weight_map"].values()) != set(names)):
             raise IntegrityRejected("inconsistent-base-weight-index")
         # Index bytes are part of the checkpoint identity, not just shards.
-        digest.update(b"sharded\\n" + hashlib.sha256(raw).hexdigest().encode("ascii"))
+        digest.update(b"sharded\n" + hashlib.sha256(raw).hexdigest().encode("ascii"))
     return {"baseWeightsSha256": digest.hexdigest(),
             "baseWeightFiles": len(weights)}
 
