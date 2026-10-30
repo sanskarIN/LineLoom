@@ -18,6 +18,22 @@ python -m unittest discover -s model/train -p "test_*.py"
 
 The **default is plan only**: Python + Node required, no GPU/framework imports, no files written, no source printed, no network access or workspace collection. Output is a source-free count/metadata summary and private manifest SHA-256. It is not training authorization.
 
+### Reviewed manifest handling
+
+The Node preflight and Python trainer now require a regular **non-symlink**
+manifest file and check file identity, size and modification metadata before
+and after bounded reads. Python applies the same 1 MiB read limit to both
+snapshots around its Node audit; it must not read an arbitrarily large
+untrusted file into memory first. The preflight refuses unknown fields,
+coerced/non-string IDs and fork-family identifiers, and case-only family
+names that would otherwise split training and held-out samples.
+
+These are mechanical checks for ordinary edits and malformed metadata.
+They cannot authenticate a user's rights assertions, detect every near
+duplicate, or prevent an attacker with local filesystem control from restoring
+bytes and metadata between checks. Source, paths and individual samples
+remain excluded from normal command output.
+
 ## Actual local experiment — explicit approvals and pre-existing checkpoint
 
 Only after **independent** dataset privacy/licensing/opt-out/attribution review and actual base model license/immutable SHA review, separately provision the checkpoint offline. Create a Python virtual environment, review and install the optional dependencies in `requirements.txt`. Start in the repository root:
