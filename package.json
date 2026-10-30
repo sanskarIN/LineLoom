@@ -378,6 +378,7 @@
     "test:model-data-audit": "node --test scripts/model-data-audit.test.mjs",
     "model:adapter:verify": "python model/train/verify_adapter.py",
     "model:smoke:compare": "python model/train/compare_smoke.py",
+    "model:reference:syntax": "python model/train/audit_reference_syntax.py",
     "test:model-training": "python -m unittest discover -s model/train -p test_*.py"
   },
   "dependencies": {
