@@ -45,7 +45,8 @@ function hasCompleteEchoBoundary(value: string, end: number): boolean {
 function isConfidentPrefixEcho(value: string, echo: string): boolean {
   if (!echo.trim() || !value.startsWith(echo)) return false;
   // Short plain identifier matches are too ambiguous to delete.
-  if (echo.length < 8 && !(echo.length >= 4 && /[\s=;:(){}\[\].,]/u.test(echo))) return false;
+  const structured = /[\s=;:(){}.,]/u.test(echo) || echo.includes("[") || echo.includes("]");
+  if (echo.length < 8 && !(echo.length >= 4 && structured)) return false;
   return hasCompleteEchoBoundary(value, echo.length);
 }
 
