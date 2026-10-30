@@ -271,6 +271,14 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         return {key: torch.tensor(value, device=args.device, dtype=torch.long)
                 for key, value in batch.items()}
 
+    # Hugging Face causal LM loss is averaged over non-masked target labels.
+    # Preserve the number of supervised middle+EOS tokens for both a
+    # per-example mean and a true token-weighted validation mean.
+    validation_target_tokens = [
+        sum(label != -100 for label in item["labels"])
+        for item in validation_set
+    ]
+
     # Evaluate exactly the same validation examples before and after the
     # optimizer updates. This does not touch the sealed TEST split or
     # expose any private sample text in the experiment receipt.
@@ -278,7 +286,8 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     with torch.no_grad():
         starting_losses = [float(model(**tensors(item)).loss.detach().cpu())
                            for item in validation_set]
-    validation_before = validation_metrics(validation_samples, starting_losses, LANGUAGES)
+    validation_before = validation_metrics(validation_samples, starting_losses, LANGUAGES,
+                                           validation_target_tokens)
     model.train()
 
     for step in range(args.steps):
@@ -298,7 +307,8 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
                   for item in validation_set]
     # Macro loss prevents a large language subset from hiding regression
     # in an under-represented language. Held-out TEST data stays untouched.
-    validation = validation_metrics(validation_samples, losses, LANGUAGES)
+    validation = validation_metrics(validation_samples, losses, LANGUAGES,
+                                    validation_target_tokens)
 
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
