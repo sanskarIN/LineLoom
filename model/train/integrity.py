@@ -131,6 +131,13 @@ def base_weight_fingerprint(base_dir: Path) -> dict:
     if not (names == ["model.safetensors"] or
             all(WEIGHT_SHARD.fullmatch(name) for name in names)):
         raise IntegrityRejected("invalid-base-weight-layout")
+    if names != ["model.safetensors"]:
+        required = [
+            f"model-{i:05d}-of-{len(names):05d}.safetensors"
+            for i in range(1, len(names) + 1)
+        ]
+        if names != required:
+            raise IntegrityRejected("missing-or-misnumbered-base-shard")
     total = 0
     digest = hashlib.sha256(b"lineloom-base-weights-v1\n")
     for path in weights:
