@@ -241,7 +241,7 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
-## Comparing local HF base-versus-adapter smoke reports (protocol v3)
+## Comparing local HF base-versus-adapter smoke reports (protocol v4)
 
 After **independently approved** local base and adapter runs on the same
 machine with the *same* base revision, tokenizer, fixtures and generation
@@ -263,7 +263,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v3` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v4` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -272,20 +272,27 @@ and refuses plans, legacy reports, corrupted counts, mixed base revisions,
 different settings, or comparisons without a local base report followed by
 a local adapter report.
 
-The only comparison output is **allowlisted numeric strict-match counts
-and adapter-minus-base differences** by language and total, plus fixed
-caveats. It never prints prompts, completions, model checkpoint paths,
-private metadata, filenames or user-supplied report fields.
+The comparison output contains **allowlisted strict-match counts and
+generation-only latency p50/p95** by language and total, including
+adapter-minus-base deltas, plus fixed caveats. The timer uses a monotonic
+clock around `model.generate()` only (and synchronizes CUDA on each side).
+It excludes model loading, tokenization, decoding, and VS Code/editor time.
+Positive latency deltas mean the adapter was slower in the recorded run;
+negative deltas mean faster. Six probes per language produce unstable p95
+values. Compare only on the same reviewed machine in controlled conditions:
+the report hashes do **not** prove hardware or runtime equivalence.
+It never prints prompts, completions, model checkpoint paths, private
+metadata, filenames or user-supplied report fields.
 
 Important limitations: file/content hashes **are not attestation of
 actual model weights or correct adapter loading**. The declared revision is
 a human assertion. This comparator cannot verify matching hardware,
 GPU settings, tokenizer runtime behavior, hidden sampling defaults,
-compiler correctness, editor acceptance, speed or whether reports were
+compiler correctness, editor acceptance, equivalent timing conditions or whether reports were
 truthfully generated. **The six probes per language are not a production
 model evaluation**, and a strict exact-match improvement does not establish
-quality. Protocol v1 reports must be rerun; HF protocol v3 remains
-incomparable with the Ollama `lineloom-synthetic-v3` protocol.
+quality. Prior HF v1–v3 reports must be rerun; HF protocol v4 remains
+incomparable with the Ollama `lineloom-synthetic-v4` protocol.
 
 Tests are run automatically by `npm run test:model-training` using Python
 standard library only; they use invented in-memory count summaries and
@@ -315,7 +322,7 @@ checkpoint weights cannot now be compared as if they were the same base.
 receipts and HF smoke `lineloom-hf-synthetic-smoke-v2` reports are
 not accepted by the new versioned verification/comparator workflow.
 New receipts use `lineloom-local-adapter-receipt-v2`; new HF reports use
-`lineloom-hf-synthetic-smoke-v3`. Do not alter old receipts to make them
+`lineloom-hf-synthetic-smoke-v4` with generation-only timing. Do not alter old receipts to make them
 pass or imply that a local SHA-256 digest authenticates a declared
 upstream revision, provenance, permissions or loaded model state. Independent
 checkpoint review, safe isolation, and actual inference/quality checks
