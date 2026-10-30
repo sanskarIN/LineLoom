@@ -313,7 +313,7 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
-## Comparing local HF base-versus-adapter smoke reports (protocol v7)
+## Comparing local HF base-versus-adapter smoke reports (protocol v8)
 
 After **independently approved** local base and adapter runs on the same
 machine with the *same* base revision, tokenizer, fixtures and generation
@@ -335,7 +335,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v7` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v8` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -363,6 +363,26 @@ A natural stop is not proof of syntactic or semantic correctness.
 Only aggregate counts are stored; per-case tokens and completions remain
 in memory for the local synthetic exact-match check.
 
+The v8 smoke runner adds an **in-memory Python AST-only syntax check**
+for each actual generated Python continuation inserted between the
+30 fixed public probes' prefix and suffix (six are Python). It calls
+Python's standard-library `ast.parse` and never executes, compiles or
+imports the generated program. A bound of 8192 characters prevents
+oversized synthetic parse requests; a bound violation rejects the run.
+The result is counted only as `passed` or `failed` for Python;
+**Rust, C, C++ and TypeScript generated outputs are expressly
+`unchecked`**. The separate CI reference syntax compiler gate validates
+known fixture reference answers, NOT generated suggestions.
+
+The offline comparator requires a new `python-ast-only-v1` accounting
+contract. It verifies exact per-language checked/passed/failed/unchecked
+totals, refuses fabricated successes for unparsed languages, and
+rejects Python strict-exact counts exceeding AST passes. It includes
+only source-free Python AST pass/fail deltas and a review flag;
+syntax errors, source text, AST nodes and fixture identities are
+never included. AST syntax success does not establish semantic
+correctness, execution safety, human acceptance or release readiness.
+
 Each real run also records a strictly validated source-free eight-field
 runtime profile: CPU/CUDA, FP32/BF16, OS family, Python, PyTorch and
 Transformers versions, plus nullable CUDA/HIP runtime versions.
@@ -389,7 +409,7 @@ GPU settings, tokenizer runtime behavior, hidden sampling defaults,
 compiler correctness, editor acceptance, equivalent timing conditions or whether reports were
 truthfully generated. **The six probes per language are not a production
 model evaluation**, and a strict exact-match improvement does not establish
-quality. Prior HF v1–v6 reports must be rerun; HF protocol v7 remains
+quality. Prior HF v1–v7 reports must be rerun; HF protocol v8 remains
 incomparable with the Ollama `lineloom-synthetic-v4` protocol.
 
 Tests are run automatically by `npm run test:model-training` using Python
