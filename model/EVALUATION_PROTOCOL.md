@@ -223,10 +223,11 @@ synthetic probes. It has a safe **offline plan** default and a separately
 gated `--run --approve-checkpoint` path. Real mode performs strictly
 bounded local greedy generations with no returned/printed code,
 source-paths or raw prompts; report is source-free per-language exact
-counts, not compile accuracy or inference latency.
+counts and generation-only timing. This is not compile accuracy, editor
+response latency, or proof of model improvement.
 
 These results are a DIFFERENT protocol from the `model:eval`
-loopback Ollama v3 benchmark; do not directly compare scores across
+loopback Ollama v4 benchmark; do not directly compare scores across
 tokenization backends/modes. No real local model run is claimed in the
 repository. Independent human, compiler, rights and editor QA is required.
 
@@ -271,3 +272,30 @@ This is only a basic integrity consistency check: user-controlled
 receipts can be altered, the full base weights are not authenticated
 and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
+
+
+## 14. Local HF synthetic generation timing (v4 current protocol)
+
+For actual reviewed local `smoke.py --run` trials, protocol
+`lineloom-hf-synthetic-smoke-v4` adds nearest-rank **p50/p95 generation
+latency in milliseconds**, overall and per target language. Measurement
+uses a monotonic clock surrounding only the `model.generate()` call,
+with explicit GPU synchronization before and after when using CUDA.
+Model loading, prompt tokenization, decoding, VS Code integration and all
+editor-side delays are **outside this timing**. Unselected languages report
+zero attempts and null percentiles.
+
+Offline `compare_smoke.py` now requires the same fixed timing scheme and
+matching fixture/request/checkpoint scope and reports base, adapter and
+adapter-minus-base latency differences. A **positive difference** is slower
+generation in that particular run, but is not an independently verified
+regression; compare only with controlled hardware, load, thermal state,
+execution order and reproducible conditions. With only six examples per
+language, these p95 measurements are highly unstable.
+
+This v4 contract intentionally rejects older v1–v3 HF reports in the
+comparator; rerun both from the same reviewed checkout. The separate
+Ollama benchmark uses `lineloom-synthetic-v4` and remains incomparable.
+Offline unit tests use invented timings, without GPU, training or any
+model-generation measurements. No real HF inference has been executed
+or claimed by this development change.
