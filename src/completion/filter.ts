@@ -25,6 +25,26 @@ function containsUnsafeUnicode(value: string): boolean {
   return false;
 }
 
+/** Read a whole Unicode scalar at a UTF-16 boundary, not a surrogate half. */
+function characterBefore(value: string, end: number): string {
+  if (end <= 0) return "";
+  const previous = value.charCodeAt(end - 1);
+  if (previous >= 0xdc00 && previous <= 0xdfff && end >= 2) {
+    const high = value.charCodeAt(end - 2);
+    if (high >= 0xd800 && high <= 0xdbff) return value.slice(end - 2, end);
+  }
+  return value.slice(end - 1, end);
+}
+function characterAt(value: string, start: number): string {
+  if (start < 0 || start >= value.length) return "";
+  const high = value.charCodeAt(start);
+  if (high >= 0xd800 && high <= 0xdbff && start + 1 < value.length) {
+    const low = value.charCodeAt(start + 1);
+    if (low >= 0xdc00 && low <= 0xdfff) return value.slice(start, start + 2);
+  }
+  return value.slice(start, start + 1);
+}
+
 /**
  * A response sharing the start of a token with the current line is not
  * necessarily an echo: "function" before "functionality()" must not turn
@@ -32,8 +52,8 @@ function containsUnsafeUnicode(value: string): boolean {
  * distinctive echoes at a real insertion boundary.
  */
 function hasCompleteEchoBoundary(value: string, end: number): boolean {
-  const previous = value[end - 1] ?? "";
-  const next = value[end] ?? "";
+  const previous = characterBefore(value, end);
+  const next = characterAt(value, end);
   const identifierPart = /[\p{L}\p{M}\p{N}\p{Pc}$\u200c\u200d]/u;
   // UTF-16 slicing must not divide a valid astral code point.
   const previousUnit = value.charCodeAt(end - 1);
@@ -108,9 +128,9 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
     const identifier = /[\p{L}\p{M}\p{N}_$]/u;
     const onlyIdentifier = /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap);
     const cutsGeneratedWord = onlyIdentifier &&
-      identifier.test(value.at(-length - 1) ?? "");
-    const cutsFollowingWord = identifier.test(overlap.at(-1) ?? "") &&
-      length < suffix.length && identifier.test(suffix[length]);
+      identifier.test(characterBefore(value, value.length - length));
+    const cutsFollowingWord = identifier.test(characterBefore(overlap, overlap.length)) &&
+      length < suffix.length && identifier.test(characterAt(suffix, length));
     if ((length <= 2 && onlyIdentifier) || cutsGeneratedWord || cutsFollowingWord) continue;
     value = value.slice(0, -length);
     break;
