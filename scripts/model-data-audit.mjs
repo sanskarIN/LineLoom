@@ -7,6 +7,7 @@ import { constants } from "node:fs";
 import { lstat, open, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { auditTrainingManifest } from "./model-data-audit-lib.mjs";
+import { parseNoDuplicateKeys } from "./model-json-strict.mjs";
 
 const sameRegularFile = (before, after) =>
   before.isFile() && after.isFile() &&
@@ -40,7 +41,7 @@ async function readBoundedJson(path) {
         !sameRegularFile(before, await lstat(path))) {
       throw Error("changed-during-read");
     }
-    return JSON.parse(new TextDecoder("utf-8", { fatal: true })
+    return parseNoDuplicateKeys(new TextDecoder("utf-8", { fatal: true })
       .decode(buffer.subarray(0, length)));
   } finally {
     await handle.close();
@@ -49,7 +50,7 @@ async function readBoundedJson(path) {
 async function main() {
   if (process.argv.length !== 4 || process.argv[2] !== "--manifest" ||
       !process.argv[3] || process.argv[3].startsWith("--")) throw Error("arguments");
-  const fixtures = JSON.parse(await readFile(fileURLToPath(
+  const fixtures = parseNoDuplicateKeys(await readFile(fileURLToPath(
     new URL("../model/fixtures/completion-v1.json", import.meta.url)), "utf8"));
   const userManifest = await readBoundedJson(process.argv[3]);
   const summary = auditTrainingManifest(userManifest, fixtures);
