@@ -41,7 +41,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "artifactKind": kind,
         "adapterReceiptVerified": kind == "local-lora-adapter",
         "adapterReceiptProtocol": (
-            "lineloom-local-adapter-receipt-v1"
+            "lineloom-local-adapter-receipt-v2"
             if kind == "local-lora-adapter" else "not-applicable"
         ),
         "selectedLanguage": language,
