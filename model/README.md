@@ -66,8 +66,18 @@ The opt-in offline evaluator now routes `lineloom-code` and
 extension's explicit local-tag behavior when no related files are selected.
 The prior synthetic v3 evaluator chose instructions for this tag; comparing
 those differently routed reports would be misleading. The benchmark
-identifier is now **`lineloom-synthetic-v4`** and legacy v1–v3 Ollama
-reports are intentionally rejected by the offline comparator. Re-run
+identifier is now **`lineloom-synthetic-v5`** and legacy v1–v4 Ollama
+reports are intentionally rejected by the offline comparator. The v5 `model:eval` runner also inspects generated **TypeScript syntax**
+in memory with the locally installed TypeScript parser, reporting only
+per-language aggregate parser-pass/fail/unchecked counts. Rust, C, C++
+and Python generated suggestions are explicitly unchecked in the Ollama
+path. Python-only AST syntax analysis exists separately in the approved
+local Hugging Face smoke runner. Neither path executes generated code,
+and neither is equivalent to model quality, type correctness or manual
+editor acceptance. The new source-free comparator rejects fabricated
+TypeScript syntax metrics and flags increased parser failures.
+
+Re-run
 baseline and candidate against the same checkout, explicit mode and
 fixture scope; do not mix them with Hugging Face smoke v2 reports.
 The change adds no installed model, real benchmark result, or automatic
