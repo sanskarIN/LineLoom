@@ -182,6 +182,18 @@ def base_weight_fingerprint(base_dir: Path) -> dict:
             "baseWeightFiles": len(weights)}
 
 
+
+def base_checkpoint_fingerprint(base_dir: Path) -> dict:
+    """Identity of both reviewed checkpoint metadata and actual weight bytes.
+
+    Use the same snapshot before model loading and after evaluation to detect
+    on-disk drift. Digest equality does not prove authentic weights, rights or
+    protection against a concurrent adversary that restores the original bytes.
+    """
+    return {**base_metadata_hashes(base_dir),
+            **base_weight_fingerprint(base_dir)}
+
+
 def adapter_artifact_hashes(adapter_dir: Path) -> dict[str, str]:
     """Hash a bounded, regular-file-only adapter tree using relative names."""
     if adapter_dir.is_symlink() or not adapter_dir.is_dir():
