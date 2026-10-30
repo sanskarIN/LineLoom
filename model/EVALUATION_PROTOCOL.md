@@ -274,10 +274,10 @@ and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
 
 
-## 14. Local HF synthetic generation timing, output length and runtime parity (v6 current protocol)
+## 14. Local HF synthetic timing, length, runtime parity and termination (v7 current protocol)
 
 For actual reviewed local `smoke.py --run` trials, protocol
-`lineloom-hf-synthetic-smoke-v6` reports nearest-rank **p50/p95 generation
+`lineloom-hf-synthetic-smoke-v7` reports nearest-rank **p50/p95 generation
 latency in milliseconds**, overall and per target language. Measurement
 uses a monotonic clock surrounding only the `model.generate()` call,
 with explicit CUDA synchronization on both sides. Loading, prompt
@@ -285,8 +285,8 @@ tokenization, decoding, VS Code integration and all editor-side delays
 are **outside this timing**. Unselected languages report zero attempts
 and null latency percentiles.
 
-V6 retains the V5 **actual generated token ID** accounting and (including a stop
-token when generated), aggregated globally and per language, with at
+V7 retains **actual generated token ID** accounting (including a terminal
+stop token when generated), aggregated globally and per language, with at
 most `maxNewTokens` IDs per attempt. It does **not** print tokens, decoded
 text, fixture identities or individual token counts. The source-free
 comparator validates count bounds and five-language sums, then reports
@@ -297,13 +297,30 @@ equal totals do **not** establish matching per-probe output lengths.
 The runner intentionally does not claim throughput, first-token latency,
 identical hardware, compiler correctness or editor acceptance.
 
-Before comparing, the v6 report requires an exact, bounded, **source-free
+Before comparing, the v7 report requires an exact, bounded, **source-free
 runtime profile** containing device (`cpu` or `cuda`), selected precision,
 OS family, Python/PyTorch/Transformers versions, and nullable CUDA/HIP
 runtime versions. The offline comparator fails closed if any of the eight
 fields differs across the base and adapter runs. This rejects accidental
 CPU-versus-GPU, FP32-versus-BF16, operating-system and framework-version
 comparisons that could otherwise be misread as adapter speed differences.
+
+V7 also reports **how generation terminated**. Only two conditions are
+accepted under the current deterministic greedy FIM policy: the last
+generated token is the tokenizer EOS or FIM suffix marker
+(`stop-token`), or the model used the full `maxNewTokens` allowance
+without producing a stop token (`token-limit`). A stop token generated
+exactly at the cap is classified as a natural stop. An unexplained
+short generation or a stop token followed by more tokens is rejected.
+
+The reported data consists solely of total and per-language
+`stopToken`/`tokenLimit` counts, and comparator base/adapter token-limit
+deltas. No individual result, raw token ID or generated text leaves memory.
+**Any token-limit exit triggers `TOKEN_LIMIT_EXITS_REQUIRE_REVIEW`**:
+the completion may be incomplete. A stop-token exit does not prove
+syntactic validity, correctness or acceptable code quality. Source-free
+aggregate metrics alone cannot determine which individual completion
+was truncated.
 
 Only fixed allowlisted platform/version strings are written. Hostnames,
 local file paths, GPU serials and private environment variables are never
@@ -319,7 +336,7 @@ an independently verified regression. Compare only on controlled
 hardware, load, thermal state, quantization and execution order.
 With six examples per language, p95 is highly unstable.
 
-V6 rejects previous v1–v5 HF smoke protocols in the comparator; rerun
+V7 rejects previous v1–v6 HF smoke protocols in the comparator; rerun
 both base and adapter from the same reviewed checkout. The separate
 Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
 comparable. Offline tests use invented timing and token counts without
