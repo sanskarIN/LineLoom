@@ -52,7 +52,7 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
     def test_pure_python_references_parse_without_compilers_or_exec(self):
         result = audit.audit_public_references(
             "python", run=True, approved=True,
-            resolve_tool=lambda _: None,
+            resolve_tool=lambda _: self.fail("AST-only audit must not discover toolchains"),
             invoke=lambda *a, **k: self.fail("no compiler should run for Python")
         )
         self.assertEqual(result["stage"], "PUBLIC_REFERENCE_SYNTAX_CHECKED")
@@ -97,6 +97,28 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
         self.assertIn("--noEmit", flags["tsc"])
         self.assertNotIn("source_text", json.dumps(result))
         self.assertNotIn("fixture0.rs", json.dumps(result))
+
+    def test_scoped_language_discovers_only_its_own_toolchain(self):
+        looked_up = []
+        invoked = []
+        def lookup(binary):
+            looked_up.append(binary)
+            return "/mock/" + binary
+        def compile_fixture(args, **kwargs):
+            invoked.append(args[0])
+            return SimpleNamespace(returncode=0)
+        report = audit.audit_public_references(
+            "rust", run=True, approved=True,
+            resolve_tool=lookup, invoke=compile_fixture
+        )
+        self.assertEqual(looked_up, ["rustc"])
+        self.assertEqual(invoked, ["/mock/rustc"] * 6)
+        self.assertEqual(report["stage"], "PUBLIC_REFERENCE_SYNTAX_CHECKED")
+        self.assertEqual(report["passed"], 6)
+        self.assertEqual(report["referenceFixtures"], 6)
+        self.assertEqual(report["byLanguage"]["rust"]["passed"], 6)
+        self.assertEqual(report["byLanguage"]["python"]["fixtures"], 0)
+        self.assertEqual(report["unavailable"], 0)
 
     def test_missing_compiler_never_counts_as_success(self):
         result = audit.audit_public_references(
