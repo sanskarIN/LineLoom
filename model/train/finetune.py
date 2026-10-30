@@ -24,7 +24,7 @@ try:
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
-        adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
+        adapter_artifact_hashes, base_checkpoint_fingerprint
     )
 except ImportError:
     from sampling import (
@@ -33,7 +33,7 @@ except ImportError:
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
-        adapter_artifact_hashes, base_metadata_hashes, base_weight_fingerprint
+        adapter_artifact_hashes, base_checkpoint_fingerprint
     )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -234,7 +234,7 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(args.seed)
     model_dir = validate_local_checkpoint(Path(args.base_dir))
-    base_weights = base_weight_fingerprint(model_dir)
+    base_identity = base_checkpoint_fingerprint(model_dir)
     dtype = (torch.bfloat16 if args.device == "cuda" and
              torch.cuda.is_bf16_supported() else torch.float32)
     tokenizer = AutoTokenizer.from_pretrained(
@@ -332,10 +332,10 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     validation = validation_metrics(validation_samples, losses, LANGUAGES,
                                     validation_target_tokens)
 
-    # Hash once before model loading and again after optimization so a local
+    # Rehash metadata and weights after optimization so an on-disk
     # checkpoint change cannot silently become an adapter receipt.
-    if base_weight_fingerprint(model_dir) != base_weights:
-        raise ExperimentRejected("base-weights-changed-during-experiment")
+    if base_checkpoint_fingerprint(model_dir) != base_identity:
+        raise ExperimentRejected("base-checkpoint-changed-during-experiment")
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
     # PEFT adapter only; base model is NEVER copied, merged or exported.
@@ -344,7 +344,6 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # Hash actual bytes after saving. Relative file keys avoid collisions
     # between equal basenames in different PEFT subfolders.
     artifact_hashes = adapter_artifact_hashes(adapter_dir)
-    base_hashes = base_metadata_hashes(model_dir)
     result = {
         "stage": "LOCAL_UNREVIEWED_ADAPTER_EXPERIMENT",
         "trainingExecuted": True,
@@ -352,8 +351,7 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         "dataAudit": "MECHANICAL_CHECKS_PASS_ONLY",
         "trainingManifestSha256": data_digest,
         "adapterReceiptProtocol": ADAPTER_RECEIPT_PROTOCOL,
-        **base_hashes,
-        **base_weights,
+        **base_identity,
         "baseRevisionDeclared": args.base_revision,
         "optimizerSteps": args.steps,
         "gradientAccumulation": args.gradient_accumulation,
