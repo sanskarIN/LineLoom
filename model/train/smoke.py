@@ -30,6 +30,7 @@ except ImportError:
 try:
     from .smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
+        classify_generation_termination,
         checked_runtime_profile
     )
     from .integrity import (
@@ -39,6 +40,7 @@ try:
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
+        classify_generation_termination,
         checked_runtime_profile
     )
     from integrity import (
@@ -195,13 +197,17 @@ def run_local(fixture_set: list[dict], args) -> dict:
                 raise ExperimentRejected("invalid-generation-clock")
             generation_ms = round(elapsed_ns / 1_000_000)
             tokens = generated[0, inputs.shape[1]:].tolist()
+            reason = classify_generation_termination(
+                tokens, stop_ids, args.max_new_tokens
+            )
             # Raw completion remains in memory only; no IDs/code/special
             # model errors written into the console or an artifact.
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             exact = normalize_completion(completion) == fixture["expected"]
             result.append({"language": fixture["language"], "exact": exact,
                            "generationMs": generation_ms,
-                           "generationTokens": len(tokens)})
+                           "generationTokens": len(tokens),
+                           "terminationReason": reason})
     verify_smoke_inputs_unchanged(
         base_dir, base_identity,
         Path(args.adapter_dir) if args.adapter_dir else None,
