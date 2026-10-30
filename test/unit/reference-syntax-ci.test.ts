@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 describe("public FIM reference syntax CI evidence", () => {
-  const workflow = readFileSync(".github/workflows/ci.yml", "utf8");
+  const workflow = readFileSync(".github/workflows/ci.yml", "utf8").replace(/\r\n?/g, "\n");
   const job = workflow.split("  reference-syntax:\n")[1]?.split("\n  integration:\n")[0] ?? "";
 
   it("has a separate bounded job using real local toolchains, not mocked checks", () => {
