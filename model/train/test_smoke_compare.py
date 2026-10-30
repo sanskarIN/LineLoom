@@ -12,12 +12,14 @@ import unittest
 
 try:
     from . import compare_smoke
+    from .generated_syntax import generated_syntax_summary
     from .smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
     )
 except ImportError:
     import compare_smoke
+    from generated_syntax import generated_syntax_summary
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
@@ -25,7 +27,8 @@ except ImportError:
 
 
 def simulated_report(kind: str, language: str = "all", tokens: int = 64,
-                     score: int = 2, token_cap_exits: int = 0) -> dict:
+                     score: int = 2, token_cap_exits: int = 0,
+                     python_syntax_failures: int = 0) -> dict:
     """Test-only synthetic counts; never claim these represent real inference."""
     selected = read_public_fixtures(language)
     groups = {}
@@ -35,6 +38,15 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
             "attempts": attempts,
             "strictExactMatches": min(score, attempts),
         }
+    seen_python = 0
+    outcomes = []
+    for fixture in selected:
+        status = "unchecked"
+        if fixture["language"] == "python":
+            status = ("failed" if seen_python < python_syntax_failures
+                      else "passed")
+            seen_python += 1
+        outcomes.append({"language": fixture["language"], "syntaxOutcome": status})
     timings = generation_latency_summary([
         {"language": item["language"],
          "generationMs": (index + 1) * (2 if kind == "local-lora-adapter" else 1),
@@ -71,6 +83,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "syntheticAttempts": len(selected),
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
         "perLanguage": groups,
+        **generated_syntax_summary(outcomes),
         **timings,
     }
 
@@ -137,7 +150,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v6")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v7")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 15)
         self.assertEqual(result["generationP95DeltaMs"], 29)
@@ -155,6 +168,16 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["baseTokenLimitExits"], 0)
         self.assertEqual(result["adapterTokenLimitExits"], 0)
         self.assertEqual(result["terminationReview"], "NO_TOKEN_LIMIT_EXITS_RECORDED")
+        self.assertEqual(result["syntaxAccounting"], "python-ast-only-v1")
+        self.assertEqual(result["syntaxCheckedPerModel"], 6)
+        self.assertEqual(result["syntaxUncheckedPerModel"], 24)
+        self.assertEqual(result["basePythonAstPassed"], 6)
+        self.assertEqual(result["adapterPythonAstPassed"], 6)
+        self.assertEqual(result["pythonAstPassedDelta"], 0)
+        self.assertEqual(result["syntaxReview"],
+                         "PYTHON_AST_ONLY_OTHER_LANGUAGES_UNCHECKED")
+        self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 0)
+        self.assertEqual(result["perLanguage"]["python"]["basePythonAstPassed"], 6)
         self.assertEqual(result["perLanguage"]["rust"]["tokenLimitExitDelta"], 0)
 
         self.assertNotIn("fixtureSetSha256", result)
@@ -359,6 +382,60 @@ class CompareSmokeTests(unittest.TestCase):
             "stopToken": 5, "tokenLimit": 1
         })
         # Merely inventing an exit cannot explain output shorter than cap.
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(self.base, candidate)
+
+    def test_python_ast_failures_reported_without_generated_source(self):
+        base = simulated_report("local-base-model", python_syntax_failures=2)
+        adapter = simulated_report("local-lora-adapter", python_syntax_failures=1)
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertEqual(result["basePythonAstPassed"], 4)
+        self.assertEqual(result["adapterPythonAstPassed"], 5)
+        self.assertEqual(result["pythonAstPassedDelta"], 1)
+        self.assertEqual(result["basePythonAstFailed"], 2)
+        self.assertEqual(result["syntaxReview"], "PYTHON_AST_FAILURES_REQUIRE_REVIEW")
+        self.assertEqual(result["perLanguage"]["python"]["adapterPythonAstFailed"], 1)
+        self.assertNotIn("syntaxByLanguage", result)
+        self.assertNotIn("generatedSource", result)
+        only_rust = compare_smoke.compare_reports(
+            simulated_report("local-base-model", language="rust"),
+            simulated_report("local-lora-adapter", language="rust")
+        )
+        self.assertEqual(only_rust["syntaxCheckedPerModel"], 0)
+        self.assertEqual(only_rust["syntaxUncheckedPerModel"], 6)
+        self.assertEqual(only_rust["syntaxReview"], "NO_SYNTAX_CHECKS_FOR_SCOPE")
+
+    def test_fabricated_ast_totals_and_illegal_non_python_passes_rejected(self):
+        for field, value in (
+            ("syntaxAccounting", "unapproved"),
+            ("syntaxChecked", True),
+            ("syntaxChecked", 5),
+            ("syntaxPassed", -1),
+            ("syntaxFailed", 7),
+            ("syntaxUnchecked", 23),
+            ("syntaxByLanguage", {}),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate[field] = value
+            with self.subTest(field=field), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(self.base, candidate)
+        for language, changed in (
+            ("python", {"passed": 5}),
+            ("python", {"checked": 5}),
+            ("python", {"failed": 1}),
+            ("rust", {"passed": 1}),
+            ("rust", {"unchecked": 5}),
+            ("c", {"unchecked": True}),
+            ("cpp", {"unknown": "private-code"}),
+        ):
+            candidate = copy.deepcopy(self.adapter)
+            candidate["syntaxByLanguage"][language].update(changed)
+            with self.subTest(language=language, changed=changed), self.assertRaises(
+                SmokeReportRejected
+            ):
+                compare_smoke.compare_reports(self.base, candidate)
+        candidate = simulated_report("local-lora-adapter", python_syntax_failures=5)
+        # A fabricated exact-match count cannot exceed Python AST successes.
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(self.base, candidate)
 
