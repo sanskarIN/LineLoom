@@ -274,10 +274,10 @@ and a checksum says nothing about code usefulness, correctness,
 legality or safety. The real-model and human-review gates remain.
 
 
-## 14. Local HF synthetic generation timing and output length (v5 current protocol)
+## 14. Local HF synthetic generation timing, output length and runtime parity (v6 current protocol)
 
 For actual reviewed local `smoke.py --run` trials, protocol
-`lineloom-hf-synthetic-smoke-v5` reports nearest-rank **p50/p95 generation
+`lineloom-hf-synthetic-smoke-v6` reports nearest-rank **p50/p95 generation
 latency in milliseconds**, overall and per target language. Measurement
 uses a monotonic clock surrounding only the `model.generate()` call,
 with explicit CUDA synchronization on both sides. Loading, prompt
@@ -285,7 +285,7 @@ tokenization, decoding, VS Code integration and all editor-side delays
 are **outside this timing**. Unselected languages report zero attempts
 and null latency percentiles.
 
-V5 additionally counts **actual generated token IDs** (including a stop
+V6 retains the V5 **actual generated token ID** accounting and (including a stop
 token when generated), aggregated globally and per language, with at
 most `maxNewTokens` IDs per attempt. It does **not** print tokens, decoded
 text, fixture identities or individual token counts. The source-free
@@ -297,6 +297,21 @@ equal totals do **not** establish matching per-probe output lengths.
 The runner intentionally does not claim throughput, first-token latency,
 identical hardware, compiler correctness or editor acceptance.
 
+Before comparing, the v6 report requires an exact, bounded, **source-free
+runtime profile** containing device (`cpu` or `cuda`), selected precision,
+OS family, Python/PyTorch/Transformers versions, and nullable CUDA/HIP
+runtime versions. The offline comparator fails closed if any of the eight
+fields differs across the base and adapter runs. This rejects accidental
+CPU-versus-GPU, FP32-versus-BF16, operating-system and framework-version
+comparisons that could otherwise be misread as adapter speed differences.
+
+Only fixed allowlisted platform/version strings are written. Hostnames,
+local file paths, GPU serials and private environment variables are never
+recorded. This profile is *not signed* and does not establish actual GPU,
+driver, memory layout, CUDA kernels, machine load, thermal state, batch
+shape or time-of-run parity. Even passing reports are descriptive and not
+a deployment or model-promotion gate.
+
 Offline `compare_smoke.py` requires identical fixture/request/checkpoint
 scope and reports only descriptive base-versus-adapter differences. A
 **positive duration difference** is slower in that particular run, not
@@ -304,7 +319,7 @@ an independently verified regression. Compare only on controlled
 hardware, load, thermal state, quantization and execution order.
 With six examples per language, p95 is highly unstable.
 
-V5 rejects previous v1–v4 HF smoke protocols in the comparator; rerun
+V6 rejects previous v1–v5 HF smoke protocols in the comparator; rerun
 both base and adapter from the same reviewed checkout. The separate
 Ollama benchmark uses `lineloom-synthetic-v4` and is not directly
 comparable. Offline tests use invented timing and token counts without
