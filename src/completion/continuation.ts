@@ -25,6 +25,29 @@ function digest(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
+/** A cached remainder must consist of complete Unicode scalar values. */
+function hasUnpairedSurrogate(value: string): boolean {
+  for (let i = 0; i < value.length; i++) {
+    const unit = value.charCodeAt(i);
+    if (unit >= 0xd800 && unit <= 0xdbff) {
+      const next = value.charCodeAt(++i);
+      if (!(next >= 0xdc00 && next <= 0xdfff)) return true;
+    } else if (unit >= 0xdc00 && unit <= 0xdfff) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/** VS Code offsets count UTF-16 units, not code points. */
+function splitsSurrogatePair(value: string, index: number): boolean {
+  if (index <= 0 || index >= value.length) return false;
+  const before = value.charCodeAt(index - 1);
+  const after = value.charCodeAt(index);
+  return before >= 0xd800 && before <= 0xdbff &&
+    after >= 0xdc00 && after <= 0xdfff;
+}
+
 /**
  * Reuse the untyped remainder only after one simple forward edit.
  * All original surrounding text must match; short or shifted context windows
@@ -35,7 +58,7 @@ export class ContinuationCache {
   constructor(private readonly ttlMs = 12_000, private readonly maxTyped = 32) {}
 
   remember(point: ContinuationPoint, suggestion: string, now = Date.now()): void {
-    if (!suggestion || suggestion.length > 6_000) {
+    if (!suggestion || suggestion.length > 6_000 || hasUnpairedSurrogate(suggestion)) {
       this.entry = undefined;
       return;
     }
@@ -58,7 +81,10 @@ export class ContinuationCache {
         saved.profileDigest !== point.profileDigest || point.version !== saved.version + 1 ||
         digest(point.suffix) !== saved.suffixDigest) return;
     const typed = point.offset - saved.offset;
-    if (typed < 1 || typed > this.maxTyped || typed >= saved.suggestion.length) return;
+    // Never return a low-surrogate remainder after a partial astral edit.
+    // Such a fragment bypasses normal model-output filtering.
+    if (typed < 1 || typed > this.maxTyped || typed >= saved.suggestion.length ||
+        splitsSurrogatePair(saved.suggestion, typed)) return;
     if (!point.prefix.endsWith(saved.suggestion.slice(0, typed))) return;
     if (digest(point.prefix.slice(0, -typed)) !== saved.prefixDigest) return;
     return saved.suggestion.slice(typed);
@@ -85,6 +111,7 @@ export class ContinuationCache {
         edit.rangeOffset !== saved.offset || edit.rangeLength !== 0 ||
         edit.text.length < 1 || edit.text.length > this.maxTyped ||
         edit.text.length >= saved.suggestion.length ||
+        splitsSurrogatePair(saved.suggestion, edit.text.length) ||
         !saved.suggestion.startsWith(edit.text)) {
       this.clear();
     }
