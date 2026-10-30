@@ -85,6 +85,38 @@ class FimEncodingTests(unittest.TestCase):
         with self.assertRaises(finetune.ExperimentRejected):
             finetune.verify_fim_tokenizer(no_eos)
 
+    def test_rejects_embedded_fim_or_chat_control_tokens_in_each_field(self):
+        for token in finetune.RESERVED_MODEL_TOKENS:
+            for part in ("prefix", "middle", "suffix"):
+                sample = dict(self.sample)
+                sample[part] += " /* " + token + " */"
+                with self.subTest(token=token, part=part):
+                    with self.assertRaises(finetune.ExperimentRejected):
+                        finetune.encode_fim(sample, self.tokenizer, 1024)
+
+    def test_rejects_tokenizer_that_merges_across_prompt_target_boundary(self):
+        class MergingTokenizer(FakeQwenTokenizer):
+            def encode(self, text, add_special_tokens=False):
+                ids = super().encode(text, add_special_tokens)
+                full = finetune.fim_prompt(self_sample) + self_sample["middle"]
+                if text == full:
+                    return ids[:-2] + [987654]  # different canonical boundary
+                return ids
+        self_sample = self.sample
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.encode_fim(self.sample, MergingTokenizer(), 1024)
+
+    def test_fim_markers_must_be_distinct_and_not_collide_with_eos(self):
+        overlapping = FakeQwenTokenizer()
+        overlapping._tokens = dict(FakeQwenTokenizer._tokens)
+        overlapping._tokens[finetune.FIM_SUFFIX] = overlapping._tokens[finetune.FIM_PREFIX]
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.verify_fim_tokenizer(overlapping)
+        ambiguous_eos = FakeQwenTokenizer()
+        ambiguous_eos.eos_token_id = 102
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.verify_fim_tokenizer(ambiguous_eos)
+
     def test_overlong_samples_rejected_not_silently_truncated(self):
         with self.assertRaises(finetune.ExperimentRejected):
             finetune.encode_fim(self.sample, self.tokenizer, 24)
