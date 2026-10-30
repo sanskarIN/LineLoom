@@ -100,7 +100,7 @@ Hugging Face offline mode, greedy bounded generation and fixed local
 original synthetic probes only. The stdout report contains numeric
 strict-match totals by language and fixed disclaimers; no generated code,
 private model directory or adapter path is displayed. This is a **separate
-`lineloom-hf-synthetic-smoke-v2`** protocol; do not mix its scores
+`lineloom-hf-synthetic-smoke-v3`** protocol; do not mix its scores
 with the Ollama network/latency `lineloom-synthetic-v3` protocol.
 
 Passing six synthetic examples per language is **not sufficient** for a
@@ -191,7 +191,7 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
-## Comparing local HF base-versus-adapter smoke reports (protocol v2)
+## Comparing local HF base-versus-adapter smoke reports (protocol v3)
 
 After **independently approved** local base and adapter runs on the same
 machine with the *same* base revision, tokenizer, fixtures and generation
@@ -213,7 +213,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v2` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v3` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -234,12 +234,42 @@ GPU settings, tokenizer runtime behavior, hidden sampling defaults,
 compiler correctness, editor acceptance, speed or whether reports were
 truthfully generated. **The six probes per language are not a production
 model evaluation**, and a strict exact-match improvement does not establish
-quality. Protocol v1 reports must be rerun; HF protocol v2 remains
+quality. Protocol v1 reports must be rerun; HF protocol v3 remains
 incomparable with the Ollama `lineloom-synthetic-v3` protocol.
 
 Tests are run automatically by `npm run test:model-training` using Python
 standard library only; they use invented in-memory count summaries and
 perform **no inference**.
+
+## Local checkpoint weight identity (development, no model publication)
+
+The optional training experiment, adapter verifier and base/adapter HF smoke
+runner now hash the **actual local safetensors checkpoint bytes**, not just
+`config.json`, `tokenizer.json` and a user-declared 40-hex revision.
+The bounded fingerprint covers either a single `model.safetensors` file or
+the root-level `model-00001-of-0000N.safetensors` shards plus their
+`model.safetensors.index.json` mapping. It rejects extra or missing
+weights, symlinks, malformed indexes and invalid file layouts. Streaming
+SHA-256 uses a small read buffer; it can still take meaningful time and
+disk I/O for a large model. The deliberate cap is 64 weight files, 8 GiB
+per file and 32 GiB total.
+
+Only `baseWeightsSha256` (a combined digest) and the number of files
+are included in source-free local reports. Training and synthetic smoke
+both check the files before and after use. The adapter receipt checker
+also requires the matching fingerprint. This closes a comparison hole:
+models with identical declared revision/config/tokenizer but different
+checkpoint weights cannot now be compared as if they were the same base.
+
+**Compatibility:** existing unreviewed `lineloom-local-adapter-receipt-v1`
+receipts and HF smoke `lineloom-hf-synthetic-smoke-v2` reports are
+not accepted by the new versioned verification/comparator workflow.
+New receipts use `lineloom-local-adapter-receipt-v2`; new HF reports use
+`lineloom-hf-synthetic-smoke-v3`. Do not alter old receipts to make them
+pass or imply that a local SHA-256 digest authenticates a declared
+upstream revision, provenance, permissions or loaded model state. Independent
+checkpoint review, safe isolation, and actual inference/quality checks
+are still required.
 
 ## Local adapter integrity gate (source development, no trained weights)
 

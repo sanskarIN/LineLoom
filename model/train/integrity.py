@@ -15,7 +15,7 @@ import re
 import stat
 from typing import BinaryIO, Iterator
 
-PROTOCOL = "lineloom-local-adapter-receipt-v1"
+PROTOCOL = "lineloom-local-adapter-receipt-v2"
 MAX_RECEIPT_BYTES = 32 * 1024
 MAX_ARTIFACT_FILES = 64
 MAX_FILE_BYTES = 128 * 1024 * 1024
@@ -105,6 +105,83 @@ def base_metadata_hashes(base_dir: Path) -> dict:
     }
 
 
+# Restrict the separately provisioned local checkpoint to the expected
+# Hugging Face safetensors layout. Only an aggregate digest is published.
+MAX_BASE_WEIGHT_FILES = 64
+MAX_BASE_WEIGHT_FILE_BYTES = 8 * 1024 * 1024 * 1024
+MAX_BASE_WEIGHT_TOTAL_BYTES = 32 * 1024 * 1024 * 1024
+WEIGHT_SHARD = re.compile(r"model-[0-9]{5}-of-[0-9]{5}\.safetensors\Z")
+
+
+def base_weight_fingerprint(base_dir: Path) -> dict:
+    """Digest *actual bytes* of local base safetensors and optional shard index.
+
+    All files must be in the checkpoint root. Streaming avoids loading tensor
+    content into memory; it does NOT attest that those bytes were the ones
+    later loaded into a framework, their rights, or the claimed revision.
+    """
+    if base_dir.is_symlink() or not base_dir.is_dir():
+        raise IntegrityRejected("invalid-base-dir")
+    weights = sorted(base_dir.glob("*.safetensors"), key=lambda p: p.name)
+    if not 1 <= len(weights) <= MAX_BASE_WEIGHT_FILES:
+        raise IntegrityRejected("invalid-base-weight-count")
+    names = [p.name for p in weights]
+    if len(set(names)) != len(names):
+        raise IntegrityRejected("duplicate-base-weight-names")
+    if not (names == ["model.safetensors"] or
+            all(WEIGHT_SHARD.fullmatch(name) for name in names)):
+        raise IntegrityRejected("invalid-base-weight-layout")
+    if names != ["model.safetensors"]:
+        required = [
+            f"model-{i:05d}-of-{len(names):05d}.safetensors"
+            for i in range(1, len(names) + 1)
+        ]
+        if names != required:
+            raise IntegrityRejected("missing-or-misnumbered-base-shard")
+    total = 0
+    digest = hashlib.sha256(b"lineloom-base-weights-v1\n")
+    for path in weights:
+        metadata = path.lstat()
+        if (not stat.S_ISREG(metadata.st_mode) or
+                not 0 < metadata.st_size <= MAX_BASE_WEIGHT_FILE_BYTES):
+            raise IntegrityRejected("invalid-base-weight-file")
+        total += metadata.st_size
+        if total > MAX_BASE_WEIGHT_TOTAL_BYTES:
+            raise IntegrityRejected("oversized-base-weights")
+        digest.update(path.name.encode("ascii") + b"\0" +
+                      str(metadata.st_size).encode("ascii") + b"\0" +
+                      _file_hash(path, MAX_BASE_WEIGHT_FILE_BYTES).encode("ascii") +
+                      b"\n")
+
+    index_path = base_dir / "model.safetensors.index.json"
+    if names == ["model.safetensors"]:
+        if index_path.exists() or index_path.is_symlink():
+            raise IntegrityRejected("unexpected-base-weight-index")
+        digest.update(b"single-file\n")
+    else:
+        if not index_path.is_file() or index_path.is_symlink():
+            raise IntegrityRejected("missing-base-weight-index")
+        with _checked_regular_stream(index_path, 1024 * 1024) as stream:
+            raw = stream.read(1024 * 1024 + 1)
+        try:
+            document = json.loads(raw.decode("utf-8", errors="strict"),
+                                  object_pairs_hook=_object_without_duplicates)
+        except (UnicodeError, ValueError, TypeError):
+            raise IntegrityRejected("invalid-base-weight-index") from None
+        if (not isinstance(document, dict) or
+                not isinstance(document.get("weight_map"), dict) or
+                not document["weight_map"] or
+                any(not isinstance(key, str) or not key or
+                    not isinstance(value, str) for key, value
+                    in document["weight_map"].items()) or
+                set(document["weight_map"].values()) != set(names)):
+            raise IntegrityRejected("inconsistent-base-weight-index")
+        # Index bytes are part of the checkpoint identity, not just shards.
+        digest.update(b"sharded\n" + hashlib.sha256(raw).hexdigest().encode("ascii"))
+    return {"baseWeightsSha256": digest.hexdigest(),
+            "baseWeightFiles": len(weights)}
+
+
 def adapter_artifact_hashes(adapter_dir: Path) -> dict[str, str]:
     """Hash a bounded, regular-file-only adapter tree using relative names."""
     if adapter_dir.is_symlink() or not adapter_dir.is_dir():
@@ -176,9 +253,13 @@ def verify_training_receipt(adapter_dir: Path, base_dir: Path, revision: str) ->
             receipt["validationSamples"] <= 0 or
             not isinstance(receipt.get("trainingManifestSha256"), str) or
             not SHA256.fullmatch(receipt["trainingManifestSha256"]) or
-            receipt.get("baseRevisionDeclared") != revision):
+            receipt.get("baseRevisionDeclared") != revision or
+            type(receipt.get("baseWeightFiles")) is not int or
+            not 1 <= receipt["baseWeightFiles"] <= MAX_BASE_WEIGHT_FILES or
+            not isinstance(receipt.get("baseWeightsSha256"), str) or
+            not SHA256.fullmatch(receipt["baseWeightsSha256"])):
         raise IntegrityRejected("adapter-receipt-mismatch")
-    metadata = base_metadata_hashes(base_dir)
+    metadata = {**base_metadata_hashes(base_dir), **base_weight_fingerprint(base_dir)}
     if any(receipt.get(key) != digest for key, digest in metadata.items()):
         raise IntegrityRejected("base-metadata-mismatch")
     claimed_files = receipt.get("adapterFileSha256")
@@ -193,6 +274,7 @@ def verify_training_receipt(adapter_dir: Path, base_dir: Path, revision: str) ->
         "adapterReceiptProtocol": PROTOCOL,
         "adapterFilesVerified": len(claimed_files),
         "baseMetadataVerified": True,
+        "baseWeightsVerified": True,
         "warning": ("Digest checks only: no signature, approved rights, "
-                    "weight lineage, real quality or model release approval."),
+                    "declared revision authenticity, training rights, or model release approval."),
     }

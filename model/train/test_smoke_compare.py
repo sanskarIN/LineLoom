@@ -41,7 +41,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "artifactKind": kind,
         "adapterReceiptVerified": kind == "local-lora-adapter",
         "adapterReceiptProtocol": (
-            "lineloom-local-adapter-receipt-v1"
+            "lineloom-local-adapter-receipt-v2"
             if kind == "local-lora-adapter" else "not-applicable"
         ),
         "selectedLanguage": language,
@@ -49,6 +49,8 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "baseRevisionDeclared": "1" * 40,
         "baseConfigSha256": "a" * 64,
         "tokenizerSha256": "b" * 64,
+        "baseWeightsSha256": "c" * 64,
+        "baseWeightFiles": 2,
         **fingerprints(selected, tokens),
         "syntheticAttempts": len(selected),
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
@@ -135,6 +137,8 @@ class CompareSmokeTests(unittest.TestCase):
             ("baseRevisionDeclared", "2" * 40),
             ("baseConfigSha256", "c" * 64),
             ("tokenizerSha256", "d" * 64),
+            ("baseWeightsSha256", "e" * 64),
+            ("baseWeightFiles", 3),
         ):
             candidate = copy.deepcopy(self.adapter)
             candidate[field] = other
@@ -153,6 +157,8 @@ class CompareSmokeTests(unittest.TestCase):
             {"adapterReceiptVerified": False},
             {"adapterReceiptProtocol": "unknown"},
             {"baseRevisionDeclared": "a" * 39},
+            {"baseWeightsSha256": "not-a-digest"},
+            {"baseWeightFiles": True},
         ):
             candidate = copy.deepcopy(self.adapter)
             candidate.update(changes)
