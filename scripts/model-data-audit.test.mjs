@@ -123,6 +123,50 @@ test("rejects reserved FIM and chat tokens from any training span", () => {
     }
   }
 });
+test("rejects unknown, missing and inherited manifest or sample fields", () => {
+  for (const change of [
+    manifest => { manifest.unreviewedSource = "must-not-be-accepted"; },
+    manifest => { delete manifest.schemaVersion; },
+    manifest => { manifest.samples[0].privateSnippet = "do-not-accept"; },
+    manifest => { delete manifest.samples[0].attributionReviewed; }
+  ]) {
+    const copy = good(); change(copy); shouldReject(copy);
+  }
+  const inherited = good();
+  const prototype = Object.create(inherited.samples[0]);
+  for (const field of ["id", "language", "split"]) prototype[field] = inherited.samples[0][field];
+  inherited.samples[0] = prototype;
+  shouldReject(inherited);
+  const inheritedRoot = Object.create(good());
+  shouldReject(inheritedRoot);
+});
+
+test("rejects coerced numeric or non-string record identifiers and revisions", () => {
+  for (const [field, value] of [
+    ["id", 123], ["repositoryGroup", 123],
+    ["id", new String("example-1")],
+    ["repositoryGroup", new String("reviewed-project-1")],
+    ["sourceRevision", 123],
+    ["sourceRevision", null], ["language", 1],
+    ["spdxLicense", 3], ["split", 1]
+  ]) {
+    const copy = good();
+    copy.samples[0][field] = value;
+    shouldReject(copy);
+  }
+});
+
+test("case-only repository-family changes cannot cross holdout splits", () => {
+  const copy = good();
+  copy.samples[5].repositoryGroup = copy.samples[0].repositoryGroup.toUpperCase();
+  shouldReject(copy);
+  const sameSplit = good();
+  sameSplit.samples[1].repositoryGroup = sameSplit.samples[0].repositoryGroup.toUpperCase();
+  const report = auditTrainingManifest(sameSplit, fixtures);
+  assert.equal(report.repositoryGroups, 14);
+  assert.ok(!JSON.stringify(report).includes("REVIEWED-PROJECT"));
+});
+
 test("bounded CLI is offline, does not echo source/paths on success or rejection", () => {
   const root = mkdtempSync(join(tmpdir(), "lineloom-private-corpus-"));
   const file = join(root, "private-source-with-names.json");
