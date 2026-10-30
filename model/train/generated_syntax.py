@@ -1,9 +1,10 @@
-"""Strictly in-memory syntax check of generated Python FIM insertions.
+"""Local-only, source-free grammar checks of generated Python and TypeScript FIM.
 
 Source is reconstructed only from a checked-in synthetic fixture and local
 inference result. Python ast.parse does not execute code. No generated source,
 AST, errors, temporary files or fixture IDs are ever returned.
-Other languages are deliberately NOT assessed until isolated parsers exist.
+Rust, C, and C++ generated code remains unchecked. TypeScript uses a bounded
+local parser subprocess; neither path executes model-generated code.
 """
 from __future__ import annotations
 
@@ -14,12 +15,13 @@ try:
 except ImportError:
     from smoke_report import LANGUAGES, SmokeReportRejected
 
-SYNTAX_ACCOUNTING = "python-ast-only-v1"
+SYNTAX_ACCOUNTING = "python-ast-typescript-parser-v1"
 MAX_SYNTHETIC_SOURCE_CHARS = 8192
 
 
-def classify_generated_syntax(fixture: dict, insertion: str) -> str:
-    """Return passed/failed for Python, unchecked for other languages.
+def classify_generated_syntax(fixture: dict, insertion: str,
+                              *, parse_typescript=None) -> str:
+    """Return Python/TypeScript grammar result; other languages unchecked.
 
     Only the original public synthetic source may be supplied by the
     optional local runner. This pure helper never executes a completion.
@@ -28,8 +30,15 @@ def classify_generated_syntax(fixture: dict, insertion: str) -> str:
             fixture.get("language") not in LANGUAGES or
             type(insertion) is not str):
         raise SmokeReportRejected("invalid-generated-syntax-input")
-    if fixture["language"] != "python":
+    if fixture["language"] in ("rust", "c", "cpp"):
         return "unchecked"
+    if fixture["language"] == "typescript":
+        if parse_typescript is None:
+            raise SmokeReportRejected("typescript-parser-required")
+        outcome = parse_typescript(fixture, insertion)
+        if outcome not in ("passed", "failed"):
+            raise SmokeReportRejected("invalid-typescript-parser-status")
+        return outcome
     if any(type(fixture.get(key)) is not str for key in ("prefix", "suffix")):
         raise SmokeReportRejected("invalid-python-synthetic-fixture")
     source = fixture["prefix"] + insertion + fixture["suffix"]
@@ -56,8 +65,10 @@ def generated_syntax_summary(results: list[dict]) -> dict:
             raise SmokeReportRejected("invalid-generated-syntax-language")
         language = item["language"]
         status = item.get("syntaxOutcome")
-        if (language == "python" and status not in ("passed", "failed") or
-                language != "python" and status != "unchecked"):
+        if (language in ("python", "typescript") and
+                status not in ("passed", "failed") or
+                language not in ("python", "typescript") and
+                status != "unchecked"):
             raise SmokeReportRejected("invalid-generated-syntax-status")
         bucket = by_language[language]
         bucket["attempts"] += 1
