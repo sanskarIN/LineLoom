@@ -111,6 +111,52 @@ describe("Ollama streaming NDJSON", () => {
     expect(await parseNdjson(stream(['{"response":"ok","done":true}']))).toBe("ok");
     expect(await parseNdjson(stream(['{"response":"ok","done":true}\\n   \t\\n'.replaceAll("\\n", "\n")]))).toBe("ok");
   });
+  it("returns a completed generation even if the stream never resolves cancel()", async () => {
+    let cancellationStarted = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode('{"response":"safe","done":true}\\n'.replaceAll("\\n", "\n")));
+      },
+      cancel() {
+        cancellationStarted = true;
+        return new Promise<void>(() => { /* Simulate a permanently stalled transport. */ });
+      }
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeout = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("stream-cancel-stalled")), 500);
+      });
+      expect(await Promise.race([parseNdjson(body), timeout])).toBe("safe");
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    expect(cancellationStarted).toBe(true);
+  });
+
+  it("does not mask a malformed stream error behind stalled cancellation", async () => {
+    let cancellationStarted = false;
+    const body = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode("private-invalid-json\n"));
+      },
+      cancel() {
+        cancellationStarted = true;
+        return new Promise<void>(() => {});
+      }
+    });
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    try {
+      const timeout = new Promise<never>((_resolve, reject) => {
+        timer = setTimeout(() => reject(new Error("stream-cancel-stalled")), 500);
+      });
+      await expect(Promise.race([parseNdjson(body), timeout])).rejects.toThrow(SyntaxError);
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
+    expect(cancellationStarted).toBe(true);
+  });
+
   it("cancels a live stream promptly after terminal completion without waiting for EOF", async () => {
     let cancelled = false;
     const pending = new ReadableStream<Uint8Array>({
