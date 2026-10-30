@@ -72,6 +72,16 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   if (isConfidentPrefixEcho(value, tail)) value = value.slice(tail.length);
   const lastLine = prefix.slice(prefix.lastIndexOf("\n") + 1);
   if (isConfidentPrefixEcho(value, lastLine)) value = value.slice(lastLine.length);
+  // Some models echo indentation on a blank, already-indented editor
+  // line. Repeating it at the insertion cursor doubles the indentation.
+  // Only remove a copy when the full current line before the cursor is
+  // spaces/tabs; never strip indentation on a new line that the model adds.
+  // Remove at most the exact existing indentation, leaving any additional
+  // generated indentation intact for legitimately deeper nested blocks.
+  const currentLine = prefix.slice(prefix.lastIndexOf("\n") + 1);
+  if (/^[ \t]+$/.test(currentLine) && value.startsWith(currentLine)) {
+    value = value.slice(currentLine.length);
+  }
   // Some models echo only the end of a line, rather than the complete current line.
   if (value && prefix) {
     const limit = Math.min(160, prefix.length, value.length);
