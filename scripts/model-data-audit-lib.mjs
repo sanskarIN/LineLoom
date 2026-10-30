@@ -10,6 +10,19 @@ const LANGUAGES = new Set(EVAL_LANGUAGES);
 const SPLITS = ["train", "validation", "test"];
 const LICENSES = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC"];
 const validId = /^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,127}$/;
+const MANIFEST_FIELDS = ["schemaVersion", "samples"];
+const SAMPLE_FIELDS = [
+  "id", "language", "split", "repositoryGroup", "sourceRevision",
+  "spdxLicense", "rightsReviewed", "optOutReviewed", "attributionReviewed",
+  "prefix", "middle", "suffix"
+];
+const exactRecord = (record, fields) =>
+  record !== null && typeof record === "object" && !Array.isArray(record) &&
+  (Object.getPrototypeOf(record) === Object.prototype ||
+    Object.getPrototypeOf(record) === null) &&
+  Object.keys(record).length === fields.length &&
+  fields.every(key => Object.hasOwn(record, key));
+
 const sha256 = text => createHash("sha256").update(text, "utf8").digest("hex");
 const normalized = value => value.replace(/\s+/gu, " ").trim();
 const tokenize = value => normalized(value).toLowerCase().match(/[\p{L}\p{N}_]+/gu) ?? [];
@@ -60,7 +73,7 @@ const malformed = () => { throw Error("dataset-audit-rejected"); };
  * obligatory even when this function returns a count-only PASS.
  */
 export function auditTrainingManifest(manifest, publicEvalManifest) {
-  if (!manifest || typeof manifest !== "object" || Array.isArray(manifest) ||
+  if (!exactRecord(manifest, MANIFEST_FIELDS) ||
       manifest.schemaVersion !== 1 || !Array.isArray(manifest.samples) ||
       manifest.samples.length < EVAL_LANGUAGES.length * SPLITS.length ||
       manifest.samples.length > 256) malformed();
@@ -82,12 +95,14 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
   const countByLicense = Object.fromEntries(LICENSES.map(x => [x, 0]));
 
   for (const s of manifest.samples) {
-    if (!s || typeof s !== "object" || Array.isArray(s) ||
-        !validId.test(s.id ?? "") || ids.has(s.id) ||
-        !LANGUAGES.has(s.language) || !SPLITS.includes(s.split) ||
-        !LICENSES.includes(s.spdxLicense) ||
-        !validId.test(s.repositoryGroup ?? "") ||
-        !/^[0-9a-f]{40}$/.test(s.sourceRevision ?? "") ||
+    if (!exactRecord(s, SAMPLE_FIELDS) ||
+        typeof s.id !== "string" || !validId.test(s.id) || ids.has(s.id) ||
+        typeof s.language !== "string" || !LANGUAGES.has(s.language) ||
+        typeof s.split !== "string" || !SPLITS.includes(s.split) ||
+        typeof s.spdxLicense !== "string" || !LICENSES.includes(s.spdxLicense) ||
+        typeof s.repositoryGroup !== "string" || !validId.test(s.repositoryGroup) ||
+        typeof s.sourceRevision !== "string" ||
+        !/^[0-9a-f]{40}$/.test(s.sourceRevision) ||
         s.rightsReviewed !== true || s.optOutReviewed !== true ||
         s.attributionReviewed !== true) malformed();
     ids.add(s.id);
@@ -99,9 +114,13 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
     const content = s.prefix + s.middle + s.suffix;
     if (looksSensitive(content)) malformed();
 
-    const lastSplit = repoSplits.get(s.repositoryGroup);
+    // Opaque family identifiers are ASCII and case-insensitive for split
+    // isolation; changing "Family-A" to "family-a" must never create a
+    // separate validation/test group in this mechanical audit.
+    const family = s.repositoryGroup.toLowerCase();
+    const lastSplit = repoSplits.get(family);
     if (lastSplit !== undefined && lastSplit !== s.split) malformed();
-    repoSplits.set(s.repositoryGroup, s.split);
+    repoSplits.set(family, s.split);
     // Source identity cannot be repeated under different split IDs or repos.
     const exact = sha256(normalized(content));
     if (seenSource.has(exact) || publicHashes.has(exact)) malformed();
