@@ -38,6 +38,7 @@ try:
         base_checkpoint_fingerprint
     )
     from .generated_syntax import classify_generated_syntax, generated_syntax_summary
+    from .typescript_syntax import classify_typescript_syntax
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
@@ -49,6 +50,7 @@ except ImportError:
         base_checkpoint_fingerprint
     )
     from generated_syntax import classify_generated_syntax, generated_syntax_summary
+    from typescript_syntax import classify_typescript_syntax
 
 
 def select_public_fixtures(language: str) -> list[dict]:
@@ -209,7 +211,9 @@ def run_local(fixture_set: list[dict], args) -> dict:
             exact = insertion == fixture["expected"]
             # Standard-library AST only: does not import or execute the
             # generated program; non-Python languages are explicitly unchecked.
-            syntax_outcome = classify_generated_syntax(fixture, insertion)
+            syntax_outcome = classify_generated_syntax(
+                fixture, insertion, parse_typescript=classify_typescript_syntax
+            )
             result.append({"language": fixture["language"], "exact": exact,
                            "syntaxOutcome": syntax_outcome,
                            "generationMs": generation_ms,
@@ -240,9 +244,10 @@ def run_local(fixture_set: list[dict], args) -> dict:
         **summarize(result),
         **generated_syntax_summary(result),
         **generation_latency_summary(result, args.max_new_tokens),
-        "limitation": ("Strict synthetic equality and Python AST-only syntax; "
-                       "C, C++, Rust and TypeScript generated syntax not checked. "
-                       "No execution, compiler, human, editor or deployment QA.")
+        "limitation": ("Strict synthetic equality and Python/TypeScript parser-only grammar; "
+                       "C, C++ and Rust generated code remains unchecked. "
+                       "No generated code execution, type correctness, "
+                       "compiler, human, editor or deployment QA.")
     }
 
 
