@@ -3,7 +3,7 @@ import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 import { GENERATED_SYNTAX_METHOD } from "./model-eval-syntax.mjs";
 
 /**
- * Pure, dependency-free helpers for an opt-in, loopback-only synthetic benchmark.
+ * Source-free reporting helpers for an opt-in, loopback-only synthetic benchmark.
  * No workspace reads, user prompt logging, telemetry, or model downloads.
  */
 export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "typescript"]);
