@@ -75,6 +75,29 @@ class ValidationMetricsTests(unittest.TestCase):
         self.assertEqual(set(metrics["validationLossByLanguage"]), set(LANGUAGES))
         self.assertNotIn("prefix", str(metrics))
 
+    def test_target_weighting_exposes_longer_completion_loss(self):
+        records = self.samples + [{"split": "validation", "language": "rust"}]
+        losses = [1, 2, 3, 4, 5, 7]
+        target_tokens = [1, 2, 2, 2, 2, 9]
+        metrics = validation_metrics(records, losses, LANGUAGES, target_tokens)
+        self.assertEqual(metrics["validationLoss"], round(22 / 6, 6))
+        self.assertEqual(metrics["validationTokenWeightedLoss"], round(92 / 18, 6))
+        self.assertEqual(metrics["validationMacroTokenWeightedLoss"], 4.08)
+        self.assertEqual(metrics["validationTargetTokens"], 18)
+        self.assertEqual(metrics["validationTargetTokensByLanguage"]["rust"], 10)
+        self.assertEqual(metrics["validationTokenWeightedLossByLanguage"]["rust"], 6.4)
+        self.assertEqual(metrics["validationLossByLanguage"]["rust"], 4)
+        self.assertNotIn("validationTokenWeightedLoss",
+                         validation_metrics(records, losses, LANGUAGES))
+
+    def test_refuses_invalid_target_token_counts(self):
+        for count in (0, -1, 258, True, 2.0, float("nan"), "2"):
+            with self.subTest(count=count), self.assertRaises(SamplingRejected):
+                validation_metrics(self.samples, [1] * 5, LANGUAGES,
+                                   [count, 2, 2, 2, 2])
+        with self.assertRaises(SamplingRejected):
+            validation_metrics(self.samples, [1] * 5, LANGUAGES, [1] * 4)
+
     def test_rejects_nonfinite_negative_missing_and_holdout(self):
         for value in (float("nan"), float("inf"), -0.1, 1_000_000, True, "oops"):
             with self.assertRaises(SamplingRejected):
@@ -108,6 +131,43 @@ class ValidationChangeTests(unittest.TestCase):
         self.assertEqual(summary["validationLanguagesWithLowerLoss"], ["rust", "python"])
         self.assertNotIn("prefix", str(summary))
         self.assertNotIn("example", str(summary))
+
+    def test_token_weighted_comparison_reports_independent_language_changes(self):
+        tokens = [1, 2, 2, 2, 2]
+        before = validation_metrics(self.records, [2, 2, 2, 2, 2],
+                                    LANGUAGES, tokens)
+        after = validation_metrics(self.records, [1, 3, 2, 2, 2],
+                                   LANGUAGES, tokens)
+        result = compare_validation_losses(before, after, LANGUAGES)
+        self.assertEqual(result["validationTokenWeightedLossChange"], round(1 / 9, 6))
+        self.assertEqual(result["validationMacroTokenWeightedLossChange"], 0)
+        self.assertEqual(result["validationTokenWeightedLossChangeByLanguage"]["rust"], -1)
+        self.assertEqual(result["validationTokenWeightedLossChangeByLanguage"]["c"], 1)
+        self.assertEqual(result["validationLanguagesWithHigherTokenWeightedLoss"], ["c"])
+        self.assertEqual(result["validationLanguagesWithLowerTokenWeightedLoss"], ["rust"])
+
+    def test_incompatible_or_partial_token_metrics_are_rejected(self):
+        first = validation_metrics(self.records, [2] * 5, LANGUAGES, [1] * 5)
+        second = validation_metrics(self.records, [1] * 5, LANGUAGES, [1] * 5)
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(first,
+                validation_metrics(self.records, [1] * 5, LANGUAGES),
+                LANGUAGES)
+        for field in ("validationTokenWeightedLoss", "validationTargetTokens"):
+            partial = dict(second)
+            partial.pop(field)
+            with self.subTest(field=field), self.assertRaises(SamplingRejected):
+                compare_validation_losses(first, partial, LANGUAGES)
+        bad = dict(second)
+        bad["validationTargetTokensByLanguage"] = dict(second["validationTargetTokensByLanguage"])
+        bad["validationTargetTokensByLanguage"]["cpp"] = 2
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(first, bad, LANGUAGES)
+        for field, value in (("validationTokenWeightedLoss", float("inf")),
+                             ("validationTargetTokens", True)):
+            bad = dict(second, **{field: value})
+            with self.subTest(field=field), self.assertRaises(SamplingRejected):
+                compare_validation_losses(first, bad, LANGUAGES)
 
     def test_rejects_changed_validation_scope_and_invalid_numbers(self):
         after = validation_metrics(self.records, [1, 2, 2, 2, 2], LANGUAGES)
