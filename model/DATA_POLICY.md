@@ -68,6 +68,17 @@ download, training loop or server request occurs. Training authorization
 is a separate review gate.
 
 
+### Model-control delimiter contamination
+
+The mechanical preflight also blocks exact FIM/chat control markers from
+`prefix`, `middle` and `suffix`, even when they appear in comments or
+string literals. These markers can change the supervised generation task and
+should not be treated as ordinary training text without a separately
+reviewed escaping/tokenization policy. The local Python trainer independently
+checks canonical combined-tokenization boundaries before assigning labels.
+Neither check validates copyright, safety, dataset quality, checkpoint
+licensing, actual opt-out requests or the resulting model.
+
 ### Five-language split coverage and improved contamination screening
 
 The development audit now requires **at least one independently declared
