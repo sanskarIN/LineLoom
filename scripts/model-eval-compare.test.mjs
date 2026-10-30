@@ -22,7 +22,9 @@ function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtur
       const exact = index < count;
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
-        ok: true, exact, formatSignals: [], firstTokenMs: 10 + run, totalMs: 30 + run
+        ok: true, exact, formatSignals: [],
+        syntaxOutcome: fixture.language === "typescript" ? "passed" : "unchecked",
+        firstTokenMs: 10 + run, totalMs: 30 + run
       });
     }
   }
@@ -167,7 +169,9 @@ test("repeated-fixture outcomes must describe mathematically possible exact matc
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
         ok: true, exact: index === 0 || (index === 1 && run === 0),
-        formatSignals: [], firstTokenMs: 10, totalMs: 30
+        formatSignals: [],
+        syntaxOutcome: fixture.language === "typescript" ? "passed" : "unchecked",
+        firstTokenMs: 10, totalMs: 30
       });
     }
   }
@@ -202,6 +206,47 @@ test("completion format signals must cover precisely the flagged completion unio
   overlapping.formatDiagnostics.signals.markdownFence = 2;
   overlapping.formatDiagnostics.signals.prefixEcho = 2;
   assert.equal(validateComparableReport(overlapping).formatDiagnostics.signals.prefixEcho, 2);
+});
+
+test("rejects forged TypeScript grammar counts and reports parser regressions without source", () => {
+  const baseline = report();
+  const worse = structuredClone(report());
+  assert.equal(baseline.generatedSyntax.checked, 12);
+  assert.equal(baseline.generatedSyntax.unchecked, 48);
+  assert.equal(baseline.generatedSyntax.passed, 12);
+  worse.generatedSyntax.byLanguage.typescript.passed -= 2;
+  worse.generatedSyntax.byLanguage.typescript.failed += 2;
+  worse.generatedSyntax.passed -= 2;
+  worse.generatedSyntax.failed += 2;
+  const comparison = compareModelReports(baseline, worse);
+  assert.equal(comparison.generatedTypeScriptSyntax.checkedPerModel, 12);
+  assert.equal(comparison.generatedTypeScriptSyntax.passedDelta, -2);
+  assert.equal(comparison.generatedTypeScriptSyntax.failedDelta, 2);
+  assert.ok(comparison.regressionReview.flags.includes("more-typescript-syntax-failures"));
+  assert.equal(comparison.generatedTypeScriptSyntax.uncheckedPerModel, 48);
+  assert.ok(!JSON.stringify(comparison).includes(baseline.model));
+  for (const mutation of [
+    report => { delete report.generatedSyntax; },
+    report => { report.generatedSyntax.method = "unapproved"; },
+    report => { report.generatedSyntax.checked = 13; },
+    report => { report.generatedSyntax.byLanguage.typescript.checked -= 1; },
+    report => { report.generatedSyntax.byLanguage.typescript.unchecked += 1; },
+    report => { report.generatedSyntax.byLanguage.rust.passed = 1; },
+    report => { report.generatedSyntax.byLanguage.python.unchecked -= 1; },
+    report => { report.generatedSyntax.byLanguage.typescript.failed = true; },
+    report => { report.generatedSyntax.byLanguage.typescript.source = "PRIVATE_SOURCE"; },
+    report => { report.generatedSyntax.passed = -1; },
+    report => { report.generatedSyntax.byLanguage.typescript.passed = 0; }
+  ]) {
+    const candidate = structuredClone(baseline);
+    mutation(candidate);
+    assert.throws(() => validateComparableReport(candidate));
+  }
+  const rustScope = report({ selected: fixtures.filter(f => f.language === "rust") });
+  const result = compareModelReports(rustScope, rustScope);
+  assert.equal(result.generatedTypeScriptSyntax.checkedPerModel, 0);
+  assert.equal(result.generatedTypeScriptSyntax.uncheckedPerModel, 12);
+  assert.equal(result.generatedTypeScriptSyntax.passedDelta, 0);
 });
 
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
