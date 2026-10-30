@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { auditTrainingManifest } from "./model-data-audit-lib.mjs";
 import { EVAL_LANGUAGES } from "./model-eval-lib.mjs";
+import { parseNoDuplicateKeys } from "./model-json-strict.mjs";
 
 const fixtures = JSON.parse(readFileSync(new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"));
 const create = (n, split) => ({
@@ -165,6 +166,55 @@ test("case-only repository-family changes cannot cross holdout splits", () => {
   const report = auditTrainingManifest(sameSplit, fixtures);
   assert.equal(report.repositoryGroups, 14);
   assert.ok(!JSON.stringify(report).includes("REVIEWED-PROJECT"));
+});
+
+test("strict JSON loader rejects repeated keys, including escaped identities", () => {
+  for (const raw of [
+    '{"rightsReviewed":false,"rightsReviewed":true}',
+    '{"rightsReviewed":false,"rights\\u0052eviewed":true}',
+    '{"nested":{"split":"train","split":"test"}}',
+    '{"samples":[{"id":"a","id":"b"}]}',
+    '{"samples":[{"\\u0069d":"a","id":"b"}]}',
+    '{"samples":[],"samples":[]}'
+  ]) {
+    assert.throws(() => parseNoDuplicateKeys(raw), /duplicate-json-field/);
+  }
+  const valid = { records: [{ id: "same" }, { id: "same" }],
+    note: 'quoted "id" plus {braces}: and } punctuation' };
+  assert.deepEqual(parseNoDuplicateKeys(JSON.stringify(valid)), valid);
+  for (const malformed of [
+    '{"x":1', '{"x":1}{"y":2}', '{"x":"unterminated}', "",
+    "x".repeat(1_048_577)
+  ]) {
+    assert.throws(() => parseNoDuplicateKeys(malformed));
+  }
+});
+
+test("offline corpus CLI rejects duplicate rights, split and nested keys", () => {
+  const root = mkdtempSync(join(tmpdir(), "lineloom-no-duplicate-"));
+  const file = join(root, "private-review-records.json");
+  const script = fileURLToPath(new URL("./model-data-audit.mjs", import.meta.url));
+  const source = JSON.stringify(good());
+  try {
+    for (const raw of [
+      source.replace('"rightsReviewed":true',
+        '"rightsReviewed":false,"rightsReviewed":true'),
+      source.replace('"split":"train"',
+        '"split":"test","split":"train"'),
+      source.replace('"id":"example-1"',
+        '"id":"private-key","\\u0069d":"example-1"')
+    ]) {
+      writeFileSync(file, raw);
+      const outcome = spawnSync(process.execPath, [script, "--manifest", file],
+        { encoding: "utf8", timeout: 5000 });
+      assert.equal(outcome.status, 1);
+      assert.equal(outcome.stdout, "");
+      assert.ok(!outcome.stderr.includes(root));
+      assert.ok(!outcome.stderr.includes("private-key"));
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
 });
 
 test("bounded CLI is offline, does not echo source/paths on success or rejection", () => {
