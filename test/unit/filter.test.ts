@@ -52,6 +52,19 @@ describe("completion filtering", () => {
     expect(cleanCompletion("ready", "", "ready;", true)).toBe("");
     expect(cleanCompletion("return value\n}", "", "\n}", true)).toBe("return value");
   });
+  it("does not truncate generated identifiers that only resemble the unfinished prefix", () => {
+    // Both short and long identifier echoes are ambiguous without a token boundary.
+    expect(cleanCompletion("foobar()", "foo", "", true)).toBe("foobar()");
+    expect(cleanCompletion("functionality()", "function", "", true)).toBe("functionality()");
+    expect(cleanCompletion("initializationMode", "const initialization", "", true)).toBe("initializationMode");
+    expect(cleanCompletion("константа", "констан", "", true)).toBe("константа");
+    expect(cleanCompletion("identifierMore", "const identifier", "", true)).toBe("identifierMore");
+  });
+  it("still drops genuine echoed prefix and line fragments at code boundaries", () => {
+    expect(cleanCompletion("const answer = 42;", "const answer = ", "", true)).toBe("42;");
+    expect(cleanCompletion("function() {", "function", "", true)).toBe("() {");
+    expect(cleanCompletion("const answer = 42", "something else; const answer = ", "", true)).toBe("42");
+  });
   it("removes echoed current line", () => expect(cleanCompletion("let x = 3;", "let x = ", "", true)).toBe("3;"));
   it("rejects conversational responses", () => expect(cleanCompletion("Certainly, I can help", "", "", true)).toBe(""));
   it("preserves meaningful Python indentation", () =>
