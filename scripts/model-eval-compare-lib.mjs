@@ -320,7 +320,8 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       [k, candidate.perCategory[k].strictMatches - baseline.perCategory[k].strictMatches])),
     generatedTypeScriptSyntax: {
       method: GENERATED_SYNTAX_METHOD,
-      checkedPerModel: baseline.generatedSyntax.byLanguage.typescript.checked,
+      baselineChecked: baseline.generatedSyntax.byLanguage.typescript.checked,
+      candidateChecked: candidate.generatedSyntax.byLanguage.typescript.checked,
       baselinePassed: baseline.generatedSyntax.byLanguage.typescript.passed,
       candidatePassed: candidate.generatedSyntax.byLanguage.typescript.passed,
       passedDelta: candidate.generatedSyntax.byLanguage.typescript.passed -
@@ -329,7 +330,8 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       candidateFailed: candidate.generatedSyntax.byLanguage.typescript.failed,
       failedDelta: candidate.generatedSyntax.byLanguage.typescript.failed -
         baseline.generatedSyntax.byLanguage.typescript.failed,
-      uncheckedPerModel: baseline.generatedSyntax.unchecked,
+      baselineUnchecked: baseline.generatedSyntax.unchecked,
+      candidateUnchecked: candidate.generatedSyntax.unchecked,
       interpretation: "TypeScript parser grammar only; other generated languages unchecked."
     },
     completionFormatSignalDelta: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
