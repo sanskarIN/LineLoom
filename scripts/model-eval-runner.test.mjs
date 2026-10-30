@@ -6,6 +6,7 @@ import { evaluateSyntheticFixture } from "./model-eval-runner.mjs";
 
 const samples = JSON.parse(readFileSync(new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"));
 const fixture = samples.fixtures.find(x => x.id === "rust-arithmetic");
+const typescriptFixture = samples.fixtures.find(x => x.id === "typescript-multiply");
 const encoder = new TextEncoder();
 const frame = (response, done = false, extra = {}) =>
   JSON.stringify({ response, done, ...extra }) + "\n";
@@ -43,6 +44,7 @@ test("uses fixed loopback URL and exact generation settings without exposing the
   assert.equal(result.firstTokenMs, 0);
   assert.equal(result.totalMs, 0);
   assert.deepEqual(result.formatSignals, []);
+  assert.equal(result.syntaxOutcome, "unchecked");
   assert.ok(!JSON.stringify(result).includes("local-model:tag"));
   assert.ok(!Object.hasOwn(result, "output"));
 });
@@ -56,6 +58,31 @@ test("reports nonmatching, markdown or hidden-control results as aggregate-only 
   assert.ok(result.formatSignals.includes("unsafeUnicode"));
   assert.ok(!JSON.stringify(result).includes("let flag"));
   assert.ok(!JSON.stringify(result).includes("\u202e"));
+});
+
+test("assesses generated TypeScript grammar locally without returning source or diagnostics", async () => {
+  const evaluate = continuation => evaluateSyntheticFixture(
+    typescriptFixture, "local-model:tag", "fim",
+    { fetchImpl: async () => goodResponse(frame(continuation, true)),
+      clock: () => 125 }
+  );
+  const exact = await evaluate(typescriptFixture.expected);
+  assert.equal(exact.ok, true);
+  assert.equal(exact.exact, true);
+  assert.equal(exact.syntaxOutcome, "passed");
+  const validAlternative = await evaluate("value + value");
+  assert.equal(validAlternative.exact, false);
+  assert.equal(validAlternative.syntaxOutcome, "passed");
+  const broken = await evaluate("value + )");
+  assert.equal(broken.ok, true);
+  assert.equal(broken.exact, false);
+  assert.equal(broken.syntaxOutcome, "failed");
+  for (const measurement of [exact, validAlternative, broken]) {
+    assert.ok(!Object.hasOwn(measurement, "source"));
+    assert.ok(!Object.hasOwn(measurement, "output"));
+    assert.ok(!Object.hasOwn(measurement, "diagnostics"));
+    assert.ok(!JSON.stringify(measurement).includes("value + value"));
+  }
 });
 
 test("rejects non-200, redirect, missing body, malformed stream and private server errors", async () => {
