@@ -19,12 +19,14 @@ try:
         fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from .integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
+    from .generated_syntax import SYNTAX_ACCOUNTING
 except ImportError:
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
+    from generated_syntax import SYNTAX_ACCOUNTING
 
 MAX_REPORT_BYTES = 32 * 1024
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -114,6 +116,39 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted += group["strictExactMatches"]
     if counted != exact:
         raise SmokeReportRejected("mismatched-language-totals")
+    if report.get("syntaxAccounting") != SYNTAX_ACCOUNTING:
+        raise SmokeReportRejected("invalid-syntax-accounting")
+    syntax = report.get("syntaxByLanguage")
+    if not isinstance(syntax, dict) or set(syntax) != set(LANGUAGES):
+        raise SmokeReportRejected("invalid-syntax-language-groups")
+    counters = {"syntaxChecked": 0, "syntaxPassed": 0,
+                "syntaxFailed": 0, "syntaxUnchecked": 0}
+    for lang in LANGUAGES:
+        entry = syntax[lang]
+        expected_count = groups[lang]["attempts"]
+        if (not isinstance(entry, dict) or set(entry) != {
+                "attempts", "checked", "passed", "failed", "unchecked"
+            } or any(type(entry.get(key)) is not int for key in entry) or
+                entry["attempts"] != expected_count or
+                any(not 0 <= entry[key] <= expected_count
+                    for key in ("checked", "passed", "failed", "unchecked")) or
+                entry["checked"] + entry["unchecked"] != expected_count or
+                entry["passed"] + entry["failed"] != entry["checked"] or
+                (lang == "python" and
+                 (entry["checked"] != expected_count or entry["unchecked"] != 0 or
+                  groups[lang]["strictExactMatches"] > entry["passed"])) or
+                (lang != "python" and (entry["checked"] != 0 or
+                 entry["passed"] != 0 or entry["failed"] != 0 or
+                 entry["unchecked"] != expected_count))):
+            raise SmokeReportRejected("invalid-syntax-language-metrics")
+        for name, key in (
+            ("syntaxChecked", "checked"), ("syntaxPassed", "passed"),
+            ("syntaxFailed", "failed"), ("syntaxUnchecked", "unchecked")
+        ):
+            counters[name] += entry[key]
+    for key, value in counters.items():
+        if type(report.get(key)) is not int or report[key] != value:
+            raise SmokeReportRejected("invalid-syntax-totals")
     checked_runtime_profile(report.get("runtimeProfile"))
     if report.get("latencyMeasurement") != "monotonic-generation-only-v1":
         raise SmokeReportRejected("invalid-latency-method")
@@ -219,8 +254,17 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         right_timing = right["generationLatencyByLanguage"][language]
         left_tokens = left["generatedTokensByLanguage"][language]["totalTokens"]
         right_tokens = right["generatedTokensByLanguage"][language]["totalTokens"]
+        base_syntax = left["syntaxByLanguage"][language]
+        adapter_syntax = right["syntaxByLanguage"][language]
         by_language[language] = {
             "attemptsPerModel": left["perLanguage"][language]["attempts"],
+            "syntaxCheckedPerModel": base_syntax["checked"],
+            "syntaxUncheckedPerModel": base_syntax["unchecked"],
+            "basePythonAstPassed": base_syntax["passed"],
+            "adapterPythonAstPassed": adapter_syntax["passed"],
+            "pythonAstPassedDelta": adapter_syntax["passed"] - base_syntax["passed"],
+            "basePythonAstFailed": base_syntax["failed"],
+            "adapterPythonAstFailed": adapter_syntax["failed"],
             "baseStrictExactMatches": before,
             "adapterStrictExactMatches": after,
             "adapterMinusBase": after - before,
@@ -247,12 +291,27 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             ),
         }
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v6",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v7",
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "runtimeProfileComparable": True,
         "runtimeProfileFieldsChecked": 8,
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
+        "syntaxAccounting": SYNTAX_ACCOUNTING,
+        "syntaxCheckedPerModel": left["syntaxChecked"],
+        "syntaxUncheckedPerModel": left["syntaxUnchecked"],
+        "basePythonAstPassed": left["syntaxPassed"],
+        "adapterPythonAstPassed": right["syntaxPassed"],
+        "pythonAstPassedDelta": right["syntaxPassed"] - left["syntaxPassed"],
+        "basePythonAstFailed": left["syntaxFailed"],
+        "adapterPythonAstFailed": right["syntaxFailed"],
+        "syntaxReview": (
+            "PYTHON_AST_FAILURES_REQUIRE_REVIEW"
+            if left["syntaxFailed"] or right["syntaxFailed"] else
+            "NO_SYNTAX_CHECKS_FOR_SCOPE"
+            if left["syntaxChecked"] == 0 else
+            "PYTHON_AST_ONLY_OTHER_LANGUAGES_UNCHECKED"
+        ),
         "baseStrictExactMatches": left["strictExactMatches"],
         "adapterStrictExactMatches": right["strictExactMatches"],
         "adapterMinusBase": delta,
@@ -297,7 +356,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "Different generated token counts confound absolute latency; "
                        "even equal totals do not prove per-probe length parity. "
                        "A token-limit exit may truncate an otherwise valid completion; "
-                       "a stop-token exit does not establish code correctness."),
+                       "a stop-token exit does not establish code correctness. "
+                       "Python AST parses syntax only and never executes code; "
+                       "Rust, C, C++ and TypeScript generated outputs remain unchecked."),
     }
 
 
