@@ -12,6 +12,9 @@ describe("typed suggestion continuation", () => {
   it("offers the exact untyped remainder after a single forward edit", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "42", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "4" }
+    ]);
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 200)).toBe("2");
     cache.remember(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), "2", 200);
     expect(cache.remainder(sample({ version: 6, offset: 17, prefix: "const answer = 42" }), 201)).toBeUndefined();
@@ -19,6 +22,9 @@ describe("typed suggestion continuation", () => {
   it("rejects altered prefix, suffix, language, model settings and document", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "123", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "1" }
+    ]);
     const next = sample({ version: 5, offset: 16, prefix: "const answer = 1" });
     expect(cache.remainder({ ...next, prefix: "const result = 1" }, 200)).toBeUndefined();
     expect(cache.remainder({ ...next, suffix: "\nmodified()" }, 200)).toBeUndefined();
@@ -29,6 +35,9 @@ describe("typed suggestion continuation", () => {
   it("refuses skipped versions, edits at another cursor and mismatched typed code", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "answer", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "a" }
+    ]);
     expect(cache.remainder(sample({ version: 6, offset: 16, prefix: "const answer = a" }), 200)).toBeUndefined();
     expect(cache.remainder(sample({ version: 5, offset: 15, prefix: "const answer = " }), 200)).toBeUndefined();
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = x" }), 200)).toBeUndefined();
@@ -37,6 +46,9 @@ describe("typed suggestion continuation", () => {
     const cache = new ContinuationCache(1000);
     const next = sample({ version: 5, offset: 16, prefix: "const answer = a" });
     cache.remember(sample(), "abc", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "a" }
+    ]);
     expect(cache.remainder(next, 1099)).toBe("bc");
     expect(cache.remainder(next, 1100)).toBeUndefined();
     cache.remember(sample(), "abc", 1200);
@@ -52,6 +64,57 @@ describe("typed suggestion continuation", () => {
     cache.remember(sample(), "x".repeat(6001), 100);
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = x" }), 200)).toBeUndefined();
   });
+  it("does not reuse a forged matching version and source snapshot without an editor edit", () => {
+    const cache = new ContinuationCache();
+    cache.remember(sample(), "42", 100);
+    const phantom = sample({ version: 5, offset: 16, prefix: "const answer = 4" });
+    expect(cache.remainder(phantom, 200)).toBeUndefined();
+    // Metadata notifications or edits of other documents cannot authorize
+    // a continuation of this document.
+    cache.invalidateOnEdit("file:///sample.ts", 5, []);
+    cache.invalidateOnEdit("file:///other.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "4" }
+    ]);
+    expect(cache.remainder(phantom, 201)).toBeUndefined();
+    // A real single insertion may still authorize the same fast path.
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "4" }
+    ]);
+    expect(cache.remainder(phantom, 202)).toBe("2");
+  });
+
+  it("ties the verified edit to its exact version and inserted character count", () => {
+    const cache = new ContinuationCache();
+    cache.remember(sample(), "example", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "ex" }
+    ]);
+    expect(cache.remainder(sample({
+      version: 5, offset: 16, prefix: "const answer = e"
+    }), 200)).toBeUndefined();
+    expect(cache.remainder(sample({
+      version: 6, offset: 17, prefix: "const answer = ex"
+    }), 200)).toBeUndefined();
+    expect(cache.remainder(sample({
+      version: 5, offset: 17, prefix: "const answer = ex"
+    }), 200)).toBe("ample");
+  });
+
+  it("never grants edit proof to an invalid replacement even if the text matches", () => {
+    const cache = new ContinuationCache();
+    const point = sample({ version: 5, offset: 16, prefix: "const answer = 4" });
+    cache.remember(sample(), "42", 100);
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 1, text: "4" }
+    ]);
+    expect(cache.remainder(point, 200)).toBeUndefined();
+    // A cleared cache cannot be resurrected by a delayed matching event.
+    cache.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "4" }
+    ]);
+    expect(cache.remainder(point, 201)).toBeUndefined();
+  });
+
   it("keeps the candidate only for one actual forward insertion of generated text", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "42", 100);
@@ -79,6 +142,8 @@ describe("typed suggestion continuation", () => {
     const cache = new ContinuationCache();
     cache.remember(sample(), "42", 100);
     cache.invalidateOnEdit("file:///other.ts", 5, [{ rangeOffset: 15, rangeLength: 0, text: "x" }]);
+    expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 200)).toBeUndefined();
+    cache.invalidateOnEdit("file:///sample.ts", 5, [{ rangeOffset: 15, rangeLength: 0, text: "4" }]);
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 200)).toBe("2");
     cache.invalidateOnEdit("file:///sample.ts", 8, [{ rangeOffset: 15, rangeLength: 0, text: "4" }]);
     expect(cache.remainder(sample({ version: 5, offset: 16, prefix: "const answer = 4" }), 201)).toBeUndefined();
@@ -129,6 +194,9 @@ describe("typed suggestion continuation", () => {
     }
     const valid = new ContinuationCache();
     valid.remember(sample(), "name🚀tail", 100);
+    valid.invalidateOnEdit("file:///sample.ts", 5, [
+      { rangeOffset: 15, rangeLength: 0, text: "n" }
+    ]);
     // Boundary after the letter 'n' remains valid even with an astral character later.
     expect(valid.remainder(sample({
       version: 5, offset: 16, prefix: "const answer = n"
