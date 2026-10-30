@@ -39,7 +39,13 @@ and trigger rules.
    must not display its isolated low surrogate or a malformed ghost
    fragment. Repeat with an edit of several ordinary letters followed
    by a high surrogate; the cache must reject it.
-7. Repeat in Rust, C, C++, Python, and TypeScript; check that the original
+7. For a synthetic `42` suggestion, type `4` with an actual one-character
+   insertion at the original cursor and confirm the cached `2` is reused.
+   Then simulate the same text and document-version snapshot **without**
+   delivering a VS Code text-change insertion event. The cache must refuse
+   reuse. A replacement event, multi-edit change, or matching edit in
+   another document must not authorize continuation either.
+8. Repeat in Rust, C, C++, Python, and TypeScript; check that the original
    Unicode characters remain byte-for-byte intact after any accepted edit.
 
 ## Evidence to record
