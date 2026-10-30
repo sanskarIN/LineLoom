@@ -44,6 +44,10 @@ const looksSensitive = text => {
   if (/\b[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}\b/.test(text)) return true;
   if (/(?:password|secret|api[_-]?key|access[_-]?token)\s*[:=]\s*["'][^"' \t\r\n]{8,}["']/i.test(text)) return true;
   if (/\b[a-z]+:\/\/[^\s/@]+:[^\s/@]+@/i.test(text)) return true;
+  // A corpus example must not inject the model's literal FIM/chat
+  // delimiters: those tokens alter which span gets trained as completion.
+  // Apply to all three parts, even comments or string literals.
+  if (/<\|(?:fim_prefix|fim_suffix|fim_middle|endoftext|im_start|im_end|file_sep)\|>/u.test(text)) return true;
   // Invisible format controls are not safe even in review-only samples.
   if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b\u200e\u200f\u202a-\u202e\u2060-\u206f\ufeff]/u.test(text)) return true;
   return false;

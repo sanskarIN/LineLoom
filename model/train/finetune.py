@@ -36,6 +36,12 @@ LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
 FIM_PREFIX = "<|fim_prefix|>"
 FIM_SUFFIX = "<|fim_suffix|>"
 FIM_MIDDLE = "<|fim_middle|>"
+# Literal model-control strings in reviewed source would change the FIM task.
+# Keep in sync with the offline Node dataset preflight.
+RESERVED_MODEL_TOKENS = (
+    FIM_PREFIX, FIM_SUFFIX, FIM_MIDDLE, "<|endoftext|>",
+    "<|im_start|>", "<|im_end|>", "<|file_sep|>"
+)
 MAX_MANIFEST_BYTES = 1_048_576
 
 
@@ -103,26 +109,47 @@ def fim_prompt(sample: dict) -> str:
 
 
 def verify_fim_tokenizer(tokenizer) -> None:
-    """A tokenizer lacking Qwen's actual FIM token IDs is not trainable here."""
+    """Require three distinct special FIM tokens, disjoint from EOS."""
+    fim_ids = []
     for token in (FIM_PREFIX, FIM_SUFFIX, FIM_MIDDLE):
         tokens = tokenizer.encode(token, add_special_tokens=False)
-        if len(tokens) != 1 or tokenizer.convert_tokens_to_ids(token) != tokens[0]:
+        token_id = tokenizer.convert_tokens_to_ids(token)
+        if (len(tokens) != 1 or type(tokens[0]) is not int or
+                tokens[0] < 0 or type(token_id) is not int or
+                token_id != tokens[0]):
             raise ExperimentRejected("unsupported-fim-tokenizer")
-    if not isinstance(tokenizer.eos_token_id, int) or tokenizer.eos_token_id < 0:
-        raise ExperimentRejected("missing-eos")
-    if not isinstance(tokenizer.pad_token_id, int) or tokenizer.pad_token_id < 0:
+        fim_ids.append(token_id)
+    if len(set(fim_ids)) != 3:
+        raise ExperimentRejected("overlapping-fim-token-ids")
+    if (type(tokenizer.eos_token_id) is not int or
+            tokenizer.eos_token_id < 0 or tokenizer.eos_token_id in fim_ids):
+        raise ExperimentRejected("missing-or-ambiguous-eos")
+    if type(tokenizer.pad_token_id) is not int or tokenizer.pad_token_id < 0:
         raise ExperimentRejected("missing-pad")
 
 
 def encode_fim(sample: dict, tokenizer, max_tokens: int) -> dict:
-    """Use causal LM label shift: only inserted middle + EOS incur loss."""
-    prefix = tokenizer.encode(fim_prompt(sample), add_special_tokens=False)
+    """Mask only the exact target; reject mismatched full-sequence tokenization.
+
+    BPE tokenizing two halves independently is not always equivalent to
+    tokenizing the combined FIM example. A different boundary would train
+    labels against a sequence the model never sees during actual generation.
+    We fail closed instead of silently assigning wrong causal LM labels.
+    """
+    if any(marker in sample[part] for part in ("prefix", "middle", "suffix")
+           for marker in RESERVED_MODEL_TOKENS):
+        raise ExperimentRejected("reserved-fim-token-in-sample")
+    prompt = fim_prompt(sample)
+    prefix = tokenizer.encode(prompt, add_special_tokens=False)
     target = tokenizer.encode(sample["middle"], add_special_tokens=False)
     if not prefix or not target:
         raise ExperimentRejected("empty-tokenized-fim")
     if len(target) > 256 or len(prefix) + len(target) + 1 > max_tokens:
         raise ExperimentRejected("sample-exceeds-training-limit")
-    token_ids = prefix + target + [tokenizer.eos_token_id]
+    canonical = tokenizer.encode(prompt + sample["middle"], add_special_tokens=False)
+    if canonical != prefix + target:
+        raise ExperimentRejected("inconsistent-fim-boundary-tokenization")
+    token_ids = canonical + [tokenizer.eos_token_id]
     return {
         "input_ids": token_ids,
         "attention_mask": [1] * len(token_ids),

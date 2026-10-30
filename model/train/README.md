@@ -36,6 +36,27 @@ This example has a placeholder revision and deliberately cannot run as-is. The s
 
 FIM loss is applied **only to the inserted middle and EOS tokens**, with the prefix and suffix masked as labels `-100`. Qwen FIM format: `<|fim_prefix|>prefix<|fim_suffix|>suffix<|fim_middle|>target`. Fixed experimental LoRA parameters are r=8, alpha=16, dropout=0.05 targeting query/value projections; AdamW with deterministic seeded, language-balanced train-only sampling and bounded optimizer steps. Requires realistic GPU memory and an independently confirmed compatible local environment.
 
+## FIM token-boundary integrity (development safeguard)
+
+A training manifest that passes the Node data audit is still not authorization
+to train. The preflight rejects literal reserved Qwen FIM/chat control tokens
+(`<|fim_prefix|>`, `<|fim_suffix|>`, `<|fim_middle|>`, `<|endoftext|>`,
+`<|im_start|>`, `<|im_end|>`, `<|file_sep|>`) anywhere inside
+`prefix`, `middle` or `suffix`, including source comments and strings.
+A secondary Python guard also refuses them if `encode_fim` is called directly.
+
+Before constructing loss labels, the local trainer checks that separately
+encoded FIM prompt/target tokens **exactly** equal canonical tokenization
+of the complete FIM training example. Byte-pair tokenizers can otherwise
+merge across a boundary and silently misalign supervised insertions. The
+trainer also checks that FIM markers have three distinct tokenizer IDs,
+disjoint from EOS. Ambiguous examples or tokenizer configurations fail
+closed; they are **not** truncated, automatically rewritten or silently
+accepted. These CPU-only regression checks do **not** establish real
+Qwen checkpoint compatibility, training quality, weights provenance or
+safe model behavior; such verification requires an independently approved
+local checkpoint and actual human review.
+
 ## Evaluation/rollout gates
 
 1. Verify reproducible checkpoint files, exact tokenizer revision and dependency lock; the current local config hash and **user-declared** commit are not full weight-provenance verification.
