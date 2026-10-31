@@ -105,7 +105,7 @@ def _validated_report(report: dict, kind: str) -> dict:
     counted = 0
     for name in LANGUAGES:
         group = groups[name]
-        expected_attempts = 6 if language in ("all", name) else 0
+        expected_attempts = 8 if language in ("all", name) else 0
         if (not isinstance(group, dict) or
                 set(group) != {"attempts", "strictExactMatches"} or
                 type(group["attempts"]) is not int or
