@@ -94,6 +94,63 @@ export function pairedDryRun(fixtures, opts) {
   };
 }
 
+/**
+ * Descriptive head-to-head strict-match outcomes for the SAME synthetic
+ * fixture and repetition. A request failure is neither a win nor a loss.
+ * The ordinal pairing is verified before aggregating; model identifiers,
+ * fixture IDs, completions and error payloads never enter the returned report.
+ * Repeated runs are correlated and must not be treated as independent trials.
+ */
+export function summarizePairedStrictExact(fixtures, runs, measurements) {
+  if (!Array.isArray(fixtures) || fixtures.length < 1 || fixtures.length > 100 ||
+      !Number.isSafeInteger(runs) || runs < 1 || runs > 5 ||
+      !Array.isArray(measurements) || measurements.length !== 2 ||
+      !measurements.every(items => Array.isArray(items) && items.length === fixtures.length * runs)) {
+    throw Error("invalid-paired-outcomes");
+  }
+  const empty = () => ({
+    pairs: 0, comparablePairs: 0, candidateWins: 0, baselineWins: 0,
+    bothExact: 0, neitherExact: 0, failedPairs: 0
+  });
+  const total = empty();
+  const byLanguage = Object.fromEntries(EVAL_LANGUAGES.map(language => [language, empty()]));
+  const byCategory = Object.fromEntries(EVAL_CATEGORIES.map(category => [category, empty()]));
+  const seen = new Set();
+  for (const fixture of fixtures) {
+    if (!fixture || typeof fixture.id !== "string" || seen.has(fixture.id) ||
+        !EVAL_LANGUAGES.includes(fixture.language) || !EVAL_CATEGORIES.includes(fixture.category)) {
+      throw Error("invalid-paired-fixture");
+    }
+    seen.add(fixture.id);
+  }
+  for (let pass = 0; pass < runs; pass++) {
+    for (let i = 0; i < fixtures.length; i++) {
+      const fixture = fixtures[i];
+      const offset = pass * fixtures.length + i;
+      const a = measurements[0][offset];
+      const b = measurements[1][offset];
+      for (const result of [a, b]) {
+        if (!result || result.fixtureId !== fixture.id ||
+            result.language !== fixture.language || result.category !== fixture.category ||
+            typeof result.ok !== "boolean" || typeof result.exact !== "boolean" ||
+            (!result.ok && result.exact)) {
+          throw Error("inconsistent-paired-result");
+        }
+      }
+      const status = !a.ok || !b.ok ? "failedPairs"
+        : a.exact && b.exact ? "bothExact"
+        : a.exact ? "baselineWins"
+        : b.exact ? "candidateWins" : "neitherExact";
+      for (const bucket of [total, byLanguage[fixture.language], byCategory[fixture.category]]) {
+        bucket.pairs++;
+        if (status !== "failedPairs") bucket.comparablePairs++;
+        bucket[status]++;
+      }
+    }
+  }
+  return { ...total, byLanguage, byCategory };
+}
+
 /** Test seam accepts only simulated, in-memory responses; CLI always uses real
  * evaluateSyntheticFixture and the fixed Ollama 127.0.0.1 endpoint. */
 export async function runPairedSyntheticBenchmarks(fixtures, opts, evaluate = evaluateSyntheticFixture) {
@@ -127,12 +184,14 @@ export async function runPairedSyntheticBenchmarks(fixtures, opts, evaluate = ev
   const candidate = report(1);
   return {
     comparison: compareModelReports(baseline, candidate),
+    pairedStrictExact: summarizePairedStrictExact(fixtures, opts.runs, measurements),
     runOrder: "alternating-full-pass-v1",
     requestsPerModel: fixtures.length * opts.runs,
     anyRequestFailed: baseline.failed > 0 || candidate.failed > 0,
     limitations: [
       "Only reviewed synthetic fixtures were tested; no user source was read.",
       "Sequential local model runs do not attest identical cold/warm cache conditions, hardware load, quantization, runtime configuration or model weights.",
+      "Head-to-head strict-match wins are descriptive only; repeated fixtures are correlated, failed requests are not losses, and no significance or practical usefulness is inferred.",
       "Strict exact-match, lexical checks and token telemetry do not establish code usefulness, release approval or genuine first-party model training."
     ]
   };
