@@ -27,6 +27,7 @@ test("supports nested Rust comments, lifetimes and 255-hash raw strings", () => 
   assert.equal(inspect(fixture("rust"), "let x = r" + "#".repeat(255) + '"{"' + "#".repeat(255) + ";"), "clean");
   assert.equal(inspect(fixture("rust"), "let x = r###\"{;"), "mismatch");
   assert.equal(inspect(fixture("rust"), "let x = r#ident;"), "clean");
+  assert.equal(inspect(fixture("rust"), "let x = r" + "#".repeat(256) + '"{ }"' + "#".repeat(256) + ";"), "unchecked");
 });
 
 test("handles C++ raw strings and ordinary C/C++ headers", () => {
