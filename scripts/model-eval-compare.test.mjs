@@ -23,6 +23,7 @@ function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtur
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
         ok: true, exact, formatSignals: [],
+        tokenUsage: { generatedTokens: 8, generationDurationNs: 500_000_000 },
         syntaxOutcome: fixture.language === "typescript" ? "passed" : "unchecked",
         firstTokenMs: 10 + run, totalMs: 30 + run
       });
