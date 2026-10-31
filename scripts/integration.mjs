@@ -2,7 +2,8 @@ import esbuild from "esbuild";
 import path from "node:path";
 import os from "node:os";
 import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
-import { runTests } from "@vscode/test-electron";
+import { downloadAndUnzipVSCode, runTests } from "@vscode/test-electron";
+import { downloadVSCodeWithTransientRetries } from "./vscode-download-retry.mjs";
 const root = process.cwd();
 await esbuild.build({
   entryPoints: ["test/integration/suite.ts"],
@@ -57,7 +58,11 @@ try {
   await writeFile(path.join(fixture, "editor-optin.css"), ".card { padding: ", "utf8");
   await writeFile(path.join(fixture, "editor-optin.lua"), "local answer = ", "utf8");
   await writeFile(path.join(fixture, "editor-fim.ts"), "const answer = /* preserved suffix */", "utf8");
+  // Only the editor download can be retried; test/extension failures must
+  // remain visible and must never be retried as if they were network errors.
+  const vscodeExecutablePath = await downloadVSCodeWithTransientRetries(downloadAndUnzipVSCode);
   await runTests({
+    vscodeExecutablePath,
     extensionDevelopmentPath: root,
     extensionTestsPath: path.join(root, "dist/integration.js"),
     launchArgs: ["--disable-extensions", "--disable-workspace-trust", "--skip-welcome", "--skip-release-notes", fixture]
