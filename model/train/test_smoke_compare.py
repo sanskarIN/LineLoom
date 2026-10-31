@@ -198,7 +198,7 @@ class CompareSmokeTests(unittest.TestCase):
         result = compare_smoke.compare_reports(a, b)
         self.assertEqual(result["adapterMinusBase"], -2)
         self.assertEqual(result["perLanguage"]["rust"]["attemptsPerModel"], 0)
-        self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 6)
+        self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 8)
         self.assertEqual(result["perLanguage"]["rust"]["generationP50DeltaMs"], None)
         self.assertEqual(result["perLanguage"]["cpp"]["generationP95DeltaMs"], 8)
         self.assertEqual(result["generatedTokenDelta"], 8)
@@ -468,12 +468,12 @@ class CompareSmokeTests(unittest.TestCase):
                 SmokeReportRejected
             ):
                 compare_smoke.compare_reports(self.base, candidate)
-        candidate = simulated_report("local-lora-adapter", python_syntax_failures=5)
+        candidate = simulated_report("local-lora-adapter", python_syntax_failures=7)
         # A fabricated exact-match count cannot exceed Python AST successes.
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(self.base, candidate)
         candidate = simulated_report("local-lora-adapter",
-                                     typescript_syntax_failures=5)
+                                     typescript_syntax_failures=7)
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(self.base, candidate)
 
