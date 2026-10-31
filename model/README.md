@@ -85,6 +85,23 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v8 native scanner coverage accounting (development source)
+
+The optional local evaluator now records `nativeStructureDiagnostics` for
+completed Rust, C and C++ model requests, with per-language counts of
+`clean`, `mismatch` and **`unchecked`** results. Unsupported/oversized inputs
+and missing measurements are **unchecked, not clean**. The existing
+`nativeDelimiterMismatch` signal is tied to mismatch counts, and the
+source-free comparator validates the relationship before allowing any
+comparison. A changed checked/unchecked coverage is flagged for review
+instead of presenting fewer mismatches as a proven improvement.
+
+This is a bounded lexical heuristic, **not** a parser, Rust/C/C++ compiler
+check or safe-to-run verdict. The Ollama benchmark identifier is now
+`lineloom-synthetic-v8`, so model baselines must be regenerated
+under v8; v7 or earlier reports cannot be mixed into a controlled comparison.
+See [evaluation protocol section 4c](EVALUATION_PROTOCOL.md#4c-native-generated-code-scanner-coverage-ollama-v8).
+
 ## Ollama v7 native generated-code structure warnings (development source)
 
 The real local Ollama synthetic evaluator adds a **bounded lexical** diagnostic
@@ -106,8 +123,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v7` and cannot be compared
-to previous v1–v6 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v8` and cannot be compared
+to previous v1–v7 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**
