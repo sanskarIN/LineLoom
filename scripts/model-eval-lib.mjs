@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 import { GENERATED_SYNTAX_METHOD } from "./model-eval-syntax.mjs";
+import { summarizeNativeStructure } from "./model-eval-native-accounting.mjs";
 
 /**
  * Source-free reporting helpers for an opt-in, loopback-only synthetic benchmark.
@@ -10,7 +11,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v7";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v8";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -166,6 +167,7 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
     completionP50Ms: percentile(totalTimes, 0.5), completionP95Ms: percentile(totalTimes, 0.95),
     firstTokenP50Ms: percentile(tokenTimes, 0.5), firstTokenP95Ms: percentile(tokenTimes, 0.95),
     perLanguage, perCategory, fixtureOutcomes,
+    nativeStructureDiagnostics: summarizeNativeStructure(completed),
     formatDiagnostics: { inspectedCompleted, completedWithoutFormatSignals, signals: formatSignalCounts },
     generatedSyntax: {
       method: GENERATED_SYNTAX_METHOD,
@@ -175,6 +177,6 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
       unchecked: syntaxSum("unchecked"),
       byLanguage: syntaxByLanguage
     },
-    disclaimer: "Strict synthetic equality and parser-only Python/TypeScript grammar checks (Python unchecked when interpreter unavailable). Rust/C/C++ format signals include a delimiter-only heuristic, not syntax verification; their generated code remains unchecked by a compiler. No type correctness, execution, human acceptance, compiler QA or model readiness."
+    disclaimer: "Strict synthetic equality and parser-only Python/TypeScript grammar checks (Python unchecked when interpreter unavailable). Rust/C/C++ report lexical clean/mismatch/unchecked coverage separately; their generated code remains unchecked by a compiler. No type correctness, execution, human acceptance, compiler QA or model readiness."
   };
 }

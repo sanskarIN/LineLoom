@@ -134,7 +134,7 @@ test("LineLoom Code auto dry-run selects FIM and binds the native request finger
   const data = JSON.parse(stdout);
   assert.equal(data.mode, "fim");
   assert.equal(data.networkCalls, 0);
-  assert.equal(data.benchmarkProtocol, "lineloom-synthetic-v7");
+  assert.equal(data.benchmarkProtocol, "lineloom-synthetic-v8");
   assert.equal(data.requestSpecSha256, requestSpecSha256(
     fixtures.filter(item => item.language === "typescript"), "fim"
   ));
@@ -198,7 +198,7 @@ test("a single attempt cannot imply repeated-outcome stability", () => {
 
 
 test("evaluator's fixture identity binds original content and benchmark protocol", () => {
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v7");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v8");
   assert.match(fixtureSetSha256(fixtures), /^[a-f0-9]{64}$/);
   assert.match(requestSpecSha256(fixtures, "fim"), /^[a-f0-9]{64}$/);
   assert.equal(requestSpecSha256(fixtures, "fim"), requestSpecSha256([...fixtures].reverse(), "fim"));

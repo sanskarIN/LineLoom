@@ -2,6 +2,7 @@ import { performance } from "node:perf_hooks";
 import { createRequest, normalizeGenerated } from "./model-eval-lib.mjs";
 import { consumeOllamaStream } from "./model-eval-stream.mjs";
 import { classifyCompletionFormat } from "./model-eval-quality.mjs";
+import { inspectNativeGeneratedStructure } from "./model-eval-native-structure.mjs";
 import { classifyGeneratedSyntax } from "./model-eval-syntax.mjs";
 
 /**
@@ -48,6 +49,7 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
     if (!Number.isFinite(elapsed) || elapsed < 0) throw new Error("invalid-timing");
     const insertion = normalizeGenerated(parsed.output);
     const syntaxOutcome = classifyGeneratedSyntax(fixture, insertion);
+    const nativeStructureOutcome = inspectNativeGeneratedStructure(fixture, insertion);
     return {
       fixtureId: fixture.id,
       language: fixture.language,
@@ -55,7 +57,8 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
       ok: true,
       exact: insertion === fixture.expected,
       syntaxOutcome,
-      formatSignals: classifyCompletionFormat(parsed.output, fixture, insertion),
+      nativeStructureOutcome,
+      formatSignals: classifyCompletionFormat(parsed.output, fixture, insertion, nativeStructureOutcome),
       firstTokenMs: parsed.firstTokenMs,
       totalMs: elapsed
     };
