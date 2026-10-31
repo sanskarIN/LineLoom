@@ -28,6 +28,22 @@ remains session-only, explicitly selected and subject to the original
 privacy gate. Rust support does not automatically install Rust tools or
 download any AI model.
 
+## Bounded lexical scanner maintenance (development source)
+
+The Rust scanner now avoids constructing the remaining input substring at
+every character. Comment and raw-string closing delimiters are checked at
+the current offset, and raw-string openings inspect at most 255 `#`
+characters. The scan remains limited to the existing 30,000-character
+window and derives only the same allowlisted contextual hints. No file
+reads, Rust compilation, token uploads or model inference were added.
+
+Offline unit cases cover long nested comments, complete and incomplete
+ordinary/byte/C raw strings with 0–255 hashes, Rust lifetimes, character
+literals and known post-literal code. These tests establish lexical
+regression behavior, **not** a measured editor latency improvement or
+the quality of generated Rust code. The actual local Ollama and physical
+desktop QA below are still required.
+
 ## Suggested real-world acceptance
 
 1. Set the Rust language model to an installed, explicitly approved
