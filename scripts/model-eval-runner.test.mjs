@@ -7,6 +7,7 @@ import { evaluateSyntheticFixture } from "./model-eval-runner.mjs";
 const samples = JSON.parse(readFileSync(new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"));
 const fixture = samples.fixtures.find(x => x.id === "rust-arithmetic");
 const typescriptFixture = samples.fixtures.find(x => x.id === "typescript-multiply");
+const pythonFixture = samples.fixtures.find(x => x.id === "python-multiply");
 const encoder = new TextEncoder();
 const frame = (response, done = false, extra = {}) =>
   JSON.stringify({ response, done, ...extra }) + "\n";
@@ -82,6 +83,29 @@ test("assesses generated TypeScript grammar locally without returning source or 
     assert.ok(!Object.hasOwn(measurement, "output"));
     assert.ok(!Object.hasOwn(measurement, "diagnostics"));
     assert.ok(!JSON.stringify(measurement).includes("value + value"));
+  }
+});
+
+test("classifies synthetic Python AST grammar without executing suggested text", async () => {
+  const evaluate = continuation => evaluateSyntheticFixture(
+    pythonFixture, "local-model:tag", "fim",
+    { fetchImpl: async () => goodResponse(frame(continuation, true)),
+      clock: () => 125 }
+  );
+  const valid = await evaluate(pythonFixture.expected);
+  const alternative = await evaluate("value + 1");
+  const invalid = await evaluate("value + )");
+  assert.equal(valid.syntaxOutcome, "passed");
+  assert.equal(valid.exact, true);
+  assert.equal(alternative.syntaxOutcome, "passed");
+  assert.equal(alternative.exact, false);
+  assert.equal(invalid.syntaxOutcome, "failed");
+  assert.equal(invalid.ok, true);
+  for (const item of [valid, alternative, invalid]) {
+    assert.ok(!Object.hasOwn(item, "source"));
+    assert.ok(!Object.hasOwn(item, "output"));
+    assert.ok(!Object.hasOwn(item, "diagnostics"));
+    assert.ok(!JSON.stringify(item).includes("value + 1"));
   }
 });
 
