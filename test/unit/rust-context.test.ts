@@ -122,6 +122,55 @@ describe("Rust feature-aware autocomplete guidance", () => {
     expect(normalC.code).toContain("async fn real()");
   });
 
+  it("scans near the 30k context limit without changing nested comment boundaries", () => {
+    const longComment = "x".repeat(12_000);
+    const source = "/* " + longComment + " /* async fn hidden() */ match fake { */\n" +
+      "fn real() { match input { Ok(value) => ";
+    const scan = scanRustCode(source);
+    expect(scan.state).toBe("code");
+    expect(scan.code).not.toContain("hidden()");
+    expect(scan.code).not.toContain("match fake");
+    expect(scan.code).toContain("match input");
+    expect(rustContextHints(source)).toEqual(
+      expect.arrayContaining([expect.stringContaining("Rust match arms:")])
+    );
+  });
+
+  it("preserves literal and lifetime token behavior around bounded lexical lookahead", () => {
+    const source = "fn borrow<'a>(s: &'a str) { let ch = 'x'; let byte = b'\\\\n'; " +
+      "println!(\"{}\", s); }";
+    const scan = scanRustCode(source);
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("borrow<'a>");
+    expect(scan.code).toContain("&'a str");
+    expect(scan.code).not.toContain("'x'");
+    expect(scan.code).not.toContain("b'\\\\n'");
+    expect(scan.code).not.toContain('"{}"');
+  });
+
+  it("preserves all supported raw-string delimiters in large bounded contexts", () => {
+    const initial = "let opening = 1;\n" + " ".repeat(8_000);
+    for (const prefix of ["r", "br", "cr"]) {
+      for (const count of [0, 1, 16, 32, 255]) {
+        const hashes = "#".repeat(count);
+        const content = "match misleading { async fn hidden()";
+        const incomplete = initial + `let data = ${prefix}${hashes}"${content}`;
+        expect(scanRustCode(incomplete).state).toBe("raw-string");
+        expect(rustContextHints(incomplete)).toEqual([
+          expect.stringContaining("Rust string literal")
+        ]);
+        const closed = incomplete + `"${hashes};\nasync fn real() {}`;
+        const scan = scanRustCode(closed);
+        expect(scan.state).toBe("code");
+        expect(scan.code).not.toContain("misleading");
+        expect(scan.code).toContain("async fn real");
+        expect(rustContextHints(closed)).toEqual(
+          expect.arrayContaining([expect.stringContaining("Future and .await")])
+        );
+      }
+    }
+  });
+
   it("does not misclassify Rust lifetimes as character literals", () => {
     const scan = scanRustCode("fn borrow<'a>(x: &'a str) -> &'a str { x }");
     expect(scan.code).toContain("borrow<'a>");
