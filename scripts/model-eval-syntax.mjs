@@ -38,7 +38,7 @@ const PYTHON_ENV = Object.fromEntries(
  */
 function classifyPythonSource(source) {
   const executable = process.platform === "win32" ? "python" : "python3";
-  const result = spawnSync(executable, ["-I", "-S", "-c", PYTHON_AST_SCRIPT], {
+  const result = spawnSync(executable, ["-I", "-S", "-X", "utf8", "-c", PYTHON_AST_SCRIPT], {
     input: source, encoding: "utf8", timeout: 2_500, maxBuffer: 128,
     windowsHide: true, env: PYTHON_ENV, stdio: ["pipe", "pipe", "ignore"]
   });
