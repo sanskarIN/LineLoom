@@ -132,7 +132,8 @@ const HINTS = {
   match: "Rust match arms: preserve pattern bindings and guards; use =>, comma separators and existing braces correctly.",
   patterns: "Rust if let/while let/let-else: preserve destructuring bindings and ownership; let-else fallback must diverge.",
   results: "Rust Result/Option: respect return types and use ? only when error/absence propagation is type-compatible; do not invent unwraps.",
-  async: "Rust async code: preserve Future and .await placement, Send constraints and borrowing across suspension points.",
+  async: "Rust async code: preserve Future and .await placement, AsyncFn bounds, closure captures, Send constraints and borrowing across suspension points.",
+  preciseCapture: "Rust impl Trait use<...> capture bounds: preserve lifetime-first ordering, all in-scope type/const generics and explicit capture requirements.",
   traits: "Rust traits and impl blocks: respect associated types, self receivers, trait method signatures and existing where bounds.",
   ffi: "Rust unsafe/FFI: preserve ABI signatures, pointer validity and safety invariants; do not invent unnecessary unsafe blocks.",
   borrow: "Rust ownership: preserve lifetimes, mutability and borrowed/owned values; avoid unnecessary clones or moves.",
@@ -160,9 +161,16 @@ export function rustContextHints(prefix: string): string[] {
   // quoted string or nested comment payloads.
   add(/\bmatch\b[\s\S]{0,650}\{|=>|\b(?:Some|None|Ok|Err)\s*\(/u.test(code.slice(-700)), HINTS.match);
   add(/\b(?:if|while)\s+let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
+  // Rust return-position impl Trait can restrict captured generics with
+  // use<...>. This is not a normal use import: only the precise-capture
+  // bound has an angle bracket following the keyword.
+  add(/\buse\s*<\s*(?:'[A-Za-z_]\w*|[A-Za-z_]\w*)/u.test(code.slice(-900)), HINTS.preciseCapture);
   add(/\b(?:Result|Option)\s*</u.test(code) || /\b(?:Ok|Err|Some|None)\s*\(/u.test(code.slice(-600)) ||
       /\?\s*;?\s*$/u.test(code), HINTS.results);
-  add(/\basync\s+(?:move\s+)?(?:fn|\{|move)|\.await\b|\bFuture\b/u.test(code), HINTS.async);
+  // async closures use `async |args|` and `async move |args|`; they are
+  // distinct from async fn/blocks. AsyncFn* bounds may also appear without
+  // an explicit async keyword at the cursor.
+  add(/\basync\s+(?:move\s+)?(?:fn\b|\{|\|)|\basync\s+move\b|\.await\b|\b(?:Future|AsyncFn|AsyncFnMut|AsyncFnOnce)\b/u.test(code), HINTS.async);
   add(/\b(?:trait\s+[A-Za-z_]|impl(?:\s*<|\s+[A-Za-z_]|\s*\{|\s*'|\s*&))|\b(?:Self|self)\s*\./u.test(code), HINTS.traits);
   add(/\bunsafe\s*(?:fn|trait|impl|\{)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)/u.test(code), HINTS.ffi);
   add(/(?:&\s*(?:'\w+\s*)?mut\b|&'\w+\b|\b(?:ref\s+mut|move\s*\|)\b)/u.test(code), HINTS.borrow);
