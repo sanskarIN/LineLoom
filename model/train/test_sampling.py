@@ -217,6 +217,79 @@ class ValidationChangeTests(unittest.TestCase):
             with self.subTest(field=field), self.assertRaises(SamplingRejected):
                 compare_validation_losses(first, bad, LANGUAGES)
 
+    def test_rejects_forged_global_improvement_when_every_language_regresses(self):
+        before = validation_metrics(self.records, [2] * 5, LANGUAGES)
+        after = validation_metrics(self.records, [3] * 5, LANGUAGES)
+        self.assertEqual(after["validationLoss"], 3)
+        self.assertEqual(after["validationMacroLoss"], 3)
+        # Counts alone do not make a false aggregate plausible: if all five
+        # languages get worse, their weighted and macro means cannot improve.
+        forged = dict(after, validationLoss=1)
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(before, forged, LANGUAGES)
+        forged = dict(after, validationMacroLoss=1)
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(before, forged, LANGUAGES)
+        forged = dict(before, validationLoss=9)
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(forged, after, LANGUAGES)
+
+    def test_rejects_forged_language_mean_even_if_totals_are_unchanged(self):
+        after = validation_metrics(self.records, [1, 2, 3, 4, 5], LANGUAGES)
+        forged = dict(after)
+        forged["validationLossByLanguage"] = dict(after["validationLossByLanguage"])
+        forged["validationLossByLanguage"]["rust"] = 100
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(self.before, forged, LANGUAGES)
+
+    def test_rejects_forged_token_weighted_total_macro_and_language_mean(self):
+        before = validation_metrics(self.records, [2] * 5, LANGUAGES, [1, 2, 3, 4, 5])
+        after = validation_metrics(self.records, [3] * 5, LANGUAGES, [1, 2, 3, 4, 5])
+        for key in ("validationTokenWeightedLoss", "validationMacroTokenWeightedLoss"):
+            forged = dict(after, **{key: 0.25})
+            with self.subTest(key=key), self.assertRaises(SamplingRejected):
+                compare_validation_losses(before, forged, LANGUAGES)
+        forged = dict(after)
+        forged["validationTokenWeightedLossByLanguage"] = dict(
+            after["validationTokenWeightedLossByLanguage"])
+        forged["validationTokenWeightedLossByLanguage"]["cpp"] = 900
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(before, forged, LANGUAGES)
+
+    def test_rejects_impossible_supervised_token_totals_even_when_means_match(self):
+        original = validation_metrics(self.records, [2] * 5, LANGUAGES, [1] * 5)
+        before = dict(original)
+        after = dict(original)
+        for report in (before, after):
+            report["validationTargetTokensByLanguage"] = dict(
+                report["validationTargetTokensByLanguage"])
+            report["validationTargetTokensByLanguage"]["rust"] = 300
+            report["validationTargetTokens"] = 304
+        # All per-language losses happen to be identical; aggregate means
+        # alone cannot reveal an impossible 300 tokens from one example.
+        with self.assertRaises(SamplingRejected):
+            compare_validation_losses(before, after, LANGUAGES)
+
+    def test_accepts_valid_six_decimal_rounded_imbalanced_validation_means(self):
+        records = self.records + [
+            {"language": "rust", "split": "validation"},
+            {"language": "rust", "split": "validation"},
+            {"language": "c", "split": "validation"}
+        ]
+        before = validation_metrics(records,
+                                    [0.1000004, 0.2000004, 0.3000004,
+                                     0.4000004, 0.5000004, 0.6000004,
+                                     0.7000004, 0.8000004],
+                                    LANGUAGES, [1, 2, 3, 4, 5, 6, 7, 8])
+        after = validation_metrics(records,
+                                   [0.9000004, 0.1000004, 0.2000004,
+                                    0.3000004, 0.4000004, 0.5000004,
+                                    0.6000004, 0.7000004],
+                                   LANGUAGES, [1, 2, 3, 4, 5, 6, 7, 8])
+        summary = compare_validation_losses(before, after, LANGUAGES)
+        self.assertIn("validationTokenWeightedLossChange", summary)
+        self.assertEqual(set(summary["validationLossChangeByLanguage"]), set(LANGUAGES))
+
     def test_rejects_changed_validation_scope_and_invalid_numbers(self):
         after = validation_metrics(self.records, [1, 2, 2, 2, 2], LANGUAGES)
         inconsistent = dict(after)

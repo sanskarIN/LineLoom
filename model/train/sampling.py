@@ -181,6 +181,41 @@ def compare_validation_losses(before: dict, after: dict,
             raised.append(language)
         elif change < -0.000001:
             lowered.append(language)
+    def verify_reconciled_summary(report: dict, count_key: str,
+                                  language_loss_key: str,
+                                  overall_key: str, macro_key: str) -> None:
+        """Reject aggregates inconsistent with the reported language means.
+
+        Each component is rounded to six places by validation_metrics().
+        Two micro-loss units tolerate both rounding of each component and
+        rounding the global/macro mean, without silently accepting materially
+        different aggregate numbers. This does not verify the underlying
+        sample identities or model provenance.
+        """
+        counts = report.get(count_key)
+        losses = report.get(language_loss_key)
+        if (not isinstance(counts, dict) or not isinstance(losses, dict) or
+                set(counts) != set(languages) or set(losses) != set(languages)):
+            raise SamplingRejected("inconsistent-validation-aggregation")
+        if any(type(counts[lang]) is not int or counts[lang] < 1
+               for lang in languages):
+            raise SamplingRejected("inconsistent-validation-aggregation")
+        values = [checked_metric(losses, lang) for lang in languages]
+        total = sum(counts[lang] for lang in languages)
+        expected_overall = math.fsum(
+            value * counts[lang] for lang, value in zip(languages, values)
+        ) / total
+        expected_macro = math.fsum(values) / len(languages)
+        if (not math.isclose(checked_metric(report, overall_key),
+                             expected_overall, rel_tol=0, abs_tol=0.000002) or
+                not math.isclose(checked_metric(report, macro_key),
+                                 expected_macro, rel_tol=0, abs_tol=0.000002)):
+            raise SamplingRejected("inconsistent-validation-aggregation")
+
+    for report in (before, after):
+        verify_reconciled_summary(report, "validationSamplesByLanguage",
+                                  "validationLossByLanguage",
+                                  "validationLoss", "validationMacroLoss")
     token_fields = (
         "validationTargetTokens", "validationTargetTokensByLanguage",
         "validationTokenWeightedLoss", "validationMacroTokenWeightedLoss",
@@ -215,6 +250,19 @@ def compare_validation_losses(before: dict, after: dict,
             token_changes[language] = round(
                 checked_metric(after_losses, language) -
                 checked_metric(before_losses, language), 6)
+        # Each token total must be achievable from the reported number of
+        # validation samples; middle+EOS contributes 1–257 tokens per sample.
+        for report in (before, after):
+            sample_counts = report["validationSamplesByLanguage"]
+            token_counts = report["validationTargetTokensByLanguage"]
+            if any(not sample_counts[lang] <= token_counts[lang] <=
+                   257 * sample_counts[lang] for lang in languages):
+                raise SamplingRejected("inconsistent-validation-token-exposure")
+            verify_reconciled_summary(
+                report, "validationTargetTokensByLanguage",
+                "validationTokenWeightedLossByLanguage",
+                "validationTokenWeightedLoss",
+                "validationMacroTokenWeightedLoss")
         if (type(before["validationTargetTokens"]) is not int or
                 type(after["validationTargetTokens"]) is not int or
                 before["validationTargetTokens"] != total or
