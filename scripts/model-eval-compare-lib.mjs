@@ -181,6 +181,8 @@ export function validateComparableReport(raw) {
         (language === "typescript" ?
           (entry.checked !== entry.completed || entry.unchecked !== 0 ||
            entry.passed < expected.strictMatches) :
+          language === "python" ?
+          (entry.passed + entry.unchecked < expected.strictMatches) :
           (entry.checked !== 0 || entry.unchecked !== entry.completed))) {
       throw Error("invalid-language-generated-syntax");
     }
@@ -238,8 +240,11 @@ function selectedNumbers(report) {
 export function reviewSyntheticRegressions(baseline, candidate) {
   const flags = [];
   if (candidate.failed > baseline.failed) flags.push("more-failed-requests");
-  if (candidate.generatedSyntax.failed > baseline.generatedSyntax.failed) {
-    flags.push("more-typescript-syntax-failures");
+  for (const language of ["typescript", "python"]) {
+    if (candidate.generatedSyntax.byLanguage[language].failed >
+        baseline.generatedSyntax.byLanguage[language].failed) {
+      flags.push("more-" + language + "-syntax-failures");
+    }
   }
   if (candidate.strictExactMatches < baseline.strictExactMatches) flags.push("fewer-strict-matches");
   if (candidate.formatDiagnostics.completedWithoutFormatSignals <
@@ -297,6 +302,12 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       EVAL_CATEGORIES.some(k => baseline.perCategory[k].attempts !== candidate.perCategory[k].attempts)) {
     throw Error("incompatible-fixture-scope");
   }
+  // Parser coverage must match before comparing syntax outcomes. Missing
+  // Python on one machine cannot be mistaken for a model improvement.
+  if (baseline.generatedSyntax.byLanguage.python.checked !==
+      candidate.generatedSyntax.byLanguage.python.checked) {
+    throw Error("incompatible-python-parser-coverage");
+  }
   return {
     regressionReview: reviewSyntheticRegressions(baseline, candidate),
     comparisonType: "controlled-synthetic-exact-match",
@@ -318,6 +329,22 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       [k, candidate.perLanguage[k].strictMatches - baseline.perLanguage[k].strictMatches])),
     perCategoryStrictMatchDelta: Object.fromEntries(EVAL_CATEGORIES.map(k =>
       [k, candidate.perCategory[k].strictMatches - baseline.perCategory[k].strictMatches])),
+    generatedPythonSyntax: {
+      method: GENERATED_SYNTAX_METHOD,
+      baselineChecked: baseline.generatedSyntax.byLanguage.python.checked,
+      candidateChecked: candidate.generatedSyntax.byLanguage.python.checked,
+      baselinePassed: baseline.generatedSyntax.byLanguage.python.passed,
+      candidatePassed: candidate.generatedSyntax.byLanguage.python.passed,
+      passedDelta: candidate.generatedSyntax.byLanguage.python.passed -
+        baseline.generatedSyntax.byLanguage.python.passed,
+      baselineFailed: baseline.generatedSyntax.byLanguage.python.failed,
+      candidateFailed: candidate.generatedSyntax.byLanguage.python.failed,
+      failedDelta: candidate.generatedSyntax.byLanguage.python.failed -
+        baseline.generatedSyntax.byLanguage.python.failed,
+      baselineUnchecked: baseline.generatedSyntax.byLanguage.python.unchecked,
+      candidateUnchecked: candidate.generatedSyntax.byLanguage.python.unchecked,
+      interpretation: "Python AST grammar only; unchecked if Python parser unavailable."
+    },
     generatedTypeScriptSyntax: {
       method: GENERATED_SYNTAX_METHOD,
       baselineChecked: baseline.generatedSyntax.byLanguage.typescript.checked,
@@ -332,7 +359,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
         baseline.generatedSyntax.byLanguage.typescript.failed,
       baselineUnchecked: baseline.generatedSyntax.unchecked,
       candidateUnchecked: candidate.generatedSyntax.unchecked,
-      interpretation: "TypeScript parser grammar only; other generated languages unchecked."
+      interpretation: "TypeScript parser grammar only; Rust, C and C++ unchecked."
     },
     completionFormatSignalDelta: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
       [name, candidate.formatDiagnostics.signals[name] - baseline.formatDiagnostics.signals[name]])),
@@ -344,7 +371,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       "Request and fixture hashes match, including explicit settings, but server defaults, model checkpoint revision, hardware, quantization and runtime conditions require manual verification.",
       "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
       "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
-      "Only generated TypeScript grammar was parsed without executing code; parse success is not type correctness or program safety. Other generated languages were not syntax checked.",
+      "Generated Python/TypeScript grammar may be parsed without executing code; Python parser unavailability is explicitly unchecked, and Rust/C/C++ remain unchecked. Parser success is not type correctness or program safety.",
       "No real-model comparison was performed by the offline tool."
     ]
   };
