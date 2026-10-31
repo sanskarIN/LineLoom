@@ -48,13 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v8 also recognizes `lineloom-code` and
+The source benchmark v9 also recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v8`, which does not
-compare with earlier v1–v7 reports; regenerate both reports locally.
+The Ollama report protocol is `lineloom-synthetic-v9`, which does not
+compare with earlier v1–v8 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -72,6 +72,7 @@ The evaluator prints only aggregate statistics, not source or generated code.
 | `perLanguage` / `perCategory` | Counts, not compile correctness or an editor acceptance rate |
 | `completionP50Ms` / `completionP95Ms` | Nearest-rank latency **of completed requests only** |
 | `firstTokenP50Ms` / `firstTokenP95Ms` | Latency of completed requests that emitted a token |
+| `tokenAccounting` | Ollama terminal output-token count and generation duration, with `unchecked` for missing metadata; server-reported, not independent speed validation |
 | `fixtureOutcomes.evaluated` | Distinct synthetic fixtures with recorded attempts |
 | `fixtureOutcomes.repeated` | Distinct fixtures with more than one attempt |
 | `fixtureOutcomes.exactAtLeastOnce` | Fixtures with at least one exact completed response |
@@ -108,7 +109,7 @@ than checked grammar passes could support, and comparisons with different
 Python checked counts. Its regression review flags increases in Python or
 TypeScript parser failures, but neither flags nor passes prove model quality.
 
-**Re-run both baselines under v8.** Earlier Ollama v1–v7 reports are
+**Re-run both baselines under v9.** Earlier Ollama v1–v8 reports are
 incompatible. For comparable syntax evidence, use the same installed Python
 interpreter and TypeScript dependency, alongside matching model hardware
 and request settings. Python AST and TypeScript parser success do not imply
@@ -168,6 +169,36 @@ language names and per-language count deltas; a coverage difference becomes
 a manual-review flag, not evidence of model quality. Neither comparison is a
 release approval. The protocol changes to `lineloom-synthetic-v8`;
 v7 and older reports must be rerun for controlled comparison.
+
+## 4d. Ollama generation-token telemetry (Ollama v9)
+
+When a completed response includes both `eval_count` and `eval_duration` on its
+final Ollama NDJSON frame, the local evaluator checks those fields as bounded
+integers and records **only** output-token count and generation duration in
+nanoseconds. Missing both fields is explicitly `unchecked`. Supplying only
+one, negative/fractional/oversized values, or contradictory zero metrics
+invalidates that response instead of silently treating it as trustworthy.
+The original response text never enters the report. These two fields are
+**server-reported**; their trustworthiness is not independently attested.
+
+`tokenAccounting` records per-language completed, checked and unchecked counts,
+generated tokens, and cumulative generation duration. The aggregate
+`tokensPerSecond` uses `total generated tokens / sum of generation seconds`.
+If no measured generation duration exists, that speed is **null, never 0**.
+The offline comparator validates consistent sums, duration and token bounds,
+and discloses per-language changes without source text. It only flags a
+wall-clock p95 latency increase as a comparable regression when enough
+completed requests exist **and** all completed requests have token metrics
+and matched per-language generated-token totals. Changed token counts or
+coverage require separate manual review; metadata does not prove actual
+model weight identity, equivalent hardware, comparable server cache state,
+correct generated source, inference warm-up, or real-editor performance.
+
+The new Ollama report protocol is `lineloom-synthetic-v9`. Re-run
+both models on the same reviewed fixture revision, hardware conditions,
+generation settings and prompt mode; reports from v8 and earlier are
+intentionally incompatible. The independent Python/HF smoke protocol is
+unchanged.
 
 ## 5. Sanitize and review the report
 
