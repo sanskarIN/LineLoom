@@ -108,7 +108,7 @@ describe("Rust feature-aware autocomplete guidance", () => {
 
   it("resumes recognizing Rust code after long-delimited raw C strings close", () => {
     const hashes = "#".repeat(32);
-    const source = `let text = cr${hashes}"trait Hidden { } " async fn hidden()"${hashes};\\nasync fn real() {`;
+    const source = `let text = cr${hashes}"trait Hidden { } " async fn hidden()"${hashes};\nasync fn real() {`;
     const scan = scanRustCode(source);
     expect(scan.state).toBe("code");
     expect(scan.code).not.toContain("Hidden");
@@ -117,7 +117,7 @@ describe("Rust feature-aware autocomplete guidance", () => {
     expect(rustContextHints(source)).toEqual(
       expect.arrayContaining([expect.stringContaining("Future and .await")])
     );
-    const normalC = scanRustCode('let text = c"trait Hidden {};";\\nasync fn real() {}');
+    const normalC = scanRustCode('let text = c"trait Hidden {};";\nasync fn real() {}');
     expect(normalC.code).not.toContain("Hidden");
     expect(normalC.code).toContain("async fn real()");
   });
