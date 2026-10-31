@@ -46,12 +46,12 @@ test("a malformed input is unchecked, never silently accepted as valid syntax", 
   assert.equal(inspect(fixture("c"), "\0"), "unchecked");
 });
 
-test("all 18 checked-in native reference FIM insertions scan clean", () => {
+test("all 24 checked-in native reference FIM insertions scan clean", () => {
   const { fixtures } = JSON.parse(readFileSync(
     new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"
   ));
   const native = fixtures.filter(item => ["rust", "c", "cpp"].includes(item.language));
-  assert.equal(native.length, 18);
+  assert.equal(native.length, 24);
   for (const item of native) {
     assert.equal(inspect(item, item.expected), "clean", item.id);
   }

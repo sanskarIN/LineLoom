@@ -15,7 +15,7 @@
 
 1. **M0 — Measurement foundation (merged to main):** fixed MIT-original synthetic fixtures, local-only evaluator, pure tests, per-language exact-match counts, aggregate repeated-fixture outcomes and measured first-token / total p50-p95. The [local baseline protocol](EVALUATION_PROTOCOL.md) defines reproducible, sanitized reporting. No real model performance results have been recorded.
 2. **M1 — Dataset review:** licensed provenance for each source (repository, revision, SPDX license, consent/opt-out status), duplicate and near-duplicate removal, secret/PII scanning, malware/poisoned training example filtering, holdout split by **repository**, not file, and an exclusion mechanism. Never train automatically on users' workspaces.
-3. **M2 — Baseline comparison:** record real Ollama results for the same fixtures using at least one known FIM baseline; include named model, prompt mode, hardware, quantization, run count and temperature. The initial 30 synthetic cases still do not justify model-quality claims; expand to a sufficiently diverse, independently reviewed holdout suite before making such claims.
+3. **M2 — Baseline comparison:** record real Ollama results for the same fixtures using at least one known FIM baseline; include named model, prompt mode, hardware, quantization, run count and temperature. The 40 synthetic cases still do not justify model-quality claims; expand to a sufficiently diverse, independently reviewed holdout suite before making such claims.
 4. **M3 — Small adapter experiment:** with reviewed checkpoint and corpus, train completion-only/FIM on opted-in or appropriately licensed sources. Record full config, seeds, base model revision, data hashes, train/validation splits, loss curves and GPU compute use. No externally sourced or private data in this repository.
 5. **M4 — Test quality and safety:** code parse/typecheck/compile execution where appropriate in **isolated offline sandboxes**, human correctness/usefulness review, duplicate/unsafe completions, multilingual identifier safety, p50/p95 latency and cancellation. Include editor tests on Windows/macOS/Linux and accessibility results; all currently **NOT RUN**.
 6. **M5 — Optional packaging:** only if evaluation warrants it, export a license-compliant local quantized artifact, verify SHA-256 and document Ollama import/run commands. Ship model **separately** from the extension and do not change default Ollama tags silently.
@@ -36,7 +36,7 @@
 }
 ```
 
-Do not interpret this example as permission to collect the named repository or to use public source without reviewing its license. **Training samples and evaluation fixtures must never overlap**, including near-duplicate code across forks; this 30-fixture synthetic benchmark is insufficient for ranking production models.
+Do not interpret this example as permission to collect the named repository or to use public source without reviewing its license. **Training samples and evaluation fixtures must never overlap**, including near-duplicate code across forks; this 40-fixture synthetic benchmark is insufficient for ranking production models.
 
 ## Model-selection decision criteria
 

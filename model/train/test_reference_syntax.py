@@ -25,7 +25,7 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
             )
         self.assertEqual(result["protocol"], "lineloom-public-reference-syntax-v1")
         self.assertEqual(result["stage"], "REFERENCE_SYNTAX_NOT_RUN")
-        self.assertEqual(result["referenceFixtures"], 30)
+        self.assertEqual(result["referenceFixtures"], 40)
         self.assertEqual(result["passed"], 0)
         self.assertEqual(result["failed"], 0)
         self.assertEqual(result["unavailable"], 0)
@@ -33,7 +33,7 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
         self.assertFalse(result["realModelInferenceExecuted"])
         self.assertEqual(
             {name: item["fixtures"] for name, item in result["byLanguage"].items()},
-            dict.fromkeys(audit.LANGUAGES, 6)
+            dict.fromkeys(audit.LANGUAGES, 8)
         )
         self.assertNotIn("fn double", json.dumps(result))
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
@@ -56,10 +56,10 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
             invoke=lambda *a, **k: self.fail("no compiler should run for Python")
         )
         self.assertEqual(result["stage"], "PUBLIC_REFERENCE_SYNTAX_CHECKED")
-        self.assertEqual(result["passed"], 6)
+        self.assertEqual(result["passed"], 8)
         self.assertEqual(result["failed"], 0)
         self.assertEqual(result["unavailable"], 0)
-        self.assertEqual(result["byLanguage"]["python"]["passed"], 6)
+        self.assertEqual(result["byLanguage"]["python"]["passed"], 8)
 
     def test_all_five_languages_use_fixed_compiler_arguments_and_no_output(self):
         captured = []
@@ -84,12 +84,12 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
                 invoke=invoked
             )
         self.assertEqual(result["stage"], "PUBLIC_REFERENCE_SYNTAX_CHECKED")
-        self.assertEqual(result["passed"], 30)
+        self.assertEqual(result["passed"], 40)
         self.assertEqual(result["unavailable"], 0)
         self.assertEqual(result["failed"], 0)
-        self.assertEqual(len(captured), 24)
+        self.assertEqual(len(captured), 32)
         for name in audit.LANGUAGES:
-            self.assertEqual(result["byLanguage"][name]["passed"], 6)
+            self.assertEqual(result["byLanguage"][name]["passed"], 8)
         flags = {Path(args[0]).name: args[1:-1] for args, _ in captured}
         self.assertIn("--emit=metadata", flags["rustc"])
         self.assertIn("-fsyntax-only", flags["cc"])
@@ -112,11 +112,11 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
             resolve_tool=lookup, invoke=compile_fixture
         )
         self.assertEqual(looked_up, ["rustc"])
-        self.assertEqual(invoked, ["/mock/rustc"] * 6)
+        self.assertEqual(invoked, ["/mock/rustc"] * 8)
         self.assertEqual(report["stage"], "PUBLIC_REFERENCE_SYNTAX_CHECKED")
-        self.assertEqual(report["passed"], 6)
-        self.assertEqual(report["referenceFixtures"], 6)
-        self.assertEqual(report["byLanguage"]["rust"]["passed"], 6)
+        self.assertEqual(report["passed"], 8)
+        self.assertEqual(report["referenceFixtures"], 8)
+        self.assertEqual(report["byLanguage"]["rust"]["passed"], 8)
         self.assertEqual(report["byLanguage"]["python"]["fixtures"], 0)
         self.assertEqual(report["unavailable"], 0)
 
@@ -127,9 +127,9 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
             invoke=lambda *args, **kwargs: SimpleNamespace(returncode=0)
         )
         self.assertEqual(result["stage"], "REFERENCE_SYNTAX_INCOMPLETE")
-        self.assertEqual(result["passed"], 24)
-        self.assertEqual(result["unavailable"], 6)
-        self.assertEqual(result["byLanguage"]["rust"]["unavailable"], 6)
+        self.assertEqual(result["passed"], 32)
+        self.assertEqual(result["unavailable"], 8)
+        self.assertEqual(result["byLanguage"]["rust"]["unavailable"], 8)
 
     def test_compiler_failures_and_timeouts_are_private_and_counted(self):
         def invoked(args, **opts):
@@ -143,11 +143,11 @@ class ReferenceSyntaxAuditTests(unittest.TestCase):
             resolve_tool=lambda name: "/mock/" + name, invoke=invoked
         )
         self.assertEqual(result["stage"], "REFERENCE_SYNTAX_INCOMPLETE")
-        self.assertEqual(result["passed"], 18)
-        self.assertEqual(result["failed"], 12)
+        self.assertEqual(result["passed"], 24)
+        self.assertEqual(result["failed"], 16)
         self.assertNotIn("private-code", json.dumps(result))
-        self.assertEqual(result["byLanguage"]["c"]["failed"], 6)
-        self.assertEqual(result["byLanguage"]["cpp"]["failed"], 6)
+        self.assertEqual(result["byLanguage"]["c"]["failed"], 8)
+        self.assertEqual(result["byLanguage"]["cpp"]["failed"], 8)
 
     def test_invalid_synthetic_reference_is_not_echoed(self):
         with mock.patch.object(audit, "read_public_fixtures", return_value=[{

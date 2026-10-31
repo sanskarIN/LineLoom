@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "description": "Original synthetic insert-at-cursor probes for five languages and five completion categories; never train on these fixtures.",
+  "description": "Original synthetic insert-at-cursor probes for five languages and five completion categories; 40 reviewed cases. Never train on these fixtures.",
   "fixtures": [
     {
       "id": "rust-arithmetic",
@@ -241,6 +241,86 @@
       "prefix": "type User = { name?: string };\nexport function getName(user: User): string {\n  return user.name ?? ",
       "suffix": "\n}\n",
       "expected": "\"unknown\";"
+    },
+    {
+      "id": "rust-let-else",
+      "language": "rust",
+      "category": "statement",
+      "prefix": "fn safe_value(input: Option<i32>) -> i32 {\n    let Some(value) = input else {\n        ",
+      "expected": "return 0;",
+      "suffix": "\n    };\n    value\n}\n"
+    },
+    {
+      "id": "rust-const-generic",
+      "language": "rust",
+      "category": "type",
+      "prefix": "fn copy_array<const N: usize>(data: [u8; N]) -> [u8; N] {\n    ",
+      "expected": "data",
+      "suffix": "\n}\n"
+    },
+    {
+      "id": "c-struct-field",
+      "language": "c",
+      "category": "suffix",
+      "prefix": "struct Point { int x; int y; };\nint get_x(const struct Point *point) {\n    return point->",
+      "expected": "x;",
+      "suffix": "\n}\n"
+    },
+    {
+      "id": "c-accumulate-loop",
+      "language": "c",
+      "category": "indentation",
+      "prefix": "int sum_to(int n) {\n    int sum = 0;\n    for (int i = 0; i < n; i++) {\n        sum += ",
+      "expected": "i;",
+      "suffix": "\n    }\n    return sum;\n}\n"
+    },
+    {
+      "id": "cpp-optional-default",
+      "language": "cpp",
+      "category": "suffix",
+      "prefix": "#include <optional>\nint value_or_zero(const std::optional<int>& maybe) {\n    return maybe.",
+      "expected": "value_or(0);",
+      "suffix": "\n}\n"
+    },
+    {
+      "id": "cpp-lambda-capture",
+      "language": "cpp",
+      "category": "indentation",
+      "prefix": "int shifted(int value) {\n    auto calculate = [value]() -> int {\n        return ",
+      "expected": "value + 1;",
+      "suffix": "\n    };\n    return calculate();\n}\n"
+    },
+    {
+      "id": "python-config-get",
+      "language": "python",
+      "category": "suffix",
+      "prefix": "def timeout(config: dict[str, int]) -> int:\n    return config.",
+      "expected": "get(\"timeout\", 30)",
+      "suffix": "\n"
+    },
+    {
+      "id": "python-loop-branch",
+      "language": "python",
+      "category": "statement",
+      "prefix": "def count_positive(values: list[int]) -> int:\n    total = 0\n    for item in values:\n        if item > 0:\n            ",
+      "expected": "total += 1",
+      "suffix": "\n    return total\n"
+    },
+    {
+      "id": "typescript-discriminated",
+      "language": "typescript",
+      "category": "indentation",
+      "prefix": "type Result = { kind: \"ok\"; value: number } | { kind: \"error\"; reason: string };\nexport function unwrap(result: Result): number {\n  if (result.kind === \"ok\") {\n    return ",
+      "expected": "result.value;",
+      "suffix": "\n  }\n  return 0;\n}\n"
+    },
+    {
+      "id": "typescript-optional-chain",
+      "language": "typescript",
+      "category": "type",
+      "prefix": "type Settings = { theme?: string };\nexport function theme(input?: Settings): string {\n  return input?.theme ?? ",
+      "expected": "\"light\";",
+      "suffix": "\n}\n"
     }
   ]
 }

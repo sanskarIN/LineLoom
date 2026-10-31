@@ -16,7 +16,7 @@ C and C++ are **separate** evaluation targets. JavaScript, Java, Kotlin and Go r
 
 ## Running the first evaluation harness
 
-The checked-in `fixtures/completion-v1.json` contains **30 small, original, synthetic examples**, six per language. It is **not a training corpus**. A strict exact string comparison is a narrow regression metric, not a claim that the generated code compiles or is useful. Equivalent completions can be marked wrong.
+The checked-in `fixtures/completion-v1.json` contains **40 small, original, synthetic examples**, eight per language. It is **not a training corpus**. A strict exact string comparison is a narrow regression metric, not a claim that the generated code compiles or is useful. Equivalent completions can be marked wrong.
 
 ```sh
 npm run model:eval:dry
@@ -32,7 +32,7 @@ npm run model:eval -- --model lineloom-code:dev --mode auto --language rust
 - The evaluator is **opt-in** and talks only to `http://127.0.0.1:11434/api/generate`. It has no configurable remote endpoint and no model downloads.
 - `--dry-run` is fully offline. No evaluator command reads editor buffers, repositories or personal source.
 - `--runs` allows 1–5 sequential repetitions. Language filters: `rust`, `c`, `cpp`, `python`, `typescript`, or `all`. The optional `--category` filter selects `expression`, `statement`, `suffix`, `type`, `indentation`, or `all`.
-- Each language has six hand-authored, synthetic checks. Category-specific results distinguish common expressions, statements, suffix awareness, type usage, and indentation. **Synthetic strict matches can reject valid alternative implementations**.
+- Each language has eight hand-authored, synthetic checks. Category-specific results distinguish common expressions, statements, suffix awareness, type usage, and indentation. **Synthetic strict matches can reject valid alternative implementations**.
 - `auto` uses prefix/suffix generation for explicitly recognized `qwen2.5-coder` and `lineloom-code` model tags, matching extension routing; unrecognized models use a bounded instruction format. `--mode fim` forces FIM only when the locally installed model actually supports it, and `--mode instruction` forces the generic protocol.
 - Only aggregate counts, per-language/per-category strict matches, nearest-rank p50/p95 duration/first-token latency, and **fixture-level outcome totals without fixture IDs** are printed. `fixtureOutcomes` reports how many synthetic fixtures were evaluated, repeated, matched at least once, matched on every attempt, or had mixed exact-match outcomes. Failed requests count as non-matches. `exactEveryAttempt` also includes one-run fixtures; use `repeated` to distinguish repeated observations. These are descriptive synthetic results, **not statistical pass@k, real-editor acceptance or proven model quality**. Model text, prompts, paths and server errors are not logged. A failed request returns a failure count and a nonzero process exit code.
 - The evaluator stream decoder validates NDJSON finalization, malformed fields, UTF-8 boundaries and strict output/byte/record limits. It now requires clean EOF after a terminal frame (no hidden later chunks) and uses the existing per-request timeout to abort stalled servers after `done`. The VS Code extension still cancels promptly at `done`, rejecting only already-buffered contradictory events. Tests use offline synthetic streams rather than real model access.
@@ -193,7 +193,7 @@ npm run model:data-audit -- --manifest local-reviewed-dataset.json
 
 The audit checks language/split coverage, repository-group segregation,
 source revision and review declarations, duplicate and near-duplicate
-samples, overlap with the checked-in 30 synthetic evaluation fixtures,
+samples, overlap with the checked-in 40 synthetic evaluation fixtures,
 and conservative secret/PII red flags. It emits sanitized totals only;
 it does **not** train, copy, download, export, distribute, or persist
 any source. See [data governance](DATA_POLICY.md) for the private manifest
@@ -305,7 +305,7 @@ useful trained model, and reviewed licensing/provenance remain required.
 **Local FIM adapter verification (development after v1.4.1):** a separate
 [optional Python smoke runner](train/README.md) supports a plan-only
 mode and an explicit opt-in local base-versus-LoRA-adapter check over
-the original 30 synthetic fixtures. It runs no network requests,
+the original 40 synthetic fixtures. It runs no network requests,
 prints no generated code, and reports only source-free per-language
 strict matches. This is distinct from Ollama benchmark protocol v3;
 the two cannot be directly compared, and neither is a full

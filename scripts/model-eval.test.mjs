@@ -13,11 +13,11 @@ const fixturePath = new URL("../model/fixtures/completion-v1.json", import.meta.
 const fixtures = validateFixtures(JSON.parse(await readFile(fixturePath, "utf8")));
 
 test("manifest contains distinct synthetic cases for each scoped language", () => {
-  assert.equal(fixtures.length, 30);
+  assert.equal(fixtures.length, 40);
   assert.deepEqual([...new Set(fixtures.map(item => item.language))].sort(), [...EVAL_LANGUAGES].sort());
   assert.equal(new Set(fixtures.map(item => item.id)).size, fixtures.length);
   for (const language of EVAL_LANGUAGES) {
-    assert.equal(fixtures.filter(item => item.language === language).length, 6);
+    assert.equal(fixtures.filter(item => item.language === language).length, 8);
   }
   assert.deepEqual([...new Set(fixtures.map(item => item.category))].sort(), [...EVAL_CATEGORIES].sort());
 });
@@ -120,7 +120,7 @@ test("dry-run reports scoped fixture IDs without starting inference", () => {
   assert.equal(data.requestSpecSha256, requestSpecSha256(
     fixtures.filter(item => item.language === "cpp"), "fim"
   ));
-  assert.equal(data.requestsPlanned, 12);
+  assert.equal(data.requestsPlanned, 16);
   assert.deepEqual(data.targetLanguages, ["cpp"]);
   assert.equal(Object.hasOwn(data, "prefix"), false);
 });

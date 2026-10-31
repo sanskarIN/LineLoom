@@ -82,7 +82,7 @@ test("comparison returns only bounded counts and per-language/category deltas", 
   const candidate = report({ count: 3, model: "secret-model-tag" });
   const result = compareModelReports(baseline, candidate);
   assert.equal(result.scopeVerified, true);
-  assert.equal(result.syntheticFixtures, 30);
+  assert.equal(result.syntheticFixtures, 40);
   assert.equal(result.candidateMinusBaseline.strictExactMatches, 4);
   assert.equal(result.candidateMinusBaseline.failed, 0);
   assert.equal(result.completedWithoutFormatSignalDelta, 0);
@@ -213,22 +213,22 @@ test("compares isolated Python AST evidence and rejects incompatible parser cove
   const candidate = report({ count: 0 });
   for (const entry of [baseline, candidate]) {
     const python = entry.generatedSyntax.byLanguage.python;
-    assert.equal(python.completed, 12);
-    python.checked = 12;
-    python.passed = 12;
+    assert.equal(python.completed, 16);
+    python.checked = 16;
+    python.passed = 16;
     python.unchecked = 0;
-    entry.generatedSyntax.checked += 12;
-    entry.generatedSyntax.passed += 12;
-    entry.generatedSyntax.unchecked -= 12;
+    entry.generatedSyntax.checked += 16;
+    entry.generatedSyntax.passed += 16;
+    entry.generatedSyntax.unchecked -= 16;
   }
-  assert.equal(validateComparableReport(baseline).generatedSyntax.byLanguage.python.checked, 12);
+  assert.equal(validateComparableReport(baseline).generatedSyntax.byLanguage.python.checked, 16);
   candidate.generatedSyntax.byLanguage.python.passed -= 2;
   candidate.generatedSyntax.byLanguage.python.failed += 2;
   candidate.generatedSyntax.passed -= 2;
   candidate.generatedSyntax.failed += 2;
   const comparison = compareModelReports(baseline, candidate);
-  assert.equal(comparison.generatedPythonSyntax.baselineChecked, 12);
-  assert.equal(comparison.generatedPythonSyntax.candidateChecked, 12);
+  assert.equal(comparison.generatedPythonSyntax.baselineChecked, 16);
+  assert.equal(comparison.generatedPythonSyntax.candidateChecked, 16);
   assert.equal(comparison.generatedPythonSyntax.failedDelta, 2);
   assert.equal(comparison.generatedPythonSyntax.passedDelta, -2);
   assert.ok(comparison.regressionReview.flags.includes("more-python-syntax-failures"));
@@ -245,32 +245,32 @@ test("compares isolated Python AST evidence and rejects incompatible parser cove
   const python = forged.generatedSyntax.byLanguage.python;
   python.checked = 12;
   python.passed = 0;
-  python.failed = 12;
+  python.failed = 16;
   python.unchecked = 0;
-  forged.generatedSyntax.checked += 12;
-  forged.generatedSyntax.failed += 12;
-  forged.generatedSyntax.unchecked -= 12;
+  forged.generatedSyntax.checked += 16;
+  forged.generatedSyntax.failed += 16;
+  forged.generatedSyntax.unchecked -= 16;
   assert.throws(() => validateComparableReport(forged), /invalid-language-generated-syntax/);
 });
 
 test("rejects forged TypeScript grammar counts and reports parser regressions without source", () => {
   const baseline = report();
   const worse = structuredClone(report());
-  assert.equal(baseline.generatedSyntax.checked, 12);
-  assert.equal(baseline.generatedSyntax.unchecked, 48);
-  assert.equal(baseline.generatedSyntax.passed, 12);
+  assert.equal(baseline.generatedSyntax.checked, 16);
+  assert.equal(baseline.generatedSyntax.unchecked, 64);
+  assert.equal(baseline.generatedSyntax.passed, 16);
   worse.generatedSyntax.byLanguage.typescript.passed -= 2;
   worse.generatedSyntax.byLanguage.typescript.failed += 2;
   worse.generatedSyntax.passed -= 2;
   worse.generatedSyntax.failed += 2;
   const comparison = compareModelReports(baseline, worse);
-  assert.equal(comparison.generatedTypeScriptSyntax.baselineChecked, 12);
-  assert.equal(comparison.generatedTypeScriptSyntax.candidateChecked, 12);
-  assert.equal(comparison.generatedTypeScriptSyntax.candidateUnchecked, 48);
+  assert.equal(comparison.generatedTypeScriptSyntax.baselineChecked, 16);
+  assert.equal(comparison.generatedTypeScriptSyntax.candidateChecked, 16);
+  assert.equal(comparison.generatedTypeScriptSyntax.candidateUnchecked, 64);
   assert.equal(comparison.generatedTypeScriptSyntax.passedDelta, -2);
   assert.equal(comparison.generatedTypeScriptSyntax.failedDelta, 2);
   assert.ok(comparison.regressionReview.flags.includes("more-typescript-syntax-failures"));
-  assert.equal(comparison.generatedTypeScriptSyntax.baselineUnchecked, 48);
+  assert.equal(comparison.generatedTypeScriptSyntax.baselineUnchecked, 64);
   assert.ok(!JSON.stringify(comparison).includes(baseline.model));
   for (const mutation of [
     report => { delete report.generatedSyntax; },
@@ -292,19 +292,19 @@ test("rejects forged TypeScript grammar counts and reports parser regressions wi
   const rustScope = report({ selected: fixtures.filter(f => f.language === "rust") });
   const result = compareModelReports(rustScope, rustScope);
   assert.equal(result.generatedTypeScriptSyntax.baselineChecked, 0);
-  assert.equal(result.generatedTypeScriptSyntax.baselineUnchecked, 12);
+  assert.equal(result.generatedTypeScriptSyntax.baselineUnchecked, 16);
   assert.equal(result.generatedTypeScriptSyntax.passedDelta, 0);
 });
 
 test("old, mismatched and inconsistent benchmark reports fail closed", () => {
   const valid = report();
-  assert.equal(validateComparableReport(valid).attempts, 60);
+  assert.equal(validateComparableReport(valid).attempts, 80);
   const invalid = [
     { ...valid, benchmarkProtocol: "old" }, { ...valid, runsPerFixture: 1 },
     { ...valid, fixtureSetSha256: "secret" },
     { ...valid, requestSpecSha256: undefined },
     { ...valid, requestSpecSha256: "not-a-hash" }, { ...valid, mode: "instruction" },
-    { ...valid, failed: 4 }, { ...valid, strictExactMatches: 61 },
+    { ...valid, failed: 4 }, { ...valid, strictExactMatches: 81 },
     { ...valid, completionP95Ms: -1 }, { ...valid, completionP95Ms: "fast" },
     { ...valid, perLanguage: { rust: {} } },
     { ...valid, formatDiagnostics: undefined },
@@ -363,8 +363,8 @@ test("offline CLI compares bounded report files and never echoes injected model/
 test("native scanner coverage is explicit, cannot be forged and never leaks code", () => {
   const baseline = report();
   const valid = validateComparableReport(baseline);
-  assert.equal(valid.nativeStructureDiagnostics.completed, 36);
-  assert.equal(valid.nativeStructureDiagnostics.unchecked, 36);
+  assert.equal(valid.nativeStructureDiagnostics.completed, 48);
+  assert.equal(valid.nativeStructureDiagnostics.unchecked, 48);
   assert.equal(valid.nativeStructureDiagnostics.clean, 0);
 
   const mutations = [
@@ -476,6 +476,6 @@ test("zero coverage in all native languages is comparable but not a syntax pass"
   const comparison = compareModelReports(report({ count: 0 }), report({ count: 0 }));
   assert.equal(comparison.nativeStructureCoverage.comparableInspectedCounts, true);
   assert.equal(comparison.nativeStructureCoverage.baseline.clean, 0);
-  assert.equal(comparison.nativeStructureCoverage.baseline.unchecked, 36);
+  assert.equal(comparison.nativeStructureCoverage.baseline.unchecked, 48);
   assert.deepEqual(comparison.regressionReview.languagesWithMoreNativeMismatches, []);
 });

@@ -32,8 +32,8 @@ npm run test:model-eval
 npm run model:eval:dry
 ```
 
-The dry run is offline: confirm the expected **30 synthetic fixtures** across
-five languages, six per language. A dry run is not model inference.
+The dry run is offline: confirm the expected **40 synthetic fixtures** across
+five languages, eight per language. A dry run is not model inference.
 
 ## 3. Run a controlled, voluntary baseline
 
@@ -302,7 +302,7 @@ correctness, hardware latency, licensed training or human usefulness.
 
 The optional [Python smoke runner](train/README.md) tests an
 *already* locally provisioned reviewed Qwen FIM base and an *optional*
-privately trained LoRA adapter using only 30 original checked-in public
+privately trained LoRA adapter using only 40 original checked-in public
 synthetic probes. It has a safe **offline plan** default and a separately
 gated `--run --approve-checkpoint` path. Real mode performs strictly
 bounded local greedy generations with no returned/printed code,
@@ -443,7 +443,7 @@ against the **original fixed public synthetic reference code**:
 | Python | Standard-library `ast.parse` (no execution) |
 | TypeScript | `tsc`, strict, `--noEmit` |
 
-The exact source is `prefix + expected + suffix` for each of the 30
+The exact source is `prefix + expected + suffix` for each of the 40
 checked-in original fixtures. It never checks or writes generated
 completions from a model, reads private training examples, invokes a
 compiler through a shell, executes compiled programs, or publishes a

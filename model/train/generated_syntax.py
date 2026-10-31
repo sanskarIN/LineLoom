@@ -53,7 +53,7 @@ def classify_generated_syntax(fixture: dict, insertion: str,
 
 def generated_syntax_summary(results: list[dict]) -> dict:
     """Emit only bounded five-language counts; never content or IDs."""
-    if not isinstance(results, list) or not 1 <= len(results) <= 30:
+    if not isinstance(results, list) or not 1 <= len(results) <= 40:
         raise SmokeReportRejected("invalid-generated-syntax-results")
     by_language = {
         language: {"attempts": 0, "checked": 0, "passed": 0,

@@ -21,7 +21,7 @@ except ImportError:
 class GeneratedSyntaxTests(unittest.TestCase):
     def test_all_original_python_reference_insertions_parse_without_execution(self):
         cases = read_public_fixtures("python")
-        self.assertEqual(len(cases), 6)
+        self.assertEqual(len(cases), 8)
         for fixture in cases:
             with self.subTest(id=fixture["id"]):
                 self.assertEqual(
@@ -123,7 +123,7 @@ class GeneratedSyntaxTests(unittest.TestCase):
             [{"language": "python", "syntaxOutcome": 1}],
             [{"language": "c", "syntaxOutcome": True}],
             [{"language": "other", "syntaxOutcome": "unchecked"}],
-            [{"language": "rust", "syntaxOutcome": "unchecked"}] * 31,
+            [{"language": "rust", "syntaxOutcome": "unchecked"}] * 41,
         ):
             with self.subTest(case=repr(results)[:35]), self.assertRaises(
                 SmokeReportRejected
