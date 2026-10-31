@@ -48,12 +48,12 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v6 also recognizes `lineloom-code` and
+The source benchmark v7 also recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v6`, which does not
+The Ollama report protocol is `lineloom-synthetic-v7`, which does not
 compare with earlier v1–v5 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
@@ -85,6 +85,24 @@ readiness. A correct alternative implementation may be recorded as a
 non-match. Inspect actual suggestions **locally** before making any claim
 about quality.
 
+## 4b. Rust/C/C++ generated delimiter warnings (Ollama v7)
+
+The synthetic benchmark now inspects the **actual normalized generated insertion**
+for balanced parentheses, braces and brackets together with each original public
+prefix/suffix. A bounded, pure JavaScript lexical scanner recognizes common
+strings, comments, Rust lifetimes and raw strings, and C++ raw strings.
+Detected mismatches are counted as a source-free `nativeDelimiterMismatch`
+**format warning**. Unsupported/ambiguous cases are skipped rather than
+declared good. It does not execute code, call compilers, read workspace files or
+add external packages.
+
+A clean result means **only** that the scanner did not see a delimiter
+problem. It is not parsing, compilation, semantic validation, proof of safety
+or evidence of model usefulness. Rust/C/C++ `generatedSyntax` remain
+**unchecked**, distinct from Python AST and TypeScript parser results.
+Because format diagnostics changed, v7 reports cannot be directly compared
+with v6; re-run both candidates with the same v7 revision.
+
 ## 4a. Generated Python and TypeScript grammar checks (Ollama v6)
 
 The opt-in loopback-only `model:eval` runner parses original, checked-in
@@ -108,7 +126,7 @@ than checked grammar passes could support, and comparisons with different
 Python checked counts. Its regression review flags increases in Python or
 TypeScript parser failures, but neither flags nor passes prove model quality.
 
-**Re-run both baselines under v6.** Earlier Ollama v1–v5 reports are
+**Re-run both baselines under v7.** Earlier Ollama v1–v5 reports are
 incompatible. For comparable syntax evidence, use the same installed Python
 interpreter and TypeScript dependency, alongside matching model hardware
 and request settings. Python AST and TypeScript parser success do not imply
