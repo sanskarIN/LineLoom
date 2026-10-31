@@ -274,4 +274,78 @@ describe("Rust feature-aware autocomplete guidance", () => {
     expect(generic.prompt).toContain("do not invent unnecessary unsafe blocks");
   });
 
+
+  it("recognizes Rust async closures and AsyncFn-family bounds in instruction mode", () => {
+    for (const source of [
+      "fn task() { let callback = async |item: i32| ",
+      "fn task() { let callback = async move |item| ",
+      "fn task() { let callback = async || ",
+      "fn task() { let callback = async move || ",
+      "fn task<F: AsyncFn(i32) -> i32>(callback: F) { ",
+      "fn task<F: AsyncFnMut(i32) -> i32>(callback: F) { ",
+      "fn task<F: AsyncFnOnce(i32) -> i32>(callback: F) { "
+    ]) {
+      const hints = rustContextHints(source);
+      expect(hints.some(h => h.includes("AsyncFn bounds")), source).toBe(true);
+      expect(hints.some(h => h.includes("closure captures")), source).toBe(true);
+      expect(hints.length).toBeLessThanOrEqual(4);
+    }
+    expect(prompt("let callback = async |x| ")).toContain("borrowing across suspension points");
+  });
+
+  it("adds fixed precise-capture guidance for Rust return-position impl Trait use bounds", () => {
+    for (const source of [
+      "fn borrow<'a, T>(value: &'a T) -> impl Sized + use<'a, T> { ",
+      "fn borrow(value: &str) -> impl Sized + use<'_> { ",
+      "fn owned<T: Clone>(value: T) -> impl Clone + use<T> { ",
+      "fn array<const N: usize>() -> impl Sized + use<N> { "
+    ]) {
+      const hints = rustContextHints(source);
+      expect(hints.some(h => h.includes("lifetime-first ordering")), source).toBe(true);
+      expect(hints.some(h => h.includes("in-scope type/const generics")), source).toBe(true);
+      expect(hints.length).toBeLessThanOrEqual(4);
+    }
+    const guidance = prompt("fn borrow<'a, T>(x: &'a T) -> impl Sized + use<'a, T> { ");
+    expect(guidance).toContain("explicit capture requirements");
+    // A regular Rust use import is not an RPIT capture bound.
+    expect(rustContextHints("use crate::shared::Thing;\nfn plain() { ")
+      .some(h => h.includes("capture bounds"))).toBe(false);
+  });
+
+  it("never promotes async closures or capture bounds from Rust comments and literals", () => {
+    const hidden = [
+      '// async |x| {} impl Clone + use<T>',
+      "/* async move |x| {} impl Clone + use<'a, T> */",
+      '"async |x| {} impl Clone + use<T>"',
+      "r#\"async move || {} impl Clone + use<'_>\"#"
+    ];
+    for (const line of hidden) {
+      const source = "fn normal() { let text = 1;\n" + line + "\n";
+      const hints = rustContextHints(source);
+      expect(hints.some(h => h.includes("AsyncFn bounds")), line).toBe(false);
+      expect(hints.some(h => h.includes("capture bounds")), line).toBe(false);
+    }
+    const secret = "PRIVATE_SOURCE_DO_NOT_REPEAT";
+    const hints = rustContextHints("/* " + secret + " async |x| {} + use<T> */\nasync |x| ");
+    expect(hints.some(h => h.includes("AsyncFn bounds"))).toBe(true);
+    expect(JSON.stringify(hints)).not.toContain(secret);
+  });
+
+  it("preserves byte-exact native FIM for async closures and precise capture code", () => {
+    const before = "fn task<'a, T>(value: &'a T) -> impl Sized + use<'a, T> { let callback = async move |x| ";
+    const context = extractContext(before + " }; callback(value) }", before.length, 30_000);
+    for (const model of ["qwen2.5-coder:1.5b", "lineloom-code:dev"]) {
+      expect(buildPrompt(rust, context, model)).toEqual({
+        prompt: context.prefix, suffix: context.suffix
+      });
+    }
+    const wrapped = buildPrompt(rust, context, "generic-local:latest");
+    expect(wrapped.prompt).toContain("AsyncFn bounds");
+    expect(wrapped.prompt).toContain("explicit capture requirements");
+    const withReference = buildPrompt(rust, context, "lineloom-code:dev", ["fn sample() {}"]);
+    expect(withReference.suffix).toBeUndefined();
+    expect(withReference.prompt).toContain("untrusted reference data");
+    expect(withReference.prompt).toContain("capture bounds");
+  });
+
 });
