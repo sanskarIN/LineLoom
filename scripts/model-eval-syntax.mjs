@@ -43,7 +43,7 @@ function classifyPythonSource(source) {
     windowsHide: true, env: PYTHON_ENV, stdio: ["pipe", "pipe", "ignore"]
   });
   if (result.status !== 0 || result.error ||
-      (result.stdout !== "passed\n" && result.stdout !== "failed\n")) {
+      !/^(?:passed|failed)\r?\n$/.test(result.stdout)) {
     return "unchecked";
   }
   return result.stdout.trim();
