@@ -124,7 +124,7 @@ test("failed local requests remain in the attempted scope and force review", asy
 
 test("head-to-head metrics distinguish candidate/baseline wins, ties and failed requests", async () => {
   const calls = new Map();
-  const subset = fixtures.slice(0, 6);
+  const subset = fixtures;
   const compare = await runPairedSyntheticBenchmarks(subset, { ...options, runs: 2 },
     async (fixture, model) => {
       const seen = calls.get(model) ?? 0;
@@ -145,11 +145,11 @@ test("head-to-head metrics distinguish candidate/baseline wins, ties and failed 
     bothExact: paired.bothExact, neitherExact: paired.neitherExact,
     failedPairs: paired.failedPairs
   }, {
-    pairs: 12, comparablePairs: 10, candidateWins: 2, baselineWins: 2,
-    bothExact: 2, neitherExact: 4, failedPairs: 2
+    pairs: 16, comparablePairs: 14, candidateWins: 2, baselineWins: 2,
+    bothExact: 2, neitherExact: 8, failedPairs: 2
   });
   assert.equal(paired.byLanguage.rust.failedPairs, 2);
-  assert.equal(Object.values(paired.byCategory).reduce((n, x) => n + x.pairs, 0), 12);
+  assert.equal(Object.values(paired.byCategory).reduce((n, x) => n + x.pairs, 0), 16);
   assert.equal(compare.anyRequestFailed, true);
   assert.ok(!JSON.stringify(compare).includes(subset[0].id));
   assert.ok(!JSON.stringify(compare).includes("NEVER_SHOW_USER_SOURCE"));
