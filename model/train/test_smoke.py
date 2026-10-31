@@ -18,11 +18,11 @@ except ImportError:
 class LocalSmokeTests(unittest.TestCase):
     def test_only_original_public_synthetic_cases_are_eligible(self):
         all_items = smoke.select_public_fixtures("all")
-        self.assertEqual(len(all_items), 30)
-        self.assertEqual(len({x["id"] for x in all_items}), 30)
+        self.assertEqual(len(all_items), 40)
+        self.assertEqual(len({x["id"] for x in all_items}), 40)
         for language in smoke.LANGUAGES:
             selected = smoke.select_public_fixtures(language)
-            self.assertEqual(len(selected), 6)
+            self.assertEqual(len(selected), 8)
             self.assertTrue(all(s["language"] == language for s in selected))
 
     def test_fim_boundary_normalization_is_conservative(self):
@@ -230,8 +230,8 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         result = json.loads(proc.stdout)
         self.assertEqual(result["stage"], "OFFLINE_SYNTHETIC_PLAN_ONLY")
-        self.assertEqual(result["syntheticFixtures"], 6)
-        self.assertEqual(result["perLanguage"]["cpp"], 6)
+        self.assertEqual(result["syntheticFixtures"], 8)
+        self.assertEqual(result["perLanguage"]["cpp"], 8)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
         self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v9")
