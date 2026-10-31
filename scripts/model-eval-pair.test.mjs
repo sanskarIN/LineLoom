@@ -83,6 +83,12 @@ test("run order alternates complete model passes and leaves source and tags priv
   assert.equal(compare.comparison.scopeVerified, true);
   assert.equal(compare.comparison.baseline.strictExactMatches, 0);
   assert.equal(compare.comparison.candidate.strictExactMatches, 24);
+  assert.equal(compare.pairedStrictExact.pairs, 24);
+  assert.equal(compare.pairedStrictExact.comparablePairs, 24);
+  assert.equal(compare.pairedStrictExact.candidateWins, 24);
+  assert.equal(compare.pairedStrictExact.baselineWins, 0);
+  assert.equal(compare.pairedStrictExact.byLanguage.rust.candidateWins, 24);
+  assert.equal(compare.pairedStrictExact.byLanguage.cpp.pairs, 0);
   assert.equal(compare.comparison.outputTokenAccounting.baseline.generatedTokens, 192);
   assert.equal(compare.comparison.outputTokenAccounting.outputVolumeComparable, true);
   assert.equal(compare.runOrder, "alternating-full-pass-v1");
@@ -105,10 +111,65 @@ test("failed local requests remain in the attempted scope and force review", asy
     });
   assert.equal(result.anyRequestFailed, true);
   assert.equal(result.comparison.candidate.failed, 1);
+  assert.equal(result.pairedStrictExact.failedPairs, 1);
+  assert.equal(result.pairedStrictExact.comparablePairs, 7);
+  assert.equal(result.pairedStrictExact.baselineWins, 0);
+  assert.equal(result.pairedStrictExact.candidateWins, 0);
   assert.equal(result.comparison.baseline.attempts, 8);
   assert.equal(result.comparison.candidate.attempts, 8);
   assert.ok(result.comparison.regressionReview.flags.includes("more-failed-requests"));
   assert.equal(result.comparison.outputTokenAccounting.candidate.checked, 7);
+});
+
+
+test("head-to-head metrics distinguish candidate/baseline wins, ties and failed requests", async () => {
+  const calls = new Map();
+  const subset = fixtures.slice(0, 6);
+  const compare = await runPairedSyntheticBenchmarks(subset, { ...options, runs: 2 },
+    async (fixture, model) => {
+      const seen = calls.get(model) ?? 0;
+      calls.set(model, seen + 1);
+      const pass = Math.floor(seen / subset.length);
+      const i = subset.indexOf(fixture);
+      const baseline = model === options.baseline;
+      // Candidate-only, baseline-only, both, neither, candidate failure,
+      // baseline failure, respectively. Failures occur only in the first pass.
+      const exact = i === 0 ? !baseline : i === 1 ? baseline : i === 2;
+      const failed = pass === 0 && ((i === 4 && !baseline) || (i === 5 && baseline));
+      return trial(fixture, { ok: !failed, exact: !failed && exact });
+    });
+  const paired = compare.pairedStrictExact;
+  assert.deepEqual({
+    pairs: paired.pairs, comparablePairs: paired.comparablePairs,
+    candidateWins: paired.candidateWins, baselineWins: paired.baselineWins,
+    bothExact: paired.bothExact, neitherExact: paired.neitherExact,
+    failedPairs: paired.failedPairs
+  }, {
+    pairs: 12, comparablePairs: 10, candidateWins: 2, baselineWins: 2,
+    bothExact: 2, neitherExact: 4, failedPairs: 2
+  });
+  assert.equal(paired.byLanguage.rust.failedPairs, 2);
+  assert.equal(Object.values(paired.byCategory).reduce((n, x) => n + x.pairs, 0), 12);
+  assert.equal(compare.anyRequestFailed, true);
+  assert.ok(!JSON.stringify(compare).includes(subset[0].id));
+  assert.ok(!JSON.stringify(compare).includes("NEVER_SHOW_USER_SOURCE"));
+});
+
+test("mismatched, reordered or contradictory evaluation results fail closed", async () => {
+  for (const mutate of [
+    (fixture, model, result) => model === options.candidate
+      ? { ...result, fixtureId: "wrong-public-id" } : result,
+    (fixture, model, result) => model === options.baseline
+      ? { ...result, language: "python" } : result,
+    (fixture, model, result) => model === options.candidate
+      ? { ...result, ok: false, exact: true } : result
+  ]) {
+    await assert.rejects(
+      runPairedSyntheticBenchmarks(fixtures, { ...options, runs: 1 },
+        async (fixture, model) => mutate(fixture, model, trial(fixture))),
+      /inconsistent-paired-result/
+    );
+  }
 });
 
 test("CLI dry run is strictly offline and errors never echo secret arguments", () => {
