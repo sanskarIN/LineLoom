@@ -48,13 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v7 also recognizes `lineloom-code` and
+The source benchmark v8 also recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v7`, which does not
-compare with earlier v1–v6 reports; regenerate both reports locally.
+The Ollama report protocol is `lineloom-synthetic-v8`, which does not
+compare with earlier v1–v7 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -108,7 +108,7 @@ than checked grammar passes could support, and comparisons with different
 Python checked counts. Its regression review flags increases in Python or
 TypeScript parser failures, but neither flags nor passes prove model quality.
 
-**Re-run both baselines under v7.** Earlier Ollama v1–v6 reports are
+**Re-run both baselines under v8.** Earlier Ollama v1–v7 reports are
 incompatible. For comparable syntax evidence, use the same installed Python
 interpreter and TypeScript dependency, alongside matching model hardware
 and request settings. Python AST and TypeScript parser success do not imply
@@ -135,6 +135,34 @@ or evidence of model usefulness. Rust/C/C++ `generatedSyntax` remain
 **unchecked**, distinct from Python AST and TypeScript parser results.
 Because format diagnostics changed, v7 reports cannot be directly compared
 with v6; re-run both candidates with the same v7 revision.
+
+## 4c. Native generated-code scanner coverage (Ollama v8)
+
+The bounded Rust, C and C++ delimiter heuristic now returns an **explicit**
+`clean`, `mismatch` or `unchecked` outcome per completed native-language
+synthetic request. `nativeStructureDiagnostics` reports, for each native
+language, the count of **completed** requests and each of those three outcomes.
+The model response remains private and in memory; reports contain fixed
+names, bounded integer counts, and no source or fixture IDs.
+
+- `clean` means the lexical scanner found no delimiter mismatch. It
+  **does not mean valid syntax, safe or correct code, nor a compiled program**.
+- `mismatch` means this heuristic observed an unmatched delimiter,
+  unfinished ordinary/raw string or comment. This also contributes the
+  existing `nativeDelimiterMismatch` format signal.
+- `unchecked` means the scanner did not establish a lexical
+  result (for example an unsupported/ambiguous case or an oversized input).
+  Missing instrumentation is **also counted unchecked**, never clean.
+  Failed HTTP/model requests are excluded from completed scanner counts and
+  remain in the benchmark's separate failure tally.
+
+The offline comparator refuses impossible totals, unknown fields and any
+disagreement between the mismatch count and corresponding format signal.
+A rise in mismatch warnings is flagged as a comparable regression **only
+when the number of inspected native completions is equal**; otherwise it
+flags the differing coverage for manual review. Neither comparison is a
+release approval. The protocol changes to `lineloom-synthetic-v8`;
+v7 and older reports must be rerun for controlled comparison.
 
 ## 5. Sanitize and review the report
 
