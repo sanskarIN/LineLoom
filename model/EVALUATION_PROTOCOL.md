@@ -100,6 +100,18 @@ candidate or baseline loss. These are descriptive strict-string scores,
 not compiler success, statistical significance or proof of a better
 autocomplete model. Repeated fixtures are correlated observations.
 
+`pairedStrictExact.fixtureStability` also counts each **unique fixture once**
+regardless of repetitions. With at least two runs, only fixtures where both
+models succeeded on **every repetition** can be classified as
+`consistentCandidateWins`, `consistentBaselineWins`,
+`consistentBothExact` or `consistentNeitherExact`. A change of outcome
+across fully successful repetitions is `mixed`; any failed paired attempt
+is `incomplete`. With just one run, the outcome is `singleRun` (or
+`incomplete`), never called consistent. `fullyComparable` independently
+counts fixtures without failures. Per-language and per-category summaries
+never expose fixture IDs. Stability is descriptive, not a statistical
+significance test, independent holdout or evidence of model readiness.
+
 A failed model request still contributes a failure to the comparison and
 sets the process exit code to nonzero; do not ignore such failures when
 interpreting results. If parser coverage differs, the comparator fails
