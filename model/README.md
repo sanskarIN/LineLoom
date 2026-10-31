@@ -85,6 +85,17 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v7 native generated-code structure warnings (development source)
+
+The real local Ollama synthetic evaluator adds a **bounded lexical** diagnostic
+for generated Rust, C and C++ FIM insertions. Mismatched delimiters and
+unterminated strings/comments are counted as `nativeDelimiterMismatch`
+format signals. It does not invoke compilers or interpret code; **clean is
+not compiler-valid**, and generated Rust/C/C++ grammar outcomes remain
+unchecked. Compare candidate models only after rerunning both under
+`lineloom-synthetic-v7`. See
+[the evaluation protocol](EVALUATION_PROTOCOL.md#4b-rustcc-generated-delimiter-warnings-ollama-v7).
+
 ## Ollama v6 Python AST syntax evidence (development source)
 
 The local synthetic Ollama evaluator can now check generated **Python** grammar
@@ -95,8 +106,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v6` and cannot be compared
-to previous v1–v5 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v7` and cannot be compared
+to previous v1–v6 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**

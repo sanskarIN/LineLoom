@@ -14,7 +14,7 @@ test("fixed format signal enums cannot reproduce generated source", () => {
   assert.deepEqual(output, ["markdownFence"]);
   assert.ok(FORMAT_SIGNAL_NAMES.includes(output[0]));
   assert.ok(!JSON.stringify(output).includes("SECRET_MARKER"));
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v6");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v7");
 });
 test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify(" \r\n "), ["empty"]);
@@ -42,4 +42,12 @@ test("counts overlapping indicators, never prints raw model results", () => {
   assert.equal(report.formatDiagnostics.signals.markdownFence, 1);
   assert.equal(report.formatDiagnostics.signals.chatPreamble, 1);
   assert.ok(!JSON.stringify(report.formatDiagnostics).includes("private-model:tag"));
+});
+
+test("native mismatches are source-free format warnings, never a compiler pass", () => {
+  const rust = { language: "rust", prefix: "fn sample() { let n = (", suffix: "); }" };
+  assert.deepEqual(classifyCompletionFormat("1", rust, "1"), []);
+  assert.deepEqual(classifyCompletionFormat("1)", rust, "1)"), ["nativeDelimiterMismatch"]);
+  assert.deepEqual(classifyCompletionFormat("1)", { ...rust, language: "python" }, "1)"), []);
+  assert.equal(FORMAT_SIGNAL_NAMES.includes("nativeDelimiterMismatch"), true);
 });
