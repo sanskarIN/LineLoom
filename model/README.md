@@ -85,6 +85,22 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v6 Python AST syntax evidence (development source)
+
+The local synthetic Ollama evaluator can now check generated **Python** grammar
+with an isolated, bounded Python 3 stdlib `ast.parse` subprocess, alongside
+its locked TypeScript parser. Neither path executes generated continuations.
+If local Python is unavailable, the result is explicitly `unchecked`, never
+a false parser success. The source-free comparator requires matching Python
+parser coverage and reports parser failure deltas. Rust, C and C++ model
+suggestions remain grammar-unchecked.
+
+The current report format is `lineloom-synthetic-v6` and cannot be compared
+to previous v1–v5 Ollama reports; rerun both models with the same parser
+environment. Historical notes above describe the earlier v5 development
+milestone. **No local inference, trained LineLoom Code weights, model-quality
+baseline, or release publication is established by these changes.**
+
 ## Source and safety boundaries
 
 Existing LineLoom endpoint approval, workspace trust, file exclusions, per-language model selection, cancellation and bounded prompt windows remain in force. The benchmark introduces **no new inference path inside the extension**; it is an explicitly invoked development command.
