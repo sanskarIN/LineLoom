@@ -19,7 +19,7 @@ preserves apostrophes that begin lifetime names.
 The supported *guidance cases*, not model-quality guarantees, include:
 Result/Option and error propagation, async/.await, trait/impl methods and
 associated types, pattern-match arms/guards, ownership/borrowing/lifetimes,
-iterator adapters/closures, macro invocations, generics/where bounds, `if let`/`while let`/`let-else`, const functions/const generics/associated constants, and unsafe/FFI contexts.
+iterator adapters/closures (including `async |x|` and `async move |x|` and `AsyncFn*` bounds), macro invocations, generics/where bounds (including return-position `impl Trait + use<'a, T>` precise capture), `if let`/`while let`/`let-else`, const functions/const generics/associated constants, and unsafe/FFI contexts.
 
 
 The additional guidance is fixed text derived from masked, already-approved
@@ -45,7 +45,7 @@ characters. The scan remains limited to the existing 30,000-character
 window and derives only the same allowlisted contextual hints. No file
 reads, Rust compilation, token uploads or model inference were added.
 
-Offline unit cases cover long nested comments, complete and incomplete
+Offline unit cases include async closures, `AsyncFn*` bounds, precise capture, masked mentions in comments/literals, unchanged native FIM requests, and long nested comments, complete and incomplete
 ordinary/byte/C raw strings with 0–255 hashes, Rust lifetimes, character
 literals and known post-literal code. These tests establish lexical
 regression behavior, **not** a measured editor latency improvement or
@@ -61,7 +61,7 @@ desktop QA below are still required.
 2. Repeat in a function returning `Result<T, E>`, including a correct
    `?` expression; validate the suggested code with your own Rust
    toolchain, and do not claim this scanner performed type checking.
-3. Test `async fn`, `.await`, a trait impl with an associated type,
+3. Test `async fn`, `.await`, `async |x|` / `async move |x|` closures, `AsyncFn` / `AsyncFnMut` / `AsyncFnOnce` bounds, and return-position `impl Trait + use<'a, T>` precise capture. Check that generics and lifetime capture constraints follow the active Rust edition. Also test a trait impl with an associated type,
    `&'a mut` references, iterator/closure adapters, and a
    `macro_rules!` invocation. Record failures as well as successes.
 4. Move the cursor inside a line comment, nested block comment, normal
