@@ -134,7 +134,7 @@ test("LineLoom Code auto dry-run selects FIM and binds the native request finger
   const data = JSON.parse(stdout);
   assert.equal(data.mode, "fim");
   assert.equal(data.networkCalls, 0);
-  assert.equal(data.benchmarkProtocol, "lineloom-synthetic-v8");
+  assert.equal(data.benchmarkProtocol, "lineloom-synthetic-v9");
   assert.equal(data.requestSpecSha256, requestSpecSha256(
     fixtures.filter(item => item.language === "typescript"), "fim"
   ));
