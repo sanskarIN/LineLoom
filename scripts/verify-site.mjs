@@ -55,10 +55,37 @@ test("site has semantic layout, accessible navigation, honest stable-release pri
     "no built-in telemetry",
     "lineloom.crossFileContext",
     "Go, Java, C and C++ remain experimental",
+    'id="research"',
   ]) assert.ok(page.includes(fragment), "Missing site requirement: " + fragment);
   assert.match(page, /stable release/i);
   // Both official registries have public listings, but publish versions independently.
   assert.ok(page.includes("https://open-vsx.org/extension/SanskarCodes/lineloom"), "Open VSX listing must be linked");
+});
+
+test("model research page distinguishes v9 source, public preview and real inference evidence", () => {
+  for (const phrase of [
+    "12</strong><span>language IDs in v1.4.2 preview",
+    "Nine language IDs in GitHub stable v1.3.0",
+    "HTML <sup>preview</sup>",
+    "CSS <sup>preview</sup>",
+    "Lua <sup>preview</sup>",
+    'id="research"',
+    'href="#research"',
+    "40",
+    "v9 evaluation protocol",
+    "Paired local-model trials",
+    "no first-party LineLoom Code model weights have been trained or published",
+    "no real-model quality or editor acceptance benchmark is verified",
+    "model/EVALUATION_PROTOCOL.md",
+  ]) assert.ok(page.includes(phrase), "Missing research disclosure: " + phrase);
+  // A published VSIX and source-only benchmark are different artifacts.
+  const releasedText = page.match(/<strong>Latest GitHub testing preview: v1\.4\.2<\/strong>[^\n]*<\/p>/)?.[0];
+  assert.ok(releasedText);
+  assert.ok(!releasedText.includes("v9"), "Do not imply source-only v9 evaluator shipped with v1.4.2");
+  const pagesGuide = readFileSync(resolve(root, "docs/github-pages.md"), "utf8");
+  assert.match(pagesGuide, /Verified Pages status \(October 31, 2026\)/);
+  assert.match(pagesGuide, /already activated for the repository/);
+  assert.ok(page.includes("not part of the published v1.3.0 stable extension"));
 });
 
 test("every local asset and fragment navigation target exists", () => {
@@ -136,7 +163,7 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
   assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
   assert.match(pagesGuide, /GitHub v1\.3\.0 stable is the latest publicly verified GitHub stable download/);
-  assert.match(pagesGuide, /GitHub .*v1\.3\.1.*latest published pre-release/);
+  assert.match(pagesGuide, /GitHub .*v1\.4\.2.*latest verified published pre-release/);
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });
 
