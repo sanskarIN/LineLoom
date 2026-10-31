@@ -19,7 +19,7 @@ test("decodes ordinary Ollama NDJSON and captures first-token timing", async () 
   const result = await consumeOllamaStream(stream([
     entry("ab"), entry("cd"), entry("", true)
   ]), 100, () => 125);
-  assert.deepEqual(result, { output: "abcd", firstTokenMs: 25 });
+  assert.deepEqual(result, { output: "abcd", firstTokenMs: 25, tokenUsage: null });
 });
 
 test("handles unicode codepoint divided over transport chunks", async () => {
@@ -30,13 +30,13 @@ test("handles unicode codepoint divided over transport chunks", async () => {
   const result = await consumeOllamaStream(stream([
     bytes.slice(0, at + 2), bytes.slice(at + 2)
   ]), 5, () => 15);
-  assert.deepEqual(result, { output: "🚀", firstTokenMs: 10 });
+  assert.deepEqual(result, { output: "🚀", firstTokenMs: 10, tokenUsage: null });
 });
 
 test("allows a final complete NDJSON object without a trailing newline", async () => {
   const body = JSON.stringify({ response: "42;", done: true });
   const result = await consumeOllamaStream(stream([body]), 0, () => 7);
-  assert.deepEqual(result, { output: "42;", firstTokenMs: 7 });
+  assert.deepEqual(result, { output: "42;", firstTokenMs: 7, tokenUsage: null });
 });
 
 test("rejects incomplete, malformed or server-error responses", async () => {
@@ -76,7 +76,7 @@ test("allows only trailing whitespace after a complete terminal event", async ()
   const result = await consumeOllamaStream(
     stream([entry("safe", true), "  \n\t\n", " \t"]), 0, () => 1
   );
-  assert.deepEqual(result, { output: "safe", firstTokenMs: 1 });
+  assert.deepEqual(result, { output: "safe", firstTokenMs: 1, tokenUsage: null });
 });
 
 test("aborts a server that never closes its stream after the terminal frame", async () => {
