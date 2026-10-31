@@ -14,6 +14,10 @@ LineLoom's VS Code extension already supports more languages; this **dedicated m
 
 C and C++ are **separate** evaluation targets. JavaScript, Java, Kotlin and Go remain supported by the extension with existing Ollama models, but **are not initial dedicated-model targets**.
 
+## Native-language reference verification
+
+Use `npm run model:reference:native` to compiler-check the **original public expected insertions** for Rust, C and C++. Missing toolchains are reported as unchecked; `npm run model:reference:native:strict` requires all 18 reference checks. This is a separate fixture QA stage, **not** generated-code compiler validation or real-model acceptance. See [native reference compiler QA](../docs/qa/native-reference-compiler-qa.md) for toolchains, safety boundaries and evidence limits.
+
 ## Running the first evaluation harness
 
 The checked-in `fixtures/completion-v1.json` contains **30 small, original, synthetic examples**, six per language. It is **not a training corpus**. A strict exact string comparison is a narrow regression metric, not a claim that the generated code compiles or is useful. Equivalent completions can be marked wrong.
