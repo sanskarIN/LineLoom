@@ -442,9 +442,9 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       candidateFailed: candidate.generatedSyntax.byLanguage.typescript.failed,
       failedDelta: candidate.generatedSyntax.byLanguage.typescript.failed -
         baseline.generatedSyntax.byLanguage.typescript.failed,
-      baselineUnchecked: baseline.generatedSyntax.unchecked,
-      candidateUnchecked: candidate.generatedSyntax.unchecked,
-      interpretation: "TypeScript parser grammar only; Rust, C and C++ unchecked."
+      baselineUnchecked: baseline.generatedSyntax.byLanguage.typescript.unchecked,
+      candidateUnchecked: candidate.generatedSyntax.byLanguage.typescript.unchecked,
+      interpretation: "TypeScript parser grammar only; unchecked counts are TypeScript-specific. Rust, C and C++ remain unchecked separately."
     },
     completionFormatSignalDelta: Object.fromEntries(FORMAT_SIGNAL_NAMES.map(name =>
       [name, candidate.formatDiagnostics.signals[name] - baseline.formatDiagnostics.signals[name]])),
