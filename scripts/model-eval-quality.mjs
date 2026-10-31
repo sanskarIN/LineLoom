@@ -3,9 +3,11 @@
  * No raw model output is written to benchmark summaries or logs.
  * These are heuristics, not a proof of correctness or harmlessness.
  */
+import { inspectNativeGeneratedStructure } from "./model-eval-native-structure.mjs";
+
 export const FORMAT_SIGNAL_NAMES = Object.freeze([
   "empty", "markdownFence", "chatPreamble", "specialToken",
-  "unsafeUnicode", "prefixEcho", "suffixEcho"
+  "unsafeUnicode", "prefixEcho", "suffixEcho", "nativeDelimiterMismatch"
 ]);
 function unsafeUnicode(value) {
   for (const character of value) {
@@ -20,7 +22,7 @@ function unsafeUnicode(value) {
   }
   return false;
 }
-export function classifyCompletionFormat(raw, fixture) {
+export function classifyCompletionFormat(raw, fixture, insertion = raw) {
   const generated = raw.replace(/\r\n?/g, "\n");
   const prefix = fixture.prefix.replace(/\r\n?/g, "\n");
   const suffix = fixture.suffix.replace(/\r\n?/g, "\n");
@@ -40,6 +42,11 @@ export function classifyCompletionFormat(raw, fixture) {
   const followingCode = suffix.trim();
   if (followingCode.length >= 12 && generated.includes(followingCode.slice(0, 80))) {
     flags.add("suffixEcho");
+  }
+  // Structural warnings are separate from grammar/compile correctness. An
+  // unchecked lexer path does not count as a failure or a syntax pass.
+  if (inspectNativeGeneratedStructure(fixture, insertion) === "mismatch") {
+    flags.add("nativeDelimiterMismatch");
   }
   return FORMAT_SIGNAL_NAMES.filter(name => flags.has(name));
 }
