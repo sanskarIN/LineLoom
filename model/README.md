@@ -85,6 +85,28 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v9 output-token measurement (development source)
+
+Real opt-in, local Ollama evaluation can now record terminal `eval_count`
+and `eval_duration` metadata as **source-free** `tokenAccounting`. Its
+per-language totals distinguish checked responses from missing (`unchecked`)
+metadata. The total tokens-per-second figure is derived from Ollama's
+reported output tokens divided by its **generation-only** duration; it is
+null when no duration is measured, and does not attest hardware, server
+configuration, cache conditions or code quality.
+
+The offline comparison validates the counter totals and refuses to flag
+a meaningful completed-request p95 slowdown unless the number of completed
+requests, token telemetry coverage and **per-language output-token totals**
+match. A model generating longer completions is not silently judged slower
+based on unadjusted completion latency. These are still just synthetic
+measurements; user-editor acceptance, generation validity and real
+checkpoint testing must be verified independently.
+
+This change advances the Ollama report identity to `lineloom-synthetic-v9`.
+Older reports must be rerun on the reviewed fixture set to compare.
+See [evaluation protocol section 4d](EVALUATION_PROTOCOL.md#4d-ollama-generation-token-telemetry-ollama-v9).
+
 ## Ollama v8 native scanner coverage accounting (development source)
 
 The optional local evaluator now records `nativeStructureDiagnostics` for
@@ -126,8 +148,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v8` and cannot be compared
-to previous v1–v7 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v9` and cannot be compared
+to previous v1–v8 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**
