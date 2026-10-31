@@ -27,7 +27,8 @@ export function scanRustCode(source: string): RustScan {
     for (const c of part) masked.push(c === "\n" ? "\n" : " ");
   };
   while (index < text.length) {
-    const rest = text.slice(index);
+    // Read at the cursor without allocating the remaining ~30 KB suffix
+    // for every token (particularly expensive on long Rust files).
     const current = text[index];
     if (state === "line-comment") {
       if (current === "\n") {
@@ -38,11 +39,11 @@ export function scanRustCode(source: string): RustScan {
       continue;
     }
     if (state === "block-comment") {
-      if (rest.startsWith("/*")) {
+      if (text.startsWith("/*", index)) {
         blockDepth++;
         mask("/*");
         index += 2;
-      } else if (rest.startsWith("*/")) {
+      } else if (text.startsWith("*/", index)) {
         blockDepth--;
         mask("*/");
         index += 2;
@@ -55,7 +56,7 @@ export function scanRustCode(source: string): RustScan {
     }
     if (state === "raw-string") {
       const end = '"' + rawHashes;
-      if (rest.startsWith(end)) {
+      if (text.startsWith(end, index)) {
         mask(end);
         index += end.length;
         state = "code";
@@ -76,13 +77,13 @@ export function scanRustCode(source: string): RustScan {
       index++;
       continue;
     }
-    if (rest.startsWith("//")) {
+    if (text.startsWith("//", index)) {
       mask("//");
       index += 2;
       state = "line-comment";
       continue;
     }
-    if (rest.startsWith("/*")) {
+    if (text.startsWith("/*", index)) {
       mask("/*");
       index += 2;
       state = "block-comment";
@@ -91,13 +92,21 @@ export function scanRustCode(source: string): RustScan {
     }
     // Recognize ordinary, byte, and C raw strings through Rust's 255-hash
     // delimiter limit; do not treat raw identifiers like r#type as strings.
-    const raw = /^(?:br|cr|r)(#{0,255})"/u.exec(rest);
-    if (raw && raw[0]) {
-      rawHashes = raw[1] ?? "";
-      mask(raw[0]);
-      index += raw[0].length;
-      state = "raw-string";
-      continue;
+    // Only inspect at most 255 delimiter chars, not the whole suffix.
+    // Keep the previous lexical behavior for r, br and cr prefixes.
+    const rawLead = current === "r" ? 1 :
+      ((current === "b" || current === "c") && text[index + 1] === "r" ? 2 : 0);
+    if (rawLead) {
+      let quote = index + rawLead;
+      let hashes = 0;
+      while (hashes < 255 && text[quote] === "#") { hashes++; quote++; }
+      if (text[quote] === '"') {
+        rawHashes = text.slice(index + rawLead, quote);
+        mask(text.slice(index, quote + 1));
+        index = quote + 1;
+        state = "raw-string";
+        continue;
+      }
     }
     if (current === '"' || ((current === "b" || current === "c") && text[index + 1] === '"')) {
       const opening = current === '"' ? '"' : current + '"';
@@ -107,7 +116,7 @@ export function scanRustCode(source: string): RustScan {
       continue;
     }
     // Complete Rust char or byte-char tokens are masked; lifetimes are not.
-    const character = /^(?:b)?'(?:\\.|[^'\\\n])'/u.exec(rest);
+    const character = /^(?:b)?'(?:\\.|[^'\\\n])'/u.exec(text.slice(index, index + 5));
     if (character && character[0]) {
       mask(character[0]);
       index += character[0].length;
