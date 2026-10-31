@@ -89,6 +89,16 @@ test("run order alternates complete model passes and leaves source and tags priv
   assert.equal(compare.pairedStrictExact.baselineWins, 0);
   assert.equal(compare.pairedStrictExact.byLanguage.rust.candidateWins, 24);
   assert.equal(compare.pairedStrictExact.byLanguage.cpp.pairs, 0);
+  const stable = compare.pairedStrictExact.fixtureStability;
+  assert.equal(stable.fixtures, 8);
+  assert.equal(stable.runsPerFixture, 3);
+  assert.equal(stable.fullyComparable, 8);
+  assert.equal(stable.consistentCandidateWins, 8);
+  assert.equal(stable.singleRun, 0);
+  assert.equal(stable.mixed, 0);
+  assert.equal(stable.byLanguage.rust.consistentCandidateWins, 8);
+  assert.equal(stable.byLanguage.python.fixtures, 0);
+  assert.equal(Object.values(stable.byCategory).reduce((n, v) => n + v.fixtures, 0), 8);
   assert.equal(compare.comparison.outputTokenAccounting.baseline.generatedTokens, 192);
   assert.equal(compare.comparison.outputTokenAccounting.outputVolumeComparable, true);
   assert.equal(compare.runOrder, "alternating-full-pass-v1");
@@ -115,6 +125,11 @@ test("failed local requests remain in the attempted scope and force review", asy
   assert.equal(result.pairedStrictExact.comparablePairs, 7);
   assert.equal(result.pairedStrictExact.baselineWins, 0);
   assert.equal(result.pairedStrictExact.candidateWins, 0);
+  assert.equal(result.pairedStrictExact.fixtureStability.fixtures, 8);
+  assert.equal(result.pairedStrictExact.fixtureStability.singleRun, 7);
+  assert.equal(result.pairedStrictExact.fixtureStability.incomplete, 1);
+  assert.equal(result.pairedStrictExact.fixtureStability.fullyComparable, 7);
+  assert.equal(result.pairedStrictExact.fixtureStability.consistentCandidateWins, 0);
   assert.equal(result.comparison.baseline.attempts, 8);
   assert.equal(result.comparison.candidate.attempts, 8);
   assert.ok(result.comparison.regressionReview.flags.includes("more-failed-requests"));
@@ -150,9 +165,50 @@ test("head-to-head metrics distinguish candidate/baseline wins, ties and failed 
   });
   assert.equal(paired.byLanguage.rust.failedPairs, 2);
   assert.equal(Object.values(paired.byCategory).reduce((n, x) => n + x.pairs, 0), 16);
+  assert.deepEqual({
+    fixtures: paired.fixtureStability.fixtures,
+    fullyComparable: paired.fixtureStability.fullyComparable,
+    incomplete: paired.fixtureStability.incomplete,
+    consistentCandidateWins: paired.fixtureStability.consistentCandidateWins,
+    consistentBaselineWins: paired.fixtureStability.consistentBaselineWins,
+    consistentBothExact: paired.fixtureStability.consistentBothExact,
+    consistentNeitherExact: paired.fixtureStability.consistentNeitherExact,
+    mixed: paired.fixtureStability.mixed
+  }, {
+    fixtures: 8, fullyComparable: 6, incomplete: 2,
+    consistentCandidateWins: 1, consistentBaselineWins: 1,
+    consistentBothExact: 1, consistentNeitherExact: 3, mixed: 0
+  });
   assert.equal(compare.anyRequestFailed, true);
   assert.ok(!JSON.stringify(compare).includes(subset[0].id));
   assert.ok(!JSON.stringify(compare).includes("NEVER_SHOW_USER_SOURCE"));
+});
+
+test("alternating wins are not counted as stable model improvements", async () => {
+  const counts = new Map();
+  const compared = await runPairedSyntheticBenchmarks(fixtures, { ...options, runs: 2 },
+    async (fixture, model) => {
+      const count = counts.get(model) ?? 0;
+      counts.set(model, count + 1);
+      const pass = Math.floor(count / fixtures.length);
+      const exact = fixture === fixtures[0] &&
+        (pass === 0 ? model === options.candidate : model === options.baseline);
+      return trial(fixture, { exact });
+    });
+  const paired = compared.pairedStrictExact;
+  const stability = paired.fixtureStability;
+  assert.equal(paired.candidateWins, 1);
+  assert.equal(paired.baselineWins, 1);
+  assert.equal(stability.fixtures, 8);
+  assert.equal(stability.fullyComparable, 8);
+  assert.equal(stability.consistentCandidateWins, 0);
+  assert.equal(stability.consistentBaselineWins, 0);
+  assert.equal(stability.consistentNeitherExact, 7);
+  assert.equal(stability.mixed, 1);
+  assert.equal(stability.incomplete, 0);
+  assert.equal(stability.singleRun, 0);
+  assert.equal(stability.byLanguage.rust.mixed, 1);
+  assert.ok(!JSON.stringify(compared).includes(fixtures[0].id));
 });
 
 test("mismatched, reordered or contradictory evaluation results fail closed", async () => {
