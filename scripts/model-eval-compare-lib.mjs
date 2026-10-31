@@ -233,6 +233,18 @@ export function validateComparableReport(raw) {
 }
 const delta = (baseline, candidate) =>
   baseline === null || candidate === null ? null : candidate - baseline;
+/**
+ * The aggregate scanner count alone is not a comparable exposure: a candidate
+ * can inspect fewer Rust completions and more C++ completions while preserving
+ * the same total. Require equivalent measured coverage for each language.
+ */
+const nativeInspected = (report, language) => {
+  const bucket = report.nativeStructureDiagnostics.byLanguage[language];
+  return bucket.clean + bucket.mismatch;
+};
+const nativeCoverageComparable = (baseline, candidate) =>
+  NATIVE_STRUCTURE_LANGUAGES.every(language =>
+    nativeInspected(baseline, language) === nativeInspected(candidate, language));
 function selectedNumbers(report) {
   const { attempts, completed, failed, strictExactMatches,
     completionP50Ms, completionP95Ms, firstTokenP50Ms, firstTokenP95Ms } = report;
@@ -252,10 +264,14 @@ export function reviewSyntheticRegressions(baseline, candidate) {
     }
   }
   if (candidate.strictExactMatches < baseline.strictExactMatches) flags.push("fewer-strict-matches");
-  const nativeScanCount = value => value.nativeStructureDiagnostics.clean + value.nativeStructureDiagnostics.mismatch;
-  const nativeStructureCoverageComparable = nativeScanCount(baseline) === nativeScanCount(candidate);
+  const nativeStructureCoverageComparable = nativeCoverageComparable(baseline, candidate);
+  const languagesWithMoreNativeMismatches = nativeStructureCoverageComparable
+    ? NATIVE_STRUCTURE_LANGUAGES.filter(language =>
+      candidate.nativeStructureDiagnostics.byLanguage[language].mismatch >
+      baseline.nativeStructureDiagnostics.byLanguage[language].mismatch)
+    : [];
   if (!nativeStructureCoverageComparable) flags.push("different-native-structure-coverage");
-  else if (candidate.nativeStructureDiagnostics.mismatch > baseline.nativeStructureDiagnostics.mismatch) {
+  else if (languagesWithMoreNativeMismatches.length) {
     flags.push("more-native-delimiter-mismatches");
   }
   if (candidate.formatDiagnostics.completedWithoutFormatSignals <
@@ -291,6 +307,7 @@ export function reviewSyntheticRegressions(baseline, candidate) {
     categoriesWithFewerStrictMatches,
     increasedFormatSignals,
     nativeStructureCoverageComparable,
+    languagesWithMoreNativeMismatches,
     latencyComparable,
     interpretation: "Synthetic review signals only; not model quality, statistical significance or release approval."
   };
@@ -350,8 +367,12 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       perLanguageUncheckedDelta: Object.fromEntries(NATIVE_STRUCTURE_LANGUAGES.map(language =>
         [language, candidate.nativeStructureDiagnostics.byLanguage[language].unchecked -
           baseline.nativeStructureDiagnostics.byLanguage[language].unchecked])),
-      comparableInspectedCounts: baseline.nativeStructureDiagnostics.clean + baseline.nativeStructureDiagnostics.mismatch ===
-        candidate.nativeStructureDiagnostics.clean + candidate.nativeStructureDiagnostics.mismatch
+      perLanguageInspectedDelta: Object.fromEntries(NATIVE_STRUCTURE_LANGUAGES.map(language =>
+        [language, nativeInspected(candidate, language) - nativeInspected(baseline, language)])),
+      perLanguageMismatchDelta: Object.fromEntries(NATIVE_STRUCTURE_LANGUAGES.map(language =>
+        [language, candidate.nativeStructureDiagnostics.byLanguage[language].mismatch -
+          baseline.nativeStructureDiagnostics.byLanguage[language].mismatch])),
+      comparableInspectedCounts: nativeCoverageComparable(baseline, candidate)
     },
     generatedPythonSyntax: {
       method: GENERATED_SYNTAX_METHOD,
@@ -395,7 +416,7 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       "Request and fixture hashes match, including explicit settings, but server defaults, model checkpoint revision, hardware, quantization and runtime conditions require manual verification.",
       "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
       "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
-      "Native delimiter checks expose clean/mismatch/unchecked separately. Clean is only a lexical observation, not validated Rust/C/C++ syntax.",
+      "Native delimiter checks expose clean/mismatch/unchecked separately. Compare warning changes only with equal inspected counts for EACH native language; clean is not validated Rust/C/C++ syntax.",
       "Generated Python/TypeScript grammar may be parsed without executing code; Python parser unavailability is explicitly unchecked, and Rust/C/C++ remain unchecked. Parser success is not type correctness or program safety.",
       "No real-model comparison was performed by the offline tool."
     ]
