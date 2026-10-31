@@ -220,4 +220,58 @@ describe("Rust feature-aware autocomplete guidance", () => {
     expect(rustContextHints("")).toEqual([]);
     expect(rustContextHints("fn ordinary() { let value = 1; ")).toEqual([]);
   });
+  it("adds bounded control-flow guidance for if let, while let and let-else", () => {
+    for (const source of [
+      "fn f(value: Option<i32>) { if let Some(number) = value { ",
+      "fn f(items: Vec<i32>) { while let Some(item) = items.pop() { ",
+      "fn f(input: Option<i32>) { let Some(value) = input else { return; }; "
+    ]) {
+      const hints = rustContextHints(source);
+      expect(hints.some(h => h.includes("let-else fallback must diverge"))).toBe(true);
+      expect(hints.length).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it("guides const functions, const generics and associated constants", () => {
+    for (const source of [
+      "const fn twice(n: usize) -> usize { ",
+      "struct Array<const N: usize> { ",
+      "impl Config { const CAPACITY: usize = "
+    ]) {
+      expect(rustContextHints(source).some(h => h.includes("const-evaluation rules"))).toBe(true);
+    }
+  });
+
+  it("recognizes unsafe and FFI code without recommending new unsafe blocks", () => {
+    for (const source of [
+      "unsafe fn from_raw(pointer: *const u8) { ",
+      "unsafe { core::ptr::read(pointer); ",
+      'extern "C" fn callback(value: i32) { ',
+      "#[repr(C)] struct Header { "
+    ]) {
+      expect(rustContextHints(source).some(h => h.includes("do not invent unnecessary unsafe blocks"))).toBe(true);
+    }
+  });
+
+  it("ignores pattern, const and FFI keywords inside masked Rust text", () => {
+    const source = [
+      'let text = r#"if let Some(x) = item { unsafe fn f() {} const fn g() {}"#;',
+      "// while let Some(value) = stream.next() {",
+      "/* extern \"C\" fn f() {} */"
+    ].join("\n");
+    expect(rustContextHints(source)).toEqual([]);
+  });
+
+  it("keeps native FIM byte exact for new Rust constructs", () => {
+    const before = "unsafe fn consume<const N: usize>(value: [u8; N]) {";
+    const ctx = extractContext(before + " }", before.length, 3000);
+    for (const model of ["qwen2.5-coder:1.5b", "lineloom-code:dev"]) {
+      const result = buildPrompt(rust, ctx, model);
+      expect(result).toEqual({ prompt: ctx.prefix, suffix: ctx.suffix });
+    }
+    const generic = buildPrompt(rust, ctx, "generic-local:latest");
+    expect(generic.prompt).toContain("const-evaluation rules");
+    expect(generic.prompt).toContain("do not invent unnecessary unsafe blocks");
+  });
+
 });

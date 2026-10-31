@@ -19,7 +19,15 @@ preserves apostrophes that begin lifetime names.
 The supported *guidance cases*, not model-quality guarantees, include:
 Result/Option and error propagation, async/.await, trait/impl methods and
 associated types, pattern-match arms/guards, ownership/borrowing/lifetimes,
-iterator adapters/closures, macro invocations and generics/where bounds.
+iterator adapters/closures, macro invocations, generics/where bounds, `if let`/`while let`/`let-else`, const functions/const generics/associated constants, and unsafe/FFI contexts.
+
+
+The additional guidance is fixed text derived from masked, already-approved
+editor context. It reminds a model that `let-else` branches must diverge,
+const-evaluation contexts have restrictions, and FFI/unsafe code must preserve
+safety invariants without introducing unnecessary `unsafe`. It neither
+compiles suggestions nor makes generated Rust code safe. Native FIM requests
+remain unchanged.
 
 **Native FIM behavior is unchanged** for selected qwen2.5-coder and local
 lineloom-code tags: the prefix and suffix are still supplied separately
