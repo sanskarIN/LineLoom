@@ -182,9 +182,11 @@ export async function runPairedSyntheticBenchmarks(fixtures, opts, evaluate = ev
   });
   const baseline = report(0);
   const candidate = report(1);
+  // Reject result/fixture mismatches before aggregating or comparing reports.
+  const pairedStrictExact = summarizePairedStrictExact(fixtures, opts.runs, measurements);
   return {
     comparison: compareModelReports(baseline, candidate),
-    pairedStrictExact: summarizePairedStrictExact(fixtures, opts.runs, measurements),
+    pairedStrictExact,
     runOrder: "alternating-full-pass-v1",
     requestsPerModel: fixtures.length * opts.runs,
     anyRequestFailed: baseline.failed > 0 || candidate.failed > 0,
