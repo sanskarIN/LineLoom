@@ -48,13 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v5 also recognizes `lineloom-code` and
+The source benchmark v6 also recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v5`, which does not
-compare with earlier v1–v4 reports; regenerate both reports locally.
+The Ollama report protocol is `lineloom-synthetic-v6`, which does not
+compare with earlier v1–v5 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -85,36 +85,38 @@ readiness. A correct alternative implementation may be recorded as a
 non-match. Inspect actual suggestions **locally** before making any claim
 about quality.
 
-## 4a. Generated TypeScript grammar checks (Ollama v5)
+## 4a. Generated Python and TypeScript grammar checks (Ollama v6)
 
-The optional loopback-only `model:eval` runner now parses the **actual
-generated TypeScript insertion** in memory, alongside strict exact-match
-and completion-format signals. It uses the pinned local TypeScript parser
-(`typescript` from the reviewed `npm ci` lockfile) and reconstructs
-only the original, checked-in synthetic TypeScript `prefix + insertion +
-suffix`. Parsing is bounded to 16,384 UTF-16 code units. No generated
-code is executed, saved, sent to a compiler process or included in reports.
-The AST and diagnostics are discarded without printing filenames, code
-or errors.
+The opt-in loopback-only `model:eval` runner parses original, checked-in
+synthetic `prefix + insertion + suffix` after each successful Ollama
+response. TypeScript is checked with the locked local TypeScript parser, in
+memory and bounded to 16,384 UTF-16 code units. Python is checked with the
+stdlib `ast.parse` from a local Python 3 interpreter, bounded to 8,192 UTF-16
+code units. It uses a fixed `python -I -S -c` script, stdin input, an
+allowlisted environment, a 2.5-second parser deadline and no shell. The parser
+does **not** execute generated code. No reconstructed source, diagnostic
+text, AST, files or private paths are saved or printed.
 
-Each successful TypeScript response has a `passed` or `failed` parser
-outcome. All successful **Rust, C, C++ and Python** responses are
-`unchecked`; failed or timed-out Ollama requests are counted separately
-as request failures, not successful syntax checks. The aggregate
-`generatedSyntax` object records checked, passed, failed and unchecked
-counts across languages. The offline comparison refuses impossible
-counts, fabricated successes for unchecked languages and TypeScript
-strict-exact matches exceeding parser passes. It also surfaces a
-`more-typescript-syntax-failures` review flag when applicable.
+Python is **`unchecked`** if its interpreter is missing or the isolated
+parser does not return a valid result; that is not counted as a syntax failure
+or a successful parser check. TypeScript responses get `passed` or
+`failed`. Rust, C and C++ stay `unchecked`. Failed or timed-out Ollama
+requests are counted separately from successful inference with parser
+results. `generatedSyntax` provides source-free by-language counts.
+The offline comparison rejects impossible allocations, more exact matches
+than checked grammar passes could support, and comparisons with different
+Python checked counts. Its regression review flags increases in Python or
+TypeScript parser failures, but neither flags nor passes prove model quality.
 
-This is **grammatical parsing only**, not TypeScript type checking,
-runtime validation, editor acceptance or safety testing. A syntactically
-valid alternative can fail exact matching. A syntactically valid program
-can still be incorrect or unsafe. The separate Linux compiler CI checks
-the **public reference answers**, not model-generated text. The separate
-HF Python/TypeScript grammar experiment does **not** share this Ollama report protocol.
-No actual model inference or trained first-party checkpoint is implied
-by the synthetic CI tests.
+**Re-run both baselines under v6.** Earlier Ollama v1–v5 reports are
+incompatible. For comparable syntax evidence, use the same installed Python
+interpreter and TypeScript dependency, alongside matching model hardware
+and request settings. Python AST and TypeScript parser success do not imply
+type correctness, runtime safety, compilation or practical editor usefulness.
+The separate Linux compiler CI tests only **public reference answers**, not
+model-generated source. This is distinct from the optional Hugging Face
+training/smoke pipeline and does not imply that a first-party model was
+trained or inference was performed in CI.
 
 ## 5. Sanitize and review the report
 
