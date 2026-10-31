@@ -123,7 +123,7 @@ class GeneratedSyntaxTests(unittest.TestCase):
             [{"language": "python", "syntaxOutcome": 1}],
             [{"language": "c", "syntaxOutcome": True}],
             [{"language": "other", "syntaxOutcome": "unchecked"}],
-            [{"language": "rust", "syntaxOutcome": "unchecked"}] * 31,
+            [{"language": "rust", "syntaxOutcome": "unchecked"}] * 41,
         ):
             with self.subTest(case=repr(results)[:35]), self.assertRaises(
                 SmokeReportRejected
