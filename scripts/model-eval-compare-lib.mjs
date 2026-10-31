@@ -13,6 +13,7 @@ import {
 import { FORMAT_SIGNAL_NAMES } from "./model-eval-quality.mjs";
 import { GENERATED_SYNTAX_METHOD } from "./model-eval-syntax.mjs";
 import { validateNativeStructureReport, NATIVE_STRUCTURE_LANGUAGES, NATIVE_STRUCTURE_METHOD } from "./model-eval-native-accounting.mjs";
+import { validateTokenAccounting, TOKEN_ACCOUNTING_LANGUAGES, TOKEN_ACCOUNTING_METHOD } from "./model-eval-token-accounting.mjs";
 
 /**
  * Reconstruct the only scopes exposed by the evaluator from the fixed
@@ -201,6 +202,7 @@ export function validateComparableReport(raw) {
   const nativeStructure = validateNativeStructureReport(
     raw.nativeStructureDiagnostics, perLanguage, format.signals.nativeDelimiterMismatch
   );
+  const tokenAccounting = validateTokenAccounting(raw.tokenAccounting, perLanguage);
   return {
     benchmarkProtocol: EVAL_BENCHMARK_PROTOCOL,
     fixtureSetSha256: raw.fixtureSetSha256,
@@ -214,6 +216,7 @@ export function validateComparableReport(raw) {
     firstTokenP50Ms: raw.firstTokenP50Ms, firstTokenP95Ms: raw.firstTokenP95Ms,
     perLanguage, perCategory,
     nativeStructureDiagnostics: nativeStructure,
+    tokenAccounting,
     generatedSyntax: {
       method: GENERATED_SYNTAX_METHOD,
       ...syntaxTotals, byLanguage: syntaxByLanguage
@@ -245,6 +248,16 @@ const nativeInspected = (report, language) => {
 const nativeCoverageComparable = (baseline, candidate) =>
   NATIVE_STRUCTURE_LANGUAGES.every(language =>
     nativeInspected(baseline, language) === nativeInspected(candidate, language));
+const equalTokenCoverage = (baseline, candidate) =>
+  TOKEN_ACCOUNTING_LANGUAGES.every(language =>
+    baseline.tokenAccounting.byLanguage[language].checked ===
+      candidate.tokenAccounting.byLanguage[language].checked);
+const equalTokenVolume = (baseline, candidate) => equalTokenCoverage(baseline, candidate) &&
+  baseline.tokenAccounting.checked === baseline.completed &&
+  candidate.tokenAccounting.checked === candidate.completed &&
+  TOKEN_ACCOUNTING_LANGUAGES.every(language =>
+    baseline.tokenAccounting.byLanguage[language].generatedTokens ===
+      candidate.tokenAccounting.byLanguage[language].generatedTokens);
 function selectedNumbers(report) {
   const { attempts, completed, failed, strictExactMatches,
     completionP50Ms, completionP95Ms, firstTokenP50Ms, firstTokenP95Ms } = report;
@@ -289,11 +302,17 @@ export function reviewSyntheticRegressions(baseline, candidate) {
   const increasedFormatSignals = FORMAT_SIGNAL_NAMES.filter(name =>
     candidate.formatDiagnostics.signals[name] > baseline.formatDiagnostics.signals[name]);
   if (increasedFormatSignals.length) flags.push("more-format-artifacts");
-  // Total latency only counts completions, so flag substantial changes only
-  // with equal finished counts and at least ten completed requests. This is
-  // still descriptive; hardware and other process loads are not attested.
+  // Only compare p95 wall-clock latency when completed counts and
+  // per-language output token totals agree, with complete server telemetry.
+  // Hardware, load, warm-up and model revision still require human review.
+  const tokenCoverageComparable = equalTokenCoverage(baseline, candidate);
+  const tokenVolumeComparable = equalTokenVolume(baseline, candidate);
+  if (!tokenCoverageComparable) flags.push("different-token-metadata-coverage");
+  else if (baseline.tokenAccounting.checked === baseline.completed &&
+      candidate.tokenAccounting.checked === candidate.completed &&
+      !tokenVolumeComparable) flags.push("different-generated-token-volumes");
   const latencyComparable = baseline.completed === candidate.completed &&
-    baseline.completed >= 10;
+    baseline.completed >= 10 && tokenVolumeComparable;
   if (latencyComparable && baseline.completionP95Ms !== null &&
       candidate.completionP95Ms !== null &&
       candidate.completionP95Ms - baseline.completionP95Ms >= 100 &&
@@ -309,6 +328,8 @@ export function reviewSyntheticRegressions(baseline, candidate) {
     nativeStructureCoverageComparable,
     languagesWithMoreNativeMismatches,
     latencyComparable,
+    tokenCoverageComparable,
+    tokenVolumeComparable,
     interpretation: "Synthetic review signals only; not model quality, statistical significance or release approval."
   };
 }
@@ -358,6 +379,25 @@ export function compareModelReports(baselineRaw, candidateRaw) {
       [k, candidate.perLanguage[k].strictMatches - baseline.perLanguage[k].strictMatches])),
     perCategoryStrictMatchDelta: Object.fromEntries(EVAL_CATEGORIES.map(k =>
       [k, candidate.perCategory[k].strictMatches - baseline.perCategory[k].strictMatches])),
+    outputTokenAccounting: {
+      method: TOKEN_ACCOUNTING_METHOD,
+      baseline: Object.fromEntries(
+        ["checked", "unchecked", "generatedTokens", "generationDurationNs", "tokensPerSecond"]
+          .map(key => [key, baseline.tokenAccounting[key]])),
+      candidate: Object.fromEntries(
+        ["checked", "unchecked", "generatedTokens", "generationDurationNs", "tokensPerSecond"]
+          .map(key => [key, candidate.tokenAccounting[key]])),
+      perLanguageGeneratedTokensDelta: Object.fromEntries(
+        TOKEN_ACCOUNTING_LANGUAGES.map(language => [language,
+          candidate.tokenAccounting.byLanguage[language].generatedTokens -
+          baseline.tokenAccounting.byLanguage[language].generatedTokens])),
+      perLanguageCheckedDelta: Object.fromEntries(
+        TOKEN_ACCOUNTING_LANGUAGES.map(language => [language,
+          candidate.tokenAccounting.byLanguage[language].checked -
+          baseline.tokenAccounting.byLanguage[language].checked])),
+      metadataCoverageComparable: equalTokenCoverage(baseline, candidate),
+      outputVolumeComparable: equalTokenVolume(baseline, candidate)
+    },
     nativeStructureCoverage: {
       method: NATIVE_STRUCTURE_METHOD,
       baseline: Object.fromEntries(["completed", "clean", "mismatch", "unchecked"].map(key =>
@@ -414,7 +454,8 @@ export function compareModelReports(baselineRaw, candidateRaw) {
     warnings: [
       "Strict equality on original synthetic fixtures is not compile correctness, semantic quality, or editor acceptance.",
       "Request and fixture hashes match, including explicit settings, but server defaults, model checkpoint revision, hardware, quantization and runtime conditions require manual verification.",
-      "Latency percentiles include only completed requests. Do not infer performance from few samples or unequal failure counts.",
+      "Latency percentiles include only completed requests. Compare p95 only with matched completed counts and verified per-language output token volumes; hardware conditions still require manual verification.",
+      "Ollama output-token totals and token speeds are server-reported and never attest a tokenizer, hardware or editor acceptance. Missing terminal fields are unchecked, not zero.",
       "Format signals are heuristic and overlapping, not evidence of compile correctness, safety or human usefulness.",
       "Native delimiter checks expose clean/mismatch/unchecked separately. Compare warning changes only with equal inspected counts for EACH native language; clean is not validated Rust/C/C++ syntax.",
       "Generated Python/TypeScript grammar may be parsed without executing code; Python parser unavailability is explicitly unchecked, and Rust/C/C++ remain unchecked. Parser success is not type correctness or program safety.",

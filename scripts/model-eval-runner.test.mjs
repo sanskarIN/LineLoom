@@ -203,3 +203,28 @@ test("invalid timeouts are rejected before transport or a timer is started", asy
     }, { timeoutMs }));
   }
 });
+
+
+test("preserves only bounded Ollama token counters in successful local measurements", async () => {
+  const result = await run(async () => goodResponse(frame(fixture.expected, true, {
+    eval_count: 9, eval_duration: 450_000_000,
+    prompt_eval_count: 100, total_duration: 1_000_000_000
+  })));
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.tokenUsage, {
+    generatedTokens: 9, generationDurationNs: 450_000_000
+  });
+  assert.ok(!Object.hasOwn(result, "output"));
+  assert.ok(!Object.hasOwn(result, "prompt_eval_count"));
+});
+
+test("incomplete terminal token metadata is an aggregate failure with no response leak", async () => {
+  const result = await run(async () => goodResponse(frame("PRIVATE_INSERTION", true, {
+    eval_count: 9
+  })));
+  assert.deepEqual(result, {
+    fixtureId: fixture.id, language: fixture.language,
+    category: fixture.category, ok: false, exact: false
+  });
+  assert.ok(!JSON.stringify(result).includes("PRIVATE_INSERTION"));
+});

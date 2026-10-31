@@ -58,6 +58,7 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
       exact: insertion === fixture.expected,
       syntaxOutcome,
       nativeStructureOutcome,
+      tokenUsage: parsed.tokenUsage,
       formatSignals: classifyCompletionFormat(parsed.output, fixture, insertion, nativeStructureOutcome),
       firstTokenMs: parsed.firstTokenMs,
       totalMs: elapsed

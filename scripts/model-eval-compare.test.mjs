@@ -15,7 +15,7 @@ import { readFileSync } from "node:fs";
 const fixtures = validateFixtures(JSON.parse(readFileSync(
   fileURLToPath(new URL("../model/fixtures/completion-v1.json", import.meta.url)), "utf8"
 )));
-function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtures, mode = "fim" } = {}) {
+function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtures, mode = "fim", tokenCount = 8, tokenDurationNs = 500_000_000 } = {}) {
   const results = [];
   for (let run = 0; run < runs; run++) {
     for (const [index, fixture] of selected.entries()) {
@@ -23,6 +23,7 @@ function report({ runs = 2, model = "local-test-a", count = 1, selected = fixtur
       results.push({
         fixtureId: fixture.id, language: fixture.language, category: fixture.category,
         ok: true, exact, formatSignals: [],
+        tokenUsage: { generatedTokens: tokenCount, generationDurationNs: tokenDurationNs },
         syntaxOutcome: fixture.language === "typescript" ? "passed" : "unchecked",
         firstTokenMs: 10 + run, totalMs: 30 + run
       });
@@ -478,4 +479,78 @@ test("zero coverage in all native languages is comparable but not a syntax pass"
   assert.equal(comparison.nativeStructureCoverage.baseline.clean, 0);
   assert.equal(comparison.nativeStructureCoverage.baseline.unchecked, 48);
   assert.deepEqual(comparison.regressionReview.languagesWithMoreNativeMismatches, []);
+});
+
+
+test("v9 output token metrics reject forged totals and never print model responses", () => {
+  const baseline = report();
+  assert.equal(baseline.tokenAccounting.checked, 80);
+  assert.equal(baseline.tokenAccounting.unchecked, 0);
+  assert.equal(baseline.tokenAccounting.generatedTokens, 640);
+  assert.equal(baseline.tokenAccounting.tokensPerSecond, 16);
+  assert.deepEqual(validateComparableReport(baseline).tokenAccounting, baseline.tokenAccounting);
+
+  const mutations = [
+    r => { delete r.tokenAccounting; },
+    r => { r.tokenAccounting.method = "unreviewed"; },
+    r => { r.tokenAccounting.checked -= 1; },
+    r => { r.tokenAccounting.generatedTokens++; },
+    r => { r.tokenAccounting.tokensPerSecond = 1000; },
+    r => { r.tokenAccounting.byLanguage.python.generatedTokens += 4; },
+    r => { r.tokenAccounting.byLanguage.rust.checked--; },
+    r => { r.tokenAccounting.byLanguage.c.source = "PRIVATE_COMPLETION"; },
+    r => { r.tokenAccounting.byLanguage.cpp.generationDurationNs = -1; },
+  ];
+  for (const mutate of mutations) {
+    const forged = structuredClone(baseline);
+    mutate(forged);
+    assert.throws(() => validateComparableReport(forged));
+  }
+});
+
+test("unequal output lengths do not justify a p95 latency regression claim", () => {
+  const baseline = report({ tokenCount: 8 });
+  const candidate = report({ tokenCount: 12 });
+  candidate.completionP95Ms = 500;
+  const compared = compareModelReports(baseline, candidate);
+  assert.equal(compared.regressionReview.tokenCoverageComparable, true);
+  assert.equal(compared.regressionReview.tokenVolumeComparable, false);
+  assert.equal(compared.regressionReview.latencyComparable, false);
+  assert.ok(compared.regressionReview.flags.includes("different-generated-token-volumes"));
+  assert.ok(!compared.regressionReview.flags.includes("higher-completed-p95-latency"));
+  assert.equal(compared.outputTokenAccounting.candidate.generatedTokens, 960);
+  assert.equal(compared.outputTokenAccounting.perLanguageGeneratedTokensDelta.rust, 64);
+  assert.ok(!JSON.stringify(compared).includes(baseline.model));
+});
+
+test("missing Ollama terminal telemetry remains unchecked and blocks speed comparisons", () => {
+  const baseline = report();
+  const candidate = structuredClone(baseline);
+  candidate.tokenAccounting.checked -= 1;
+  candidate.tokenAccounting.unchecked += 1;
+  candidate.tokenAccounting.generatedTokens -= 8;
+  candidate.tokenAccounting.generationDurationNs -= 500_000_000;
+  candidate.tokenAccounting.tokensPerSecond = Math.round(
+    candidate.tokenAccounting.generatedTokens * 1e9 / candidate.tokenAccounting.generationDurationNs
+  );
+  candidate.tokenAccounting.byLanguage.rust.checked -= 1;
+  candidate.tokenAccounting.byLanguage.rust.unchecked += 1;
+  candidate.tokenAccounting.byLanguage.rust.generatedTokens -= 8;
+  candidate.tokenAccounting.byLanguage.rust.generationDurationNs -= 500_000_000;
+  const compared = compareModelReports(baseline, candidate);
+  assert.equal(compared.regressionReview.tokenCoverageComparable, false);
+  assert.equal(compared.regressionReview.latencyComparable, false);
+  assert.ok(compared.regressionReview.flags.includes("different-token-metadata-coverage"));
+  assert.equal(compared.outputTokenAccounting.perLanguageCheckedDelta.rust, -1);
+});
+
+test("output-token telemetry does not establish hardware throughput comparability", () => {
+  const baseline = report();
+  const fasterServerTiming = report({ tokenDurationNs: 250_000_000 });
+  const compared = compareModelReports(baseline, fasterServerTiming);
+  assert.equal(compared.outputTokenAccounting.outputVolumeComparable, true);
+  assert.equal(compared.regressionReview.latencyComparable, true);
+  assert.ok(compared.outputTokenAccounting.candidate.tokensPerSecond >
+    compared.outputTokenAccounting.baseline.tokensPerSecond);
+  assert.ok(compared.warnings.some(x => x.includes("hardware")));
 });

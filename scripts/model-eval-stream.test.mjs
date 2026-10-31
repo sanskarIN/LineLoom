@@ -19,7 +19,7 @@ test("decodes ordinary Ollama NDJSON and captures first-token timing", async () 
   const result = await consumeOllamaStream(stream([
     entry("ab"), entry("cd"), entry("", true)
   ]), 100, () => 125);
-  assert.deepEqual(result, { output: "abcd", firstTokenMs: 25 });
+  assert.deepEqual(result, { output: "abcd", firstTokenMs: 25, tokenUsage: null });
 });
 
 test("handles unicode codepoint divided over transport chunks", async () => {
@@ -30,13 +30,13 @@ test("handles unicode codepoint divided over transport chunks", async () => {
   const result = await consumeOllamaStream(stream([
     bytes.slice(0, at + 2), bytes.slice(at + 2)
   ]), 5, () => 15);
-  assert.deepEqual(result, { output: "🚀", firstTokenMs: 10 });
+  assert.deepEqual(result, { output: "🚀", firstTokenMs: 10, tokenUsage: null });
 });
 
 test("allows a final complete NDJSON object without a trailing newline", async () => {
   const body = JSON.stringify({ response: "42;", done: true });
   const result = await consumeOllamaStream(stream([body]), 0, () => 7);
-  assert.deepEqual(result, { output: "42;", firstTokenMs: 7 });
+  assert.deepEqual(result, { output: "42;", firstTokenMs: 7, tokenUsage: null });
 });
 
 test("rejects incomplete, malformed or server-error responses", async () => {
@@ -76,7 +76,7 @@ test("allows only trailing whitespace after a complete terminal event", async ()
   const result = await consumeOllamaStream(
     stream([entry("safe", true), "  \n\t\n", " \t"]), 0, () => 1
   );
-  assert.deepEqual(result, { output: "safe", firstTokenMs: 1 });
+  assert.deepEqual(result, { output: "safe", firstTokenMs: 1, tokenUsage: null });
 });
 
 test("aborts a server that never closes its stream after the terminal frame", async () => {
@@ -118,4 +118,49 @@ test("rejects excess NDJSON frames even with individually short valid lines", as
   const lines = Array.from({ length: 513 }, () => entry("", false));
   lines.push(entry("", true));
   await assert.rejects(consumeOllamaStream(stream(lines), 0, () => 1));
+});
+
+
+test("accepts bounded Ollama terminal token counters without logging output", async () => {
+  const body = JSON.stringify({
+    response: "private generated text", done: true,
+    eval_count: 17, eval_duration: 250_000_000,
+    prompt_eval_count: 65, total_duration: 1_000_000_000
+  }) + "\n";
+  const result = await consumeOllamaStream(stream([body]), 0, () => 25);
+  assert.deepEqual(result.tokenUsage, {
+    generatedTokens: 17, generationDurationNs: 250_000_000
+  });
+  assert.equal(result.firstTokenMs, 25);
+  assert.ok(!JSON.stringify(result.tokenUsage).includes("private"));
+});
+
+test("incomplete, malformed or unsafe terminal counters fail closed without source", async () => {
+  const invalid = [
+    { eval_count: 5 },
+    { eval_duration: 1_000 },
+    { eval_count: -1, eval_duration: 1_000 },
+    { eval_count: "5", eval_duration: 1_000 },
+    { eval_count: 5, eval_duration: 0 },
+    { eval_count: 0, eval_duration: 5 },
+    { eval_count: 4097, eval_duration: 1_000 },
+    { eval_count: 5, eval_duration: Number.MAX_SAFE_INTEGER },
+    { eval_count: true, eval_duration: 50 },
+  ];
+  for (const fields of invalid) {
+    const line = JSON.stringify({
+      response: "PRIVATE_OUTPUT", done: true, ...fields
+    }) + "\n";
+    await assert.rejects(consumeOllamaStream(stream([line]), 0, () => 1), err => {
+      assert.ok(!String(err).includes("PRIVATE_OUTPUT"));
+      return true;
+    });
+  }
+});
+
+test("a terminal frame without optional token metadata remains explicitly unchecked", async () => {
+  const result = await consumeOllamaStream(stream([
+    JSON.stringify({ response: "abc", done: true }) + "\n"
+  ]), 0, () => 1);
+  assert.equal(result.tokenUsage, null);
 });
