@@ -23,7 +23,7 @@ except ImportError:
 class TypeScriptSyntaxBridgeTests(unittest.TestCase):
     def test_all_six_checked_in_reference_continuations_parse(self):
         fixtures = read_public_fixtures("typescript")
-        self.assertEqual(len(fixtures), 6)
+        self.assertEqual(len(fixtures), 8)
         for fixture in fixtures:
             with self.subTest(id=fixture["id"]):
                 self.assertEqual(
