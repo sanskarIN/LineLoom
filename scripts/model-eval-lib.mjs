@@ -10,7 +10,7 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v5";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v6";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
@@ -175,6 +175,6 @@ export function summarizeMeasurements(results, fixtureCount, model, mode) {
       unchecked: syntaxSum("unchecked"),
       byLanguage: syntaxByLanguage
     },
-    disclaimer: "Strict synthetic equality and parser-only TypeScript grammar checks; other generated languages unchecked. No type correctness, execution, human acceptance, compiler QA or model readiness."
+    disclaimer: "Strict synthetic equality and parser-only Python/TypeScript grammar checks (Python unchecked when interpreter unavailable); Rust, C and C++ unchecked. No type correctness, execution, human acceptance, compiler QA or model readiness."
   };
 }
