@@ -115,6 +115,8 @@ export function summarizePairedStrictExact(fixtures, runs, measurements) {
   const total = empty();
   const byLanguage = Object.fromEntries(EVAL_LANGUAGES.map(language => [language, empty()]));
   const byCategory = Object.fromEntries(EVAL_CATEGORIES.map(category => [category, empty()]));
+  // One in-memory sequence per public fixture; IDs never enter the report.
+  const perFixtureStatuses = fixtures.map(() => []);
   const seen = new Set();
   for (const fixture of fixtures) {
     if (!fixture || typeof fixture.id !== "string" || seen.has(fixture.id) ||
@@ -141,6 +143,7 @@ export function summarizePairedStrictExact(fixtures, runs, measurements) {
         : a.exact && b.exact ? "bothExact"
         : a.exact ? "baselineWins"
         : b.exact ? "candidateWins" : "neitherExact";
+      perFixtureStatuses[i].push(status);
       for (const bucket of [total, byLanguage[fixture.language], byCategory[fixture.category]]) {
         bucket.pairs++;
         if (status !== "failedPairs") bucket.comparablePairs++;
@@ -148,7 +151,42 @@ export function summarizePairedStrictExact(fixtures, runs, measurements) {
       }
     }
   }
-  return { ...total, byLanguage, byCategory };
+  // Repeated observations of one fixture are correlated. Keep the
+  // fixture-level result separate from the per-request pair totals.
+  const emptyStability = () => ({
+    fixtures: 0, fullyComparable: 0, singleRun: 0, incomplete: 0,
+    consistentCandidateWins: 0, consistentBaselineWins: 0,
+    consistentBothExact: 0, consistentNeitherExact: 0, mixed: 0
+  });
+  const stable = emptyStability();
+  const byStableLanguage = Object.fromEntries(EVAL_LANGUAGES.map(id => [id, emptyStability()]));
+  const byStableCategory = Object.fromEntries(EVAL_CATEGORIES.map(id => [id, emptyStability()]));
+  const consistent = {
+    candidateWins: "consistentCandidateWins",
+    baselineWins: "consistentBaselineWins",
+    bothExact: "consistentBothExact",
+    neitherExact: "consistentNeitherExact"
+  };
+  for (let i = 0; i < fixtures.length; i++) {
+    const item = fixtures[i];
+    const statuses = perFixtureStatuses[i];
+    const comparable = !statuses.includes("failedPairs");
+    const classification = !comparable ? "incomplete" : runs === 1 ? "singleRun"
+      : statuses.every(value => value === statuses[0])
+        ? consistent[statuses[0]] : "mixed";
+    for (const bucket of [stable, byStableLanguage[item.language], byStableCategory[item.category]]) {
+      bucket.fixtures++;
+      if (comparable) bucket.fullyComparable++;
+      bucket[classification]++;
+    }
+  }
+  return {
+    ...total, byLanguage, byCategory,
+    fixtureStability: {
+      runsPerFixture: runs, ...stable,
+      byLanguage: byStableLanguage, byCategory: byStableCategory
+    }
+  };
 }
 
 /** Test seam accepts only simulated, in-memory responses; CLI always uses real
@@ -194,6 +232,7 @@ export async function runPairedSyntheticBenchmarks(fixtures, opts, evaluate = ev
       "Only reviewed synthetic fixtures were tested; no user source was read.",
       "Sequential local model runs do not attest identical cold/warm cache conditions, hardware load, quantization, runtime configuration or model weights.",
       "Head-to-head strict-match wins are descriptive only; repeated fixtures are correlated, failed requests are not losses, and no significance or practical usefulness is inferred.",
+      "Fixture stability requires repeated fully successful pairs; mixed, incomplete and single-run observations do not demonstrate consistent improvement.",
       "Strict exact-match, lexical checks and token telemetry do not establish code usefulness, release approval or genuine first-party model training."
     ]
   };
