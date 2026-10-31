@@ -8,8 +8,8 @@ const cases = JSON.parse(readFileSync(new URL("../model/fixtures/completion-v1.j
 const tsCases = cases.filter(x => x.language === "typescript");
 const pythonCases = cases.filter(x => x.language === "python");
 
-test("parses the six public TypeScript reference insertions without evaluating them", () => {
-  assert.equal(tsCases.length, 6);
+test("parses the eight public TypeScript reference insertions without evaluating them", () => {
+  assert.equal(tsCases.length, 8);
   for (const fixture of tsCases) {
     assert.equal(classifyGeneratedSyntax(fixture, fixture.expected), "passed", fixture.id);
   }
@@ -35,8 +35,8 @@ test("normalizes only boundary markers before an in-memory TypeScript syntax che
     normalizeGenerated(fixture.expected + "<|fim_suffix|>")), "passed");
 });
 
-test("parses the six public Python reference insertions using isolated AST, never execution", () => {
-  assert.equal(pythonCases.length, 6);
+test("parses the eight public Python reference insertions using isolated AST, never execution", () => {
+  assert.equal(pythonCases.length, 8);
   for (const fixture of pythonCases) {
     assert.equal(classifyGeneratedSyntax(fixture, fixture.expected), "passed", fixture.id);
   }
