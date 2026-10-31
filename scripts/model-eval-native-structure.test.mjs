@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import { inspectNativeGeneratedStructure as inspect } from "./model-eval-native-structure.mjs";
 
 const fixture = (language, prefix = "fn f() { ", suffix = " }") => ({ language, prefix, suffix });
@@ -43,4 +44,15 @@ test("a malformed input is unchecked, never silently accepted as valid syntax", 
   assert.equal(inspect(fixture("rust"), null), "unchecked");
   assert.equal(inspect(fixture("c"), "a".repeat(20000)), "unchecked");
   assert.equal(inspect(fixture("c"), "\0"), "unchecked");
+});
+
+test("all 18 checked-in native reference FIM insertions scan clean", () => {
+  const { fixtures } = JSON.parse(readFileSync(
+    new URL("../model/fixtures/completion-v1.json", import.meta.url), "utf8"
+  ));
+  const native = fixtures.filter(item => ["rust", "c", "cpp"].includes(item.language));
+  assert.equal(native.length, 18);
+  for (const item of native) {
+    assert.equal(inspect(item, item.expected), "clean", item.id);
+  }
 });
