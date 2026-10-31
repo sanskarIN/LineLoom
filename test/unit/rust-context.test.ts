@@ -137,14 +137,14 @@ describe("Rust feature-aware autocomplete guidance", () => {
   });
 
   it("preserves literal and lifetime token behavior around bounded lexical lookahead", () => {
-    const source = "fn borrow<'a>(s: &'a str) { let ch = 'x'; let byte = b'\\\\n'; " +
+    const source = "fn borrow<'a>(s: &'a str) { let ch = 'x'; let byte = b'\\n'; " +
       "println!(\"{}\", s); }";
     const scan = scanRustCode(source);
     expect(scan.state).toBe("code");
     expect(scan.code).toContain("borrow<'a>");
     expect(scan.code).toContain("&'a str");
     expect(scan.code).not.toContain("'x'");
-    expect(scan.code).not.toContain("b'\\\\n'");
+    expect(scan.code).not.toContain("b'\\n'");
     expect(scan.code).not.toContain('"{}"');
   });
 
