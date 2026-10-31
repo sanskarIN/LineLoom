@@ -93,8 +93,11 @@ completed Rust, C and C++ model requests, with per-language counts of
 and missing measurements are **unchecked, not clean**. The existing
 `nativeDelimiterMismatch` signal is tied to mismatch counts, and the
 source-free comparator validates the relationship before allowing any
-comparison. A changed checked/unchecked coverage is flagged for review
-instead of presenting fewer mismatches as a proven improvement.
+comparison. A changed checked/unchecked coverage **for any native language** is
+flagged for review, even if the overall inspected total is unchanged. Increases
+in Rust, C or C++ mismatch warnings are tracked independently, so improvements
+in one language cannot silently cancel a regression in another. Neither a
+clean lexical scan nor a favorable comparator output proves model correctness.
 
 This is a bounded lexical heuristic, **not** a parser, Rust/C/C++ compiler
 check or safe-to-run verdict. The Ollama benchmark identifier is now
