@@ -107,7 +107,7 @@ parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
 The current report format is `lineloom-synthetic-v7` and cannot be compared
-to previous v1–v5 Ollama reports; rerun both models with the same parser
+to previous v1–v6 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**
