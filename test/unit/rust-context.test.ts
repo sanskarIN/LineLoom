@@ -87,6 +87,41 @@ describe("Rust feature-aware autocomplete guidance", () => {
       .toContain("r#type");
   });
 
+  it("masks C strings and raw strings with up to 255 hash delimiters", () => {
+    const normalC = 'let value = c"match input { async fn run()';
+    expect(scanRustCode(normalC).state).toBe("string");
+    expect(rustContextHints(normalC)).toEqual([
+      expect.stringContaining("Rust string literal")
+    ]);
+    for (const prefix of ["r", "br", "cr"]) {
+      for (const count of [17, 32, 255]) {
+        const source = `let value = ${prefix}${"#".repeat(count)}"match input { async fn run()`;
+        const scan = scanRustCode(source);
+        expect(scan.state).toBe("raw-string");
+        expect(scan.code).not.toContain("match input");
+        expect(rustContextHints(source)).toEqual([
+          expect.stringContaining("Rust string literal")
+        ]);
+      }
+    }
+  });
+
+  it("resumes recognizing Rust code after long-delimited raw C strings close", () => {
+    const hashes = "#".repeat(32);
+    const source = `let text = cr${hashes}"trait Hidden { } " async fn hidden()"${hashes};\\nasync fn real() {`;
+    const scan = scanRustCode(source);
+    expect(scan.state).toBe("code");
+    expect(scan.code).not.toContain("Hidden");
+    expect(scan.code).not.toContain("hidden");
+    expect(scan.code).toContain("async fn real()");
+    expect(rustContextHints(source)).toEqual(
+      expect.arrayContaining([expect.stringContaining("Future and .await")])
+    );
+    const normalC = scanRustCode('let text = c"trait Hidden {};";\\nasync fn real() {}');
+    expect(normalC.code).not.toContain("Hidden");
+    expect(normalC.code).toContain("async fn real()");
+  });
+
   it("does not misclassify Rust lifetimes as character literals", () => {
     const scan = scanRustCode("fn borrow<'a>(x: &'a str) -> &'a str { x }");
     expect(scan.code).toContain("borrow<'a>");
