@@ -218,8 +218,16 @@ values, and fixed-language lists where loss rose or fell. A positive
 loss change means **higher (worse) validation loss**, not necessarily worse
 editor acceptance; a negative number is lower loss, not demonstrated
 code correctness. The comparison refuses unequal sample counts,
-missing language keys, or invalid numbers. It never reads the sealed
-test examples or prints source, repository identities or completions.
+missing language keys, or invalid numbers. It also recalculates the
+sample-weighted and five-language macro averages from the reported language
+means and sample counts, rejecting discrepancies beyond the six-decimal
+rounding tolerance. For token-weighted validation it independently checks
+the token-weighted and macro averages and rejects impossible per-language
+supervised-token totals (each sample contributes 1–257 target tokens).
+This blocks a forged aggregate improvement when language-level figures do
+not support it; it does **not** prove provenance, that samples are identical,
+or model quality. It never reads the sealed test examples or prints source,
+repository identities or completions.
 The extra validation pass costs local compute and will only run after
 the explicit approvals required by the training CLI.
 
