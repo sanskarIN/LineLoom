@@ -267,11 +267,11 @@ test("rejects forged TypeScript grammar counts and reports parser regressions wi
   const comparison = compareModelReports(baseline, worse);
   assert.equal(comparison.generatedTypeScriptSyntax.baselineChecked, 16);
   assert.equal(comparison.generatedTypeScriptSyntax.candidateChecked, 16);
-  assert.equal(comparison.generatedTypeScriptSyntax.candidateUnchecked, 64);
+  assert.equal(comparison.generatedTypeScriptSyntax.candidateUnchecked, 0);
   assert.equal(comparison.generatedTypeScriptSyntax.passedDelta, -2);
   assert.equal(comparison.generatedTypeScriptSyntax.failedDelta, 2);
   assert.ok(comparison.regressionReview.flags.includes("more-typescript-syntax-failures"));
-  assert.equal(comparison.generatedTypeScriptSyntax.baselineUnchecked, 64);
+  assert.equal(comparison.generatedTypeScriptSyntax.baselineUnchecked, 0);
   assert.ok(!JSON.stringify(comparison).includes(baseline.model));
   for (const mutation of [
     report => { delete report.generatedSyntax; },
@@ -293,7 +293,7 @@ test("rejects forged TypeScript grammar counts and reports parser regressions wi
   const rustScope = report({ selected: fixtures.filter(f => f.language === "rust") });
   const result = compareModelReports(rustScope, rustScope);
   assert.equal(result.generatedTypeScriptSyntax.baselineChecked, 0);
-  assert.equal(result.generatedTypeScriptSyntax.baselineUnchecked, 16);
+  assert.equal(result.generatedTypeScriptSyntax.baselineUnchecked, 0);
   assert.equal(result.generatedTypeScriptSyntax.passedDelta, 0);
 });
 
@@ -553,4 +553,24 @@ test("output-token telemetry does not establish hardware throughput comparabilit
   assert.ok(compared.outputTokenAccounting.candidate.tokensPerSecond >
     compared.outputTokenAccounting.baseline.tokensPerSecond);
   assert.ok(compared.warnings.some(x => x.includes("hardware")));
+});
+
+
+test("TypeScript unchecked metrics do not include other languages or unattempted TypeScript", () => {
+  const mixed = compareModelReports(report(), report());
+  assert.equal(mixed.generatedTypeScriptSyntax.baselineChecked, 16);
+  assert.equal(mixed.generatedTypeScriptSyntax.baselineUnchecked, 0);
+  assert.equal(mixed.generatedTypeScriptSyntax.candidateUnchecked, 0);
+  // The top-level unchecked count includes Rust/C/C++ and any unparsed Python
+  // completions, but must never be mislabeled as TypeScript-only coverage.
+  assert.ok(report().generatedSyntax.unchecked > 0);
+  const rust = fixtures.filter(item => item.language === "rust");
+  const onlyRust = compareModelReports(report({ selected: rust }), report({ selected: rust }));
+  assert.equal(onlyRust.generatedTypeScriptSyntax.baselineChecked, 0);
+  assert.equal(onlyRust.generatedTypeScriptSyntax.baselineUnchecked, 0);
+  assert.equal(onlyRust.generatedTypeScriptSyntax.candidateUnchecked, 0);
+  const forged = report();
+  forged.generatedSyntax.byLanguage.typescript.unchecked = 1;
+  forged.generatedSyntax.byLanguage.typescript.checked -= 1;
+  assert.throws(() => validateComparableReport(forged));
 });
