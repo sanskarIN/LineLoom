@@ -130,13 +130,16 @@ export function scanRustCode(source: string): RustScan {
 
 const HINTS = {
   match: "Rust match arms: preserve pattern bindings and guards; use =>, comma separators and existing braces correctly.",
+  patterns: "Rust if let/while let/let-else: preserve destructuring bindings and ownership; let-else fallback must diverge.",
   results: "Rust Result/Option: respect return types and use ? only when error/absence propagation is type-compatible; do not invent unwraps.",
   async: "Rust async code: preserve Future and .await placement, Send constraints and borrowing across suspension points.",
   traits: "Rust traits and impl blocks: respect associated types, self receivers, trait method signatures and existing where bounds.",
+  ffi: "Rust unsafe/FFI: preserve ABI signatures, pointer validity and safety invariants; do not invent unnecessary unsafe blocks.",
   borrow: "Rust ownership: preserve lifetimes, mutability and borrowed/owned values; avoid unnecessary clones or moves.",
   iter: "Rust iterators and closures: preserve item/reference types, closure captures, iterator adapters and collection targets.",
   macro: "Rust macros: preserve macro_rules! or invocation delimiter structure and Rust token-tree syntax.",
-  generics: "Rust generics: preserve type parameters, lifetimes, trait bounds and where clauses without guessing missing types."
+  generics: "Rust generics: preserve type parameters, lifetimes, trait bounds and where clauses without guessing missing types.",
+  constants: "Rust const contexts: respect const-evaluation rules, const generics and associated constants; avoid runtime-only operations."
 } as const;
 
 /** Fixed instructions only; never interpolate source, paths, identifiers or comments. */
@@ -156,13 +159,16 @@ export function rustContextHints(prefix: string): string[] {
   // Prioritize local completion patterns. Inspect only code tokens, never
   // quoted string or nested comment payloads.
   add(/\bmatch\b[\s\S]{0,650}\{|=>|\b(?:Some|None|Ok|Err)\s*\(/u.test(code.slice(-700)), HINTS.match);
+  add(/\b(?:if|while)\s+let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
   add(/\b(?:Result|Option)\s*</u.test(code) || /\b(?:Ok|Err|Some|None)\s*\(/u.test(code.slice(-600)) ||
       /\?\s*;?\s*$/u.test(code), HINTS.results);
   add(/\basync\s+(?:move\s+)?(?:fn|\{|move)|\.await\b|\bFuture\b/u.test(code), HINTS.async);
   add(/\b(?:trait\s+[A-Za-z_]|impl(?:\s*<|\s+[A-Za-z_]|\s*\{|\s*'|\s*&))|\b(?:Self|self)\s*\./u.test(code), HINTS.traits);
+  add(/\bunsafe\s*(?:fn|trait|impl|\{)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)/u.test(code), HINTS.ffi);
   add(/(?:&\s*(?:'\w+\s*)?mut\b|&'\w+\b|\b(?:ref\s+mut|move\s*\|)\b)/u.test(code), HINTS.borrow);
   add(/\.(?:iter|iter_mut|into_iter|map|filter|collect|fold|enumerate|flat_map)\s*(?:\(|::<)|\bmove\s*\|/u.test(code), HINTS.iter);
   add(/\bmacro_rules\s*!|\b[A-Za-z_]\w*!\s*[([{]/u.test(code), HINTS.macro);
   add(/\bwhere\b|\bfn\s+\w+\s*<|\bimpl\s*<|\b(?:dyn|impl)\s+[A-Z]\w*/u.test(code), HINTS.generics);
+  add(/\bconst\s+fn\b|\bconst\s+[A-Za-z_]\w*\s*[:=]|[<,]\s*const\s+[A-Za-z_]\w*\s*:/u.test(code), HINTS.constants);
   return hints;
 }
