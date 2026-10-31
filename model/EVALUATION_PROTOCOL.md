@@ -63,6 +63,44 @@ A failing inference returns a nonzero process exit code; preserve the
 aggregate failure count and do **not** quietly discard failed attempts.
 The evaluator prints only aggregate statistics, not source or generated code.
 
+## 3a. Run a same-scope paired local comparison (optional)
+
+When **both** reviewed models are already installed and a running Ollama
+instance is accessible on the local IPv4 loopback endpoint, you can compare
+them without manually saving and pairing two report files:
+
+```sh
+npm run model:eval:pair:dry -- --baseline qwen2.5-coder:1.5b --candidate local-research:dev --mode fim --runs 3
+npm run model:eval:pair -- --baseline qwen2.5-coder:1.5b --candidate local-research:dev --mode fim --runs 3
+npm run model:eval:pair -- --baseline qwen2.5-coder:1.5b --candidate local-research:dev --mode fim --language rust --runs 3
+```
+
+Model names here are **examples**, not verified local installations or
+recommended checkpoints. The command accepts only `--mode fim` or
+`--mode instruction` **explicitly** for both models, so their request
+specifications are identical apart from the model tag. It uses the same
+reviewed fixtures, generation settings and run count for each. For each run
+it performs a complete pass of one model and then the other; the first model
+alternates on subsequent runs. This is **not** a perfectly controlled
+experiment: cold-start, model residency, caching, power/thermal state and
+different quantizations can bias results.
+
+The dry run makes **zero** network calls and prints only fixed public-scope
+fingerprints, mode and bounded request counts. The live command can contact
+only `127.0.0.1:11434` through the existing evaluator and reports
+allowlisted source-free aggregate deltas, parser/lexer diagnostic counts,
+token metadata and review caveats. No reports or prompts are written to
+disk; model tags, source, responses and transport errors are not echoed.
+A failed model request still contributes a failure to the comparison and
+sets the process exit code to nonzero; do not ignore such failures when
+interpreting results. If parser coverage differs, the comparator fails
+closed rather than manufacturing a controlled comparison.
+
+The sequential pair is a **convenience for actual voluntary local inference**
+—not an evaluation already performed by the project, a performance ranking,
+hardware attestation, a reason to train on private source, or a release gate.
+Independent editor acceptance and detailed hardware notes remain required.
+
 ## 4. Interpret numbers accurately
 
 | Field | Correct interpretation |
