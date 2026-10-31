@@ -198,7 +198,7 @@ test("a single attempt cannot imply repeated-outcome stability", () => {
 
 
 test("evaluator's fixture identity binds original content and benchmark protocol", () => {
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v8");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v9");
   assert.match(fixtureSetSha256(fixtures), /^[a-f0-9]{64}$/);
   assert.match(requestSpecSha256(fixtures, "fim"), /^[a-f0-9]{64}$/);
   assert.equal(requestSpecSha256(fixtures, "fim"), requestSpecSha256([...fixtures].reverse(), "fim"));
