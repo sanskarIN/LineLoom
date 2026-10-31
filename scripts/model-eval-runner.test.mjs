@@ -61,6 +61,16 @@ test("reports nonmatching, markdown or hidden-control results as aggregate-only 
   assert.ok(!JSON.stringify(result).includes("\u202e"));
 });
 
+test("flags malformed real Rust continuation without claiming a syntax check", async () => {
+  const result = await run(async () => goodResponse(frame("2)", true)));
+  assert.equal(result.ok, true);
+  assert.equal(result.exact, false);
+  assert.equal(result.syntaxOutcome, "unchecked");
+  assert.ok(result.formatSignals.includes("nativeDelimiterMismatch"));
+  assert.ok(!Object.hasOwn(result, "output"));
+  assert.ok(!Object.hasOwn(result, "source"));
+});
+
 test("assesses generated TypeScript grammar locally without returning source or diagnostics", async () => {
   const evaluate = continuation => evaluateSyntheticFixture(
     typescriptFixture, "local-model:tag", "fim",
