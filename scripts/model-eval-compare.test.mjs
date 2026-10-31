@@ -413,3 +413,69 @@ test("native delimiter regression is only directly compared at equal scanner cov
   assert.equal(uncovered.nativeStructureCoverage.comparableInspectedCounts, false);
   assert.ok(!JSON.stringify(uncovered).includes("PRIVATE_SOURCE"));
 });
+
+
+function inspectNativeSamples(report, language, amount = 1) {
+  const metrics = report.nativeStructureDiagnostics;
+  metrics.byLanguage[language].clean += amount;
+  metrics.byLanguage[language].unchecked -= amount;
+  metrics.clean += amount;
+  metrics.unchecked -= amount;
+}
+function shiftNativeMismatch(report, language, direction = 1) {
+  const metrics = report.nativeStructureDiagnostics;
+  metrics.byLanguage[language].clean -= direction;
+  metrics.byLanguage[language].mismatch += direction;
+  metrics.clean -= direction;
+  metrics.mismatch += direction;
+  report.formatDiagnostics.signals.nativeDelimiterMismatch += direction;
+  report.formatDiagnostics.completedWithoutFormatSignals -= direction;
+}
+
+test("rejects swapped Rust/C++ scanner coverage despite equal global inspected counts", () => {
+  const baseline = report({ count: 0 });
+  inspectNativeSamples(baseline, "rust", 2);
+  const candidate = structuredClone(baseline);
+  inspectNativeSamples(candidate, "rust", -1);
+  inspectNativeSamples(candidate, "cpp", 1);
+  assert.equal(validateComparableReport(candidate).nativeStructureDiagnostics.clean, 2);
+  assert.equal(baseline.nativeStructureDiagnostics.clean, candidate.nativeStructureDiagnostics.clean);
+
+  const comparison = compareModelReports(baseline, candidate);
+  assert.equal(comparison.regressionReview.nativeStructureCoverageComparable, false);
+  assert.deepEqual(comparison.regressionReview.languagesWithMoreNativeMismatches, []);
+  assert.ok(comparison.regressionReview.flags.includes("different-native-structure-coverage"));
+  assert.ok(!comparison.regressionReview.flags.includes("more-native-delimiter-mismatches"));
+  assert.equal(comparison.nativeStructureCoverage.comparableInspectedCounts, false);
+  assert.deepEqual(comparison.nativeStructureCoverage.perLanguageInspectedDelta,
+    { rust: -1, c: 0, cpp: 1 });
+});
+
+test("catches worse Rust mismatches even when C++ improvement hides global increase", () => {
+  const baseline = report({ count: 0 });
+  inspectNativeSamples(baseline, "rust", 2);
+  inspectNativeSamples(baseline, "cpp", 2);
+  shiftNativeMismatch(baseline, "cpp", 1);
+
+  const candidate = structuredClone(baseline);
+  shiftNativeMismatch(candidate, "cpp", -1);
+  shiftNativeMismatch(candidate, "rust", 1);
+  assert.equal(baseline.nativeStructureDiagnostics.mismatch, candidate.nativeStructureDiagnostics.mismatch);
+
+  const comparison = compareModelReports(baseline, candidate);
+  assert.equal(comparison.nativeStructureCoverage.comparableInspectedCounts, true);
+  assert.equal(comparison.regressionReview.nativeStructureCoverageComparable, true);
+  assert.deepEqual(comparison.regressionReview.languagesWithMoreNativeMismatches, ["rust"]);
+  assert.ok(comparison.regressionReview.flags.includes("more-native-delimiter-mismatches"));
+  assert.deepEqual(comparison.nativeStructureCoverage.perLanguageMismatchDelta,
+    { rust: 1, c: 0, cpp: -1 });
+  assert.equal(comparison.nativeStructureCoverage.perLanguageInspectedDelta.rust, 0);
+});
+
+test("zero coverage in all native languages is comparable but not a syntax pass", () => {
+  const comparison = compareModelReports(report({ count: 0 }), report({ count: 0 }));
+  assert.equal(comparison.nativeStructureCoverage.comparableInspectedCounts, true);
+  assert.equal(comparison.nativeStructureCoverage.baseline.clean, 0);
+  assert.equal(comparison.nativeStructureCoverage.baseline.unchecked, 36);
+  assert.deepEqual(comparison.regressionReview.languagesWithMoreNativeMismatches, []);
+});

@@ -159,8 +159,13 @@ names, bounded integer counts, and no source or fixture IDs.
 The offline comparator refuses impossible totals, unknown fields and any
 disagreement between the mismatch count and corresponding format signal.
 A rise in mismatch warnings is flagged as a comparable regression **only
-when the number of inspected native completions is equal**; otherwise it
-flags the differing coverage for manual review. Neither comparison is a
+when the number of inspected completions is equal independently for Rust,
+C and C++**. Equal aggregate counts alone are insufficient: coverage can
+shift between languages while preserving the total. The comparator also
+flags a worse mismatch count in any one native language even when improvements
+elsewhere leave the overall mismatch count unchanged. It outputs only fixed
+language names and per-language count deltas; a coverage difference becomes
+a manual-review flag, not evidence of model quality. Neither comparison is a
 release approval. The protocol changes to `lineloom-synthetic-v8`;
 v7 and older reports must be rerun for controlled comparison.
 
