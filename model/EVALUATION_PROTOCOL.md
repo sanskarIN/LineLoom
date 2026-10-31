@@ -91,6 +91,15 @@ only `127.0.0.1:11434` through the existing evaluator and reports
 allowlisted source-free aggregate deltas, parser/lexer diagnostic counts,
 token metadata and review caveats. No reports or prompts are written to
 disk; model tags, source, responses and transport errors are not echoed.
+The live output also includes `pairedStrictExact`: same-fixture,
+same-repetition `candidateWins`, `baselineWins`, `bothExact`,
+`neitherExact` and `failedPairs`, with counts by language and fixture
+category. Only successful responses for **both models** enter the win/tie
+comparison; failed pairs are reported separately, never counted as a
+candidate or baseline loss. These are descriptive strict-string scores,
+not compiler success, statistical significance or proof of a better
+autocomplete model. Repeated fixtures are correlated observations.
+
 A failed model request still contributes a failure to the comparison and
 sets the process exit code to nonzero; do not ignore such failures when
 interpreting results. If parser coverage differs, the comparator fails
