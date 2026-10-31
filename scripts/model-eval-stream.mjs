@@ -1,4 +1,5 @@
 import { performance } from "node:perf_hooks";
+import { checkedOllamaTokenUsage } from "./model-eval-token-accounting.mjs";
 
 /**
  * Bounded, strictly decoded Ollama NDJSON reader for developer-run model tests.
@@ -18,6 +19,7 @@ export async function consumeOllamaStream(stream, started, clock = () => perform
   let receivedBytes = 0;
   let frames = 0;
   let finished = false;
+  let tokenUsage = null;
 
   const frame = (line) => {
     if (!line.trim()) return;
@@ -36,7 +38,15 @@ export async function consumeOllamaStream(stream, started, clock = () => perform
       output += payload.response;
       if (output.length > 8192) throw new Error("output-limit");
     }
-    if (payload.done === true) finished = true;
+    if (payload.done === true) {
+      const hasCount = Object.hasOwn(payload, "eval_count");
+      const hasDuration = Object.hasOwn(payload, "eval_duration");
+      if (hasCount !== hasDuration) throw new Error("incomplete-token-metadata");
+      if (hasCount) tokenUsage = checkedOllamaTokenUsage({
+        generatedTokens: payload.eval_count, generationDurationNs: payload.eval_duration
+      });
+      finished = true;
+    }
   };
 
   try {
@@ -66,7 +76,7 @@ export async function consumeOllamaStream(stream, started, clock = () => perform
       if (pending.length > 65536) throw new Error("line-limit");
     }
     if (!finished) throw new Error("incomplete-stream");
-    return { output, firstTokenMs };
+    return { output, firstTokenMs, tokenUsage };
   } finally {
     signal?.removeEventListener("abort", onAbort);
     await reader.cancel().catch(() => undefined);
