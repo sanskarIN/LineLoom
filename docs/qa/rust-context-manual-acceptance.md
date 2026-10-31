@@ -11,8 +11,9 @@ local model** (one not recognized as native suffix-aware FIM), LineLoom now
 appends up to four fixed Rust-context instructions after the ordinary language
 guidance. The instructions are selected locally from the **existing approved,
 bounded** prefix; no extra files, Cargo metadata, crates or external services
-are read. The scanner masks ordinary strings, byte strings, raw strings,
-line comments, nested block comments and complete character literals. It
+are read. The scanner masks ordinary, byte and C strings, raw strings (including
+C raw strings and up to 255 `#` delimiters), line comments, nested block
+comments and complete character literals. It
 preserves apostrophes that begin lifetime names.
 
 The supported *guidance cases*, not model-quality guarantees, include:
@@ -40,8 +41,8 @@ download any AI model.
    `&'a mut` references, iterator/closure adapters, and a
    `macro_rules!` invocation. Record failures as well as successes.
 4. Move the cursor inside a line comment, nested block comment, normal
-   string and raw string. Verify the suggestion does not switch to
-   executable Rust code or repeat a closing delimiter.
+   string, C string, and raw string with many `#` delimiters. Verify the
+   suggestion does not switch to executable Rust code or repeat a closing delimiter.
 5. Switch to an installed, recognized **native FIM** model. Inspect
    an isolated local mock request and confirm it sends only the existing
    bounded cursor prefix and a separate suffix, not the new Rust hints.
