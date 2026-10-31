@@ -119,3 +119,48 @@ test("rejects excess NDJSON frames even with individually short valid lines", as
   lines.push(entry("", true));
   await assert.rejects(consumeOllamaStream(stream(lines), 0, () => 1));
 });
+
+
+test("accepts bounded Ollama terminal token counters without logging output", async () => {
+  const body = JSON.stringify({
+    response: "private generated text", done: true,
+    eval_count: 17, eval_duration: 250_000_000,
+    prompt_eval_count: 65, total_duration: 1_000_000_000
+  }) + "\n";
+  const result = await consumeOllamaStream(stream([body]), 0, () => 25);
+  assert.deepEqual(result.tokenUsage, {
+    generatedTokens: 17, generationDurationNs: 250_000_000
+  });
+  assert.equal(result.firstTokenMs, 25);
+  assert.ok(!JSON.stringify(result.tokenUsage).includes("private"));
+});
+
+test("incomplete, malformed or unsafe terminal counters fail closed without source", async () => {
+  const invalid = [
+    { eval_count: 5 },
+    { eval_duration: 1_000 },
+    { eval_count: -1, eval_duration: 1_000 },
+    { eval_count: "5", eval_duration: 1_000 },
+    { eval_count: 5, eval_duration: 0 },
+    { eval_count: 0, eval_duration: 5 },
+    { eval_count: 4097, eval_duration: 1_000 },
+    { eval_count: 5, eval_duration: Number.MAX_SAFE_INTEGER },
+    { eval_count: true, eval_duration: 50 },
+  ];
+  for (const fields of invalid) {
+    const line = JSON.stringify({
+      response: "PRIVATE_OUTPUT", done: true, ...fields
+    }) + "\n";
+    await assert.rejects(consumeOllamaStream(stream([line]), 0, () => 1), err => {
+      assert.ok(!String(err).includes("PRIVATE_OUTPUT"));
+      return true;
+    });
+  }
+});
+
+test("a terminal frame without optional token metadata remains explicitly unchecked", async () => {
+  const result = await consumeOllamaStream(stream([
+    JSON.stringify({ response: "abc", done: true }) + "\n"
+  ]), 0, () => 1);
+  assert.equal(result.tokenUsage, null);
+});
