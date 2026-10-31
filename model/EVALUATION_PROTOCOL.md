@@ -144,7 +144,12 @@ requests are counted separately from successful inference with parser
 results. `generatedSyntax` provides source-free by-language counts.
 The offline comparison rejects impossible allocations, more exact matches
 than checked grammar passes could support, and comparisons with different
-Python checked counts. Its regression review flags increases in Python or
+Python checked counts.
+The comparator's `generatedTypeScriptSyntax.baselineUnchecked` and
+`candidateUnchecked` fields count **only completed TypeScript requests left
+unchecked**, not the entire benchmark's Rust, C, C++ or Python unchecked
+sample totals. With the current TypeScript parser these fields are always
+zero for valid reviewed reports, even on a Rust-only run. Its regression review flags increases in Python or
 TypeScript parser failures, but neither flags nor passes prove model quality.
 
 **Re-run both baselines under v9.** Earlier Ollama v1–v8 reports are
