@@ -208,6 +208,51 @@ test("completion format signals must cover precisely the flagged completion unio
   assert.equal(validateComparableReport(overlapping).formatDiagnostics.signals.prefixEcho, 2);
 });
 
+test("compares isolated Python AST evidence and rejects incompatible parser coverage", () => {
+  const baseline = report({ count: 0 });
+  const candidate = report({ count: 0 });
+  for (const entry of [baseline, candidate]) {
+    const python = entry.generatedSyntax.byLanguage.python;
+    assert.equal(python.completed, 12);
+    python.checked = 12;
+    python.passed = 12;
+    python.unchecked = 0;
+    entry.generatedSyntax.checked += 12;
+    entry.generatedSyntax.passed += 12;
+    entry.generatedSyntax.unchecked -= 12;
+  }
+  assert.equal(validateComparableReport(baseline).generatedSyntax.byLanguage.python.checked, 12);
+  candidate.generatedSyntax.byLanguage.python.passed -= 2;
+  candidate.generatedSyntax.byLanguage.python.failed += 2;
+  candidate.generatedSyntax.passed -= 2;
+  candidate.generatedSyntax.failed += 2;
+  const comparison = compareModelReports(baseline, candidate);
+  assert.equal(comparison.generatedPythonSyntax.baselineChecked, 12);
+  assert.equal(comparison.generatedPythonSyntax.candidateChecked, 12);
+  assert.equal(comparison.generatedPythonSyntax.failedDelta, 2);
+  assert.equal(comparison.generatedPythonSyntax.passedDelta, -2);
+  assert.ok(comparison.regressionReview.flags.includes("more-python-syntax-failures"));
+  assert.ok(!JSON.stringify(comparison).includes("local-test-a"));
+
+  // A local Python interpreter absent in only one run makes syntax
+  // comparisons unreliable, even when all other report hashes match.
+  assert.throws(() => compareModelReports(report({ count: 0 }), candidate),
+    /incompatible-python-parser-coverage/);
+
+  // Python strict equality cannot outrun parser passes when all results
+  // were checked; an unchecked result can never be claimed as a pass.
+  const forged = report({ count: 7 });
+  const python = forged.generatedSyntax.byLanguage.python;
+  python.checked = 12;
+  python.passed = 0;
+  python.failed = 12;
+  python.unchecked = 0;
+  forged.generatedSyntax.checked += 12;
+  forged.generatedSyntax.failed += 12;
+  forged.generatedSyntax.unchecked -= 12;
+  assert.throws(() => validateComparableReport(forged), /invalid-language-generated-syntax/);
+});
+
 test("rejects forged TypeScript grammar counts and reports parser regressions without source", () => {
   const baseline = report();
   const worse = structuredClone(report());
