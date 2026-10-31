@@ -227,7 +227,7 @@ describe("Rust feature-aware autocomplete guidance", () => {
       "fn f(input: Option<i32>) { let Some(value) = input else { return; }; "
     ]) {
       const hints = rustContextHints(source);
-      expect(hints).toContain(expect.stringContaining("let-else fallback must diverge"));
+      expect(hints.some(h => h.includes("let-else fallback must diverge"))).toBe(true);
       expect(hints.length).toBeLessThanOrEqual(4);
     }
   });
@@ -238,9 +238,7 @@ describe("Rust feature-aware autocomplete guidance", () => {
       "struct Array<const N: usize> { ",
       "impl Config { const CAPACITY: usize = "
     ]) {
-      expect(rustContextHints(source)).toContain(
-        expect.stringContaining("const-evaluation rules")
-      );
+      expect(rustContextHints(source).some(h => h.includes("const-evaluation rules"))).toBe(true);
     }
   });
 
@@ -251,9 +249,7 @@ describe("Rust feature-aware autocomplete guidance", () => {
       'extern "C" fn callback(value: i32) { ',
       "#[repr(C)] struct Header { "
     ]) {
-      expect(rustContextHints(source)).toContain(
-        expect.stringContaining("do not invent unnecessary unsafe blocks")
-      );
+      expect(rustContextHints(source).some(h => h.includes("do not invent unnecessary unsafe blocks"))).toBe(true);
     }
   });
 
