@@ -100,7 +100,7 @@ The stable extension and `SanskarCodes.lineloom` publisher are unaffected.
 ## Public benchmark reference syntax audit (optional, no model inference)
 
 Before attributing strict-match results to a model, independently check that
-the 30 original synthetic **reference continuations** form valid source after
+the 40 original synthetic **reference continuations** form valid source after
 insertion between their fixed prefixes and suffixes. This is a limited
 baseline-fixture validation, **not** compiler-backed evaluation of model
 outputs, meaningful runtime correctness, security or a trained LineLoom model.
@@ -114,7 +114,7 @@ npm run model:reference:syntax -- --run --approve-local-compilers
 npm run model:reference:syntax -- --language python --run --approve-local-compilers
 ```
 
-The `Public reference syntax (Linux)` CI job runs the same checked-in 30
+The `Public reference syntax (Linux)` CI job runs the same checked-in 40
 synthetic references through installed toolchains using explicit approval
 flags. VSIX candidate packaging now depends on that job. These results
 apply only to public reference syntax on the CI runner, not model output,
@@ -143,8 +143,8 @@ library tests with `npm run test:model-training`, no compilers required.
 
 A separate `model/train/smoke.py` lets a developer manually compare
 an independently installed base model to a **locally trained** LoRA adapter
-using **only** the 30 original checked-in synthetic completion probes
-(six each: Rust, C, C++, Python, TypeScript). No raw prompts or model
+using **only** the 40 original checked-in synthetic completion probes
+(eight each: Rust, C, C++, Python, TypeScript). No raw prompts or model
 responses are printed, stored or uploaded.
 
 ```sh
@@ -364,7 +364,7 @@ Only aggregate counts are stored; per-case tokens and completions remain
 in memory for the local synthetic exact-match check.
 
 The v9 smoke runner validates the **actual generated Python and TypeScript
-insertions** on fixed public synthetic FIM probes (six per language).
+insertions** on fixed public synthetic FIM probes (eight per language).
 Python uses standard-library `ast.parse` in memory. TypeScript uses
 the same pinned `typescript` parser as the local Ollama benchmark, called
 through an explicit offline Node subprocess on a bounded stdin JSON
