@@ -26,10 +26,13 @@ function readRustRaw(text, start) {
   if (text[pos] === "b" || text[pos] === "c") pos++;
   if (text[pos] !== "r" || isName(text[start - 1])) return null;
   pos++;
-  while (text[pos] === "#" && pos - start <= 257) pos++;
+  let hashes = 0;
+  while (text[pos] === "#") {
+    hashes++;
+    if (hashes > 255) return "unchecked";
+    pos++;
+  }
   if (text[pos] !== '"') return null; // r#identifier is not a string.
-  const hashes = pos - (start + (text[start] === "r" ? 1 : 2));
-  if (hashes > 255) return "unchecked";
   const delimiter = '"' + "#".repeat(hashes);
   const end = text.indexOf(delimiter, pos + 1);
   return end < 0 ? -1 : end + delimiter.length;
