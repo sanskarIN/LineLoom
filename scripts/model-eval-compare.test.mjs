@@ -358,3 +358,58 @@ test("offline CLI compares bounded report files and never echoes injected model/
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+
+test("native scanner coverage is explicit, cannot be forged and never leaks code", () => {
+  const baseline = report();
+  const valid = validateComparableReport(baseline);
+  assert.equal(valid.nativeStructureDiagnostics.completed, 36);
+  assert.equal(valid.nativeStructureDiagnostics.unchecked, 36);
+  assert.equal(valid.nativeStructureDiagnostics.clean, 0);
+
+  const mutations = [
+    r => { delete r.nativeStructureDiagnostics; },
+    r => { r.nativeStructureDiagnostics.method = "forged"; },
+    r => { r.nativeStructureDiagnostics.clean = 1; },
+    r => { r.nativeStructureDiagnostics.byLanguage.rust.unchecked -= 1; },
+    r => { r.nativeStructureDiagnostics.byLanguage.c.source = "PRIVATE_SOURCE"; },
+    r => { r.nativeStructureDiagnostics.mismatch = true; },
+    r => { r.nativeStructureDiagnostics.byLanguage.cpp.completed = 0; },
+  ];
+  for (const mutate of mutations) {
+    const malformed = structuredClone(baseline);
+    mutate(malformed);
+    assert.throws(() => validateComparableReport(malformed));
+  }
+});
+
+test("native delimiter regression is only directly compared at equal scanner coverage", () => {
+  const baseline = report();
+  const checkedBaseline = structuredClone(baseline);
+  checkedBaseline.nativeStructureDiagnostics.clean++;
+  checkedBaseline.nativeStructureDiagnostics.unchecked--;
+  checkedBaseline.nativeStructureDiagnostics.byLanguage.rust.clean++;
+  checkedBaseline.nativeStructureDiagnostics.byLanguage.rust.unchecked--;
+  assert.equal(validateComparableReport(checkedBaseline).nativeStructureDiagnostics.clean, 1);
+
+  const candidate = structuredClone(checkedBaseline);
+  candidate.nativeStructureDiagnostics.clean--;
+  candidate.nativeStructureDiagnostics.mismatch++;
+  candidate.nativeStructureDiagnostics.byLanguage.rust.clean--;
+  candidate.nativeStructureDiagnostics.byLanguage.rust.mismatch++;
+  candidate.formatDiagnostics.completedWithoutFormatSignals--;
+  candidate.formatDiagnostics.signals.nativeDelimiterMismatch++;
+  const delta = compareModelReports(checkedBaseline, candidate);
+  assert.equal(delta.regressionReview.nativeStructureCoverageComparable, true);
+  assert.ok(delta.regressionReview.flags.includes("more-native-delimiter-mismatches"));
+  assert.equal(delta.nativeStructureCoverage.candidate.mismatch, 1);
+  assert.equal(delta.nativeStructureCoverage.perLanguageUncheckedDelta.rust, 0);
+
+  // A candidate that simply leaves a previously inspected response unchecked
+  // cannot advertise reduced mismatch counts as a quality improvement.
+  const uncovered = compareModelReports(checkedBaseline, baseline);
+  assert.equal(uncovered.regressionReview.nativeStructureCoverageComparable, false);
+  assert.ok(uncovered.regressionReview.flags.includes("different-native-structure-coverage"));
+  assert.equal(uncovered.nativeStructureCoverage.comparableInspectedCounts, false);
+  assert.ok(!JSON.stringify(uncovered).includes("PRIVATE_SOURCE"));
+});
