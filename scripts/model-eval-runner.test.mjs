@@ -46,6 +46,7 @@ test("uses fixed loopback URL and exact generation settings without exposing the
   assert.equal(result.totalMs, 0);
   assert.deepEqual(result.formatSignals, []);
   assert.equal(result.syntaxOutcome, "unchecked");
+  assert.equal(result.nativeStructureOutcome, "clean");
   assert.ok(!JSON.stringify(result).includes("local-model:tag"));
   assert.ok(!Object.hasOwn(result, "output"));
 });
@@ -67,6 +68,7 @@ test("flags malformed real Rust continuation without claiming a syntax check", a
   assert.equal(result.exact, false);
   assert.equal(result.syntaxOutcome, "unchecked");
   assert.ok(result.formatSignals.includes("nativeDelimiterMismatch"));
+  assert.equal(result.nativeStructureOutcome, "mismatch");
   assert.ok(!Object.hasOwn(result, "output"));
   assert.ok(!Object.hasOwn(result, "source"));
 });
@@ -81,6 +83,7 @@ test("assesses generated TypeScript grammar locally without returning source or 
   assert.equal(exact.ok, true);
   assert.equal(exact.exact, true);
   assert.equal(exact.syntaxOutcome, "passed");
+  assert.equal(exact.nativeStructureOutcome, "unchecked");
   const validAlternative = await evaluate("value + value");
   assert.equal(validAlternative.exact, false);
   assert.equal(validAlternative.syntaxOutcome, "passed");
