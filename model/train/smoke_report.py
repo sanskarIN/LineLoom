@@ -43,7 +43,7 @@ def read_public_fixtures(language: str) -> list[dict]:
             not isinstance(raw.get("fixtures"), list)):
         raise SmokeReportRejected("invalid-public-probes")
     fixtures = raw["fixtures"]
-    if len(fixtures) != 30:
+    if len(fixtures) != 40:
         raise SmokeReportRejected("invalid-public-coverage")
     ids: set[str] = set()
     counts = dict.fromkeys(LANGUAGES, 0)
@@ -58,7 +58,7 @@ def read_public_fixtures(language: str) -> list[dict]:
             raise SmokeReportRejected("invalid-public-probes")
         ids.add(fixture["id"])
         counts[fixture["language"]] += 1
-    if any(count != 6 for count in counts.values()):
+    if any(count != 8 for count in counts.values()):
         raise SmokeReportRejected("invalid-public-coverage")
     return [fixture for fixture in fixtures
             if language == "all" or fixture["language"] == language]
@@ -130,7 +130,7 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
     a slower but longer completion as a like-for-like latency regression.
     Duration covers model.generate only; it is NOT editor latency.
     """
-    if (not isinstance(results, list) or not 1 <= len(results) <= 30 or
+    if (not isinstance(results, list) or not 1 <= len(results) <= 40 or
             type(max_new_tokens) is not int or not 1 <= max_new_tokens <= 128):
         raise SmokeReportRejected("invalid-generation-measurements")
     buckets: dict[str, list[int]] = {language: [] for language in LANGUAGES}
