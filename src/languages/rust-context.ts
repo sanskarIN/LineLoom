@@ -89,8 +89,9 @@ export function scanRustCode(source: string): RustScan {
       blockDepth = 1;
       continue;
     }
-    // Recognize Rust r-string and br-string delimiters, not raw identifiers.
-    const raw = /^(?:br|r)(#{0,16})"/u.exec(rest);
+    // Recognize ordinary, byte, and C raw strings through Rust's 255-hash
+    // delimiter limit; do not treat raw identifiers like r#type as strings.
+    const raw = /^(?:br|cr|r)(#{0,255})"/u.exec(rest);
     if (raw && raw[0]) {
       rawHashes = raw[1] ?? "";
       mask(raw[0]);
@@ -98,8 +99,8 @@ export function scanRustCode(source: string): RustScan {
       state = "raw-string";
       continue;
     }
-    if (current === '"' || (current === "b" && text[index + 1] === '"')) {
-      const opening = current === "b" ? 'b"' : '"';
+    if (current === '"' || ((current === "b" || current === "c") && text[index + 1] === '"')) {
+      const opening = current === '"' ? '"' : current + '"';
       mask(opening);
       index += opening.length;
       state = "string";
