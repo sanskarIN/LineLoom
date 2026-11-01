@@ -106,7 +106,7 @@ describe("C/C++ source-aware instruction context", () => {
   });
 
   it("handles escaped quotes and closed multiline block comments", () => {
-    const source = 'const char *s = "a\\\" // std::move(fake)";\n' +
+    const source = 'const char *s = "a\\" // std::move(fake)";\n' +
       "/* comment \n template <typename Fake> */\n" +
       "template <typename Real> class Box {};\n";
     const scan = scanNativeCode(source, "cpp");
