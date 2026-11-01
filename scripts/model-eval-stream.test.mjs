@@ -164,3 +164,64 @@ test("a terminal frame without optional token metadata remains explicitly unchec
   ]), 0, () => 1);
   assert.equal(result.tokenUsage, null);
 });
+
+/** Bounded test watchdog: detects a cancellation deadlock without hanging CI. */
+async function settleBeforeWatchdog(work, timeoutMs = 750) {
+  let timeout;
+  try {
+    return await Promise.race([
+      work.then(
+        () => ({ kind: "success" }),
+        () => ({ kind: "rejected" })
+      ),
+      new Promise(resolve => {
+        timeout = setTimeout(() => resolve({ kind: "hung" }), timeoutMs);
+      })
+    ]);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+test("malformed NDJSON fails even if stream cancellation never settles", async () => {
+  let cancelCalled = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode('{"response":42,"done":true}\n'));
+      // Deliberately do not close: a misbehaving endpoint can leave it open.
+    },
+    cancel() {
+      cancelCalled++;
+      return new Promise(() => {}); // Never acknowledges cancellation.
+    }
+  });
+  const result = await settleBeforeWatchdog(consumeOllamaStream(body, 0, () => 1));
+  assert.equal(result.kind, "rejected");
+  assert.equal(cancelCalled, 1);
+});
+
+test("timeout settles despite a never-resolving stream cancellation promise", async () => {
+  let cancelCalled = 0;
+  const body = new ReadableStream({
+    start(controller) {
+      controller.enqueue(encoder.encode(entry("PRIVATE_INSERTION", true)));
+      // Terminal frame, but no clean EOF: benchmark must wait for timeout.
+    },
+    cancel() {
+      cancelCalled++;
+      return new Promise(() => {});
+    }
+  });
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), 10);
+  try {
+    const result = await settleBeforeWatchdog(
+      consumeOllamaStream(body, 0, () => 1, abort.signal)
+    );
+    assert.equal(result.kind, "rejected");
+    assert.equal(abort.signal.aborted, true);
+    assert.equal(cancelCalled, 1);
+  } finally {
+    clearTimeout(timer);
+  }
+});

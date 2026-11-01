@@ -79,7 +79,11 @@ export async function consumeOllamaStream(stream, started, clock = () => perform
     return { output, firstTokenMs, tokenUsage };
   } finally {
     signal?.removeEventListener("abort", onAbort);
-    await reader.cancel().catch(() => undefined);
+    // A nonstandard server/stream can leave cancellation pending forever.
+    // Cleanup is best-effort: never let an unresolved cancel() promise bypass
+    // the per-fixture timeout or prevent a malformed response from failing.
+    // Match the production extension's non-blocking cancellation semantics.
+    void reader.cancel().catch(() => undefined);
     reader.releaseLock();
   }
 }
