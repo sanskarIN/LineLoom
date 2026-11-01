@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -204,6 +205,25 @@ def encode_fim(sample: dict, tokenizer, max_tokens: int) -> dict:
     }
 
 
+def clip_gradients_safely(clipper, parameters) -> float:
+    """Fail before optimizer.step on non-finite gradient norms.
+
+    The real torch.nn.utils.clip_grad_norm_ must support the strict
+    error_if_nonfinite flag; don't fall back to its permissive default.
+    The returned norm is numeric only and never goes into experiment reports.
+    A local failure must not publish/save an adapter.
+    """
+    try:
+        norm = float(clipper(
+            parameters, max_norm=1.0, error_if_nonfinite=True
+        ))
+    except (ValueError, TypeError, RuntimeError, OverflowError):
+        raise ExperimentRejected("invalid-training-gradient-norm") from None
+    if not math.isfinite(norm) or norm < 0:
+        raise ExperimentRejected("invalid-training-gradient-norm")
+    return norm
+
+
 def pad_examples(examples: list[dict], pad_token_id: int) -> dict:
     if not examples:
         raise ExperimentRejected("empty-batch")
@@ -361,7 +381,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
             if not torch.isfinite(output.loss).all():
                 raise ExperimentRejected("nonfinite-training-loss")
             (output.loss * scale).backward()
-        torch.nn.utils.clip_grad_norm_(parameters, max_norm=1.0)
+        # A finite mean training loss does not imply finite gradients:
+        # backpropagation, scaling and clipping can still overflow.
+        clip_gradients_safely(torch.nn.utils.clip_grad_norm_, parameters)
         optimizer.step()
 
     model.eval()
