@@ -7,7 +7,8 @@ export interface QuickAction {
 }
 export function quickActions(
   enabled: boolean, automatic: boolean, performanceDiagnostics = false,
-  crossFileContextEnabled = false, relatedFileCount = 0
+  crossFileContextEnabled = false, relatedFileCount = 0,
+  activeFilePaused?: boolean, pausedFileCount = 0
 ): QuickAction[] {
   return [
     {
@@ -22,6 +23,18 @@ export function quickActions(
       description: "Manual completion remains available while automatic suggestions are paused",
       command: "lineloom.toggleAutomatic"
     },
+    ...(activeFilePaused !== undefined ? [{
+      id: "toggleFilePause",
+      label: activeFilePaused ? "$(play) Resume Suggestions for This File" : "$(debug-pause) Pause Suggestions for This File",
+      description: "Session-only: block manual and automatic completions for the active local file",
+      command: "lineloom.toggleFilePause"
+    }] : []),
+    ...(pausedFileCount > 0 ? [{
+      id: "clearFilePauses",
+      label: "$(clear-all) Resume All Session-Paused Files",
+      description: "Clear session-only file pauses without changing preferences",
+      command: "lineloom.clearFilePauses"
+    }] : []),
     { id: "trigger", label: "$(sparkle) Trigger Completion", description: "Request a suggestion at the current cursor", command: "lineloom.trigger" },
     { id: "cancel", label: "$(debug-stop) Stop Current Generation",
       description: "Cancel any queued or in-flight request without disabling future suggestions",

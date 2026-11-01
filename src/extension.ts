@@ -330,9 +330,12 @@ async function setupGuide(
 }
 async function openQuickActions(): Promise<void> {
   const config = readConfig();
+  const uri = vscode.window.activeTextEditor?.document.uri;
+  const activeFilePaused = uri?.scheme === "file" ? engine?.isFilePaused(uri) : undefined;
   const choice = await vscode.window.showQuickPick(
     quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics,
-      config.crossFileContext, engine?.getRelatedFileCount() ?? 0).map((action) => ({
+      config.crossFileContext, engine?.getRelatedFileCount() ?? 0,
+       activeFilePaused, engine?.getPausedFileCount() ?? 0).map((action) => ({
       label: action.label, description: action.description, command: action.command
     })),
     { placeHolder: "LineLoom Quick Actions — choose an action" }
@@ -419,7 +422,12 @@ export function activate(context: vscode.ExtensionContext): void {
     () => engine?.getRelatedFileCount() ?? 0,
     () => modelReadiness.state,
     () => filePrivacy.state,
-    () => activeModelReadiness.state
+    () => activeModelReadiness.state,
+    () => {
+      const uri = vscode.window.activeTextEditor?.document.uri;
+      return uri?.scheme === "file" && Boolean(engine?.isFilePaused(uri));
+    },
+    () => engine?.getPausedFileCount() ?? 0
   );
   engine = new CompletionEngine(
     (state) => {
@@ -460,6 +468,33 @@ export function activate(context: vscode.ExtensionContext): void {
     sidebar.refresh();
   });
   command("lineloom.quickActions", () => openQuickActions());
+  command("lineloom.toggleFilePause", () => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    if (!uri || uri.scheme !== "file") {
+      void vscode.window.showInformationMessage("LineLoom: open a local file to pause suggestions.");
+      return;
+    }
+    const previouslyPaused = engine?.isFilePaused(uri) ?? false;
+    if (!engine?.setFilePaused(uri, !previouslyPaused)) {
+      void vscode.window.showWarningMessage(
+        "LineLoom: 128 files are paused this session; resume one or clear pauses before adding another."
+      );
+      return;
+    }
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage(previouslyPaused
+      ? "LineLoom: suggestions resumed for this file."
+      : "LineLoom: manual and automatic suggestions paused for this file until resumed or session end.");
+  });
+  command("lineloom.clearFilePauses", () => {
+    engine?.clearPausedFiles();
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage("LineLoom: session-only file pauses cleared.");
+  });
   command("lineloom.refreshSidebar", () => sidebar.refresh());
   command("lineloom.openSidebar", () => vscode.commands.executeCommand("workbench.view.extension.lineloom"));
   command("lineloom.toggleAutomatic", async () => {
