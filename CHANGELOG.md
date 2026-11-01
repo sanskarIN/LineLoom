@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — optional per-language LoRA validation export gate
+
+- Add `--fail-on-validation-regression` for explicitly approved local LoRA experiments. Block adapter export if any target language's sample-mean or token-weighted loss increases, even when the overall loss improves; also block aggregate and macro loss regressions.
+- Always record a source-free numeric-only validation review in private experiment receipts; reject malformed token-weighted metrics. Add standard-library tests without a checkpoint or GPU.
+- No new release, model weights, publisher migration or real-model performance claim.
+
 ## Unreleased — Python/JavaScript/TypeScript language-aware hints
 
 - Add bounded Python, JavaScript and TypeScript syntax hints for generic local instruction-mode completions. Fixed-text guidance covers async, typing, modules, error handling, and comment/literal continuation, without embedding code tokens or reading extra files.

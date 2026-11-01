@@ -22,7 +22,8 @@ import stat
 try:
     from .sampling import (
         balanced_sample_indices, validation_metrics, compare_validation_losses,
-        optimizer_step_token_scales, training_token_exposure
+        review_validation_nonregression, optimizer_step_token_scales,
+        training_token_exposure
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
@@ -31,7 +32,8 @@ try:
 except ImportError:
     from sampling import (
         balanced_sample_indices, validation_metrics, compare_validation_losses,
-        optimizer_step_token_scales, training_token_exposure
+        review_validation_nonregression, optimizer_step_token_scales,
+        training_token_exposure
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
@@ -224,6 +226,27 @@ def clip_gradients_safely(clipper, parameters) -> float:
     return norm
 
 
+def validation_export_gate(before: dict, after: dict,
+                           required: bool) -> dict:
+    """Optional fail-closed adapter export gate; no model or GPU imports.
+
+    The comparison checks numerical reconciliation and counts, but it
+    cannot independently prove identical validation sample identities.
+    """
+    if type(required) is not bool:
+        raise ExperimentRejected("invalid-validation-export-gate")
+    try:
+        review = review_validation_nonregression(before, after, LANGUAGES)
+    except ValueError:
+        raise ExperimentRejected("invalid-validation-review") from None
+    if required and review["validationNonRegressionStatus"] != "NO_RECORDED_REGRESSION":
+        raise ExperimentRejected("validation-regression-rejected")
+    return {
+        "validationRegressionExportGateEnabled": required,
+        **review
+    }
+
+
 def pad_examples(examples: list[dict], pad_token_id: int) -> dict:
     if not examples:
         raise ExperimentRejected("empty-batch")
@@ -394,6 +417,12 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # in an under-represented language. Held-out TEST data stays untouched.
     validation = validation_metrics(validation_samples, losses, LANGUAGES,
                                     validation_target_tokens)
+    # Opt-in artifact gate must execute BEFORE creating an output directory
+    # or calling model.save_pretrained(). The default training path remains
+    # available for investigating regressions in private experiments.
+    export_review = validation_export_gate(
+        validation_before, validation, args.fail_on_validation_regression
+    )
 
     # Rehash metadata and weights after optimization so an on-disk
     # checkpoint change cannot silently become an adapter receipt.
@@ -426,6 +455,7 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         **validation,
         "validationBeforeTraining": validation_before,
         **compare_validation_losses(validation_before, validation, LANGUAGES),
+        **export_review,
         "trainSamples": len(train_set),
         "validationSamples": len(validation_set),
         "testSamplesUsed": 0,
@@ -444,6 +474,8 @@ def parser() -> argparse.ArgumentParser:
     )
     cli.add_argument("--manifest", required=True)
     cli.add_argument("--train", action="store_true", help="Explicitly enable training (default: plan only)")
+    cli.add_argument("--fail-on-validation-regression", action="store_true",
+                     help="Do not export local adapter if any reviewed language loss regresses")
     cli.add_argument("--approve-rights", action="store_true")
     cli.add_argument("--approve-checkpoint", action="store_true")
     cli.add_argument("--base-dir")
@@ -465,6 +497,8 @@ def main() -> int:
                 256 <= args.max_tokens <= 4096 and
                 0 <= args.seed <= 2_147_483_647):
             raise ExperimentRejected("invalid-bounds")
+        if args.fail_on_validation_regression and not args.train:
+            raise ExperimentRejected("validation-regression-gate-requires-train")
         if args.train:
             if not (args.approve_rights and args.approve_checkpoint and
                     args.base_dir and args.base_revision and args.output_dir):

@@ -189,3 +189,16 @@ unreviewed adapter. Mocked standard-library tests enforce strict nonfinite
 clipping semantics and sanitized errors, but no live GPU training or model
 quality improvement is implied. This does not change model licenses,
 train/validation/test isolation or publisher/release status.
+
+## Optional export protection after model validation (unreleased)
+
+The opt-in LoRA trainer now exposes `--fail-on-validation-regression` to
+block writing an experimental adapter when any target language has
+worsened sample-mean or token-weighted validation loss, or aggregate
+means regress. Training is still performed only with separately approved
+local data/checkpoints. The gate uses the existing validated loss
+comparison and runs before artifact output. Without the flag, the
+experiment remains exploratory but its source-free regression review is
+recorded. This is not an automatic promotion criterion, evidence of
+better completions, independent holdout verification or authorization
+to distribute weights. Actual GPU validation remains untested.
