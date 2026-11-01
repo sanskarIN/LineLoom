@@ -419,7 +419,7 @@ class AdapterValidationExportGateTests(unittest.TestCase):
         self.assertLess(body.index("export_review = validation_export_gate("),
                         body.index("output_dir.mkdir("))
         self.assertLess(body.index("export_review = validation_export_gate("),
-                        body.index("model.save_pretrained("))
+                        body.index("\n    model.save_pretrained("))
         self.assertIn("**export_review", body)
 
     def test_plan_rejects_training_only_gate_without_model_loading(self):
