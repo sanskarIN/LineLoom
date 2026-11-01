@@ -70,6 +70,29 @@ prefix and suffix without additional instructions**, including for C and
 C++. No weights, model downloads, editor source collection, new endpoint
 permissions or release are added by this change.
 
+## Untrusted source framing (generic instruction-mode models)
+
+Source content and explicitly user-selected related files are **data**, not
+instructions. In generic Ollama instruction prompts, LineLoom now prefixes
+every source line with `| ` and explains that this marker is not code.
+This prevents raw source lines such as `</before>`, `</reference>`, or
+`Completion:` from being formatted as new top-level prompt sections.
+CRLF/CR line endings are normalized for display; additional visual line
+separator characters are shown as escaped Unicode code points so they
+cannot create unquoted prompt lines. The source is not rewritten in the
+editor, and only the already-approved bounded source is included.
+
+This is **structural prompt-framing hardening, not a prompt-injection
+guarantee**: an instruction-following model can still misunderstand or act
+on malicious comments. Outputs remain untrusted and require developer
+review. Native FIM model requests without selected references still send
+the exact original prefix/suffix, without any line prefixes or rewriting.
+
+The separate developer synthetic evaluation harness uses its own versioned
+instruction protocol; its synthetic scores are **not** evidence that this
+editor-specific framing improves real model completion quality. Re-run
+controlled local/editor tests before making quality claims.
+
 ## Model compatibility and security
 
 Language registration is not a guarantee that any particular installed Ollama model can generate useful completions. Choose an appropriately licensed coding model and review all generated code. LineLoom still checks workspace trust, file exclusions and nested ignore rules **before** sending context to the configured endpoint. Remote endpoints require separate HTTPS approval. No AI model weights are included or installed automatically.
