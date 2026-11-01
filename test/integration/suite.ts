@@ -456,7 +456,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(disabledContext?.length);
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false,
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), false,
           "Opted-out completion must not include selected related source");
 
         // The only additional source is the user's explicit, bounded,
@@ -467,7 +467,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(selectedContext?.length, "Allowed user-selected related file should complete");
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), true,
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), true,
           "Opted-in related file must be passed as untrusted reference text");
         assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
         assert.equal(isSupportedRelatedCandidate(document.uri, permitted.uri), true);
@@ -556,7 +556,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(clearedRelated?.length);
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), false);
 
         // Inference duration diagnostics are opt-in, unlike source-free
         // request counters. Opt-out must clear measurements without disabling
@@ -952,7 +952,7 @@ export async function run(): Promise<void> {
         assert.equal(generic?.[0]?.insertText, "42");
         assert.equal(lastSuffixSent, undefined,
           "Unrecognized models must never receive an assumed FIM suffix");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Generic models must retain the bounded instruction prompt");
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         engine.cancel();
@@ -979,7 +979,7 @@ export async function run(): Promise<void> {
         assert.ok(lastPromptSent.includes("Rust match arms:"), "Rust match guidance must be present");
         assert.ok(lastPromptSent.includes("Rust Result/Option:"),
           "Rust Result/Option guidance must be present");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Rust suffix must remain visible as untrusted context");
         await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
         engine.cancel();
