@@ -18,13 +18,15 @@ export class LatestDebounce {
     if (ms <= 0) return Promise.resolve(true);
     return new Promise<boolean>((resolve) => {
       let settled = false;
-      let timeout: ReturnType<typeof setTimeout> | undefined;
-      let subscription: { dispose(): void } | undefined;
+      const resources: {
+        timeout?: ReturnType<typeof setTimeout>;
+        subscription?: { dispose(): void };
+      } = {};
       const finish = (allowed: boolean): void => {
         if (settled) return;
         settled = true;
-        if (timeout !== undefined) clearTimeout(timeout);
-        subscription?.dispose();
+        if (resources.timeout !== undefined) clearTimeout(resources.timeout);
+        resources.subscription?.dispose();
         if (this.pending?.stop === stop) this.pending = undefined;
         resolve(allowed && !token.isCancellationRequested);
       };
@@ -32,12 +34,12 @@ export class LatestDebounce {
       this.pending = { stop };
       // Some token adapters fire synchronously during subscription. Handle
       // that case without retaining a listener or scheduling a stale timer.
-      subscription = token.onCancellationRequested(stop);
+      resources.subscription = token.onCancellationRequested(stop);
       if (settled) {
-        subscription.dispose();
+        resources.subscription.dispose();
         return;
       }
-      timeout = setTimeout(() => finish(true), ms);
+      resources.timeout = setTimeout(() => finish(true), ms);
       if (token.isCancellationRequested) stop();
     });
   }
