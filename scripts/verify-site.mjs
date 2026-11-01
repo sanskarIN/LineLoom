@@ -23,8 +23,8 @@ test("publisher migration guide keeps future listings distinct from verified exi
   }
   assert.match(migration, /not an automatic/i);
   assert.match(migration, /uninstall/i);
-  assert.match(migration, /not automatically transfer|do not automatically transfer/i);
-  assert.match(migration, /not.*claim.*live|not.*listing.*live/i);
+  assert.match(migration, /cannot transfer|do not automatically transfer/i);
+  assert.match(migration, /no new marketplace.*claimed live|not.*listing.*live/i);
   assert.ok(migration.includes("LineLoom-1.4.3-Sanskar.vsix"));
   for (const [, ref] of migration.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
     assert.ok(existsSync(resolve(dir, ref)), "Missing migration page asset: " + ref);
