@@ -534,3 +534,28 @@ no private samples, model outputs, gradient values or local paths.
 The new regression tests use an injected stand-in clipper and run without
 PyTorch, CUDA, network access or training data. Actual GPU training stability,
 accuracy or reproducibility remains unverified; no weights were trained.
+
+### Optional validation non-regression gate for adapter export (unreleased)
+
+A local LoRA experiment can be run with `--fail-on-validation-regression`
+**together with** `--train` and all existing explicit approval flags.
+After the final validation pass, LineLoom compares the **same declared
+validation records** against the before-training losses. If the sample-mean
+or supervised-token-weighted loss increases for *any* of Rust, C, C++,
+Python or TypeScript, or an overall/macro loss increases, it rejects the
+experiment **before creating an adapter output directory**. The comparisons
+use the existing six-decimal reporting tolerance. A missing, malformed,
+inconsistent, non-finite or mismatched validation report also fails closed.
+
+The default local training path still allows saving a private exploratory
+adapter after a detected regression, with the regression review recorded as
+numeric, source-free metadata. The optional gate records whether it was
+requested, the affected language IDs and the aggregate signal names only.
+It never logs example contents, generated code or file paths.
+
+**This is not a quality guarantee or release authorization.** Training
+and validation samples must still be independently reviewed, repository-
+isolated, and free of contamination; sample identity cannot be attested
+by the aggregate loss report. Small validation sets may fluctuate. No
+training, checkpoint download or model publication is performed by the
+repository change.

@@ -6,12 +6,14 @@ import unittest
 try:
     from .sampling import (
         SamplingRejected, balanced_sample_indices, validation_metrics,
-        compare_validation_losses, optimizer_step_token_scales, training_token_exposure
+        compare_validation_losses, review_validation_nonregression,
+        optimizer_step_token_scales, training_token_exposure
     )
 except ImportError:
     from sampling import (
         SamplingRejected, balanced_sample_indices, validation_metrics,
-        compare_validation_losses, optimizer_step_token_scales, training_token_exposure
+        compare_validation_losses, review_validation_nonregression,
+        optimizer_step_token_scales, training_token_exposure
     )
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
@@ -309,6 +311,71 @@ class ValidationChangeTests(unittest.TestCase):
             compare_validation_losses(self.before, wrong_languages, LANGUAGES)
         with self.assertRaises(SamplingRejected):
             compare_validation_losses(self.before, after, ("rust", "rust"))
+
+class ValidationExportReviewTests(unittest.TestCase):
+    def setUp(self):
+        self.samples = [
+            {"language": language, "split": "validation"}
+            for language in LANGUAGES
+        ]
+        self.counts = [2, 4, 6, 8, 10]
+        self.before = validation_metrics(
+            self.samples, [2.0] * 5, LANGUAGES, self.counts
+        )
+
+    def test_reports_five_language_improvement_without_claiming_model_quality(self):
+        after = validation_metrics(
+            self.samples, [1.0] * 5, LANGUAGES, self.counts
+        )
+        review = review_validation_nonregression(self.before, after, LANGUAGES)
+        self.assertEqual(review["validationNonRegressionStatus"],
+                         "NO_RECORDED_REGRESSION")
+        self.assertEqual(review["validationRegressedLanguages"], [])
+        self.assertEqual(review["validationRegressedAggregateSignals"], [])
+        self.assertNotIn("code correctness", str(review["validationRegressedLanguages"]))
+        self.assertIn("not code correctness", review["validationNonRegressionLimitation"])
+
+    def test_one_language_regression_blocks_even_if_macro_loss_improves(self):
+        after = validation_metrics(
+            self.samples, [1, 1, 1, 1, 3], LANGUAGES, self.counts
+        )
+        review = review_validation_nonregression(self.before, after, LANGUAGES)
+        self.assertEqual(review["validationNonRegressionStatus"], "REGRESSION_RECORDED")
+        self.assertEqual(review["validationRegressedLanguages"], ["typescript"])
+        self.assertEqual(review["validationRegressedAggregateSignals"], [])
+
+    def test_token_weighted_regression_blocks_with_lower_sample_mean(self):
+        # The long Rust completion becomes worse even though the two Rust
+        # examples have a lower unweighted sample mean after training.
+        samples = self.samples + [{"language": "rust", "split": "validation"}]
+        counts = [1, 2, 3, 4, 5, 12]
+        before = validation_metrics(samples, [1] * 6, LANGUAGES, counts)
+        after = validation_metrics(samples, [0.1, 1, 1, 1, 1, 1.2],
+                                   LANGUAGES, counts)
+        review = review_validation_nonregression(before, after, LANGUAGES)
+        self.assertEqual(review["validationNonRegressionStatus"], "REGRESSION_RECORDED")
+        self.assertEqual(review["validationRegressedLanguages"], ["rust"])
+        self.assertIn("validationTokenWeightedLossChange",
+                      review["validationRegressedAggregateSignals"])
+
+    def test_equal_report_passes_but_does_not_claim_an_improvement(self):
+        review = review_validation_nonregression(
+            self.before, self.before, LANGUAGES
+        )
+        self.assertEqual(review["validationNonRegressionStatus"],
+                         "NO_RECORDED_REGRESSION")
+        self.assertEqual(review["validationRegressedAggregateSignals"], [])
+
+    def test_rejects_absent_token_signals_and_forged_aggregate_loss(self):
+        after = validation_metrics(self.samples, [1] * 5, LANGUAGES)
+        with self.assertRaises(SamplingRejected):
+            review_validation_nonregression(self.before, after, LANGUAGES)
+        after = validation_metrics(self.samples, [3] * 5, LANGUAGES,
+                                   self.counts)
+        forged = dict(after, validationMacroLoss=0.1)
+        with self.assertRaises(SamplingRejected):
+            review_validation_nonregression(self.before, forged, LANGUAGES)
+
 
 if __name__ == "__main__":
     unittest.main()

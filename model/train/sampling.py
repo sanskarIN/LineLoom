@@ -294,6 +294,52 @@ def compare_validation_losses(before: dict, after: dict,
     }
 
 
+def review_validation_nonregression(before: dict, after: dict,
+                                    languages: tuple[str, ...]) -> dict:
+    """Review pre/post validation loss without inspecting private source.
+
+    A drop in the global average cannot excuse a regression in Rust, C,
+    C++, Python or TypeScript. Both sample- and token-weighted signals
+    are required, with a six-decimal reporting tolerance. This is an
+    optional *artifact-export* gate, NOT a model promotion or quality test.
+    """
+    delta = compare_validation_losses(before, after, languages)
+    required = (
+        "validationTokenWeightedLossChange",
+        "validationMacroTokenWeightedLossChange",
+        "validationTokenWeightedLossChangeByLanguage",
+        "validationLanguagesWithHigherTokenWeightedLoss",
+    )
+    if any(key not in delta for key in required):
+        raise SamplingRejected("token-weighted-validation-required")
+    sample_regressions = delta["validationLanguagesWithHigherLoss"]
+    token_regressions = delta["validationLanguagesWithHigherTokenWeightedLoss"]
+    tolerance = 0.000001
+    aggregate_regressions = [
+        key for key in (
+            "validationLossChange", "validationMacroLossChange",
+            "validationTokenWeightedLossChange",
+            "validationMacroTokenWeightedLossChange"
+        ) if delta[key] > tolerance
+    ]
+    blocked = bool(sample_regressions or token_regressions or
+                   aggregate_regressions)
+    return {
+        "validationNonRegressionProtocol": "lineloom-local-validation-review-v1",
+        "validationNonRegressionStatus": (
+            "REGRESSION_RECORDED" if blocked else "NO_RECORDED_REGRESSION"
+        ),
+        "validationRegressedLanguages": sorted(set(
+            sample_regressions + token_regressions
+        )),
+        "validationRegressedAggregateSignals": aggregate_regressions,
+        "validationNonRegressionLimitation": (
+            "Rounded held-out validation loss is not code correctness, "
+            "independent sample identity, model safety, or release approval."
+        )
+    }
+
+
 def optimizer_step_token_scales(target_counts: list[int]) -> tuple[float, ...]:
     """Normalize gradient contributions by supervised tokens in ONE step.
 

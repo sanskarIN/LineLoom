@@ -373,5 +373,67 @@ class StrictGradientClippingTests(unittest.TestCase):
         self.assertEqual(finetune.clip_gradients_safely(
             lambda *args, **kwargs: 0.0, []), 0.0)
 
+class AdapterValidationExportGateTests(unittest.TestCase):
+    def setUp(self):
+        records = [
+            {"language": language, "split": "validation"}
+            for language in finetune.LANGUAGES
+        ]
+        self.before = finetune.validation_metrics(
+            records, [2] * 5, finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+        self.regressed = finetune.validation_metrics(
+            records, [1, 1, 1, 1, 3], finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+        self.better = finetune.validation_metrics(
+            records, [1] * 5, finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+
+    def test_optional_gate_blocks_one_language_regression(self):
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, self.regressed, True)
+        descriptive = finetune.validation_export_gate(
+            self.before, self.regressed, False
+        )
+        self.assertFalse(descriptive["validationRegressionExportGateEnabled"])
+        self.assertEqual(descriptive["validationNonRegressionStatus"],
+                         "REGRESSION_RECORDED")
+        self.assertEqual(descriptive["validationRegressedLanguages"],
+                         ["typescript"])
+
+    def test_opt_in_passes_good_validation_and_rejects_malformed(self):
+        ready = finetune.validation_export_gate(self.before, self.better, True)
+        self.assertTrue(ready["validationRegressionExportGateEnabled"])
+        self.assertEqual(ready["validationNonRegressionStatus"],
+                         "NO_RECORDED_REGRESSION")
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, self.better, 1)
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, {}, True)
+
+    def test_gate_is_wired_before_any_adapter_output_write(self):
+        source = Path(finetune.__file__).read_text(encoding="utf-8")
+        start = source.index("def train(")
+        end = source.index("def parser(", start)
+        body = source[start:end]
+        self.assertLess(body.index("export_review = validation_export_gate("),
+                        body.index("output_dir.mkdir("))
+        self.assertLess(body.index("export_review = validation_export_gate("),
+                        body.index("\n    model.save_pretrained("))
+        self.assertIn("**export_review", body)
+
+    def test_plan_rejects_training_only_gate_without_model_loading(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "synthetic-dataset.json"
+            path.write_text(json.dumps(synthetic_manifest()), encoding="utf-8")
+            result = subprocess.run([
+                sys.executable, str(Path(finetune.__file__).resolve()),
+                "--manifest", str(path), "--fail-on-validation-regression"
+            ], capture_output=True, text=True, timeout=25)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn(str(path), result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()
