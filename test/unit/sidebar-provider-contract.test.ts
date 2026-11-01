@@ -20,6 +20,6 @@ describe("native sidebar privacy and accessibility contract", () => {
     expect(extension).toContain('command("lineloom.cancel", () => {');
     expect(extension).toContain("engine?.cancel();");
     expect(extension).toMatch(/onDidChangeActiveTextEditor\(\(editor\) => \{/);
-    expect(extension).toMatch(/engine\?\.cancelIfEditorChanged\(editor\);\s*sidebar\.refresh\(\);/);
+    expect(extension).toMatch(/engine\?\.cancelIfEditorChanged\(editor\);\s*\/\/[^\n]*\n\s*status\.set\(currentState, readConfig\(\)\.autoTrigger\);\s*sidebar\.refresh\(\);/);
   });
 });

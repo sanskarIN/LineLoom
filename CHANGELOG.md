@@ -10,7 +10,7 @@ All notable changes follow Semantic Versioning.
 
 ## Unreleased — session-only per-file completion controls
 
-- Add Pause/Resume Suggestions for This File and Resume All Session-Paused Files to Quick Actions, the Command Palette and the native Control Center. Pauses block manual and automatic completions, cancel in-flight requests, and never change user settings.
+- Add Pause/Resume Suggestions for This File and Resume All Session-Paused Files to Quick Actions, the Command Palette and the native Control Center. The status bar now shows a clear File Paused state for an affected active local file. Pauses block manual and automatic completions, cancel in-flight requests, and never change user settings.
 - Keep at most 128 in-memory SHA-256 file identity digests; never save source paths. Other files remain eligible; pausing applies to the full active extension session. Include unit and mocked editor-host coverage.
 - This feature is on source `main` only after merge; publishing v1.4.3 does not retroactively add it to existing VSIX assets.
 

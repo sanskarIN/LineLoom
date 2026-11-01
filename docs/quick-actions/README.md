@@ -37,3 +37,8 @@ closed instead of silently resuming an old file. Use **Resume All Session-Paused
 Files** to clear it. A new session starts with no paused files. The dashboard
 shows counts only, not filenames. No model or network request is made by the
 pause/resume command.
+
+The native status bar displays **LineLoom File Paused** when the active file is
+paused. Switching to another file restores the ordinary enabled/manual status.
+The status indicator is computed locally and reveals no path, file contents or
+model credentials.
