@@ -8,6 +8,12 @@ All notable changes follow Semantic Versioning.
 - Mask comments, Python triple-quoted strings and JavaScript template/regular-expression content before recognizing constructs; preserve native FIM prompt bytes and existing privacy policy. Add unit tests for masking, hint limits and language separation.
 - No trained model, real Ollama quality claim, publisher migration or new release. Public v1.4.3 VSIX assets remain unchanged.
 
+## Unreleased — active-language fenced code checks
+
+- Reject model responses with an explicitly recognized incompatible Markdown code-fence language; retain compatible aliases, native source output, and unknown/unlabeled fence behavior.
+- Wire the active VS Code language into the output filter and cover common Python, Rust, TypeScript, JavaScript, C/C++ and Go cases, truncated fences, and unknown labels in unit tests.
+- Source-only improvement. No new release or publisher migration.
+
 ## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
 
 - Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**

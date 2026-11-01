@@ -23,7 +23,10 @@ export function isCompatibleFencedLanguage(
   label: string | undefined, activeLanguage?: SupportedLanguage
 ): boolean {
   if (!label || !activeLanguage) return true;
-  const declared = fenceLanguages[label.toLowerCase()];
+  // Ignore inherited Object keys such as constructor or toString.
+  const key = label.toLowerCase();
+  const declared = Object.prototype.hasOwnProperty.call(fenceLanguages, key)
+    ? fenceLanguages[key] : undefined;
   if (!declared) return true;
   if (declared === activeLanguage) return true;
   return (activeLanguage === "typescript" && declared === "javascript") ||

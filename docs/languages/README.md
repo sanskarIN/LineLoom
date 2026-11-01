@@ -115,3 +115,18 @@ literal, its inferred state can be wrong. Native FIM models still receive the
 byte-exact approved prefix and suffix when no related file has been selected.
 Real local-model quality and physical editor QA remain unverified. Publisher
 migration and any additional release are postponed.
+
+## Completion fence language matching (unreleased)
+
+Generic local models sometimes return a Markdown code block tagged for a
+different programming language. LineLoom now checks the **explicit fence
+label** against VS Code's active language mode. Known mismatches, including
+other language-family fences, are rejected before they become ghost text.
+Common aliases are supported. JavaScript snippets may be used in TypeScript
+editors, and ordinary C snippets in C++ editors, but not conversely.
+
+Plain source, unlabeled code fences, and unknown/custom labels retain the
+previous behavior. This is a conservative formatting quality gate, **not**
+a syntax or compiler check. The feature adds no new endpoint calls, file reads,
+persistent telemetry or source indexing; native FIM prompts and user privacy
+controls are unchanged. Publisher migration and new releases remain paused.
