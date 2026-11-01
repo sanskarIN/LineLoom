@@ -176,3 +176,55 @@ describe("completion filtering", () => {
     expect(cleanCompletion('const s = "<|fim_middle|>";', "", "", true)).toBe('const s = "<|fim_middle|>";'));
 
 });
+
+
+describe("active-language fenced completion filtering", () => {
+  it("rejects clearly mismatched fenced model responses", () => {
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("```typescript\nconst x: number = 1;\n```", "", "", true, 8, "python")).toBe("");
+    expect(cleanCompletion("```rust\nlet x = 3;\n```", "", "", true, 8, "cpp")).toBe("");
+    expect(cleanCompletion("```bash\necho unsafe\n```", "", "", true, 8, "javascript")).toBe("");
+    expect(cleanCompletion("```json\n{\"x\": 1}\n```", "", "", true, 8, "python")).toBe("");
+  });
+
+  it("accepts recognized aliases for Python, Rust, TSX, C++, Go", () => {
+    expect(cleanCompletion("```py\nprint(2)\n```", "", "", true, 8, "python")).toBe("print(2)");
+    expect(cleanCompletion("```rs\nlet answer = 3;\n```", "", "", true, 8, "rust")).toBe("let answer = 3;");
+    expect(cleanCompletion("```tsx\nconst V = () => <span />;\n```", "", "", true, 8, "typescript"))
+      .toBe("const V = () => <span />;");
+    expect(cleanCompletion("```c++\nstd::string name;\n```", "", "", true, 8, "cpp"))
+      .toBe("std::string name;");
+    expect(cleanCompletion("```golang\nfmt.Println(3)\n```", "", "", true, 8, "go"))
+      .toBe("fmt.Println(3)");
+  });
+
+  it("permits JS in TypeScript and C in C++, but not reverse assumptions", () => {
+    expect(cleanCompletion("```javascript\nconst x = 1;\n```", "", "", true, 8, "typescript"))
+      .toBe("const x = 1;");
+    expect(cleanCompletion("```c\nint x = 1;\n```", "", "", true, 8, "cpp"))
+      .toBe("int x = 1;");
+    expect(cleanCompletion("```typescript\nconst x: number = 1;\n```", "", "", true, 8, "javascript"))
+      .toBe("");
+    expect(cleanCompletion("```cpp\nstd::string x;\n```", "", "", true, 8, "c")).toBe("");
+  });
+
+  it("preserves plain code, unlabeled fences, unknown custom labels and legacy calls", () => {
+    const code = "const x = 1;";
+    expect(cleanCompletion(code, "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```mydsl\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```constructor\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true)).toBe("print(1)");
+  });
+
+  it("also checks a truncated fence header while allowing compatible partial code", () => {
+    expect(cleanCompletion("```python\nprint(1)", "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("```typescript\nconst ok = 1;", "", "", true, 8, "typescript"))
+      .toBe("const ok = 1;");
+  });
+
+  it("does not misread a code-string containing fence markers as a fence", () => {
+    const text = 'const example = "```python";';
+    expect(cleanCompletion(text, "", "", true, 8, "typescript")).toBe(text);
+  });
+});

@@ -1,3 +1,38 @@
+import type { SupportedLanguage } from "../languages/registry";
+
+/**
+ * Use only an explicit model-provided fence label to detect an obvious
+ * language mismatch; unlabeled and unrecognized custom labels are allowed.
+ */
+const fenceLanguages: Readonly<Record<string, SupportedLanguage | "other">> = {
+  py: "python", python: "python", python3: "python",
+  js: "javascript", javascript: "javascript", jsx: "javascript",
+  ts: "typescript", typescript: "typescript", tsx: "typescript",
+  rs: "rust", rust: "rust", c: "c", cpp: "cpp",
+  "c++": "cpp", cxx: "cpp", cc: "cpp",
+  go: "go", golang: "go", java: "java",
+  kt: "kotlin", kotlin: "kotlin", html: "html", css: "css", lua: "lua",
+  ruby: "other", php: "other", swift: "other", bash: "other",
+  sh: "other", shell: "other", powershell: "other",
+  sql: "other", json: "other", yaml: "other", yml: "other",
+  markdown: "other", md: "other"
+};
+
+/** Only directionally safe compatibility is allowed across known languages. */
+export function isCompatibleFencedLanguage(
+  label: string | undefined, activeLanguage?: SupportedLanguage
+): boolean {
+  if (!label || !activeLanguage) return true;
+  // Ignore inherited Object keys such as constructor or toString.
+  const key = label.toLowerCase();
+  const declared = Object.prototype.hasOwnProperty.call(fenceLanguages, key)
+    ? fenceLanguages[key] : undefined;
+  if (!declared) return true;
+  if (declared === activeLanguage) return true;
+  return (activeLanguage === "typescript" && declared === "javascript") ||
+    (activeLanguage === "cpp" && declared === "c");
+}
+
 /**
  * Reject unsafe/invisible control characters in model-generated ghost text
  * rather than silently deleting bytes and accidentally changing source code.
@@ -71,7 +106,10 @@ function isConfidentPrefixEcho(value: string, echo: string): boolean {
 }
 
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
-export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
+export function cleanCompletion(
+  raw: string, prefix: string, suffix: string, multiLine: boolean,
+  maxLines = 8, activeLanguage?: SupportedLanguage
+): string {
   // Even a loopback model can return malformed or direction-spoofing text.
   // Never "repair" such output into different executable source.
   if (containsUnsafeUnicode(raw)) return "";
@@ -81,6 +119,10 @@ export function cleanCompletion(raw: string, prefix: string, suffix: string, mul
   value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
   value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
   value = value.replace(/^<\|im_start\|>assistant[^\n]*\n/, "");
+  // A clearly wrong-language fenced response should not become editor ghost text.
+  // Also inspect incomplete fences (where the closing marker was truncated).
+  const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
+  if (fenceHeader && !isCompatibleFencedLanguage(fenceHeader[1], activeLanguage)) return "";
   // Prefer the first fenced code block, dropping explanations that follow it.
   const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
   if (fenced) value = fenced[1];

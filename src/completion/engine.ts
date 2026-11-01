@@ -348,7 +348,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
           return;
         }
         this.transientFailures.recordSuccess(failureProfile);
-        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines);
+        const suggestion = cleanCompletion(raw, extracted.prefix, extracted.suffix, config.multiLine, config.maxSuggestionLines, language.id);
         const latency = performance.now() - start;
         // Diagnostics consent may have been revoked while Ollama responded.
         // Preserve neither a late sample nor an old session's measurements

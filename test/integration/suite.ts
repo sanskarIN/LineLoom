@@ -143,6 +143,7 @@ export async function run(): Promise<void> {
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
+  let mockWrongLanguageFence = false;
   let mockTransientFailure = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
@@ -182,6 +183,8 @@ export async function run(): Promise<void> {
       }
       if (mockUnsafeOutput) {
         response.end(JSON.stringify({ response: "42" + String.fromCharCode(0x202e), done: true }) + "\n");
+      } else if (mockWrongLanguageFence) {
+        response.end(JSON.stringify({ response: "```python\nprint(42)\n```", done: true }) + "\n");
       } else if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
       } else {
@@ -466,6 +469,30 @@ export async function run(): Promise<void> {
         assert.equal(second[0].insertText, "42");
         assert.equal(second[0].command?.command, "lineloom.recordSuggestionAccepted");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
+
+        // Actual editor-host path: a TypeScript editor must never offer a
+        // Python-fenced reply from the fake local model as ghost text.
+        engine.cancel();
+        const fencedBaseline = generationCalls;
+        mockWrongLanguageFence = true;
+        try {
+          const wrongLanguage = await engine.provideInlineCompletionItems(
+            document, position, trigger, cancellation.token
+          );
+          assert.equal(wrongLanguage, undefined,
+            "A known mismatched language fence must be rejected before insertion");
+          assert.equal(generationCalls, fencedBaseline + 1,
+            "The test must exercise a real /api/generate response, not cache reuse");
+        } finally {
+          mockWrongLanguageFence = false;
+          engine.cancel();
+        }
+        const matchingLanguage = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(matchingLanguage?.length,
+          "A rejected fenced reply must not poison future compatible completions");
+        assert.equal(matchingLanguage[0].insertText, "42");
 
         // Real editor-host privacy regression: no cross-file source enters the
         // request while the preference is disabled, even with a stored selection.
