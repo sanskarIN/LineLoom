@@ -130,12 +130,12 @@ export function scanRustCode(source: string): RustScan {
 
 const HINTS = {
   match: "Rust match arms: preserve pattern bindings and guards; use =>, comma separators and existing braces correctly.",
-  patterns: "Rust if let/while let/let-else: preserve destructuring bindings and ownership; let-else fallback must diverge.",
+  patterns: "Rust if let/while let/let-chains/let-else: preserve condition order, bindings and ownership; let-else fallback must diverge.",
   results: "Rust Result/Option: respect return types and use ? only when error/absence propagation is type-compatible; do not invent unwraps.",
   async: "Rust async code: preserve Future and .await placement, AsyncFn bounds, closure captures, Send constraints and borrowing across suspension points.",
   preciseCapture: "Rust impl Trait use<...> capture bounds: preserve lifetime-first ordering, all in-scope type/const generics and explicit capture requirements.",
   traits: "Rust traits and impl blocks: respect associated types, self receivers, trait method signatures and existing where bounds.",
-  ffi: "Rust unsafe/FFI: preserve ABI signatures, pointer validity and safety invariants; do not invent unnecessary unsafe blocks.",
+  ffi: "Rust unsafe/FFI: preserve unsafe extern blocks, ABI signatures, safety attributes and pointer validity; do not invent unnecessary unsafe blocks.",
   borrow: "Rust ownership: preserve lifetimes, mutability and borrowed/owned values; avoid unnecessary clones or moves.",
   iter: "Rust iterators and closures: preserve item/reference types, closure captures, iterator adapters and collection targets.",
   macro: "Rust macros: preserve macro_rules! or invocation delimiter structure and Rust token-tree syntax.",
@@ -160,7 +160,7 @@ export function rustContextHints(prefix: string): string[] {
   // Prioritize local completion patterns. Inspect only code tokens, never
   // quoted string or nested comment payloads.
   add(/\bmatch\b[\s\S]{0,650}\{|=>|\b(?:Some|None|Ok|Err)\s*\(/u.test(code.slice(-700)), HINTS.match);
-  add(/\b(?:if|while)\s+let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
+  // Stable let-chains can place a conditional let after a boolean condition.\n  // Bound the scan to a single condition to avoid unrelated later bindings.\n  add(/\b(?:if|while)\s+let\b|\b(?:if|while)\b[^\n;{}]{0,160}&&\s*let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
   // Rust return-position impl Trait can restrict captured generics with
   // use<...>. This is not a normal use import: only the precise-capture
   // bound has an angle bracket following the keyword.
@@ -172,7 +172,7 @@ export function rustContextHints(prefix: string): string[] {
   // an explicit async keyword at the cursor.
   add(/\basync\s+(?:move\s+)?(?:fn\b|\{|\|)|\basync\s+move\b|\.await\b|\b(?:Future|AsyncFn|AsyncFnMut|AsyncFnOnce)\b/u.test(code), HINTS.async);
   add(/\b(?:trait\s+[A-Za-z_]|impl(?:\s*<|\s+[A-Za-z_]|\s*\{|\s*'|\s*&))|\b(?:Self|self)\s*\./u.test(code), HINTS.traits);
-  add(/\bunsafe\s*(?:fn|trait|impl|\{)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)/u.test(code), HINTS.ffi);
+  // Rust 2024 explicit unsafe extern blocks and unsafe attributes are\n  // high-signal FFI contexts even when ABI strings are masked above.\n  add(/\bunsafe\s*(?:fn|trait|impl|\{|extern\b)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)|#\s*\[\s*unsafe\s*\(\s*(?:no_mangle|export_name|link_section)\b/u.test(code), HINTS.ffi);
   add(/(?:&\s*(?:'\w+\s*)?mut\b|&'\w+\b|\b(?:ref\s+mut|move\s*\|)\b)/u.test(code), HINTS.borrow);
   add(/\.(?:iter|iter_mut|into_iter|map|filter|collect|fold|enumerate|flat_map)\s*(?:\(|::<)|\bmove\s*\|/u.test(code), HINTS.iter);
   add(/\bmacro_rules\s*!|\b[A-Za-z_]\w*!\s*[([{]/u.test(code), HINTS.macro);
