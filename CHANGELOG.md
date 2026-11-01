@@ -8,6 +8,12 @@ All notable changes follow Semantic Versioning.
 - Document manual uninstall/reinstall, configuration preservation boundaries, separate SHA-256 receipts and non-transfer of extension-private state. Do not claim the new Marketplace/Open VSX URLs are live before checking them.
 - Add an isolated staging packager, separate identity checks, synthetic CLI migration smoke coverage and an owner-gated GitHub-only publisher workflow. See [migration guide](docs/publisher-migration.md) and [v1.4.3 preview notes](docs/releases/v1.4.3.md).
 
+## Unreleased — session-only per-file completion controls
+
+- Add Pause/Resume Suggestions for This File and Resume All Session-Paused Files to Quick Actions, the Command Palette and the native Control Center. Pauses block manual and automatic completions, cancel in-flight requests, and never change user settings.
+- Keep at most 128 in-memory SHA-256 file identity digests; never save source paths. Other files remain eligible; pausing applies to the full active extension session. Include unit and mocked editor-host coverage.
+- This feature is on source `main` only after merge; publishing v1.4.3 does not retroactively add it to existing VSIX assets.
+
 ## Unreleased — source after v1.4.2 (not distributed)
 
 - [PR #164](https://github.com/sanskarIN/LineLoom/pull/164): prevent the prefix-echo cleanup from truncating an otherwise valid generated identifier. Match complete UTF-16/Unicode identifier boundaries, preserve genuine short keyword echoes, and cover both cases with focused regression tests.

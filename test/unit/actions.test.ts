@@ -54,6 +54,22 @@ describe("LineLoom Quick Actions", () => {
   });
 });
 
+describe("per-file session-only Quick Actions", () => {
+  it("offers pause or resume only when a local file is active", () => {
+    const noEditor = quickActions(true, true, false, false, 0, undefined, 0);
+    expect(noEditor.some(x => x.command === "lineloom.toggleFilePause")).toBe(false);
+    const active = quickActions(true, true, false, false, 0, false, 0);
+    expect(active.find(x => x.command === "lineloom.toggleFilePause")?.label).toContain("Pause Suggestions for This File");
+    const paused = quickActions(true, true, false, false, 0, true, 1);
+    expect(paused.find(x => x.command === "lineloom.toggleFilePause")?.label).toContain("Resume Suggestions for This File");
+    expect(paused.some(x => x.command === "lineloom.clearFilePauses")).toBe(true);
+    expect(paused.every(x => !x.description.includes("/private/"))).toBe(true);
+    expect(new Set(paused.map(x => x.id)).size).toBe(paused.length);
+    expect(quickActions(true, true, false, false, 0, undefined, 2)
+      .some(x => x.command === "lineloom.clearFilePauses")).toBe(true);
+  });
+});
+
 describe("opt-in related-file Quick Actions", () => {
   it("adds no actions when cross-file context is off, but exposes selective commands when enabled", () => {
     expect(quickActions(true, true, false, false, 2).some(a =>
