@@ -952,7 +952,7 @@ export async function run(): Promise<void> {
         assert.equal(generic?.[0]?.insertText, "42");
         assert.equal(lastSuffixSent, undefined,
           "Unrecognized models must never receive an assumed FIM suffix");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Generic models must retain the bounded instruction prompt");
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         engine.cancel();
@@ -979,7 +979,7 @@ export async function run(): Promise<void> {
         assert.ok(lastPromptSent.includes("Rust match arms:"), "Rust match guidance must be present");
         assert.ok(lastPromptSent.includes("Rust Result/Option:"),
           "Rust Result/Option guidance must be present");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Rust suffix must remain visible as untrusted context");
         await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
         engine.cancel();
