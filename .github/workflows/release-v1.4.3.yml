@@ -1,0 +1,140 @@
+name: Publish LineLoom v1.4.3 dual-publisher GitHub preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/release-v1.4.3.flag
+permissions:
+  contents: read
+concurrency:
+  group: lineloom-dual-publisher-preview-v1.4.3
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.repository == 'sanskarIN/LineLoom' && github.ref == 'refs/heads/main'
+    name: Test, package both identities, and publish GitHub preview only
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Verify owner release authorization and unchanged legacy identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(cat .github/release-v1.4.3.flag)" = "OWNER_AUTHORIZED_GITHUB_PRE_RELEASE_V1.4.3_DUAL_PUBLISHER_MANUAL_QA_DISCLOSED"
+          node --input-type=module - <<'NODE'
+          import fs from 'node:fs';
+          const p = JSON.parse(fs.readFileSync('package.json','utf8'));
+          const l = JSON.parse(fs.readFileSync('package-lock.json','utf8'));
+          if (p.name !== 'lineloom' || p.version !== '1.4.3' ||
+              p.publisher !== 'SanskarCodes' || l.version !== p.version ||
+              l.packages?.['']?.version !== p.version)
+            throw Error('Legacy publisher identity/version/lock mismatch');
+          const notes = fs.readFileSync('docs/releases/v1.4.3.md','utf8');
+          for (const phrase of ['SanskarCodes.lineloom','Sanskar.lineloom',
+            'Manual QA outstanding', 'NOT RUN', 'not a stable release']) {
+            if (!notes.includes(phrase)) throw Error('Missing release disclosure: ' + phrase);
+          }
+          NODE
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript, security policy, unit, model, website and build checks
+        run: npm run check
+      - name: Mocked VS Code extension-host integration
+        run: xvfb-run -a npm run test:integration
+      - name: Audit complete toolchain (high and critical)
+        run: npm audit --audit-level=high
+      - name: Audit shipped dependency set (moderate and above)
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Build preview VSIX for existing SanskarCodes publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx vsce package --pre-release --no-dependencies -o LineLoom-1.4.3-SanskarCodes.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 LINELOOM_EXPECT_PUBLISHER=SanskarCodes npm run verify:vsix -- LineLoom-1.4.3-SanskarCodes.vsix
+      - name: Build isolated preview VSIX for new Sanskar publisher
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run package:publisher-preview -- LineLoom-1.4.3-Sanskar.vsix
+          LINELOOM_EXPECT_PRE_RELEASE=1 LINELOOM_EXPECT_PUBLISHER=Sanskar npm run verify:vsix -- LineLoom-1.4.3-Sanskar.vsix
+          test "$(node -p "require('./package.json').publisher")" = SanskarCodes
+          git diff --exit-code -- package.json package-lock.json
+      - name: Calculate and independently check each published archive SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum LineLoom-1.4.3-SanskarCodes.vsix > LineLoom-1.4.3-SanskarCodes.sha256
+          sha256sum LineLoom-1.4.3-Sanskar.vsix > LineLoom-1.4.3-Sanskar.sha256
+          sha256sum --check LineLoom-1.4.3-SanskarCodes.sha256
+          sha256sum --check LineLoom-1.4.3-Sanskar.sha256
+      - name: Install both candidate IDs independently in isolated VS Code profiles
+        shell: bash
+        run: |
+          set -euo pipefail
+          LINELOOM_EXPECT_PUBLISHER=SanskarCodes xvfb-run -a npm run test:install-vsix -- LineLoom-1.4.3-SanskarCodes.vsix
+          LINELOOM_EXPECT_PUBLISHER=Sanskar xvfb-run -a npm run test:install-vsix -- LineLoom-1.4.3-Sanskar.vsix
+      - name: Retrieve pinned published v1.4.2 legacy preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --location --retry 3 --retry-all-errors \
+            --output LineLoom-1.4.2.vsix \
+            https://github.com/sanskarIN/LineLoom/releases/download/v1.4.2/LineLoom-1.4.2.vsix
+          echo "ccf9a4cb130a0d9e63f1509705457c927a331330df07b1e8119a7d90970398a0  LineLoom-1.4.2.vsix" | sha256sum --check
+      - name: Test upgrade of legacy publisher without changing saved user settings
+        env:
+          LINELOOM_EXPECT_PRE_RELEASE: '1'
+        run: xvfb-run -a npm run test:upgrade-vsix -- LineLoom-1.4.2.vsix LineLoom-1.4.3-SanskarCodes.vsix
+      - name: Test cross-publisher install, remove legacy ID, and preserve settings
+        run: xvfb-run -a node scripts/smoke-publisher-migration.mjs LineLoom-1.4.2.vsix LineLoom-1.4.3-Sanskar.vsix
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lineloom-v1.4.3-dual-publisher-preview
+          path: |
+            LineLoom-1.4.3-SanskarCodes.vsix
+            LineLoom-1.4.3-SanskarCodes.sha256
+            LineLoom-1.4.3-Sanskar.vsix
+            LineLoom-1.4.3-Sanskar.sha256
+          if-no-files-found: error
+      - name: Refuse to overwrite an existing v1.4.3 tag or release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view v1.4.3 >/dev/null 2>&1; then
+            echo "v1.4.3 already published; refusing overwrite"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin refs/tags/v1.4.3 >/dev/null; then
+            echo "v1.4.3 tag already exists; refusing overwrite"
+            exit 1
+          fi
+      - name: Publish GitHub-only pre-release with both distinct VSIX identities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh release create v1.4.3 \
+            LineLoom-1.4.3-SanskarCodes.vsix LineLoom-1.4.3-SanskarCodes.sha256 \
+            LineLoom-1.4.3-Sanskar.vsix LineLoom-1.4.3-Sanskar.sha256 \
+            --target "${GITHUB_SHA}" --prerelease --latest=false \
+            --title "LineLoom v1.4.3 — Dual Publisher Migration Preview" \
+            --notes-file docs/releases/v1.4.3.md
+      - name: Verify public GitHub pre-release and all four assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/sanskarIN/LineLoom/releases/tags/v1.4.3 \
+            --jq 'if (.prerelease == true and .draft == false and (.assets | map(.name) | sort) == ["LineLoom-1.4.3-Sanskar.sha256","LineLoom-1.4.3-Sanskar.vsix","LineLoom-1.4.3-SanskarCodes.sha256","LineLoom-1.4.3-SanskarCodes.vsix"]) then "PASS: dual publisher GitHub preview and four verified assets" else error("Incorrect preview metadata or assets") end'

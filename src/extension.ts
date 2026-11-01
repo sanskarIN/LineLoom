@@ -19,7 +19,10 @@ import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
 import { ollamaFailureMessage } from "./models/errors";
 
-const SETTINGS_FILTER = "@ext:SanskarCodes.lineloom";
+function settingsFilter(context: vscode.ExtensionContext): string {
+  // The two publisher IDs are separate extensions; open settings for this one.
+  return "@ext:" + context.extension.id;
+}
 let engine: CompletionEngine | undefined;
 
 async function approveEndpoint(context: vscode.ExtensionContext, ask: boolean): Promise<string | undefined> {
@@ -321,7 +324,7 @@ async function setupGuide(
   switch (action) {
     case "Check Connection": await checkConnection(context, readiness, refresh); break;
     case "Select Model": await selectModel(context); break;
-    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER); break;
+    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", settingsFilter(context)); break;
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
   }
 }
@@ -531,7 +534,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
       " related file(s). Privacy rules are rechecked before every model request.");
   });
-  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
+  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", settingsFilter(context)));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   command("lineloom.copySupportSummary", async () => {
     const config = readConfig();

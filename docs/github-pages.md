@@ -12,9 +12,13 @@ The public site at https://sanskarin.github.io/LineLoom/ is accessible,
 and the GitHub Actions workflow **Deploy LineLoom GitHub Pages** has
 previously completed 31 runs; its latest listed success was October 27, 2026.
 That confirms Pages is already activated for the repository. No settings
-toggle is required to permit ordinary `site/**` updates. Changes merged to
-`main` under `site/` trigger the existing deployment workflow; manual
-`workflow_dispatch` is also supported. For new site changes, verify the
+toggle is required to permit ordinary `site/**` updates. The updated workflow triggers on **each main-branch push** (including documentation
+and non-site changes), allowing normal GitHub Pages deployment history without
+creating fake deployment records. It retains a single deployment environment,
+uses `cancel-in-progress: false` for active builds, and permits manual
+`workflow_dispatch`. GitHub concurrency may still coalesce pending runs;
+verify completed deployments independently rather than assuming every
+commit results in a distinct finished deployment. For new site changes, verify the
 **new** Pages workflow run and the live URL independently rather than
 assuming an earlier successful deployment proves the current version is live.
 
@@ -46,3 +50,5 @@ Use a local server (for example `npx serve site` if you already have that utilit
 **Public registry verification (2026-10-25):** Open VSX v1.3.0 Stable is its public/latest version, and Marketplace v1.3.0 was updated separately by the maintainer. Website deployment itself does not publish extensions. GitHub v1.4.2 remains preview only. Research-only changes in main, including the 40-case v9 model evaluation and paired local CLI, are not automatically part of that released VSIX.
 
 **Not provided by this deployment:** Marketplace or Open VSX publication, model downloads, hosted Ollama inference, or editor testing with real local models. Those require independent publication or manual verification. See the [publishing guide](publishing.md), [v1.3.0 stable notes](releases/v1.3.0.md), and [v1.3.0 manual acceptance](qa/v1.3.0-manual-acceptance.md).
+
+**Upcoming publisher migration:** the [migration page](https://sanskarin.github.io/LineLoom/publisher-migration.html) explains the planned separate `Sanskar.lineloom` ID. Until independently verified, the existing `SanskarCodes` Marketplace/Open VSX buttons remain the public installation destinations.

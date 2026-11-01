@@ -11,6 +11,26 @@ const css = readFileSync(resolve(dir, "styles.css"), "utf8");
 const js = readFileSync(resolve(dir, "site.js"), "utf8");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 
+test("publisher migration guide keeps future listings distinct from verified existing ones", () => {
+  const migration = readFileSync(resolve(dir, "publisher-migration.html"), "utf8");
+  const guide = readFileSync(resolve(dir, "install.html"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  assert.ok(page.includes('href="./publisher-migration.html"'));
+  assert.ok(guide.includes('href="./publisher-migration.html"'));
+  for (const s of [migration, guide, readme]) {
+    assert.ok(s.includes("SanskarCodes.lineloom"));
+    assert.ok(s.includes("Sanskar.lineloom"));
+  }
+  assert.match(migration, /not an automatic/i);
+  assert.match(migration, /uninstall/i);
+  assert.match(migration, /cannot transfer|do not automatically transfer/i);
+  assert.match(migration, /no new marketplace.*claimed live|not.*listing.*live/i);
+  assert.ok(migration.includes("LineLoom-1.4.3-Sanskar.vsix"));
+  for (const [, ref] of migration.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
+    assert.ok(existsSync(resolve(dir, ref)), "Missing migration page asset: " + ref);
+  }
+});
+
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);

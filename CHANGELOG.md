@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## v1.4.3 — planned GitHub dual-publisher preview (not yet verified published)
+
+- Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
+- Document manual uninstall/reinstall, configuration preservation boundaries, separate SHA-256 receipts and non-transfer of extension-private state. Do not claim the new Marketplace/Open VSX URLs are live before checking them.
+- Add an isolated staging packager, separate identity checks, synthetic CLI migration smoke coverage and an owner-gated GitHub-only publisher workflow. See [migration guide](docs/publisher-migration.md) and [v1.4.3 preview notes](docs/releases/v1.4.3.md).
+
 ## Unreleased — source after v1.4.2 (not distributed)
 
 - [PR #164](https://github.com/sanskarIN/LineLoom/pull/164): prevent the prefix-echo cleanup from truncating an otherwise valid generated identifier. Match complete UTF-16/Unicode identifier boundaries, preserve genuine short keyword echoes, and cover both cases with focused regression tests.

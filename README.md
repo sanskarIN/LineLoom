@@ -9,6 +9,8 @@
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
+> **Publisher transition planned:** `SanskarCodes.lineloom` remains the verified published extension identity. A dual-publisher GitHub **v1.4.3 preview** is being prepared with a separate `Sanskar.lineloom` VSIX. This is a **manual reinstall**, not an automatic update, and neither new registry listing is claimed live. Back up settings and uninstall the legacy ID before enabling the new one. See [publisher migration instructions](docs/publisher-migration.md) and the [website walkthrough](https://sanskarin.github.io/LineLoom/publisher-migration.html).
+
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
 **Stable registry distribution (2026-10-25):** [Open VSX v1.3.0 Stable](https://open-vsx.org/extension/SanskarCodes/lineloom) is independently confirmed as its public downloadable `latest` version (`preRelease: false`, `verified: true`); the [version-pinned publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40201081119) reused the existing stable GitHub VSIX. The maintainer also manually published v1.3.0 to [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom). The separate GitHub v1.3.1 preview was **not** uploaded to either registry. Real-model and physical-device QA remain unverified.
