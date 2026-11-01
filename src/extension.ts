@@ -408,7 +408,10 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
 }
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
-  const status = new LineLoomStatus();
+  const status = new LineLoomStatus(() => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    return uri?.scheme === "file" && Boolean(engine?.isFilePaused(uri));
+  });
   let currentState: CompletionState = "ready";
   // Invalidate overlapping pickers when privacy, settings or editor state changes.
   let relatedPickerRevision = 0;
@@ -667,6 +670,8 @@ export function activate(context: vscode.ExtensionContext): void {
       relatedPickerRevision++;
       engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
+      // Recompute active-file pause state without revealing file identity.
+      status.set(currentState, readConfig().autoTrigger);
       sidebar.refresh();
     }),
     vscode.window.onDidChangeTextEditorSelection((event) => {

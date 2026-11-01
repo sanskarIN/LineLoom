@@ -2,8 +2,14 @@ import type { CompletionState } from "../completion/engine";
 
 /** Pure, source-free native status bar wording; never probes model or files. */
 export interface StatusPresentation { text: string; tooltip: string; }
-export function statusPresentation(state: CompletionState, automatic = true): StatusPresentation {
+export function statusPresentation(state: CompletionState, automatic = true, filePaused = false): StatusPresentation {
   const action = " • Click for Quick Actions";
+  if (filePaused && state !== "disabled") {
+    return {
+      text: "$(debug-pause) LineLoom File Paused",
+      tooltip: "Manual and automatic completions are paused for this file only; other files are unaffected" + action
+    };
+  }
   switch (state) {
     case "ready":
       return {

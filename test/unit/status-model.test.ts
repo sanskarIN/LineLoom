@@ -27,6 +27,18 @@ describe("native status bar copy", () => {
     }
   );
 
+  it("displays a file-local pause without implying the entire extension is disabled", () => {
+    const paused = statusPresentation("ready", true, true);
+    expect(paused.text).toBe("$(debug-pause) LineLoom File Paused");
+    expect(paused.tooltip).toContain("Manual and automatic completions");
+    expect(paused.tooltip).toContain("this file only");
+    expect(paused.tooltip).not.toContain("file://");
+    expect(statusPresentation("ready", false, true).text).toContain("File Paused");
+    expect(statusPresentation("generating", true, true).text).toContain("File Paused");
+    expect(statusPresentation("disabled", true, true).text).toContain("LineLoom Off");
+    expect(statusPresentation("ready", true, false).text).toBe("$(sparkle) LineLoom");
+  });
+
   it("offers manual remediation without starting a background check", () => {
     expect(statusPresentation("unavailable").tooltip).toContain("manually check");
     expect(statusPresentation("error").tooltip).toContain("diagnostics");
