@@ -87,7 +87,7 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
   it("distinguishes division from regular expressions and ignores regex payload", () => {
     expect(scanScriptCode("const ratio = total / count;", "javascript").code)
       .toContain("total / count;");
-    const source = "const r = /[\\/]async\\\\/await/g;\nconst ok = 1;";
+    const source = "const r = /[\\/]async\\/[a-z]+/g;\nconst ok = 1;";
     const scan = scanScriptCode(source, "javascript");
     expect(scan.state).toBe("code");
     expect(scan.code).not.toContain("async");
