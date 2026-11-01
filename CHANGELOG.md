@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — Python/JavaScript/TypeScript language-aware hints
+
+- Add bounded Python, JavaScript and TypeScript syntax hints for generic local instruction-mode completions. Fixed-text guidance covers async, typing, modules, error handling, and comment/literal continuation, without embedding code tokens or reading extra files.
+- Mask comments, Python triple-quoted strings and JavaScript template/regular-expression content before recognizing constructs; preserve native FIM prompt bytes and existing privacy policy. Add unit tests for masking, hint limits and language separation.
+- No trained model, real Ollama quality claim, publisher migration or new release. Public v1.4.3 VSIX assets remain unchanged.
+
 ## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
 
 - Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
