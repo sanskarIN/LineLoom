@@ -5,7 +5,7 @@
  * "unchecked" covers unsupported/oversized inputs and missing instrumentation.
  * These values are not compiler, parser, safety or semantic verdicts.
  */
-export const NATIVE_STRUCTURE_METHOD = "bounded-native-delimiter-coverage-v1";
+export const NATIVE_STRUCTURE_METHOD = "bounded-native-delimiter-coverage-v2";
 export const NATIVE_STRUCTURE_LANGUAGES = Object.freeze(["rust", "c", "cpp"]);
 export const NATIVE_STRUCTURE_STATUSES = Object.freeze(["clean", "mismatch", "unchecked"]);
 const STATUS_KEYS = ["completed", ...NATIVE_STRUCTURE_STATUSES];

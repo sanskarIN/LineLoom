@@ -128,6 +128,18 @@ check or safe-to-run verdict. The Ollama benchmark identifier is now
 under v8; v7 or earlier reports cannot be mixed into a controlled comparison.
 See [evaluation protocol section 4c](EVALUATION_PROTOCOL.md#4c-native-generated-code-scanner-coverage-ollama-v8).
 
+The C/C++ delimiter scanner accounts for backslash-LF and backslash-CRLF
+physical-line splicing **before** recognizing line comments or brackets.
+Otherwise a continued `//` comment could be mistaken for unmatched code.
+Rust is not normalized this way. Both the original input-size limit and
+the `unchecked` result for unsupported cases are preserved. This is a
+scanner accuracy fix, **not** a new parser, model benchmark, compiler
+verification or extension release. Because it changes scanner evidence, the
+reported native-scanner method is now `bounded-native-delimiter-coverage-v2`.
+Old `v1` method reports are rejected by the comparator, even when the
+broader synthetic benchmark protocol is unchanged. Rerun **both** baseline
+and candidate using the same checkout and method before comparing results.
+
 ## Ollama v7 native generated-code structure warnings (development source)
 
 The real local Ollama synthetic evaluator adds a **bounded lexical** diagnostic

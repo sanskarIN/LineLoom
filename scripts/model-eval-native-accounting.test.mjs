@@ -29,6 +29,15 @@ test("counts clean, mismatch and unchecked separately without treating absent ev
   assert.deepEqual(validateNativeStructureReport(data, counts, 1), data);
 });
 
+test("rejects legacy native scanner evidence after line-splice semantics changed", () => {
+  const current = report();
+  assert.equal(NATIVE_STRUCTURE_METHOD, "bounded-native-delimiter-coverage-v2");
+  assert.throws(() => validateNativeStructureReport({
+    ...current,
+    method: "bounded-native-delimiter-coverage-v1"
+  }, counts, 1), /invalid-native-structure-report/);
+});
+
 test("only counts completed native-language responses", () => {
   const data = summarizeNativeStructure([
     completed("typescript", "mismatch"), completed("python", "clean"),
