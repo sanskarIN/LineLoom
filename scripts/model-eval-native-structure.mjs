@@ -60,9 +60,15 @@ export function inspectNativeGeneratedStructure(fixture, insertion) {
   if (!fixture || !LANGUAGES.has(fixture.language) ||
       typeof fixture.prefix !== "string" || typeof fixture.suffix !== "string" ||
       typeof insertion !== "string") return "unchecked";
-  const text = fixture.prefix + insertion + fixture.suffix;
-  if (text.length > MAX_CHARS || text.includes("\0")) return "unchecked";
+  const original = fixture.prefix + insertion + fixture.suffix;
+  if (original.length > MAX_CHARS || original.includes("\0")) return "unchecked";
   const language = fixture.language;
+  // C and C++ splice a backslash immediately followed by LF/CRLF before
+  // recognizing comments and delimiters. Otherwise a continued // comment
+  // can create a false unmatched-delimiter warning on its following line.
+  // Rust does not use this translation phase. The original bounded input
+  // is checked before normalization, which cannot increase its length.
+  const text = language === "rust" ? original : original.replace(/\\\r?\n/g, "");
   const stack = [];
   for (let i = 0; i < text.length;) {
     const ch = text[i];
