@@ -78,6 +78,16 @@ describe("prompt generation", () => {
     expect(result.prompt).not.toContain("\u2029");
   });
 
+  it("escapes legacy visual newline control characters inside quoted source", () => {
+    const prefix = "before\u000bhidden\u000cnext\u0085last";
+    const value = buildPrompt(language, { ...context, prefix },
+      "generic-model:latest").prompt;
+    expect(value).toContain("| before\\u000bhidden\\u000cnext\\u0085last");
+    expect(value).not.toContain("\u000b");
+    expect(value).not.toContain("\u000c");
+    expect(value).not.toContain("\u0085");
+  });
+
   it("leaves original FIM prefix/suffix byte-exact with source that resembles prompt control", () => {
     const fim = {
       ...context,
