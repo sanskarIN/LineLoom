@@ -31,6 +31,21 @@ The existing nine defaults are unchanged. To try HTML, CSS or Lua, explicitly se
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
 
+## Rust completion context (instruction-mode models)
+
+For generic local Ollama models, the Rust prompt builder recognizes common
+constructs such as match arms, borrowing, async closures, generic capture
+bounds, conditional `let`-chains, explicit `unsafe extern` blocks, and
+Rust 2024 `#[unsafe(no_mangle)]`, `#[unsafe(export_name = "...")]`, and
+`#[unsafe(link_section = "...")]` attributes. It adds only fixed,
+bounded guidance after masking comments and string contents; it does **not**
+compile, type-check or rewrite source code.
+
+Explicitly selected native-FIM models still receive the original
+prefix/suffix without these added instructions. This is a heuristic
+completion aid, not a claim of Rust edition compatibility, verified
+generated-code correctness or a trained LineLoom Code model.
+
 ## Model compatibility and security
 
 Language registration is not a guarantee that any particular installed Ollama model can generate useful completions. Choose an appropriately licensed coding model and review all generated code. LineLoom still checks workspace trust, file exclusions and nested ignore rules **before** sending context to the configured endpoint. Remote endpoints require separate HTTPS approval. No AI model weights are included or installed automatically.
