@@ -2,7 +2,7 @@
 
 All notable changes follow Semantic Versioning.
 
-## v1.4.3 — planned GitHub dual-publisher preview (not yet verified published)
+## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
 
 - Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
 - Document manual uninstall/reinstall, configuration preservation boundaries, separate SHA-256 receipts and non-transfer of extension-private state. Do not claim the new Marketplace/Open VSX URLs are live before checking them.
