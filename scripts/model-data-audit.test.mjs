@@ -258,3 +258,75 @@ test("bounded CLI is offline, does not echo source/paths on success or rejection
     rmSync(root, { recursive: true, force: true });
   }
 });
+
+
+test("refuses substantial supervised completion reuse across isolated holdouts", () => {
+  // The large synthetic prefixes/suffixes differ: the complete snippets
+  // should not match, but the supervised answers are byte-for-byte identical.
+  const source = good();
+  const longMiddle = [
+    "const filtered = values.filter(item => item.metric > threshold)",
+    "  .map(item => item.metric * multiplier);",
+    "return filtered.reduce((total, value) => total + value, 0);"
+  ].join("\n");
+  source.samples[0].middle = longMiddle;
+  source.samples[5].middle = longMiddle;
+  shouldReject(source);
+});
+
+test("rejects a lightly edited long held-out target without relying on prompt overlap", () => {
+  const source = good();
+  const longMiddle = [
+    "const filtered = values.filter(item => item.metric > threshold)",
+    "  .map(item => item.metric * multiplier);",
+    "return filtered.reduce((total, value) => total + value, 0);"
+  ].join("\n");
+  source.samples[0].middle = longMiddle;
+  source.samples[10].middle = longMiddle.replace("threshold", "thresholdValue");
+  shouldReject(source);
+});
+
+test("short common completion targets remain eligible across repository splits", () => {
+  const source = good();
+  source.samples[0].middle = "return 1";
+  source.samples[5].middle = "return 1";
+  // Short standard language patterns are not sufficiently identifying to
+  // establish a leaked answer. This is not a full contamination guarantee.
+  assert.equal(auditTrainingManifest(source, fixtures).samples, 15);
+});
+
+test("large repeated targets within one training split are not automatically holdout leakage", () => {
+  const source = good();
+  const longMiddle = [
+    "const filtered = values.filter(item => item.metric > threshold)",
+    "  .map(item => item.metric * multiplier);",
+    "return filtered.reduce((total, value) => total + value, 0);"
+  ].join("\n");
+  source.samples[0].middle = longMiddle;
+  source.samples[1].middle = longMiddle;
+  // Whole-source duplicate screening still applies independently.
+  assert.equal(auditTrainingManifest(source, fixtures).samples, 15);
+});
+
+test("offline plan rejects held-out answer leakage without exposing targets", () => {
+  const root = mkdtempSync(join(tmpdir(), "lineloom-private-target-leak-"));
+  const file = join(root, "sensitive-manifest.json");
+  const script = fileURLToPath(new URL("./model-data-audit.mjs", import.meta.url));
+  const manifest = good();
+  const answer = "const privateResult = values.filter(item => item.score > minimum)." +
+    "map(item => item.score).reduce((total, score) => total + score, 0);";
+  manifest.samples[0].middle = answer;
+  manifest.samples[10].middle = answer;
+  try {
+    writeFileSync(file, JSON.stringify(manifest));
+    const outcome = spawnSync(process.execPath, [script, "--manifest", file],
+      { encoding: "utf8", timeout: 5000 });
+    assert.equal(outcome.status, 1);
+    assert.equal(outcome.stdout, "");
+    assert.ok(!outcome.stderr.includes(file));
+    assert.ok(!outcome.stderr.includes("privateResult"));
+    assert.ok(!outcome.stderr.includes("score"));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});

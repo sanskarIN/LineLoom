@@ -83,6 +83,23 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
   const publicHashes = new Set(publicTexts.map(sha256));
   const publicWindows = publicTexts.map(item => windows(tokenize(item), 5));
   const publicShingles = publicTexts.map(characterShingles);
+  // The FIM middle is the supervised answer. Reusing a substantial middle
+  // in a held-out split or public benchmark is leakage even if the surrounding
+  // prefix/suffix have been changed enough to defeat whole-source similarity.
+  // Short commonplace completions are excluded from this additional gate.
+  const informativeTarget = value => {
+    const content = normalized(value);
+    if (content.length < 64 || tokenize(content).length < 8) return undefined;
+    return { content, shingles: characterShingles(content) };
+  };
+  const publicTargets = publicFixtures.map(item => informativeTarget(item.expected))
+    .filter(Boolean);
+  const overlapsTarget = (a, b) =>
+    a.content === b.content ||
+    (Math.min(a.content.length, b.content.length) >= 96 &&
+      Math.min(a.shingles.size, b.shingles.size) >= 8 &&
+      intersect(a.shingles, b.shingles) /
+        Math.min(a.shingles.size, b.shingles.size) >= 0.85);
   const samples = [];
   const ids = new Set();
   const repoSplits = new Map();
@@ -129,6 +146,10 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
     // Check both literal passages and common five-token sequences. Evaluate
     // only ORIGINAL checked-in public fixtures, no external requests.
     const norm = normalized(content);
+    const target = informativeTarget(s.middle);
+    if (target && (publicTargets.some(reference => overlapsTarget(reference, target)) ||
+        samples.some(existing => existing.split !== s.split &&
+          existing.target && overlapsTarget(existing.target, target)))) malformed();
     const tokens = windows(tokenize(content), 5);
     const characters = characterShingles(norm);
     if (publicTexts.some(t => (t.length >= 48 && norm.includes(t)) ||
@@ -152,7 +173,7 @@ export function auditTrainingManifest(manifest, publicEvalManifest) {
           intersect(characters, existing.characters) /
             Math.min(characters.size, existing.characters.size) >= 0.9) malformed();
     }
-    samples.push({ norm, tokens, characters });
+    samples.push({ norm, tokens, characters, target, split: s.split });
     countByLanguage[s.language]++;
     countBySplit[s.split]++;
     countByLanguageAndSplit[s.language][s.split]++;
