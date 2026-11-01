@@ -48,13 +48,13 @@ npm run model:eval -- --model qwen2.5-coder:1.5b --mode auto --category suffix -
 
 Replace the illustrative tag only with a locally installed, reviewed model.
 Run `--mode fim` only where a model actually supports suffix-aware FIM.
-The source benchmark v9 also recognizes `lineloom-code` and
+The source benchmark v10 recognizes `lineloom-code` and
 `lineloom-code:<tag>` for native FIM in `--mode auto`, matching VS Code
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v9`, which does not
-compare with earlier v1–v8 reports; regenerate both reports locally.
+The Ollama report protocol is `lineloom-synthetic-v10`, which does not
+compare with earlier v1–v9 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -62,6 +62,32 @@ from repeated runs or infer human usefulness from strict string equality.
 A failing inference returns a nonzero process exit code; preserve the
 aggregate failure count and do **not** quietly discard failed attempts.
 The evaluator prints only aggregate statistics, not source or generated code.
+
+## 3a0. Instruction-mode quoted source framing (Ollama v10)
+
+The optional CLI benchmark previously placed fixture source between literal
+`<before>`/`<after>` tags, which could be visually impersonated by source
+content. The v10 evaluator now mirrors the extension's **untrusted source-line
+presentation**: each source line is prefixed with `| ` and the top-level
+prompt explicitly explains this is quoted data, not code. CRLF/CR line
+endings are normalized **inside instruction-mode request presentation**;
+vertical tab, form feed, NEL and Unicode line/paragraph separators are
+escaped as visible `\\uXXXX` text. Native FIM mode still sends the
+**original fixture prefix and suffix byte-for-byte unchanged**.
+
+This does **not** make the evaluator's prompts identical to the full VS Code
+extension: the CLI intentionally omits the extension's per-language static
+Rust/C/C++ context hints, selected-related-file material and editor state.
+It only aligns the **source-framing convention**. Nor does quoted framing
+prove prompt-injection resistance, compiler correctness or model quality.
+The request-spec SHA-256 now binds the new prompt text, and top-level
+`lineloom-synthetic-v10` **rejects old v9 report comparisons even for FIM**
+to keep one unambiguous reporting contract.
+
+This change is **protocol and test implementation only**, not a model run,
+human-editor evaluation, trained model, automatic Ollama installation or a
+published release. Produce new baseline/candidate reports on the same commit
+and hardware before making any measured comparisons.
 
 ## 3a. Run a same-scope paired local comparison (optional)
 
@@ -242,7 +268,7 @@ The `nativeStructureDiagnostics.method` value is bumped to
 `bounded-native-delimiter-coverage-v2`, so previously saved
 `bounded-native-delimiter-coverage-v1` reports **must not be compared** with
 new scanner output. Regenerate baseline and candidate using the same
-checkout; the top-level synthetic request protocol remains v9.
+checkout; the top-level synthetic request protocol was v9 at this scanner milestone and is now v10 (section 3a0).
 
 ## 4d. Ollama generation-token telemetry (Ollama v9)
 
@@ -268,7 +294,7 @@ coverage require separate manual review; metadata does not prove actual
 model weight identity, equivalent hardware, comparable server cache state,
 correct generated source, inference warm-up, or real-editor performance.
 
-The new Ollama report protocol is `lineloom-synthetic-v9`. Re-run
+At this historical telemetry milestone, the Ollama report protocol was `lineloom-synthetic-v9`. Re-run
 both models on the same reviewed fixture revision, hardware conditions,
 generation settings and prompt mode; reports from v8 and earlier are
 intentionally incompatible. The independent Python/HF smoke protocol is

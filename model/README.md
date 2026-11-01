@@ -86,6 +86,26 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v10 instruction-context framing (development source)
+
+The optional local synthetic evaluator now quotes untrusted fixture source
+using the same **source-line data-lane convention** as the VS Code extension:
+`| ` on each line, not forgeable `<before>`/`<after>` wrappers.
+It displays unusual newline separators as escaped Unicode sequences and
+keeps the native-FIM request prefix/suffix **byte-exact**. The request SHA-256
+binds this new format. Because it changes the instruction prompt,
+the top-level report protocol is now **`lineloom-synthetic-v10`**.
+Version v9 and earlier reports are **not comparable**, including for the
+unchanged FIM route; rerun both locally under v10.
+
+The benchmark is still **not the full editor prompt**: it intentionally
+does not reproduce per-language Rust/C/C++ static hints or selected related
+files. Matching a formatting convention does not prove model quality,
+prompt-injection protection or compiler-valid completions. No local
+inference/training, model download, weight release or new published extension
+version was performed. See the
+[protocol framing section](EVALUATION_PROTOCOL.md#3a0-instruction-mode-quoted-source-framing-ollama-v10).
+
 ## Ollama v9 output-token measurement (development source)
 
 Real opt-in, local Ollama evaluation can now record terminal `eval_count`
@@ -104,7 +124,8 @@ based on unadjusted completion latency. These are still just synthetic
 measurements; user-editor acceptance, generation validity and real
 checkpoint testing must be verified independently.
 
-This change advances the Ollama report identity to `lineloom-synthetic-v9`.
+The historical v9 telemetry milestone advanced the Ollama report identity
+to `lineloom-synthetic-v9`. The current protocol is **v10** (above).
 Older reports must be rerun on the reviewed fixture set to compare.
 See [evaluation protocol section 4d](EVALUATION_PROTOCOL.md#4d-ollama-generation-token-telemetry-ollama-v9).
 
@@ -161,8 +182,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v9` and cannot be compared
-to previous v1–v8 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v10` and cannot be compared
+to previous v1–v9 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**
