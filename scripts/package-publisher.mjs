@@ -42,9 +42,15 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const stage = mkdtempSync(join(tmpdir(), "lineloom-new-publisher-"));
   try {
     const created = stageNewPublisher(root, stage);
-    const vsce = join(root, "node_modules", ".bin", process.platform === "win32" ? "vsce.cmd" : "vsce");
+    // Resolve vsce's real Node CLI instead of relying on .cmd execution on Windows.
+    // Invoking Node directly avoids shell interpolation of the output filename.
+    const vsceRoot = join(root, "node_modules", "@vscode", "vsce");
+    const vscePkg = JSON.parse(readFileSync(join(vsceRoot, "package.json"), "utf8"));
+    const cli = typeof vscePkg.bin === "string" ? vscePkg.bin : vscePkg.bin?.vsce;
+    assert.ok(typeof cli === "string" && cli.length > 0, "Missing locked vsce CLI");
+    const vsce = resolve(vsceRoot, cli);
     assert.ok(existsSync(vsce), "Install locked dev dependencies via npm ci");
-    execFileSync(vsce, ["package", "--pre-release", "--no-dependencies", "-o", output], {
+    execFileSync(process.execPath, [vsce, "package", "--pre-release", "--no-dependencies", "-o", output], {
       cwd: stage, stdio: "inherit", timeout: 180_000
     });
     console.log("Packaged separate extension ID: " + created.publisher + "." + created.name);
