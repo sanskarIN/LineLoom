@@ -96,3 +96,22 @@ controlled local/editor tests before making quality claims.
 ## Model compatibility and security
 
 Language registration is not a guarantee that any particular installed Ollama model can generate useful completions. Choose an appropriately licensed coding model and review all generated code. LineLoom still checks workspace trust, file exclusions and nested ignore rules **before** sending context to the configured endpoint. Remote endpoints require separate HTTPS approval. No AI model weights are included or installed automatically.
+
+## Python, JavaScript and TypeScript lexical context hints (unreleased)
+
+Generic local **instruction-mode** models receive up to four fixed, language-specific
+hints inferred from the already-approved bounded prefix. Python guidance covers
+async, typing, exceptions, context managers, match/case and decorators.
+JavaScript covers modules, Promise/async, functions and exceptions; TypeScript
+also covers interfaces and types. The scanner masks comments, ordinary and
+triple-quoted strings, JavaScript templates, and common regexp literals.
+
+Hints use **only fixed text**: no identifiers, filenames, paths or snippets are
+copied into the hints themselves. No workspace scan, new source reads, model
+downloads, network calls, training or persistent index is introduced. This is a
+30,000-character **best-effort lexical heuristic**, not a parser or a proof of
+syntax correctness. If the bounded window starts inside a previously opened
+literal, its inferred state can be wrong. Native FIM models still receive the
+byte-exact approved prefix and suffix when no related file has been selected.
+Real local-model quality and physical editor QA remain unverified. Publisher
+migration and any additional release are postponed.
