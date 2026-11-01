@@ -38,6 +38,30 @@ test("handles C++ raw strings and ordinary C/C++ headers", () => {
   assert.equal(inspect(fixture("c", "#define OPEN_PAREN (\nint f() { "), "0;"), "unchecked");
 });
 
+test("C/C++ phase-two line splicing prevents false unmatched delimiters", () => {
+  for (const language of ["c", "cpp"]) {
+    const prefix = language === "c" ? "int f(void) { " : "int f() { ";
+    const input = fixture(language, prefix, " }");
+    // The backslash joins physical lines before the // comment is read.
+    const continuedComment = "int x = 0; // comment " + "\\" + "\n) ignored\nreturn x;";
+    const continuedSlash = "int x = 0; /" + "\\" + "\n/ ) ignored\nreturn x;";
+    const crlfComment = "int x = 0; // comment " + "\\" + "\r\n) ignored\r\nreturn x;";
+    assert.equal(inspect(input, continuedComment), "clean");
+    assert.equal(inspect(input, continuedSlash), "clean");
+    assert.equal(inspect(input, crlfComment), "clean");
+    assert.equal(inspect(input, "int x = 0; // comment\n) not ignored\nreturn x;"), "mismatch");
+  }
+});
+
+test("Rust is not C-line-spliced, and raw size is bounded before normalization", () => {
+  const rust = fixture("rust", "fn f() { ", " }");
+  assert.equal(inspect(rust, "let x = 0; // comment " + "\\" + "\n) not ignored\nlet y = 1;"), "mismatch");
+  for (const language of ["c", "cpp"]) {
+    const input = fixture(language, "", "");
+    assert.equal(inspect(input, ("x" + "\\" + "\n").repeat(6_000)), "unchecked");
+  }
+});
+
 test("a malformed input is unchecked, never silently accepted as valid syntax", () => {
   assert.equal(inspect(null, ")"), "unchecked");
   assert.equal(inspect(fixture("python"), ")"), "unchecked");
