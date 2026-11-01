@@ -234,6 +234,16 @@ a manual-review flag, not evidence of model quality. Neither comparison is a
 release approval. The protocol changes to `lineloom-synthetic-v8`;
 v7 and older reports must be rerun for controlled comparison.
 
+**Post-v9 scanner compatibility note:** C and C++ now apply bounded
+backslash-LF/CRLF physical-line splicing before identifying `//` comments
+and delimiter pairs. Rust is unchanged. This prevents false mismatch
+warnings from continued comments but does not imply native syntax validity.
+The `nativeStructureDiagnostics.method` value is bumped to
+`bounded-native-delimiter-coverage-v2`, so previously saved
+`bounded-native-delimiter-coverage-v1` reports **must not be compared** with
+new scanner output. Regenerate baseline and candidate using the same
+checkout; the top-level synthetic request protocol remains v9.
+
 ## 4d. Ollama generation-token telemetry (Ollama v9)
 
 When a completed response includes both `eval_count` and `eval_duration` on its
