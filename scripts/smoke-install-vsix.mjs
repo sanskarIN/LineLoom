@@ -22,7 +22,9 @@ if (!candidate || !candidate.toLowerCase().endsWith(".vsix")) {
   try {
     if (!statSync(packagePath).isFile()) throw new Error("Not a VSIX file");
     const { version, publisher, name } = JSON.parse(readFileSync("package.json", "utf8"));
-    if (publisher !== "SanskarCodes" || name !== "lineloom" || !/^\d+\.\d+\.\d+$/.test(version)) {
+    const expectedPublisher = process.env.LINELOOM_EXPECT_PUBLISHER || publisher;
+    if (!["SanskarCodes", "Sanskar"].includes(expectedPublisher) ||
+        publisher !== "SanskarCodes" || name !== "lineloom" || !/^\d+\.\d+\.\d+$/.test(version)) {
       throw new Error("This smoke test is restricted to versioned LineLoom packages.");
     }
     directory = mkdtempSync(join(tmpdir(), "lineloom-vsix-install-"));
@@ -42,7 +44,7 @@ if (!candidate || !candidate.toLowerCase().endsWith(".vsix")) {
     const installation = run("--install-extension", packagePath, "--force");
     if (installation.trim()) console.log(installation.trim());
     const listing = run("--list-extensions", "--show-versions").trim().split(/\r?\n/);
-    const expected = (publisher + "." + name + "@" + version).toLowerCase();
+    const expected = (expectedPublisher + "." + name + "@" + version).toLowerCase();
     if (!listing.some(item => item.trim().toLowerCase() === expected)) {
       throw new Error("VS Code CLI did not list installed extension " + expected + ".");
     }
