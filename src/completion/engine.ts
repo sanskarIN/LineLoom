@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
+import { LatestDebounce } from "./latest-debounce";
 import { SessionFilePause } from "./session-file-pause";
 import { EmptySuggestionBackoff } from "./backoff";
 import { TransientFailureBackoff, isTransientGenerationFailure } from "./failure-backoff";
@@ -36,6 +37,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   // Increment on opt-out to reject measurements from already-running requests.
   private latencyEpoch = 0;
   private readonly suggestions = new SuggestionCache();
+  private readonly debounceGate = new LatestDebounce();
   private readonly pausedFiles = new SessionFilePause();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
   private readonly transientFailures = new TransientFailureBackoff();
@@ -128,6 +130,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   }
   cancel(preserveContinuation = false): void {
     this.generation++;
+    this.debounceGate.cancel();
     this.controller?.abort();
     this.controller = undefined;
     this.target = undefined;
@@ -160,17 +163,6 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.cancelIfEditorChanged(vscode.window.activeTextEditor);
   }
   dispose(): void { this.cancel(); this.acceptance.clear(); this.pausedFiles.clear(); }
-  private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
-    if (ms === 0) return !token.isCancellationRequested;
-    return new Promise((resolve) => {
-      const timeout = setTimeout(() => { subscription.dispose(); resolve(!token.isCancellationRequested); }, ms);
-      const subscription = token.onCancellationRequested(() => {
-        clearTimeout(timeout);
-        subscription.dispose();
-        resolve(false);
-      });
-    });
-  }
   async provideInlineCompletionItems(
     document: vscode.TextDocument,
     position: vscode.Position,
@@ -208,7 +200,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     this.controller?.abort();
     this.target = { uri: document.uri.toString(), version: initialVersion, position };
     // An explicit developer request should never wait for the typing debounce.
-    if (!await this.debounce(manual ? 0 : config.debounceMs, token) || requestId !== this.generation || !isTargetCurrent()) {
+    if (!await this.debounceGate.wait(manual ? 0 : config.debounceMs, token) ||
+        requestId !== this.generation || !isTargetCurrent()) {
       if (requestId === this.generation) this.onState("ready");
       return;
     }

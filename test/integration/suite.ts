@@ -807,6 +807,30 @@ export async function run(): Promise<void> {
         engine.cancel();
         assert.equal(await queuedBeforeNetwork, undefined, "Queued generation must stop before HTTP");
         assert.equal(generationCalls, callsBeforeQueuedCancel, "Stop during debounce must not contact Ollama");
+
+        // Burst typing should supersede an older queued automatic request.
+        // The rejected request must settle without triggering Ollama, while
+        // the latest request still passes through every ordinary privacy gate.
+        engine.cancel();
+        const callsBeforeBurst = generationCalls;
+        const automaticBurst = {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        };
+        const staleBurst = engine.provideInlineCompletionItems(
+          document, position, automaticBurst, cancellation.token
+        );
+        const newestBurst = engine.provideInlineCompletionItems(
+          document, position, automaticBurst, cancellation.token
+        );
+        assert.equal(await staleBurst, undefined,
+          "Superseded queued request must settle without a suggestion");
+        const newestResult = await newestBurst;
+        assert.ok(newestResult?.length,
+          "The newest automatic request must still complete after debounce");
+        assert.equal(generationCalls, callsBeforeBurst + 1,
+          "Only the latest eligible automatic request should contact Ollama");
+        engine.cancel();
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
 
         // Explicit cancellation must abort an in-flight model request, reject
