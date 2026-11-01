@@ -210,3 +210,15 @@ cannot reintroduce a prior editor's model result. Cancellation does not undo
 bytes a remote service has already received. There are no automatic network
 checks, downloads, or telemetry. Automated tests verify abort and stale-token
 behavior; real physical-device/model acceptance remains **NOT RUN**.
+
+## Session-only active-file pause (unreleased)
+
+The **Active Editor** section provides a Pause/Resume Suggestions for This File
+control when a local file is active, plus Resume All Session-Paused Files when
+any files are paused. This is a local-only switch; opening the Control Center
+never requests an Ollama model. Pauses block both manual and automatic
+completions and immediately cancel queued or in-flight generation. The sidebar
+shows an aggregate count and state, not filenames, URIs or source. Pauses are
+non-persistent, independent of global auto-trigger settings, and limited to 128
+SHA-256 URI digests in memory. This source-only feature does not change the
+published v1.4.3 VSIX.

@@ -7,6 +7,8 @@ LineLoom's status indicator on the right side of the VS Code status bar opens a 
 | Enable / Disable Autocomplete | Turns the entire provider on or off |
 | Pause / Resume Automatic Suggestions | Toggles only automatic inference while typing; **manual completion still works** when enabled |
 | Trigger Completion | Requests a suggestion explicitly at a valid single cursor |
+| Pause / Resume Suggestions for This File | Session-only pause for the active local file, blocking both manual and automatic requests; other files stay enabled |
+| Resume All Session-Paused Files | Clears all session file pauses, without modifying VS Code settings |
 | Stop Current Generation (v1.2.1 candidate) | Aborts the current/queued LineLoom completion without pausing future automatic or manual suggestions |
 | Select Model | Requests installed-model information from the validated Ollama endpoint and allows selection |
 | Manage Languages | Chooses eligible VS Code editor language modes |
@@ -21,3 +23,17 @@ The current enable/automatic settings decide the picker labels. Selecting nothin
 Pause updates the existing `lineloom.autoTrigger` setting, persists across VS Code sessions and changes the ready indicator to **LineLoom Manual**. Typing no longer initiates a model completion, but the manual **LineLoom: Trigger Completion** command remains available if `lineloom.enabled` is true. Disable Autocomplete instead turns off **all** LineLoom completions. Resume restores automatic typing-triggered requests.
 
 **Pre-release validation note:** unit tests exercise the picker model, and mocked extension-host tests verify the command behavior. Visual menu layout and actual locally installed models require manual testing.
+
+## Per-file pause (new unreleased development feature)
+
+Use **LineLoom: Pause or Resume Suggestions for This File** in the Command Palette,
+Quick Actions picker, or Control Center Active Editor section. This applies to both
+manual and automatic suggestions, unlike the global automatic pause. A file pause
+immediately cancels in-flight completion and is retained only until resumed or
+VS Code reloads/deactivates the extension. Other files are unaffected. The
+extension stores a bounded set of 128 hashed local file identifiers in memory;
+it does not log filenames or save paused paths to disk. A full pause set fails
+closed instead of silently resuming an old file. Use **Resume All Session-Paused
+Files** to clear it. A new session starts with no paused files. The dashboard
+shows counts only, not filenames. No model or network request is made by the
+pause/resume command.

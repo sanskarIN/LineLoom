@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { createHash } from "node:crypto";
 import { SuggestionCache } from "./cache";
+import { SessionFilePause } from "./session-file-pause";
 import { EmptySuggestionBackoff } from "./backoff";
 import { TransientFailureBackoff, isTransientGenerationFailure } from "./failure-backoff";
 import { ContinuationCache, type ContinuationPoint } from "./continuation";
@@ -35,6 +36,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
   // Increment on opt-out to reject measurements from already-running requests.
   private latencyEpoch = 0;
   private readonly suggestions = new SuggestionCache();
+  private readonly pausedFiles = new SessionFilePause();
   private readonly emptyBackoff = new EmptySuggestionBackoff();
   private readonly transientFailures = new TransientFailureBackoff();
   private readonly continuations = new ContinuationCache();
@@ -76,6 +78,23 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     return item;
   }
   getRelatedFileCount(): number { return this.relatedFiles.length; }
+  /** Digests of paused file URIs remain only in memory for this extension session. */
+  isFilePaused(uri: vscode.Uri): boolean {
+    return uri.scheme === "file" && this.pausedFiles.isPaused(uri.toString());
+  }
+  getPausedFileCount(): number { return this.pausedFiles.count; }
+  /** Revoke both manual and automatic suggestions for a single local file. */
+  setFilePaused(uri: vscode.Uri, paused: boolean): boolean {
+    if (uri.scheme !== "file" || !this.pausedFiles.setPaused(uri.toString(), paused)) return false;
+    // Invalidate any in-flight stream, queued debounce, cached result or continuation.
+    this.cancel();
+    return true;
+  }
+  clearPausedFiles(): void {
+    if (this.pausedFiles.count === 0) return;
+    this.pausedFiles.clear();
+    this.cancel();
+  }
   /** Reset only in-memory activity; do not modify settings or related-file consent. */
   resetSessionActivity(): void {
     this.cancel(); // Invalidates queued and in-flight generations first.
@@ -140,7 +159,7 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     );
     this.cancelIfEditorChanged(vscode.window.activeTextEditor);
   }
-  dispose(): void { this.cancel(); this.acceptance.clear(); }
+  dispose(): void { this.cancel(); this.acceptance.clear(); this.pausedFiles.clear(); }
   private async debounce(ms: number, token: vscode.CancellationToken): Promise<boolean> {
     if (ms === 0) return !token.isCancellationRequested;
     return new Promise((resolve) => {
@@ -158,6 +177,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
     context: vscode.InlineCompletionContext,
     token: vscode.CancellationToken
   ): Promise<vscode.InlineCompletionItem[] | undefined> {
+    // A file pause also applies to explicit manual invokes, before reading source.
+    if (this.isFilePaused(document.uri)) return;
     const config = readConfig();
     if (!config.enabled) { this.onState("disabled"); return; }
     if (!config.autoTrigger && context.triggerKind === vscode.InlineCompletionTriggerKind.Automatic) return;
@@ -171,7 +192,8 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       const active = vscode.window.activeTextEditor;
       return Boolean(active && active.document === document &&
         document.version === initialVersion &&
-        hasSingleInsertionCursor(active.selections, position.line, position.character));
+        hasSingleInsertionCursor(active.selections, position.line, position.character) &&
+        !this.isFilePaused(document.uri));
     };
     if (!isTargetCurrent()) return;
     const manual = context.triggerKind === vscode.InlineCompletionTriggerKind.Invoke;

@@ -25,6 +25,7 @@ export async function run(): Promise<void> {
     "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
+    "lineloom.toggleFilePause", "lineloom.clearFilePauses",
     "lineloom.refreshSidebar", "lineloom.openSidebar", "lineloom.checkActiveModel"
   ];
   const commands = await vscode.commands.getCommands(true);
@@ -428,6 +429,23 @@ export async function run(): Promise<void> {
           triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
           selectedCompletionInfo: undefined
         };
+        // User-invoked per-file pauses must block even manual suggestions,
+        // before touching the network. The other file remains eligible.
+        const pauseBaseline = generationCalls;
+        assert.equal(engine.setFilePaused(document.uri, true), true);
+        assert.equal(engine.isFilePaused(document.uri), true);
+        assert.equal(engine.isFilePaused(permitted.uri), false);
+        assert.equal(await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        ), undefined, "Manual completion must also be denied in a paused file");
+        assert.equal(generationCalls, pauseBaseline, "Paused file must not contact Ollama");
+        assert.equal(engine.setFilePaused(document.uri, false), true);
+        assert.equal(engine.isFilePaused(document.uri), false);
+        // Verify the real extension commands are registered and network-free.
+        await vscode.commands.executeCommand("lineloom.toggleFilePause");
+        assert.equal(generationCalls, pauseBaseline);
+        await vscode.commands.executeCommand("lineloom.clearFilePauses");
+        assert.equal(generationCalls, pauseBaseline);
         await configuration.update("languageModels", { typescript: "lineloom-typed:latest" }, vscode.ConfigurationTarget.Global);
         const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(first?.length, "Expected inline completion from the mocked model");

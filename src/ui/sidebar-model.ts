@@ -40,6 +40,9 @@ export interface SidebarSnapshot {
   filePrivacy?: ManualFilePrivacy;
   crossFileContextEnabled?: boolean;
   relatedFileCount?: number;
+  activeLocalFile?: boolean;
+  activeFilePaused?: boolean;
+  pausedFileCount?: number;
 }
 
 export interface SidebarEntry {
@@ -112,6 +115,11 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
   const entry = (label: string, description: string, icon: string, command?: string): SidebarEntry =>
     ({ id: "next-step", label, description, icon, ...(command ? { command } : {}) });
 
+  if (snapshot.activeFilePaused) return entry(
+    "Next: Resume Suggestions for This File",
+    "Resume manual and automatic suggestions for this file only.",
+    "play", "lineloom.toggleFilePause"
+  );
   if (!snapshot.enabled) return entry("Next: Enable Autocomplete",
     "Suggestions are off; enabling does not contact Ollama.", "play", "lineloom.enable");
   if (!snapshot.workspaceTrusted) return entry("Next: Review Workspace Trust",
@@ -246,8 +254,24 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             (snapshot.activeEditor.modelSource ? " (" + snapshot.activeEditor.modelSource + ")" : ""),
           icon: "symbol-method" },
         { id: "editor-eligibility", label: "Completion Status",
-          description: snapshot.activeEditor.eligibility,
-          icon: snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+          description: snapshot.activeFilePaused ? "Paused for this session (manual and automatic blocked)" :
+            snapshot.activeEditor.eligibility,
+          icon: snapshot.activeFilePaused ? "debug-pause" :
+            snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+        ...(snapshot.activeLocalFile ? [{
+          id: "editor-file-pause",
+          label: snapshot.activeFilePaused ? "Resume Suggestions for This File" : "Pause Suggestions for This File",
+          description: "Session only; block manual and automatic completion in this file",
+          icon: snapshot.activeFilePaused ? "play" : "debug-pause",
+          command: "lineloom.toggleFilePause"
+        }] : []),
+        ...((snapshot.pausedFileCount ?? 0) > 0 ? [{
+          id: "editor-resume-all",
+          label: "Resume All Session-Paused Files",
+          description: (snapshot.pausedFileCount ?? 0) + " file(s) paused in memory",
+          icon: "clear-all",
+          command: "lineloom.clearFilePauses"
+        }] : []),
         { id: "active-model-readiness", label: "Last Active Model Check",
           description: activeModelReadinessDescription(snapshot.activeModelReadiness),
           icon: snapshot.activeModelReadiness === "available" ? "check" :
