@@ -160,7 +160,9 @@ export function rustContextHints(prefix: string): string[] {
   // Prioritize local completion patterns. Inspect only code tokens, never
   // quoted string or nested comment payloads.
   add(/\bmatch\b[\s\S]{0,650}\{|=>|\b(?:Some|None|Ok|Err)\s*\(/u.test(code.slice(-700)), HINTS.match);
-  // Stable let-chains can place a conditional let after a boolean condition.\n  // Bound the scan to a single condition to avoid unrelated later bindings.\n  add(/\b(?:if|while)\s+let\b|\b(?:if|while)\b[^\n;{}]{0,160}&&\s*let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
+  // Stable let-chains can place a conditional let after a boolean condition.
+  // Bound the scan to a single condition to avoid unrelated later bindings.
+  add(/\b(?:if|while)\s+let\b|\b(?:if|while)\b[^\n;{}]{0,160}&&\s*let\b|\blet\s+[^\n;]{1,180}\s+else\s*\{/u.test(code.slice(-900)), HINTS.patterns);
   // Rust return-position impl Trait can restrict captured generics with
   // use<...>. This is not a normal use import: only the precise-capture
   // bound has an angle bracket following the keyword.
@@ -172,7 +174,9 @@ export function rustContextHints(prefix: string): string[] {
   // an explicit async keyword at the cursor.
   add(/\basync\s+(?:move\s+)?(?:fn\b|\{|\|)|\basync\s+move\b|\.await\b|\b(?:Future|AsyncFn|AsyncFnMut|AsyncFnOnce)\b/u.test(code), HINTS.async);
   add(/\b(?:trait\s+[A-Za-z_]|impl(?:\s*<|\s+[A-Za-z_]|\s*\{|\s*'|\s*&))|\b(?:Self|self)\s*\./u.test(code), HINTS.traits);
-  // Rust 2024 explicit unsafe extern blocks and unsafe attributes are\n  // high-signal FFI contexts even when ABI strings are masked above.\n  add(/\bunsafe\s*(?:fn|trait|impl|\{|extern\b)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)|#\s*\[\s*unsafe\s*\(\s*(?:no_mangle|export_name|link_section)\b/u.test(code), HINTS.ffi);
+  // Rust 2024 explicit unsafe extern blocks and unsafe attributes are
+  // high-signal FFI contexts even when ABI strings are masked above.
+  add(/\bunsafe\s*(?:fn|trait|impl|\{|extern\b)|\bextern\s+(?:fn|\{)|\brepr\s*\(\s*C\s*\)|#\s*\[\s*unsafe\s*\(\s*(?:no_mangle|export_name|link_section)\b/u.test(code), HINTS.ffi);
   add(/(?:&\s*(?:'\w+\s*)?mut\b|&'\w+\b|\b(?:ref\s+mut|move\s*\|)\b)/u.test(code), HINTS.borrow);
   add(/\.(?:iter|iter_mut|into_iter|map|filter|collect|fold|enumerate|flat_map)\s*(?:\(|::<)|\bmove\s*\|/u.test(code), HINTS.iter);
   add(/\bmacro_rules\s*!|\b[A-Za-z_]\w*!\s*[([{]/u.test(code), HINTS.macro);
