@@ -46,6 +46,30 @@ prefix/suffix without these added instructions. This is a heuristic
 completion aid, not a claim of Rust edition compatibility, verified
 generated-code correctness or a trained LineLoom Code model.
 
+## C and C++ completion context (instruction-mode models)
+
+Generic local Ollama models now receive **fixed, bounded** C and C++
+syntax guidance inferred from the already-approved editor prefix.
+For C this covers allocations/pointers, struct/union/enum declarations,
+function pointers and preprocessor directives. For C++ it covers templates
+and constraints, RAII/move semantics, lambdas, constexpr/noexcept and
+coroutines. The two language modes remain distinct: C-only guidance does
+not suggest C++ features, and C++ guidance does not assume a specific
+language-standard version.
+
+The lexical scanner masks comments, character/string literals and C++
+raw-string payloads, and interprets backslash-newline continuations before
+comment detection. It returns **only allowlisted instruction text**, never
+filenames, identifiers or source snippets. It scans a bounded prefix and
+is not a parser, type checker or guarantee of code correctness; a source
+window beginning inside an earlier multiline comment/literal can be
+misclassified. The model must still respect existing visible code.
+
+As with Rust, native FIM-capable Ollama tags receive their **original
+prefix and suffix without additional instructions**, including for C and
+C++. No weights, model downloads, editor source collection, new endpoint
+permissions or release are added by this change.
+
 ## Model compatibility and security
 
 Language registration is not a guarantee that any particular installed Ollama model can generate useful completions. Choose an appropriately licensed coding model and review all generated code. LineLoom still checks workspace trust, file exclusions and nested ignore rules **before** sending context to the configured endpoint. Remote endpoints require separate HTTPS approval. No AI model weights are included or installed automatically.
