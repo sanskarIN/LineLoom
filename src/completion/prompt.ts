@@ -14,7 +14,8 @@ export interface PromptData { prompt: string; suffix?: string }
 function frameUntrustedSource(source: string): string {
   return source
     .replace(/\r\n?/g, "\n")
-    .replace(/[\u2028\u2029]/g, char => char === "\u2028" ? "\\u2028" : "\\u2029")
+    .replace(/[\u000b\u000c\u0085\u2028\u2029]/gu, char =>
+      "\\u" + char.charCodeAt(0).toString(16).padStart(4, "0"))
     .split("\n")
     .map(line => "| " + line)
     .join("\n");
