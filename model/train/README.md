@@ -509,3 +509,14 @@ modified along with an adapter by someone who controls both files.
 They only detect accidental mismatch and basic tampering, and are NOT
 distribution approvals. Real GPU training, model correctness, independent
 quality evaluation and production readiness remain unverified.
+
+### Held-out FIM target leakage guard (source-only)
+
+The offline Node preflight now checks long informative `middle` spans across
+train/validation/test split boundaries and public original synthetic probes,
+not only prefix + middle + suffix as a whole. Changed surrounding context
+must not disguise reuse of a supervised answer. Short commonplace answers
+remain allowed because they are not reliable evidence of copying.
+This is not a guarantee that the dataset is clean; independent human rights,
+provenance, near-duplicate and red-team review remains required. Offline
+planning and training use the same fail-closed audit before records are accepted.

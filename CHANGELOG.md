@@ -20,6 +20,12 @@ All notable changes follow Semantic Versioning.
 - Preserve cache, context, privacy, endpoint approval, request generation, and manual bypass behavior. Add unit and mocked editor-host tests for supersession, timeout, cancellation and listener cleanup.
 - This is a local scheduler improvement; no measured real-model latency claim, publisher migration or new published version.
 
+## Unreleased — LineLoom Code training target contamination preflight
+
+- Detect substantial duplicated or lightly edited FIM supervised middle targets across independently declared train/validation/test splits, even when prefix/suffix source context is different. Include long public benchmark target screening and retain short-common-answer tolerance.
+- Add offline synthetic audit and CLI privacy regression tests; no private source text or identifiers enter reports or error messages, and the existing LoRA planning gate continues to use this audit.
+- No real checkpoint, GPU training, new model weights, publisher migration or release.
+
 ## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
 
 - Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
