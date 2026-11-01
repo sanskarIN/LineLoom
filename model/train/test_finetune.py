@@ -337,5 +337,41 @@ class LocalGateTests(unittest.TestCase):
             (path / "tokenizer.json").write_text("{}", encoding="utf-8")
             self.assertEqual(finetune.validate_local_checkpoint(path), path.resolve())
 
+
+class StrictGradientClippingTests(unittest.TestCase):
+    def test_clips_with_strict_nonfinite_check_before_optimizer_update(self):
+        seen = []
+        weights = [object(), object()]
+
+        def simulated_clip(parameters, *, max_norm, error_if_nonfinite):
+            seen.append((parameters, max_norm, error_if_nonfinite))
+            return 1.25
+
+        self.assertEqual(finetune.clip_gradients_safely(simulated_clip, weights), 1.25)
+        self.assertEqual(seen, [(weights, 1.0, True)])
+
+    def test_nonfinite_negative_and_bad_norms_fail_closed(self):
+        for invalid in (float("nan"), float("inf"), -float("inf"), -1.0, "bad", None):
+            with self.subTest(invalid=str(invalid)):
+                with self.assertRaises(finetune.ExperimentRejected):
+                    finetune.clip_gradients_safely(
+                        lambda *args, **kwargs: invalid, ["synthetic-parameter"])
+
+    def test_backend_errors_are_sanitized_not_forwarded(self):
+        for issue in (RuntimeError("PRIVATE_SOURCE_TEXT"),
+                      ValueError("PRIVATE_SOURCE_TEXT"),
+                      OverflowError("PRIVATE_SOURCE_TEXT"),
+                      TypeError("PRIVATE_SOURCE_TEXT")):
+            def fail(*args, **kwargs):
+                raise issue
+            with self.subTest(type=type(issue).__name__):
+                with self.assertRaises(finetune.ExperimentRejected) as caught:
+                    finetune.clip_gradients_safely(fail, ["synthetic-parameter"])
+                self.assertNotIn("PRIVATE_SOURCE_TEXT", str(caught.exception))
+
+    def test_zero_gradient_norm_is_finite_but_not_reported(self):
+        self.assertEqual(finetune.clip_gradients_safely(
+            lambda *args, **kwargs: 0.0, []), 0.0)
+
 if __name__ == "__main__":
     unittest.main()

@@ -520,3 +520,17 @@ remain allowed because they are not reliable evidence of copying.
 This is not a guarantee that the dataset is clean; independent human rights,
 provenance, near-duplicate and red-team review remains required. Offline
 planning and training use the same fail-closed audit before records are accepted.
+
+### Strict non-finite gradient rejection (unreleased source)
+
+During an explicitly approved local LoRA experiment, the trainer now uses
+`torch.nn.utils.clip_grad_norm_(..., error_if_nonfinite=True)` and also
+checks the returned scalar before every optimizer update. A finite forward
+loss alone does not guarantee finite gradients. NaN/Infinity or an unsupported
+strict clipping backend stops the experiment **before optimizer.step** and
+before an adapter can be written. Error output stays sanitized and reveals
+no private samples, model outputs, gradient values or local paths.
+
+The new regression tests use an injected stand-in clipper and run without
+PyTorch, CUDA, network access or training data. Actual GPU training stability,
+accuracy or reproducibility remains unverified; no weights were trained.

@@ -26,6 +26,12 @@ All notable changes follow Semantic Versioning.
 - Add offline synthetic audit and CLI privacy regression tests; no private source text or identifiers enter reports or error messages, and the existing LoRA planning gate continues to use this audit.
 - No real checkpoint, GPU training, new model weights, publisher migration or release.
 
+## Unreleased — LineLoom Code strict gradient clipping
+
+- During future opt-in local LoRA training, require strict PyTorch non-finite gradient detection and a finite, nonnegative clip norm before each optimizer step. Reject and sanitize runtime errors rather than saving numerically corrupted adapters.
+- Add framework-free Python unit tests for strict flag propagation, non-finite norms, backend failure redaction and valid zero/finite norms.
+- No GPU training, trained model, new release or publisher migration.
+
 ## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
 
 - Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
