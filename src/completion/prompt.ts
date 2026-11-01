@@ -12,13 +12,12 @@ export interface PromptData { prompt: string; suffix?: string }
  * Native FIM inputs bypass this function and stay byte-exact.
  */
 function frameUntrustedSource(source: string): string {
-  return source
-    .replace(/\r\n?/g, "\n")
-    .replace(/[\u000b\u000c\u0085\u2028\u2029]/gu, char =>
-      "\\u" + char.charCodeAt(0).toString(16).padStart(4, "0"))
-    .split("\n")
-    .map(line => "| " + line)
-    .join("\n");
+  const separators = new Set([0x0b, 0x0c, 0x85, 0x2028, 0x2029]);
+  const escaped = [...source.replace(/\r\n?/g, "\n")].map(char => {
+    const code = char.charCodeAt(0);
+    return separators.has(code) ? "\\u" + code.toString(16).padStart(4, "0") : char;
+  }).join("");
+  return escaped.split("\n").map(line => "| " + line).join("\n");
 }
 /**
  * Only explicitly recognized suffix-aware families receive native Ollama FIM.
