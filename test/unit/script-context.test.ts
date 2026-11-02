@@ -96,6 +96,54 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
       .toEqual([]);
   });
 
+  it("masks regex payload following an arrow while preserving subsequent source", () => {
+    const source = String.raw`const matches = value => /async function Fake/.test(value);` +
+      "\nconst actual = 1;";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).not.toContain("async function Fake");
+    expect(scan.code).toContain("const actual = 1;");
+    const hints = scriptContextHints(source, "typescript").join(" ");
+    expect(hints).toContain("functions");
+    expect(hints).not.toContain("Promise contracts");
+  });
+
+  it("treats regexes after || and && as literals rather than executable TypeScript", () => {
+    const cases = [
+      "const re = previous || /interface Fake extends Hidden/;\nconst real = 1;",
+      String.raw`const re = enabled && /https?:\\/\\/example\\/async/;` +
+        "\nconst actual = 2;"
+    ];
+    for (const source of cases) {
+      const scan = scanScriptCode(source, "typescript");
+      expect(scan.state, source).toBe("code");
+      expect(scan.code, source).not.toContain("interface Fake");
+      expect(scan.code, source).not.toContain("https?");
+      expect(scan.code, source).toContain("const ");
+      expect(scriptContextHints(source, "typescript").join(" ")).not
+        .toContain("TypeScript declarations:");
+    }
+  });
+
+  it("still distinguishes division after arrows and logical operators from regexes", () => {
+    const source = "const half = n => n / 2;\n" +
+      "const answer = fallback || total / count;\n" +
+      "const next = flag && score / divisor;";
+    const scan = scanScriptCode(source, "javascript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("n / 2;");
+    expect(scan.code).toContain("total / count;");
+    expect(scan.code).toContain("score / divisor;");
+  });
+
+  it("keeps native FIM source bytes unchanged for arrow-returned regex code", () => {
+    const source = String.raw`const predicate = value => /async function Fake/.test(value);` +
+      "\nconst next = ";
+    const ctx = extractContext(source + "fallback;", source.length, 2048);
+    const built = buildPrompt(getLanguage("typescript")!, ctx, "qwen2.5-coder:1.5b");
+    expect(built).toEqual({ prompt: ctx.prefix, suffix: ctx.suffix });
+  });
+
   it("identifies active JS comment or literal without returning executable hints", () => {
     expect(scriptContextHints("const x = 1; // async function hidden()", "javascript"))
       .toEqual([expect.stringContaining("comment")]);
