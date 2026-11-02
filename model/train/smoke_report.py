@@ -11,8 +11,8 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v9"
-GENERATION_POLICY = "greedy-fim-v2"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v10"
+GENERATION_POLICY = "greedy-fim-v3"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
 
@@ -85,6 +85,7 @@ def fingerprints(fixtures: list[dict], max_new_tokens: int) -> dict:
         "doSample": False,
         "stopTokenKinds": ["tokenizer.eos", "fim_suffix"],
         "decodeSkipSpecialTokens": False,
+        "completionDecode": "remove-terminal-stop-token-id-only-v1",
         "inputTokenLimit": 2048,
     } for item in fixtures]
     return {
