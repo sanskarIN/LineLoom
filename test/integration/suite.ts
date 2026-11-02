@@ -143,7 +143,7 @@ export async function run(): Promise<void> {
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
-  let mockWrongLanguageFence = false;
+  let mockWrongLanguageFence: "plain" | "prefaced" | false = false;
   let mockTransientFailure = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
@@ -184,7 +184,7 @@ export async function run(): Promise<void> {
       if (mockUnsafeOutput) {
         response.end(JSON.stringify({ response: "42" + String.fromCharCode(0x202e), done: true }) + "\n");
       } else if (mockWrongLanguageFence) {
-        response.end(JSON.stringify({ response: "```python\nprint(42)\n```", done: true }) + "\n");
+        response.end(JSON.stringify({ response: mockWrongLanguageFence === "prefaced" ? "Here is the code:\n```python\nprint(42)\n```" : "```python\nprint(42)\n```", done: true }) + "\n");
       } else if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
       } else {
@@ -473,19 +473,23 @@ export async function run(): Promise<void> {
         // Actual editor-host path: a TypeScript editor must never offer a
         // Python-fenced reply from the fake local model as ghost text.
         engine.cancel();
-        const fencedBaseline = generationCalls;
-        mockWrongLanguageFence = true;
-        try {
-          const wrongLanguage = await engine.provideInlineCompletionItems(
-            document, position, trigger, cancellation.token
-          );
-          assert.equal(wrongLanguage, undefined,
-            "A known mismatched language fence must be rejected before insertion");
-          assert.equal(generationCalls, fencedBaseline + 1,
-            "The test must exercise a real /api/generate response, not cache reuse");
-        } finally {
-          mockWrongLanguageFence = false;
-          engine.cancel();
+        // Verify both ordinary and chat-prefaced wrong-language output via
+        // the real mocked HTTP /api/generate extension-host pathway.
+        for (const variant of ["plain", "prefaced"] as const) {
+          const fencedBaseline = generationCalls;
+          mockWrongLanguageFence = variant;
+          try {
+            const wrongLanguage = await engine.provideInlineCompletionItems(
+              document, position, trigger, cancellation.token
+            );
+            assert.equal(wrongLanguage, undefined,
+              "A mismatched " + variant + " language fence must be rejected before insertion");
+            assert.equal(generationCalls, fencedBaseline + 1,
+              "Must exercise a real /api/generate response, not cache reuse");
+          } finally {
+            mockWrongLanguageFence = false;
+            engine.cancel();
+          }
         }
         const matchingLanguage = await engine.provideInlineCompletionItems(
           document, position, trigger, cancellation.token
