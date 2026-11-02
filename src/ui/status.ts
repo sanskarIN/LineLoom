@@ -8,9 +8,11 @@ export class LineLoomStatus implements vscode.Disposable {
     this.item.command = "lineloom.quickActions"; this.set("ready"); this.item.show();
   }
   set(state: CompletionState, automatic = true): void {
-    const display = statusPresentation(state, automatic, this.isActiveFilePaused());
+    const display = statusPresentation(state, automatic, this.isActiveFilePaused(), vscode.workspace.isTrusted);
     this.item.text = display.text;
     this.item.tooltip = display.tooltip;
+    // Use an explicit icon-free screen-reader name, not the codicon markup.
+    this.item.accessibilityInformation = { label: display.accessibilityLabel, role: "button" };
   }
   dispose(): void { this.item.dispose(); }
 }
