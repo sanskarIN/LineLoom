@@ -373,6 +373,70 @@ class StrictGradientClippingTests(unittest.TestCase):
         self.assertEqual(finetune.clip_gradients_safely(
             lambda *args, **kwargs: 0.0, []), 0.0)
 
+class FiniteLoraWeightTests(unittest.TestCase):
+    class FiniteMask:
+        def __init__(self, verdict):
+            self.verdict = verdict
+
+        def all(self):
+            return self
+
+        def item(self):
+            return self.verdict
+
+    def test_accepts_all_finite_updated_weights(self):
+        observed = []
+        parameters = ["synthetic-q-weight", "synthetic-v-weight"]
+
+        def isfinite(parameter):
+            observed.append(parameter)
+            return self.FiniteMask(True)
+
+        self.assertIsNone(finetune.verify_finite_lora_weights(parameters, isfinite))
+        self.assertEqual(observed, parameters)
+
+    def test_rejects_one_corrupted_weight_and_invalid_mask(self):
+        for value in (False, None, 1, "true"):
+            with self.subTest(verdict=repr(value)):
+                observed = []
+
+                def isfinite(parameter):
+                    observed.append(parameter)
+                    return self.FiniteMask(True if parameter == "q" else value)
+
+                with self.assertRaises(finetune.ExperimentRejected):
+                    finetune.verify_finite_lora_weights(["q", "v", "later"], isfinite)
+                self.assertEqual(observed, ["q", "v"])
+
+    def test_rejects_empty_trainable_parameter_list(self):
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.verify_finite_lora_weights([], lambda _: self.FiniteMask(True))
+
+    def test_backend_failures_do_not_expose_tensor_or_source_details(self):
+        for error in (RuntimeError("PRIVATE_SOURCE_TEXT"),
+                      ValueError("PRIVATE_SOURCE_TEXT"),
+                      TypeError("PRIVATE_SOURCE_TEXT"),
+                      OverflowError("PRIVATE_SOURCE_TEXT"),
+                      AttributeError("PRIVATE_SOURCE_TEXT")):
+            def broken(_):
+                raise error
+            with self.subTest(error=type(error).__name__):
+                with self.assertRaises(finetune.ExperimentRejected) as caught:
+                    finetune.verify_finite_lora_weights(["fake"], broken)
+                self.assertNotIn("PRIVATE_SOURCE_TEXT", str(caught.exception))
+
+    def test_checks_after_optimizer_step_and_before_adapter_creation(self):
+        source = Path(finetune.__file__).read_text(encoding="utf-8")
+        body = source[source.index("def train("):source.index("def parser(")]
+        self.assertLess(body.index("optimizer.step()"),
+                        body.index("verify_finite_lora_weights(parameters, torch.isfinite)"))
+        self.assertEqual(body.count("verify_finite_lora_weights(parameters, torch.isfinite)"), 2)
+        self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
+                        body.index("output_dir.mkdir("))
+        self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
+                        body.index("\n    model.save_pretrained("))
+
+
 class AdapterValidationExportGateTests(unittest.TestCase):
     def setUp(self):
         records = [
