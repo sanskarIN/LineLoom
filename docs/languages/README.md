@@ -116,6 +116,21 @@ byte-exact approved prefix and suffix when no related file has been selected.
 Real local-model quality and physical editor QA remain unverified. Publisher
 migration and any additional release are postponed.
 
+## JavaScript/TypeScript regexp expression boundaries (development source)
+
+The local instruction-mode lexical scanner now recognizes regex literals at
+expression starts immediately after arrow-function (\`=>\`) and logical
+(\`||\`, \`&&\`) operators. Their contents are masked before choosing
+allowlisted autocomplete hints, so text resembling \`async function\` or
+\`interface\` inside regex patterns does not become fabricated syntax
+context. Escaped slashes inside a regex remain literal content; ordinary
+division after these operators is still scanned as source.
+
+This is bounded best-effort lexical recognition, not a JavaScript/TypeScript
+parser or proof of generated-code correctness. It does not alter the native
+FIM prefix/suffix, read files, change Ollama endpoints, publish weights or
+imply improved real-model results. Physical editor and model QA remain needed.
+
 ## Completion fence language matching (unreleased)
 
 Generic local models sometimes return a Markdown code block tagged for a
