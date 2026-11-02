@@ -405,13 +405,21 @@ remains `greedy-fim-v3`. The read-only comparator now uses
 `lineloom-hf-synthetic-comparison-v10`, validates all prompt-token count
 bounds and per-language sums, and refuses to compare base and adapter
 reports unless each language has identical aggregate input-token counts.
-Its output includes `inputTokenParityVerified`, `inputTokensPerModel`,
-and per-language `inputTokensPerModel` values. This protects against
-**obvious input workload mismatches**, not all confounders: equal sums
-cannot prove each individual prompt had identical tokenization,
-hardware/driver load, or actual runtime parity. Generated output lengths
-can still differ, and p50/p95 remain generation-only measurements,
-not editor latency or standardized tokens-per-second throughput.
+The report also includes `inputLengthSequenceSha256`, a digest
+of the **ordered, language-labeled prompt-token lengths** from the fixed
+public fixture sequence. No per-probe token lengths or token IDs are
+printed. The comparator requires matching digests as well as matching
+per-language sums, detecting reordered or changed prompt-token workloads
+that equal totals alone would miss.
+
+Its output includes `inputTokenParityVerified`,
+`inputLengthSequenceParityVerified`, `inputTokensPerModel`, and
+per-language `inputTokensPerModel` values. These checks establish
+**only equality of the reported input-token workloads**. A forged report
+or a different hidden backend cannot be authenticated by a matching hash;
+hardware/driver load and runtime parity remain unverified. Generated
+output lengths can still differ, and p50/p95 remain generation-only
+measurements, not editor latency or standardized tokens-per-second throughput.
 
 This change adds no network calls, model downloads, trained weights,
 automatic compiler execution or public release. Real model benchmarks
