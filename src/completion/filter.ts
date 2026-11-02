@@ -107,6 +107,26 @@ function isConfidentPrefixEcho(value: string, echo: string): boolean {
   return hasCompleteEchoBoundary(value, echo.length);
 }
 
+/**
+ * Some local models nest chat and FIM envelopes in either order. Unwrap only
+ * recognized boundary markers and the existing fixed preamble; never search
+ * inside generated code literals. Excessively nested envelopes fail closed
+ * instead of leaking control tokens into an editor insertion.
+ */
+function unwrapModelBoundaries(raw: string): string | undefined {
+  let value = raw;
+  for (let pass = 0; pass < 16; pass++) {
+    const next = value
+      .replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "")
+      .replace(/^<\|im_start\|>assistant[^\n]*\n/, "")
+      .replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "")
+      .replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>\s*)+$/, "");
+    if (next === value) return value;
+    value = next;
+  }
+  return undefined;
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
 export function cleanCompletion(
   raw: string, prefix: string, suffix: string, multiLine: boolean,
@@ -117,14 +137,11 @@ export function cleanCompletion(
   if (containsUnsafeUnicode(raw)) return "";
   // Normalise line endings without trimming meaningful leading Python indentation.
   let value = raw.replace(/\r\n?/g, "\n");
-  // Remove boundary-only control tokens without touching tokens inside code literals.
-  value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
-  value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
-  value = value.replace(/^<\|im_start\|>assistant[^\n]*\n/, "");
-  // Strip only the existing fixed chat preamble before checking a fenced
-  // language; a prefaced wrong-language fence must never bypass validation.
-  // No user/source content is interpolated and arbitrary prose is not stripped.
-  value = value.replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "");
+  // Unwrap mixed local-model envelopes before checking a declared fence
+  // language. Do not strip arbitrary prose or modify embedded code literals.
+  const unwrapped = unwrapModelBoundaries(value);
+  if (unwrapped === undefined) return "";
+  value = unwrapped;
   // A clearly wrong-language fenced response should not become editor ghost text.
   // Also inspect incomplete fences (where the closing marker was truncated).
   const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
