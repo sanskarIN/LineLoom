@@ -34,6 +34,12 @@ function regexCanStart(output: readonly string[]): boolean {
   while (end && /\s/u.test(output[end - 1])) end--;
   if (end === 0) return true;
   if (/[=([{,:;!?]/u.test(output[end - 1])) return true;
+  // These operators expect a fresh expression. Without this guard a regex
+  // after an arrow or logical operator is parsed as ordinary code and its
+  // payload can accidentally enable misleading fixed autocomplete hints.
+  // Inspect two already-scanned characters; do not regex-search user text.
+  const operator = output.slice(Math.max(0, end - 2), end).join("");
+  if (operator === "=>" || operator === "||" || operator === "&&") return true;
   return /\b(?:return|throw|case|yield|await)\s*$/u.test(
     output.slice(Math.max(0, end - 32), end).join("")
   );
