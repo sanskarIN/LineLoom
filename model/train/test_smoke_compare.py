@@ -262,7 +262,8 @@ class CompareSmokeTests(unittest.TestCase):
         adapter = simulated_report("local-lora-adapter", score=2)
         result = compare_smoke.compare_reports(base, adapter)
         self.assertTrue(result["inputTokenParityVerified"])
-        self.assertEqual(result["inputTokenParityScope"], "per-language-sums-only-v1")
+        self.assertTrue(result["inputLengthSequenceParityVerified"])
+        self.assertEqual(result["inputTokenParityScope"], "per-language-sums-and-ordered-length-digest-v2")
         self.assertEqual(result["inputTokensPerModel"], base["inputTokenCount"])
         self.assertEqual(
             result["perLanguage"]["rust"]["inputTokensPerModel"],
@@ -275,6 +276,29 @@ class CompareSmokeTests(unittest.TestCase):
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(base, altered)
 
+    def test_ordered_prompt_hash_rejects_hidden_per_fixture_workload_changes(self):
+        base = simulated_report("local-base-model")
+        adapter = simulated_report("local-lora-adapter")
+        selected = read_public_fixtures("all")
+        lengths = [16 + index % 5 for index in range(len(selected))]
+        positions = [i for i, item in enumerate(selected) if item["language"] == "rust"]
+        first, second = next(
+            (a, b) for a in positions for b in positions
+            if lengths[a] != lengths[b]
+        )
+        lengths[first], lengths[second] = lengths[second], lengths[first]
+        changed = prompt_token_summary([
+            {"language": item["language"], "promptTokens": lengths[i]}
+            for i, item in enumerate(selected)
+        ])
+        self.assertEqual(changed["inputTokenCount"], adapter["inputTokenCount"])
+        self.assertEqual(changed["inputTokensByLanguage"], adapter["inputTokensByLanguage"])
+        self.assertNotEqual(changed["inputLengthSequenceSha256"],
+                            adapter["inputLengthSequenceSha256"])
+        adapter["inputLengthSequenceSha256"] = changed["inputLengthSequenceSha256"]
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, adapter)
+
     def test_input_token_counts_reject_forged_missing_or_inconsistent_reports(self):
         base = simulated_report("local-base-model")
         adapter = simulated_report("local-lora-adapter")
@@ -283,6 +307,8 @@ class CompareSmokeTests(unittest.TestCase):
             ("inputTokenAccounting", None),
             ("inputTokenCount", True),
             ("inputTokenCount", -1),
+            ("inputLengthSequenceSha256", "broken"),
+            ("inputLengthSequenceSha256", None),
             ("inputTokenCount", adapter["inputTokenCount"] + 1),
             ("inputTokensByLanguage", {}),
         ]
