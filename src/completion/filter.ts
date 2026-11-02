@@ -121,6 +121,10 @@ export function cleanCompletion(
   value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
   value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
   value = value.replace(/^<\|im_start\|>assistant[^\n]*\n/, "");
+  // Strip only the existing fixed chat preamble before checking a fenced
+  // language; a prefaced wrong-language fence must never bypass validation.
+  // No user/source content is interpolated and arbitrary prose is not stripped.
+  value = value.replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "");
   // A clearly wrong-language fenced response should not become editor ghost text.
   // Also inspect incomplete fences (where the closing marker was truncated).
   const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
@@ -129,7 +133,6 @@ export function cleanCompletion(
   const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
   if (fenced) value = fenced[1];
   else value = value.replace(/^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
-  value = value.replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "");
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
   const tail = prefix.slice(-160);
