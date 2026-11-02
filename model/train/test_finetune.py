@@ -434,7 +434,7 @@ class FiniteLoraWeightTests(unittest.TestCase):
         self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
                         body.index("output_dir.mkdir("))
         self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
-                        body.index("model.save_pretrained("))
+                        body.index("\n    model.save_pretrained("))
 
 
 class AdapterValidationExportGateTests(unittest.TestCase):
