@@ -39,6 +39,39 @@ describe("native status bar copy", () => {
     expect(statusPresentation("ready", true, false).text).toBe("$(sparkle) LineLoom");
   });
 
+  it("prevents a restricted workspace from being reported as ready or generating", () => {
+    for (const state of ["ready", "generating", "unavailable", "error"] as const) {
+      for (const automatic of [true, false]) {
+        for (const paused of [true, false]) {
+          const display = statusPresentation(state, automatic, paused, false);
+          expect(display.text).toBe("$(lock) LineLoom Restricted");
+          expect(display.tooltip).toContain("manual and automatic completions are blocked");
+          expect(display.tooltip).toContain("Workspace is restricted");
+          expect(display.accessibilityLabel).toContain("Workspace is restricted");
+          expect(display.accessibilityLabel).not.toMatch(/\\$\\(|file:\/\/|https?:\/\//);
+        }
+      }
+    }
+    const disabled = statusPresentation("disabled", true, true, false);
+    expect(disabled.text).toBe("$(circle-slash) LineLoom Off");
+    expect(disabled.accessibilityLabel).toContain("Autocomplete is disabled");
+  });
+
+  it("announces an icon-free meaningful status and discoverable Quick Actions for each state", () => {
+    for (const state of ["ready", "generating", "disabled", "unavailable", "error"] as const) {
+      const display = statusPresentation(state);
+      expect(display.accessibilityLabel).toMatch(/^LineLoom: /);
+      expect(display.accessibilityLabel).toContain("Open Quick Actions");
+      expect(display.accessibilityLabel).not.toContain("$(");
+      expect(display.accessibilityLabel).not.toMatch(/https?:\/\/|file:\/\/|private\/|\.ts\b/);
+      expect(display.tooltip).toContain("Click for Quick Actions");
+    }
+    expect(statusPresentation("ready", false).accessibilityLabel)
+      .toContain("manual completion remains available");
+    expect(statusPresentation("ready", true, true).accessibilityLabel)
+      .toContain("this file only");
+  });
+
   it("offers manual remediation without starting a background check", () => {
     expect(statusPresentation("unavailable").tooltip).toContain("manually check");
     expect(statusPresentation("error").tooltip).toContain("diagnostics");
