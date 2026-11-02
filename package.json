@@ -398,7 +398,7 @@
     "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs"
   },
   "dependencies": {
-    "ignore": "^7.0.13"
+    "ignore": "^7.0.14"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
