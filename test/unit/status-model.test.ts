@@ -48,7 +48,9 @@ describe("native status bar copy", () => {
           expect(display.tooltip).toContain("manual and automatic completions are blocked");
           expect(display.tooltip).toContain("Workspace is restricted");
           expect(display.accessibilityLabel).toContain("Workspace is restricted");
-          expect(display.accessibilityLabel).not.toMatch(/\\$\\(|file:\/\/|https?:\/\//);
+          expect(display.accessibilityLabel).not.toContain("$(");
+          expect(display.accessibilityLabel).not.toContain("file://");
+          expect(display.accessibilityLabel).not.toContain("https://");
         }
       }
     }
