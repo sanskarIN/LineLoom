@@ -344,7 +344,10 @@ class CompareSmokeTests(unittest.TestCase):
                          "ALL_LANGUAGES_GRAMMAR_CHECKED_NATIVE_COMPILERS_OPTED_IN")
         self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 8)
         self.assertEqual(result["perLanguage"]["cpp"]["syntaxUncheckedPerModel"], 0)
-        self.assertNotIn("prompt", json.dumps(result))
+        self.assertNotIn('"prompt":', json.dumps(result))
+        self.assertNotIn('"prefix":', json.dumps(result))
+        self.assertNotIn('"suffix":', json.dumps(result))
+        self.assertNotIn('"fixtureId":', json.dumps(result))
 
     def test_mixed_native_approval_modes_and_forged_native_counts_are_rejected(self):
         base = simulated_report("local-base-model", native_compilers=True, score=1)
