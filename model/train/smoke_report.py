@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v10"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v11"
 GENERATION_POLICY = "greedy-fim-v3"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -198,6 +198,35 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
                 **terminations[language],
             } for language in LANGUAGES
         },
+    }
+
+
+def prompt_token_summary(results: list[dict]) -> dict:
+    """Aggregate FIM prompt token IDs, never code, token values or probe IDs.
+
+    Prompt lengths are measured after encoding the original public synthetic
+    FIM request and before inference. They include FIM boundary tokens.
+    Per-language totals detect obvious unequal input work between local
+    base/adapter runs, not rearrangements within a language.
+    """
+    if not isinstance(results, list) or not 1 <= len(results) <= 40:
+        raise SmokeReportRejected("invalid-prompt-token-measurements")
+    by_language = {
+        language: {"attempts": 0, "totalTokens": 0} for language in LANGUAGES
+    }
+    for item in results:
+        if not isinstance(item, dict) or item.get("language") not in by_language:
+            raise SmokeReportRejected("invalid-prompt-token-language")
+        count = item.get("promptTokens")
+        if type(count) is not int or not 1 <= count <= 2048:
+            raise SmokeReportRejected("invalid-prompt-token-count")
+        group = by_language[item["language"]]
+        group["attempts"] += 1
+        group["totalTokens"] += count
+    return {
+        "inputTokenAccounting": "tokenizer-encoded-fim-prompt-ids-v1",
+        "inputTokenCount": sum(group["totalTokens"] for group in by_language.values()),
+        "inputTokensByLanguage": by_language,
     }
 
 
