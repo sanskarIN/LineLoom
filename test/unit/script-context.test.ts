@@ -144,6 +144,76 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
     expect(built).toEqual({ prompt: ctx.prefix, suffix: ctx.suffix });
   });
 
+  it("recognizes executable template interpolations without reading literal text as code", () => {
+    const tick = String.fromCharCode(96);
+    const source = "const title = " + tick +
+      "interface Hidden { async fake() {} } ${await loadTitle()}" + tick + ";";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).not.toContain("interface Hidden");
+    expect(scan.code).not.toContain("async fake");
+    expect(scan.code).toContain("await loadTitle()");
+    const hints = scriptContextHints(source, "typescript").join(" ");
+    expect(hints).toContain("Promise contracts");
+    expect(hints).not.toContain("TypeScript declarations:");
+    const active = "const title = " + tick + "hidden ${await loadTitle(";
+    expect(scanScriptCode(active, "typescript").state).toBe("code");
+    expect(scriptContextHints(active, "typescript")).toEqual([
+      expect.stringContaining("async code")
+    ]);
+  });
+
+  it("tracks nested braces, nested templates and quoted closing braces in JS/TS expressions", () => {
+    const tick = String.fromCharCode(96);
+    const source = "const result = " + tick + "outer ${({ value: { nested: await load() } }).value.nested} " +
+      "${await render(" + tick + "inner ${Promise.resolve(42)}" + tick + ")} tail" + tick + ";";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("await load()");
+    expect(scan.code).toContain("await render(");
+    expect(scan.code).toContain("Promise.resolve(42)");
+    expect(scan.code).not.toContain("outer");
+    expect(scan.code).not.toContain("inner");
+    expect(scan.code).not.toContain("tail");
+    expect(scriptContextHints(source, "typescript").join(" ")).toContain("Promise contracts");
+    const inside = "const result = " + tick + "${({ nested: { inner: await work() } }).nested";
+    expect(scanScriptCode(inside, "javascript").state).toBe("code");
+    expect(scriptContextHints(inside, "javascript").join(" ")).toContain("Promise contracts");
+  });
+
+  it("does not mistake escaped interpolation markers, quoted braces or comments for delimiters", () => {
+    const tick = String.fromCharCode(96);
+    const escaped = "const text = " + tick + "fake \\${await privateCall()}" + tick + ";";
+    expect(scanScriptCode(escaped, "typescript").state).toBe("code");
+    expect(scriptContextHints(escaped, "typescript")).toEqual([]);
+    const source = "const output = " + tick + "start ${" +
+      "({ quoted: '}', valid: await fetchData(), re: /[}]/, /* } */ extra: 1 }).valid" +
+      "} text" + tick + ";";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("quoted:");
+    expect(scan.code).toContain("await fetchData()");
+    expect(scan.code).not.toContain("/* } */");
+    expect(scan.code).not.toContain("[}]");
+    expect(scriptContextHints(source, "typescript").join(" ")).toContain("Promise contracts");
+  });
+
+  it("preserves literal guidance outside interpolation and source-exact native FIM", () => {
+    const tick = String.fromCharCode(96);
+    const raw = "const formatted = " + tick + "outer ${await load()} and raw";
+    expect(scanScriptCode(raw, "typescript").state).toBe("template");
+    expect(scriptContextHints(raw, "typescript")).toEqual([
+      expect.stringContaining("literal")
+    ]);
+    const expr = "const formatted = " + tick + "outer ${await load(";
+    const ctx = extractContext(expr + "value)", expr.length, 2048);
+    const fim = buildPrompt(getLanguage("typescript")!, ctx, "qwen2.5-coder:1.5b");
+    expect(fim).toEqual({ prompt: ctx.prefix, suffix: ctx.suffix });
+    const instruction = buildPrompt(getLanguage("typescript")!, ctx, "generic-local:latest");
+    expect(instruction.prompt).toContain("Promise contracts");
+    expect(instruction.prompt).not.toContain("continue literal content");
+  });
+
   it("identifies active JS comment or literal without returning executable hints", () => {
     expect(scriptContextHints("const x = 1; // async function hidden()", "javascript"))
       .toEqual([expect.stringContaining("comment")]);

@@ -45,13 +45,17 @@ function regexCanStart(output: readonly string[]): boolean {
   );
 }
 
-/** Bounded, best-effort scanner; conservatively masks all JS template content. */
+/** Bounded scanner: mask template text but inspect executable JS/TS interpolations. */
 export function scanScriptCode(source: string, language: ScriptLanguage): ScriptScan {
   const text = source.slice(-30_000);
   const python = language === "python";
   const output: string[] = [];
   let state: ScriptState = "code";
   let charClass = false;
+  // Each template has its own interpolation brace depth. A nested template
+  // inside ${...} must not close the outer interpolation, and braces in
+  // strings/comments/regexes must not affect its depth.
+  const templates: Array<{ interpolationDepth: number }> = [];
   let i = 0;
   const mask = (part: string): void => {
     for (const c of part) output.push(c === "\n" ? "\n" : " ");
@@ -76,6 +80,28 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
       else { mask(c); i++; }
       continue;
     }
+    if (state === "template") {
+      if (c === "\\" && i + 1 < text.length) {
+        mask(text.slice(i, i + 2));
+        i += 2;
+      } else if (text.startsWith("${", i)) {
+        // Template data stays masked; executable interpolation is scanned
+        // normally until its matching unquoted closing brace.
+        mask("${");
+        templates[templates.length - 1].interpolationDepth = 1;
+        state = "code";
+        i += 2;
+      } else if (c === String.fromCharCode(96)) {
+        mask(c);
+        templates.pop();
+        state = "code";
+        i++;
+      } else {
+        mask(c);
+        i++;
+      }
+      continue;
+    }
     if (state !== "code") {
       if (c === "\\" && i + 1 < text.length) {
         mask(text.slice(i, i + 2));
@@ -86,8 +112,7 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
         if (c === "[") charClass = true;
         if (c === "]") charClass = false;
         if (c === "/" && !charClass) state = "code";
-      } else if (c === (state === "single" ? "'" :
-          state === "double" ? '"' : String.fromCharCode(96))) {
+      } else if (c === (state === "single" ? "'" : '"')) {
         state = "code";
       } else if (python && c === "\n" && (state === "single" || state === "double")) {
         state = "code";
@@ -112,6 +137,7 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
       continue;
     }
     if (!python && c === String.fromCharCode(96)) {
+      templates.push({ interpolationDepth: 0 });
       state = "template";
       mask(c);
       i++;
@@ -123,6 +149,21 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
       mask(c);
       i++;
       continue;
+    }
+    // Only the current innermost template frame receives braces from
+    // executable interpolation. Other braces and all literals are untouched.
+    const frame = templates[templates.length - 1];
+    if (frame && frame.interpolationDepth > 0) {
+      if (c === "{") frame.interpolationDepth++;
+      if (c === "}") {
+        frame.interpolationDepth--;
+        if (frame.interpolationDepth === 0) {
+          mask(c);
+          state = "template";
+          i++;
+          continue;
+        }
+      }
     }
     output.push(c);
     i++;
