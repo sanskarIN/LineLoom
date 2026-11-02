@@ -525,7 +525,7 @@ class FiniteOptimizerStateTests(unittest.TestCase):
         self.assertEqual(body.count(call), 2)
         self.assertLess(body.index("optimizer.step()"), body.index(call))
         self.assertLess(body.rindex(call), body.index("output_dir.mkdir("))
-        self.assertLess(body.rindex(call), body.index("\\n    model.save_pretrained("))
+        self.assertLess(body.rindex(call), body.index("\n    model.save_pretrained("))
 
 
 class AdapterValidationExportGateTests(unittest.TestCase):
