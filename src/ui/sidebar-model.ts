@@ -115,15 +115,15 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
   const entry = (label: string, description: string, icon: string, command?: string): SidebarEntry =>
     ({ id: "next-step", label, description, icon, ...(command ? { command } : {}) });
 
+  if (!snapshot.enabled) return entry("Next: Enable Autocomplete",
+    "Suggestions are off; enabling does not contact Ollama.", "play", "lineloom.enable");
+  if (!snapshot.workspaceTrusted) return entry("Next: Review Workspace Trust",
+    "Use VS Code's Workspace Trust controls; inference is blocked in restricted workspaces.", "shield");
   if (snapshot.activeFilePaused) return entry(
     "Next: Resume Suggestions for This File",
     "Resume manual and automatic suggestions for this file only.",
     "play", "lineloom.toggleFilePause"
   );
-  if (!snapshot.enabled) return entry("Next: Enable Autocomplete",
-    "Suggestions are off; enabling does not contact Ollama.", "play", "lineloom.enable");
-  if (!snapshot.workspaceTrusted) return entry("Next: Review Workspace Trust",
-    "Use VS Code's Workspace Trust controls; inference is blocked in restricted workspaces.", "shield");
 
   // Match the deliberately bounded, settings-only messages from editor-context.ts.
   // Never mistake "Allowed by settings" for a verified file privacy decision.
@@ -188,12 +188,15 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         {
           id: "state", label: "Engine Status",
           description: !snapshot.enabled ? "Disabled" :
+            !snapshot.workspaceTrusted ? "Blocked — workspace restricted" :
             snapshot.completionState === "ready" ? "Ready (model not automatically verified)" :
             snapshot.completionState === "generating" ? "Generating" :
             snapshot.completionState === "disabled" ? "Disabled" :
             snapshot.completionState === "unavailable" ? "Unavailable — check Ollama" :
             "Error — open diagnostics",
-          icon: snapshot.completionState === "generating" ? "sync" :
+          icon: !snapshot.enabled ? "circle-slash" :
+            !snapshot.workspaceTrusted ? "shield" :
+            snapshot.completionState === "generating" ? "sync" :
             snapshot.completionState === "error" ? "error" :
             snapshot.completionState === "unavailable" ? "warning" : "info"
         },
