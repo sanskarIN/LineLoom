@@ -39,6 +39,7 @@ try:
     )
     from .generated_syntax import classify_generated_syntax, generated_syntax_summary
     from .typescript_syntax import classify_typescript_syntax
+    from .native_syntax import classify_native_syntax
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
@@ -51,6 +52,7 @@ except ImportError:
     )
     from generated_syntax import classify_generated_syntax, generated_syntax_summary
     from typescript_syntax import classify_typescript_syntax
+    from native_syntax import classify_native_syntax
 
 
 def select_public_fixtures(language: str) -> list[dict]:
@@ -113,6 +115,9 @@ def verify_smoke_inputs_unchanged(base_dir: Path, expected_identity: dict,
 
 def run_local(fixture_set: list[dict], args) -> dict:
     """Only local model files; optional PEFT adapter is never uploaded/merged."""
+    native_syntax = getattr(args, "native_syntax", False)
+    if native_syntax and getattr(args, "approve_local_compilers", False) is not True:
+        raise ExperimentRejected("native-compiler-approval-required")
     # Fail closed before importing ML frameworks or loading any weights:
     # merely having adapter.safetensors is insufficient for comparison.
     if args.adapter_dir:
@@ -209,10 +214,14 @@ def run_local(fixture_set: list[dict], args) -> dict:
             completion = tokenizer.decode(tokens, skip_special_tokens=False)
             insertion = normalize_completion(completion)
             exact = insertion == fixture["expected"]
-            # Standard-library AST only: does not import or execute the
-            # generated program; non-Python languages are explicitly unchecked.
+            # Grammar checks never execute generated programs. Native source
+            # is compiled in a disposable directory ONLY on explicit opt-in.
+            native_parser = (lambda selected, middle: classify_native_syntax(
+                selected, middle, approved=True
+            )) if native_syntax else None
             syntax_outcome = classify_generated_syntax(
-                fixture, insertion, parse_typescript=classify_typescript_syntax
+                fixture, insertion, parse_typescript=classify_typescript_syntax,
+                parse_native=native_parser
             )
             result.append({"language": fixture["language"], "exact": exact,
                            "syntaxOutcome": syntax_outcome,
@@ -242,12 +251,13 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "runtimeProfile": runtime_profile,
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
-        **generated_syntax_summary(result),
+        **generated_syntax_summary(result, native_compilers=native_syntax),
         **generation_latency_summary(result, args.max_new_tokens),
-        "limitation": ("Strict synthetic equality and Python/TypeScript parser-only grammar; "
-                       "C, C++ and Rust generated code remains unchecked. "
-                       "No generated code execution, type correctness, "
-                       "compiler, human, editor or deployment QA.")
+        "limitation": ("Strict synthetic equality and limited grammar checks; "
+                       "native syntax is only checked with separately approved "
+                       "local compilers, otherwise Rust/C/C++ remain unchecked. "
+                       "No generated program execution, isolated security sandbox, "
+                       "semantic correctness, human/editor or deployment QA.")
     }
 
 
@@ -263,6 +273,10 @@ def parser() -> argparse.ArgumentParser:
     cli.add_argument("--adapter-dir", help="Optional directory holding an independently trained local LoRA adapter")
     cli.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     cli.add_argument("--max-new-tokens", type=int, default=64)
+    cli.add_argument("--native-syntax", action="store_true",
+                     help="Opt in to local Rust/C/C++ compiler checks of generated synthetic code")
+    cli.add_argument("--approve-local-compilers", action="store_true",
+                     help="Explicitly approve compiler subprocesses; not a security sandbox")
     return cli
 
 
@@ -271,6 +285,8 @@ def main() -> int:
     try:
         if not 1 <= args.max_new_tokens <= 128:
             raise ExperimentRejected("invalid-token-cap")
+        if args.native_syntax and not (args.run and args.approve_local_compilers):
+            raise ExperimentRejected("native-compiler-approval-required")
         fixtures = select_public_fixtures(args.language)
         if not args.run:
             print(json.dumps({
