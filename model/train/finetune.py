@@ -226,6 +226,29 @@ def clip_gradients_safely(clipper, parameters) -> float:
     return norm
 
 
+
+def verify_finite_lora_weights(parameters, isfinite) -> None:
+    """Reject corrupted LoRA weights before another step or adapter export.
+
+    Called with torch.isfinite on trainable parameters only; kept injectable
+    so the contract is tested without importing PyTorch or loading private data.
+    Do not echo tensor values or backend exception messages.
+    """
+    seen = False
+    try:
+        for parameter in parameters:
+            seen = True
+            verdict = isfinite(parameter).all().item()
+            if type(verdict) is not bool or not verdict:
+                raise ExperimentRejected("nonfinite-lora-weight")
+    except ExperimentRejected:
+        raise
+    except (ValueError, TypeError, RuntimeError, OverflowError, AttributeError):
+        raise ExperimentRejected("invalid-lora-weight-check") from None
+    if not seen:
+        raise ExperimentRejected("no-trainable-lora-parameters")
+
+
 def validation_export_gate(before: dict, after: dict,
                            required: bool) -> dict:
     """Optional fail-closed adapter export gate; no model or GPU imports.
@@ -408,6 +431,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         # backpropagation, scaling and clipping can still overflow.
         clip_gradients_safely(torch.nn.utils.clip_grad_norm_, parameters)
         optimizer.step()
+        # Finite gradients do not guarantee finite optimizer-updated weights.
+        with torch.no_grad():
+            verify_finite_lora_weights(parameters, torch.isfinite)
 
     model.eval()
     with torch.no_grad():
@@ -428,6 +454,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # checkpoint change cannot silently become an adapter receipt.
     if base_checkpoint_fingerprint(model_dir) != base_identity:
         raise ExperimentRejected("base-checkpoint-changed-during-experiment")
+    # A final check must precede every adapter filesystem write.
+    with torch.no_grad():
+        verify_finite_lora_weights(parameters, torch.isfinite)
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
     # PEFT adapter only; base model is NEVER copied, merged or exported.
