@@ -388,6 +388,43 @@ quality; tests use synthetic token-ID decoders without GPU dependencies.
 Reported generated-token totals still count the actual final stop ID,
 while the code insertion used for syntax and exact matching does not.
 
+### Input prompt-token parity for latency comparison (smoke protocol v11)
+
+Local Hugging Face FIM generation time depends on **both the input prompt
+length** and the generated output length. Previously the smoke reports
+counted generated tokens only. The runner now records how many tokenizer
+IDs were passed to each approved public synthetic FIM prompt, bounded to
+1–2,048 per sample. Only allowlisted **overall and per-language sums**
+are emitted, using `inputTokenAccounting:
+tokenizer-encoded-fim-prompt-ids-v1`, `inputTokenCount`, and
+`inputTokensByLanguage`. Individual probe lengths, token IDs, generated
+source, private paths and identifiers are not reported.
+
+`lineloom-hf-synthetic-smoke-v11` replaces smoke v10; generation policy
+remains `greedy-fim-v3`. The read-only comparator now uses
+`lineloom-hf-synthetic-comparison-v10`, validates all prompt-token count
+bounds and per-language sums, and refuses to compare base and adapter
+reports unless each language has identical aggregate input-token counts.
+The report also includes `inputLengthSequenceSha256`, a digest
+of the **ordered, language-labeled prompt-token lengths** from the fixed
+public fixture sequence. No per-probe token lengths or token IDs are
+printed. The comparator requires matching digests as well as matching
+per-language sums, detecting reordered or changed prompt-token workloads
+that equal totals alone would miss.
+
+Its output includes `inputTokenParityVerified`,
+`inputLengthSequenceParityVerified`, `inputTokensPerModel`, and
+per-language `inputTokensPerModel` values. These checks establish
+**only equality of the reported input-token workloads**. A forged report
+or a different hidden backend cannot be authenticated by a matching hash;
+hardware/driver load and runtime parity remain unverified. Generated
+output lengths can still differ, and p50/p95 remain generation-only
+measurements, not editor latency or standardized tokens-per-second throughput.
+
+This change adds no network calls, model downloads, trained weights,
+automatic compiler execution or public release. Real model benchmarks
+still require independent checkpoint and dataset reviews.
+
 ## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same
@@ -410,7 +447,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v10` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v11` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -421,8 +458,8 @@ a local adapter report.
 
 ### Language regression review in offline comparisons (development)
 
-The local comparison output now uses
-`lineloom-hf-synthetic-comparison-v9` and includes
+The local comparison output uses
+`lineloom-hf-synthetic-comparison-v10` and includes
 `languageRegressionReview`, plus three fixed-language-only lists:
 `strictExactRegressedLanguages` (fewer exact matches),
 `syntaxPassRegressedLanguages` (fewer Python AST/TypeScript parser passes),

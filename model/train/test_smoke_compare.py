@@ -15,14 +15,16 @@ try:
     from .generated_syntax import generated_syntax_summary
     from .smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
+        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary,
+        prompt_token_summary
     )
 except ImportError:
     import compare_smoke
     from generated_syntax import generated_syntax_summary
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
-        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary
+        fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary,
+        prompt_token_summary
     )
 
 
@@ -66,6 +68,10 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
              "token-limit" if index < token_cap_exits else "stop-token")}
         for index, item in enumerate(selected)
     ], tokens)
+    inputs = prompt_token_summary([
+        {"language": item["language"], "promptTokens": 16 + index % 5}
+        for index, item in enumerate(selected)
+    ])
     return {
         "stage": "UNREVIEWED_REAL_LOCAL_SYNTHETIC_SMOKE",
         "realModelInferenceExecuted": True,
@@ -93,6 +99,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
         "perLanguage": groups,
         **generated_syntax_summary(outcomes, native_compilers=native_compilers),
+        **inputs,
         **timings,
     }
 
@@ -159,7 +166,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 8)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v9")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v10")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 20)
         self.assertEqual(result["generationP95DeltaMs"], 38)
@@ -250,6 +257,81 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(only_cpp["strictExactRegressedLanguages"], ["cpp"])
         self.assertEqual(only_cpp["syntaxPassRegressedLanguages"], [])
 
+    def test_prompt_token_workload_parity_requires_matching_language_totals(self):
+        base = simulated_report("local-base-model", score=1)
+        adapter = simulated_report("local-lora-adapter", score=2)
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertTrue(result["inputTokenParityVerified"])
+        self.assertTrue(result["inputLengthSequenceParityVerified"])
+        self.assertEqual(result["inputTokenParityScope"], "per-language-sums-and-ordered-length-digest-v2")
+        self.assertEqual(result["inputTokensPerModel"], base["inputTokenCount"])
+        self.assertEqual(
+            result["perLanguage"]["rust"]["inputTokensPerModel"],
+            base["inputTokensByLanguage"]["rust"]["totalTokens"]
+        )
+        self.assertNotIn("fixtureId", json.dumps(result))
+        altered = copy.deepcopy(adapter)
+        altered["inputTokensByLanguage"]["rust"]["totalTokens"] += 1
+        altered["inputTokenCount"] += 1
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, altered)
+
+    def test_ordered_prompt_hash_rejects_hidden_per_fixture_workload_changes(self):
+        base = simulated_report("local-base-model")
+        adapter = simulated_report("local-lora-adapter")
+        selected = read_public_fixtures("all")
+        lengths = [16 + index % 5 for index in range(len(selected))]
+        positions = [i for i, item in enumerate(selected) if item["language"] == "rust"]
+        first, second = next(
+            (a, b) for a in positions for b in positions
+            if lengths[a] != lengths[b]
+        )
+        lengths[first], lengths[second] = lengths[second], lengths[first]
+        changed = prompt_token_summary([
+            {"language": item["language"], "promptTokens": lengths[i]}
+            for i, item in enumerate(selected)
+        ])
+        self.assertEqual(changed["inputTokenCount"], adapter["inputTokenCount"])
+        self.assertEqual(changed["inputTokensByLanguage"], adapter["inputTokensByLanguage"])
+        self.assertNotEqual(changed["inputLengthSequenceSha256"],
+                            adapter["inputLengthSequenceSha256"])
+        adapter["inputLengthSequenceSha256"] = changed["inputLengthSequenceSha256"]
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, adapter)
+
+    def test_input_token_counts_reject_forged_missing_or_inconsistent_reports(self):
+        base = simulated_report("local-base-model")
+        adapter = simulated_report("local-lora-adapter")
+        tamper = [
+            ("inputTokenAccounting", "unsafe-other-mode"),
+            ("inputTokenAccounting", None),
+            ("inputTokenCount", True),
+            ("inputTokenCount", -1),
+            ("inputLengthSequenceSha256", "broken"),
+            ("inputLengthSequenceSha256", None),
+            ("inputTokenCount", adapter["inputTokenCount"] + 1),
+            ("inputTokensByLanguage", {}),
+        ]
+        for field, value in tamper:
+            forged = copy.deepcopy(adapter)
+            forged[field] = value
+            with self.subTest(field=field, value=repr(value)[:20]):
+                with self.assertRaises(SmokeReportRejected):
+                    compare_smoke.compare_reports(base, forged)
+        for value in (True, 0, -5, "3", 2049):
+            forged = copy.deepcopy(adapter)
+            forged["inputTokensByLanguage"]["python"]["totalTokens"] = value
+            with self.subTest(group_total=value), self.assertRaises(SmokeReportRejected):
+                compare_smoke.compare_reports(base, forged)
+        forged = copy.deepcopy(adapter)
+        forged["inputTokensByLanguage"]["typescript"]["attempts"] = 7
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, forged)
+        forged = copy.deepcopy(adapter)
+        forged["inputTokensByLanguage"]["rust"]["extra"] = "private"
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, forged)
+
     def test_matching_explicit_native_syntax_scope_is_compared_source_free(self):
         left = simulated_report("local-base-model", native_compilers=True, score=1)
         right = simulated_report("local-lora-adapter", native_compilers=True, score=2)
@@ -262,7 +344,10 @@ class CompareSmokeTests(unittest.TestCase):
                          "ALL_LANGUAGES_GRAMMAR_CHECKED_NATIVE_COMPILERS_OPTED_IN")
         self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 8)
         self.assertEqual(result["perLanguage"]["cpp"]["syntaxUncheckedPerModel"], 0)
-        self.assertNotIn("prompt", json.dumps(result))
+        self.assertNotIn('"prompt":', json.dumps(result))
+        self.assertNotIn('"prefix":', json.dumps(result))
+        self.assertNotIn('"suffix":', json.dumps(result))
+        self.assertNotIn('"fixtureId":', json.dumps(result))
 
     def test_mixed_native_approval_modes_and_forged_native_counts_are_rejected(self):
         base = simulated_report("local-base-model", native_compilers=True, score=1)

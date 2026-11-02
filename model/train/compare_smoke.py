@@ -203,6 +203,32 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted_tokens += group["totalTokens"]
     if counted_tokens != total:
         raise SmokeReportRejected("mismatched-generated-token-total")
+    if report.get("inputTokenAccounting") != "tokenizer-encoded-fim-prompt-ids-v1":
+        raise SmokeReportRejected("invalid-input-token-method")
+    sequence = report.get("inputLengthSequenceSha256")
+    if type(sequence) is not str or not SHA256.fullmatch(sequence):
+        raise SmokeReportRejected("invalid-input-length-sequence")
+    input_total = report.get("inputTokenCount")
+    if (type(input_total) is not int or
+            not attempts <= input_total <= attempts * 2048):
+        raise SmokeReportRejected("invalid-input-token-total")
+    input_groups = report.get("inputTokensByLanguage")
+    if not isinstance(input_groups, dict) or set(input_groups) != set(LANGUAGES):
+        raise SmokeReportRejected("invalid-input-token-groups")
+    input_counted = 0
+    for name in LANGUAGES:
+        entry = input_groups[name]
+        expected_count = groups[name]["attempts"]
+        if (not isinstance(entry, dict) or
+                set(entry) != {"attempts", "totalTokens"} or
+                type(entry["attempts"]) is not int or
+                entry["attempts"] != expected_count or
+                type(entry["totalTokens"]) is not int or
+                not expected_count <= entry["totalTokens"] <= expected_count * 2048):
+            raise SmokeReportRejected("invalid-input-token-language")
+        input_counted += entry["totalTokens"]
+    if input_counted != input_total:
+        raise SmokeReportRejected("mismatched-input-token-total")
     if report.get("terminationAccounting") != "stop-token-or-token-limit-v1":
         raise SmokeReportRejected("invalid-termination-accounting")
     counts = report.get("terminationCounts")
@@ -245,7 +271,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "requestSpecSha256", "baseRevisionDeclared",
         "baseConfigSha256", "tokenizerSha256", "baseWeightsSha256",
         "baseWeightFiles", "syntheticAttempts", "runtimeProfile",
-        "syntaxAccounting",
+        "syntaxAccounting", "inputTokenAccounting",
+        "inputTokenCount", "inputTokensByLanguage",
+        "inputLengthSequenceSha256",
     )
     if any(left[field] != right[field] for field in same):
         raise SmokeReportRejected("incomparable-smoke-reports")
@@ -262,6 +290,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         adapter_syntax = right["syntaxByLanguage"][language]
         by_language[language] = {
             "attemptsPerModel": left["perLanguage"][language]["attempts"],
+            "inputTokensPerModel": left["inputTokensByLanguage"][language]["totalTokens"],
             "syntaxCheckedPerModel": base_syntax["checked"],
             "syntaxUncheckedPerModel": base_syntax["unchecked"],
             "baseSyntaxPassed": base_syntax["passed"],
@@ -315,7 +344,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         exact_regressions or syntax_regressions or truncation_regressions
     )
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v9",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v10",
         "languageRegressionReview": (
             "SYNTHETIC_REGRESSION_RECORDED" if any_regression else
             "NO_RECORDED_SYNTHETIC_REGRESSION"
@@ -333,6 +362,11 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "runtimeProfileComparable": True,
         "runtimeProfileFieldsChecked": 8,
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
+        "inputTokenAccounting": left["inputTokenAccounting"],
+        "inputTokensPerModel": left["inputTokenCount"],
+        "inputTokenParityVerified": True,
+        "inputLengthSequenceParityVerified": True,
+        "inputTokenParityScope": "per-language-sums-and-ordered-length-digest-v2",
         "syntaxAccounting": left["syntaxAccounting"],
         "syntaxCheckedPerModel": left["syntaxChecked"],
         "syntaxUncheckedPerModel": left["syntaxUnchecked"],
@@ -402,6 +436,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "descriptive, and small samples are unstable. "
                        "Runtime fields match but cannot prove physical GPU, "
                        "driver, thermal, load or execution-order parity. "
+                       "Matching ordered prompt-length digests establish only "
+                       "reported sequence equality, not truthful tokenizer "
+                       "measurements or model input provenance. "
                        "Different generated token counts confound absolute latency; "
                        "even equal totals do not prove per-probe length parity. "
                        "A token-limit exit may truncate an otherwise valid completion; "
