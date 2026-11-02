@@ -29,7 +29,8 @@ except ImportError:
 def simulated_report(kind: str, language: str = "all", tokens: int = 64,
                      score: int = 2, token_cap_exits: int = 0,
                      python_syntax_failures: int = 0,
-                     typescript_syntax_failures: int = 0) -> dict:
+                     typescript_syntax_failures: int = 0,
+                     native_compilers: bool = False) -> dict:
     """Test-only synthetic counts; never claim these represent real inference."""
     selected = read_public_fixtures(language)
     groups = {}
@@ -52,6 +53,8 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
             status = ("failed" if seen_typescript < typescript_syntax_failures
                       else "passed")
             seen_typescript += 1
+        if native_compilers and fixture["language"] in ("rust", "c", "cpp"):
+            status = "passed"
         outcomes.append({"language": fixture["language"], "syntaxOutcome": status})
     timings = generation_latency_summary([
         {"language": item["language"],
@@ -89,7 +92,7 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         "syntheticAttempts": len(selected),
         "strictExactMatches": sum(x["strictExactMatches"] for x in groups.values()),
         "perLanguage": groups,
-        **generated_syntax_summary(outcomes),
+        **generated_syntax_summary(outcomes, native_compilers=native_compilers),
         **timings,
     }
 
@@ -246,6 +249,43 @@ class CompareSmokeTests(unittest.TestCase):
         )
         self.assertEqual(only_cpp["strictExactRegressedLanguages"], ["cpp"])
         self.assertEqual(only_cpp["syntaxPassRegressedLanguages"], [])
+
+    def test_matching_explicit_native_syntax_scope_is_compared_source_free(self):
+        left = simulated_report("local-base-model", native_compilers=True, score=1)
+        right = simulated_report("local-lora-adapter", native_compilers=True, score=2)
+        result = compare_smoke.compare_reports(left, right)
+        self.assertEqual(result["syntaxAccounting"],
+                         "python-typescript-native-compiler-v2")
+        self.assertEqual(result["syntaxCheckedPerModel"], 40)
+        self.assertEqual(result["syntaxUncheckedPerModel"], 0)
+        self.assertEqual(result["syntaxReview"],
+                         "ALL_LANGUAGES_GRAMMAR_CHECKED_NATIVE_COMPILERS_OPTED_IN")
+        self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 8)
+        self.assertEqual(result["perLanguage"]["cpp"]["syntaxUncheckedPerModel"], 0)
+        self.assertNotIn("prompt", json.dumps(result))
+
+    def test_mixed_native_approval_modes_and_forged_native_counts_are_rejected(self):
+        base = simulated_report("local-base-model", native_compilers=True, score=1)
+        adapter = simulated_report("local-lora-adapter", native_compilers=True, score=2)
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(
+                simulated_report("local-base-model", score=1), adapter
+            )
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(
+                base, simulated_report("local-lora-adapter", score=2)
+            )
+        tampered = copy.deepcopy(adapter)
+        tampered["syntaxByLanguage"]["rust"]["checked"] = 0
+        tampered["syntaxByLanguage"]["rust"]["unchecked"] = 8
+        tampered["syntaxChecked"] -= 8
+        tampered["syntaxUnchecked"] += 8
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, tampered)
+        tampered = copy.deepcopy(adapter)
+        tampered["syntaxAccounting"] = "arbitrary-unknown-mode"
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, tampered)
 
     def test_single_language_scope_and_no_false_improvement(self):
         a = simulated_report("local-base-model", language="cpp", score=3)
