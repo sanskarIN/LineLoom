@@ -11,7 +11,7 @@ import math
 from pathlib import Path
 
 LANGUAGES = ("rust", "c", "cpp", "python", "typescript")
-PROTOCOL = "lineloom-hf-synthetic-smoke-v11"
+PROTOCOL = "lineloom-hf-synthetic-smoke-v12"
 GENERATION_POLICY = "greedy-fim-v3"
 PUBLIC_FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "completion-v1.json"
 
@@ -201,13 +201,27 @@ def generation_latency_summary(results: list[dict], max_new_tokens: int = 128) -
     }
 
 
+
+def fingerprint_prompt_token_ids(token_ids: list[int]) -> str:
+    """Digest a reviewed synthetic FIM request without serializing it to reports.
+
+    The actual tokenizer IDs, not merely their length, determine the encoded
+    request seen by model.generate(). Never disclose individual token values.
+    """
+    if (type(token_ids) is not list or not 1 <= len(token_ids) <= 2048 or
+            any(type(token_id) is not int or not 0 <= token_id < 2**31
+                for token_id in token_ids)):
+        raise SmokeReportRejected("invalid-prompt-token-ids")
+    return _sha(["lineloom-public-fim-token-ids-v1", token_ids])
+
+
 def prompt_token_summary(results: list[dict]) -> dict:
     """Aggregate FIM prompt token IDs, never code, token values or probe IDs.
 
-    Prompt lengths are measured after encoding the original public synthetic
-    FIM request and before inference. They include FIM boundary tokens.
-    Per-language totals detect obvious unequal input work between local
-    base/adapter runs, not rearrangements within a language.
+    Prompt lengths and token-ID digests are measured after encoding each
+    checked-in public synthetic FIM request, before inference. Digests bind
+    the exact order, not just lengths; no raw token IDs leave this module.
+    Per-language counts remain source-free, not hardware authentication.
     """
     if not isinstance(results, list) or not 1 <= len(results) <= 40:
         raise SmokeReportRejected("invalid-prompt-token-measurements")
@@ -215,18 +229,28 @@ def prompt_token_summary(results: list[dict]) -> dict:
         language: {"attempts": 0, "totalTokens": 0} for language in LANGUAGES
     }
     ordered_lengths: list[list[object]] = []
+    ordered_token_ids: list[list[object]] = []
     for item in results:
         if not isinstance(item, dict) or item.get("language") not in by_language:
             raise SmokeReportRejected("invalid-prompt-token-language")
         count = item.get("promptTokens")
         if type(count) is not int or not 1 <= count <= 2048:
             raise SmokeReportRejected("invalid-prompt-token-count")
+        token_digest = item.get("promptIdsSha256")
+        if (type(token_digest) is not str or len(token_digest) != 64 or
+                any(character not in "0123456789abcdef"
+                    for character in token_digest)):
+            raise SmokeReportRejected("invalid-prompt-token-digest")
         ordered_lengths.append([item["language"], count])
+        ordered_token_ids.append([item["language"], count, token_digest])
         group = by_language[item["language"]]
         group["attempts"] += 1
         group["totalTokens"] += count
     return {
         "inputTokenAccounting": "tokenizer-encoded-fim-prompt-ids-v1",
+        "inputTokenSequenceSha256": _sha([
+            "lineloom-ordered-fim-token-id-digests-v1", ordered_token_ids
+        ]),
         "inputLengthSequenceSha256": hashlib.sha256(json.dumps(
             ["lineloom-fim-prompt-length-order-v1", ordered_lengths],
             ensure_ascii=True, separators=(",", ":")

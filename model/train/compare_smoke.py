@@ -208,6 +208,9 @@ def _validated_report(report: dict, kind: str) -> dict:
     sequence = report.get("inputLengthSequenceSha256")
     if type(sequence) is not str or not SHA256.fullmatch(sequence):
         raise SmokeReportRejected("invalid-input-length-sequence")
+    token_sequence = report.get("inputTokenSequenceSha256")
+    if type(token_sequence) is not str or not SHA256.fullmatch(token_sequence):
+        raise SmokeReportRejected("invalid-input-token-sequence")
     input_total = report.get("inputTokenCount")
     if (type(input_total) is not int or
             not attempts <= input_total <= attempts * 2048):
@@ -274,6 +277,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "syntaxAccounting", "inputTokenAccounting",
         "inputTokenCount", "inputTokensByLanguage",
         "inputLengthSequenceSha256",
+        "inputTokenSequenceSha256",
     )
     if any(left[field] != right[field] for field in same):
         raise SmokeReportRejected("incomparable-smoke-reports")
@@ -344,7 +348,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         exact_regressions or syntax_regressions or truncation_regressions
     )
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v10",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v11",
         "languageRegressionReview": (
             "SYNTHETIC_REGRESSION_RECORDED" if any_regression else
             "NO_RECORDED_SYNTHETIC_REGRESSION"
@@ -366,7 +370,8 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "inputTokensPerModel": left["inputTokenCount"],
         "inputTokenParityVerified": True,
         "inputLengthSequenceParityVerified": True,
-        "inputTokenParityScope": "per-language-sums-and-ordered-length-digest-v2",
+        "inputTokenSequenceParityVerified": True,
+        "inputTokenParityScope": "per-language-sums-and-ordered-token-id-digests-v3",
         "syntaxAccounting": left["syntaxAccounting"],
         "syntaxCheckedPerModel": left["syntaxChecked"],
         "syntaxUncheckedPerModel": left["syntaxUnchecked"],
@@ -436,9 +441,9 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "descriptive, and small samples are unstable. "
                        "Runtime fields match but cannot prove physical GPU, "
                        "driver, thermal, load or execution-order parity. "
-                       "Matching ordered prompt-length digests establish only "
-                       "reported sequence equality, not truthful tokenizer "
-                       "measurements or model input provenance. "
+                       "Matching ordered token-ID digests establish only "
+                       "reported encoded-input equality, not truthful "
+                       "measurements, hardware parity or model provenance. "
                        "Different generated token counts confound absolute latency; "
                        "even equal totals do not prove per-probe length parity. "
                        "A token-limit exit may truncate an otherwise valid completion; "
