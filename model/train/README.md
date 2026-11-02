@@ -559,3 +559,21 @@ isolated, and free of contamination; sample identity cannot be attested
 by the aggregate loss report. Small validation sets may fluctuate. No
 training, checkpoint download or model publication is performed by the
 repository change.
+
+### Finite LoRA parameter integrity (source-only, unreleased)
+
+An approved local LoRA training run now verifies **all trainable adapter
+parameters** with `torch.isfinite` after **each optimizer update** and again
+immediately before the adapter output directory is created. Finite training
+loss and a finite clipped gradient norm alone cannot prove that the optimizer
+produced finite updated weights. A NaN, Infinity, an invalid finiteness
+result, or an inspection error fails closed: the experiment does not export
+an adapter. Neither parameter values nor backend errors are printed.
+
+The standard-library regression tests exercise finite and corrupted
+synthetic weights, invalid checks, sanitized failures and ordering without
+importing torch or allocating model weights. Inspecting all adapter
+parameters can add synchronization and runtime overhead on a real GPU;
+**this performance cost and training stability remain unmeasured**.
+These source changes do not execute training, verify model quality,
+or authorize checkpoint/dataset use or model publication.
