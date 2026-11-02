@@ -191,7 +191,7 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
       "} text" + tick + ";";
     const scan = scanScriptCode(source, "typescript");
     expect(scan.state).toBe("code");
-    expect(scan.code).not.toContain("quoted");
+    expect(scan.code).toContain("quoted:");
     expect(scan.code).toContain("await fetchData()");
     expect(scan.code).not.toContain("/* } */");
     expect(scan.code).not.toContain("[}]");
