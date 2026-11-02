@@ -214,17 +214,23 @@ def prompt_token_summary(results: list[dict]) -> dict:
     by_language = {
         language: {"attempts": 0, "totalTokens": 0} for language in LANGUAGES
     }
+    ordered_lengths: list[list[object]] = []
     for item in results:
         if not isinstance(item, dict) or item.get("language") not in by_language:
             raise SmokeReportRejected("invalid-prompt-token-language")
         count = item.get("promptTokens")
         if type(count) is not int or not 1 <= count <= 2048:
             raise SmokeReportRejected("invalid-prompt-token-count")
+        ordered_lengths.append([item["language"], count])
         group = by_language[item["language"]]
         group["attempts"] += 1
         group["totalTokens"] += count
     return {
         "inputTokenAccounting": "tokenizer-encoded-fim-prompt-ids-v1",
+        "inputLengthSequenceSha256": hashlib.sha256(json.dumps(
+            ["lineloom-fim-prompt-length-order-v1", ordered_lengths],
+            ensure_ascii=True, separators=(",", ":")
+        ).encode("ascii")).hexdigest(),
         "inputTokenCount": sum(group["totalTokens"] for group in by_language.values()),
         "inputTokensByLanguage": by_language,
     }
