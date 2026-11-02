@@ -172,6 +172,33 @@ describe("completion filtering", () => {
     expect(cleanCompletion("let x = 1;<|endoftext|>", "", "", true)).toBe("let x = 1;");
     expect(cleanCompletion("<|im_start|>assistant\n42<|im_end|>", "", "", true)).toBe("42");
   });
+  it("unwraps interleaved chat and FIM markers without suggesting model tokens", () => {
+    const wrapped = [
+      "<|im_start|>assistant\n<|fim_middle|>return x;<|fim_suffix|><|im_end|>",
+      "<|fim_middle|><|im_start|>assistant\nreturn x;<|im_end|><|fim_suffix|>",
+      "Completion:\n<|fim_middle|>return x;<|endoftext|>",
+      "Here's the code:\n<|im_start|>assistant\n<|fim_middle|>return x;<|im_end|> \n<|fim_suffix|>"
+    ];
+    for (const raw of wrapped) {
+      expect(cleanCompletion(raw, "", "", true), raw).toBe("return x;");
+    }
+  });
+
+  it("validates fenced languages after nested envelopes and preserves code literals", () => {
+    const fence = String.fromCharCode(96).repeat(3);
+    const wrapped = "<|im_start|>assistant\n<|fim_middle|>" +
+      fence + "python\nprint(1)\n" + fence + "<|fim_suffix|><|im_end|>";
+    expect(cleanCompletion(wrapped, "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion(wrapped, "", "", true, 8, "python")).toBe("print(1)");
+    const literal = 'const m = "<|fim_middle|><|im_end|>";';
+    expect(cleanCompletion(literal, "", "", true)).toBe(literal);
+  });
+
+  it("rejects excessive nested model envelopes rather than inserting leftover markers", () => {
+    const nested = "<|im_start|>assistant\n".repeat(20) + "return x;";
+    expect(cleanCompletion(nested, "", "", true)).toBe("");
+  });
+
   it("does not rewrite control-token text inside an ordinary code string", () =>
     expect(cleanCompletion('const s = "<|fim_middle|>";', "", "", true)).toBe('const s = "<|fim_middle|>";'));
 
