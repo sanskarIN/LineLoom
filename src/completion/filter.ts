@@ -129,6 +129,10 @@ export function cleanCompletion(
   // Also inspect incomplete fences (where the closing marker was truncated).
   const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
   if (fenceHeader && !isCompatibleFencedLanguage(fenceHeader[1], activeLanguage)) return "";
+  // A different, unrecognized one-line introduction followed immediately
+  // by a fence is not code. Reject it instead of accidentally inserting prose
+  // or bypassing the fence language check; do not guess how to rewrite it.
+  if (!fenceHeader && /^[^\n]{1,160}\n[ \t]*```[a-zA-Z0-9+#_-]*[^\n]*\n/u.test(value)) return "";
   // Prefer the first fenced code block, dropping explanations that follow it.
   const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
   if (fenced) value = fenced[1];
