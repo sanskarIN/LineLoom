@@ -156,7 +156,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 8)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v8")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v9")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 20)
         self.assertEqual(result["generationP95DeltaMs"], 38)
@@ -191,6 +191,61 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertNotIn("fixtureSetSha256", result)
         self.assertNotIn("baseRevisionDeclared", result)
         self.assertNotIn("Qwen", json.dumps(result))
+
+    def test_language_review_does_not_hide_rust_regression_behind_aggregate_gain(self):
+        base = simulated_report("local-base-model", score=1)
+        adapter = simulated_report("local-lora-adapter", score=2)
+        # Overall exact matches still improve, but Rust loses its only match.
+        adapter["perLanguage"]["rust"]["strictExactMatches"] = 0
+        adapter["strictExactMatches"] -= 2
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertGreater(result["adapterMinusBase"], 0)
+        self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], -1)
+        self.assertEqual(result["languageRegressionReview"], "SYNTHETIC_REGRESSION_RECORDED")
+        self.assertEqual(result["strictExactRegressedLanguages"], ["rust"])
+        self.assertEqual(result["syntaxPassRegressedLanguages"], [])
+        self.assertEqual(result["tokenLimitExitIncreasedLanguages"], [])
+        self.assertNotIn("IN_MEMORY_GENERATED_CODE", json.dumps(result))
+
+    def test_language_review_flags_typescript_grammar_loss_despite_exact_gain(self):
+        base = simulated_report("local-base-model", score=1)
+        adapter = simulated_report(
+            "local-lora-adapter", score=2, typescript_syntax_failures=1
+        )
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertGreater(result["adapterMinusBase"], 0)
+        self.assertEqual(result["strictExactRegressedLanguages"], [])
+        self.assertEqual(result["syntaxPassRegressedLanguages"], ["typescript"])
+        self.assertEqual(result["languageRegressionReview"], "SYNTHETIC_REGRESSION_RECORDED")
+        self.assertEqual(result["perLanguage"]["rust"]["syntaxCheckedPerModel"], 0)
+
+    def test_language_review_flags_more_token_limit_exits_without_claiming_quality(self):
+        base = simulated_report("local-base-model", score=1)
+        adapter = simulated_report("local-lora-adapter", score=2, token_cap_exits=2)
+        result = compare_smoke.compare_reports(base, adapter)
+        expected = [
+            language for language in LANGUAGES
+            if result["perLanguage"][language]["tokenLimitExitDelta"] > 0
+        ]
+        self.assertTrue(expected)
+        self.assertEqual(result["tokenLimitExitIncreasedLanguages"], expected)
+        self.assertEqual(result["languageRegressionReview"], "SYNTHETIC_REGRESSION_RECORDED")
+        self.assertIn("does not establish", result["languageRegressionReviewLimitation"])
+
+    def test_language_review_is_clear_for_matching_scope_without_recorded_losses(self):
+        base = simulated_report("local-base-model", score=1)
+        adapter = simulated_report("local-lora-adapter", score=2)
+        result = compare_smoke.compare_reports(base, adapter)
+        self.assertEqual(result["languageRegressionReview"], "NO_RECORDED_SYNTHETIC_REGRESSION")
+        self.assertEqual(result["strictExactRegressedLanguages"], [])
+        self.assertEqual(result["syntaxPassRegressedLanguages"], [])
+        self.assertEqual(result["tokenLimitExitIncreasedLanguages"], [])
+        only_cpp = compare_smoke.compare_reports(
+            simulated_report("local-base-model", language="cpp", score=3),
+            simulated_report("local-lora-adapter", language="cpp", score=1),
+        )
+        self.assertEqual(only_cpp["strictExactRegressedLanguages"], ["cpp"])
+        self.assertEqual(only_cpp["syntaxPassRegressedLanguages"], [])
 
     def test_single_language_scope_and_no_false_improvement(self):
         a = simulated_report("local-base-model", language="cpp", score=3)

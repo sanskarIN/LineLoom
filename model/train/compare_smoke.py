@@ -291,8 +291,40 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                 if left_timing["p95Ms"] is not None else None
             ),
         }
+    # A better aggregate exact-match count may hide a regression in a
+    # smaller language group. Syntax checks only cover Python/TypeScript;
+    # token-limit exits are also source-free diagnostics, not quality proof.
+    # Report affected fixed language labels without exposing any completions.
+    exact_regressions = [
+        language for language in LANGUAGES
+        if by_language[language]["adapterMinusBase"] < 0
+    ]
+    syntax_regressions = [
+        language for language in LANGUAGES
+        if by_language[language]["syntaxCheckedPerModel"] > 0 and
+           by_language[language]["syntaxPassedDelta"] < 0
+    ]
+    truncation_regressions = [
+        language for language in LANGUAGES
+        if by_language[language]["tokenLimitExitDelta"] > 0
+    ]
+    any_regression = bool(
+        exact_regressions or syntax_regressions or truncation_regressions
+    )
     return {
-        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v8",
+        "comparisonProtocol": "lineloom-hf-synthetic-comparison-v9",
+        "languageRegressionReview": (
+            "SYNTHETIC_REGRESSION_RECORDED" if any_regression else
+            "NO_RECORDED_SYNTHETIC_REGRESSION"
+        ),
+        "strictExactRegressedLanguages": exact_regressions,
+        "syntaxPassRegressedLanguages": syntax_regressions,
+        "tokenLimitExitIncreasedLanguages": truncation_regressions,
+        "languageRegressionReviewLimitation": (
+            "Only fixed synthetic strict-match, available grammar and token-limit "
+            "counts are reviewed. Zero recorded regressions does not establish "
+            "per-probe parity, real code quality, safety or model release readiness."
+        ),
         "benchmarkProtocol": PROTOCOL,
         "scope": left["selectedLanguage"],
         "runtimeProfileComparable": True,

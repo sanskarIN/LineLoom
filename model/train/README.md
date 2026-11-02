@@ -352,6 +352,25 @@ and refuses plans, legacy reports, corrupted counts, mixed base revisions,
 different settings, or comparisons without a local base report followed by
 a local adapter report.
 
+### Language regression review in offline comparisons (development)
+
+The local comparison output now uses
+`lineloom-hf-synthetic-comparison-v9` and includes
+`languageRegressionReview`, plus three fixed-language-only lists:
+`strictExactRegressedLanguages` (fewer exact matches),
+`syntaxPassRegressedLanguages` (fewer Python AST/TypeScript parser passes),
+and `tokenLimitExitIncreasedLanguages` (more truncated generations).
+This makes it harder for an overall improvement to conceal a loss for
+one target language. Empty lists mean **no regression recorded in these
+limited aggregate measurements**, not that a model is better or ready to
+publish. Rust, C and C++ generated syntax is still **unchecked**.
+
+This is an offline descriptive comparison, **not** an automatic
+training/export gate, model selection rule, statistical significance test,
+compiler check or real-editor validation. It uses only previously verified
+bounded aggregate counts and fixed language labels, never code, paths,
+model responses, probe IDs or network access.
+
 The comparison output contains **allowlisted strict-match counts,
 generation-only latency p50/p95, and generated-token totals** by language
 and overall, with adapter-minus-base deltas. Generated-token totals
