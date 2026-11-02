@@ -257,9 +257,13 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             (snapshot.activeEditor.modelSource ? " (" + snapshot.activeEditor.modelSource + ")" : ""),
           icon: "symbol-method" },
         { id: "editor-eligibility", label: "Completion Status",
-          description: snapshot.activeFilePaused ? "Paused for this session (manual and automatic blocked)" :
+          description: !snapshot.enabled ? "Autocomplete disabled" :
+            !snapshot.workspaceTrusted ? "Workspace restricted (completion blocked)" :
+            snapshot.activeFilePaused ? "Paused for this session (manual and automatic blocked)" :
             snapshot.activeEditor.eligibility,
-          icon: snapshot.activeFilePaused ? "debug-pause" :
+          icon: !snapshot.enabled ? "circle-slash" :
+            !snapshot.workspaceTrusted ? "shield" :
+            snapshot.activeFilePaused ? "debug-pause" :
             snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
         ...(snapshot.activeLocalFile ? [{
           id: "editor-file-pause",
