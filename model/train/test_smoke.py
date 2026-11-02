@@ -114,21 +114,28 @@ class LocalSmokeTests(unittest.TestCase):
 
     def test_input_prompt_token_counts_are_bounded_source_free_and_complete(self):
         results = [
-            {"language": "rust", "promptTokens": 10, "secret": "PRIVATE_CODE"},
-            {"language": "rust", "promptTokens": 25},
-            {"language": "typescript", "promptTokens": 2048},
+            {"language": "rust", "promptTokens": 10,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([4] * 10),
+             "secret": "PRIVATE_CODE"},
+            {"language": "rust", "promptTokens": 25,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([6] * 25)},
+            {"language": "typescript", "promptTokens": 2048,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([8] * 2048)},
         ]
         summary = smoke.prompt_token_summary(results)
         self.assertEqual(summary["inputTokenAccounting"],
                          "tokenizer-encoded-fim-prompt-ids-v1")
         self.assertEqual(summary["inputTokenCount"], 2083)
         self.assertEqual(len(summary["inputLengthSequenceSha256"]), 64)
+        self.assertEqual(len(summary["inputTokenSequenceSha256"]), 64)
         self.assertEqual(smoke.prompt_token_summary(results), summary)
         reordered = smoke.prompt_token_summary([results[1], results[0], results[2]])
         self.assertEqual(reordered["inputTokenCount"], summary["inputTokenCount"])
         self.assertEqual(reordered["inputTokensByLanguage"], summary["inputTokensByLanguage"])
         self.assertNotEqual(reordered["inputLengthSequenceSha256"],
                             summary["inputLengthSequenceSha256"])
+        self.assertNotEqual(reordered["inputTokenSequenceSha256"],
+                            summary["inputTokenSequenceSha256"])
         self.assertEqual(summary["inputTokensByLanguage"]["rust"],
                          {"attempts": 2, "totalTokens": 35})
         self.assertEqual(summary["inputTokensByLanguage"]["typescript"],
@@ -137,6 +144,20 @@ class LocalSmokeTests(unittest.TestCase):
                          {"attempts": 0, "totalTokens": 0})
         self.assertNotIn("PRIVATE_CODE", json.dumps(summary))
         self.assertNotIn("secret", json.dumps(summary))
+        same_lengths_different_ids = [dict(result) for result in results]
+        same_lengths_different_ids[0]["promptIdsSha256"] = (
+            smoke.fingerprint_prompt_token_ids([5] * 10)
+        )
+        changed = smoke.prompt_token_summary(same_lengths_different_ids)
+        self.assertEqual(changed["inputTokenCount"], summary["inputTokenCount"])
+        self.assertEqual(changed["inputLengthSequenceSha256"],
+                         summary["inputLengthSequenceSha256"])
+        self.assertNotEqual(changed["inputTokenSequenceSha256"],
+                            summary["inputTokenSequenceSha256"])
+        for invalid in ("ABC" * 21 + "A", "z" * 64, True, None, ""):
+            broken = [dict(results[0], promptIdsSha256=invalid)]
+            with self.subTest(digest=repr(invalid)[:12]), self.assertRaises(ValueError):
+                smoke.prompt_token_summary(broken)
         for value in (True, None, 0, -1, 2049, 1.5, "5"):
             with self.subTest(value=repr(value)), self.assertRaises(ValueError):
                 smoke.prompt_token_summary([{"language": "rust", "promptTokens": value}])
@@ -148,6 +169,20 @@ class LocalSmokeTests(unittest.TestCase):
         ):
             with self.subTest(invalid=repr(invalid)[:28]), self.assertRaises(ValueError):
                 smoke.prompt_token_summary(invalid)
+
+    def test_real_prompt_token_id_digest_requires_bounded_integer_sequence(self):
+        digest = smoke.fingerprint_prompt_token_ids([101, 42, 9])
+        self.assertEqual(len(digest), 64)
+        self.assertEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42, 9]))
+        self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 9, 42]))
+        self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42]))
+        self.assertNotIn("101", digest)
+        for invalid in (
+            None, [], (), [True], [-1], ["1"], [1.5],
+            [2 ** 31], [0] * 2049, "private", [[1]],
+        ):
+            with self.subTest(kind=repr(invalid)[:30]), self.assertRaises(ValueError):
+                smoke.fingerprint_prompt_token_ids(invalid)
 
     def test_generation_timing_nearest_rank_and_no_source_output(self):
         from_smoke = smoke.generation_latency_summary([
@@ -334,7 +369,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 8)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v11")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v12")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v3")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
