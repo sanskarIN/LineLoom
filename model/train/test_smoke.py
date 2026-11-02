@@ -176,7 +176,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42, 9]))
         self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 9, 42]))
         self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42]))
-        self.assertNotIn("101", digest)
+        self.assertRegex(digest, r"^[0-9a-f]{64}$")
         for invalid in (
             None, [], (), [True], [-1], ["1"], [1.5],
             [2 ** 31], [0] * 2049, "private", [[1]],
