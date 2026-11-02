@@ -61,15 +61,42 @@ def select_public_fixtures(language: str) -> list[dict]:
 
 
 def normalize_completion(response: str) -> str:
-    """Compare only a hypothetical FIM insertion, never surrounding source.
+    """Normalize line endings, but never remove marker-like source text.
 
-    The public synthetic exact-string score is not compile correctness:
-    a valid alternative implementation can still fail strict matching.
+    A decoded literal containing '<|endoftext|>' is not proof that the
+    tokenizer emitted an actual EOS token. Only the generated token IDs
+    can establish that. Strict matching remains descriptive, not correctness.
     """
-    normalized = response.replace("\r\n", "\n").replace("\r", "\n")
-    for marker in ("<|fim_suffix|>", "<|endoftext|>", "<|im_end|>"):
-        normalized = normalized.split(marker, 1)[0]
-    return normalized
+    if type(response) is not str:
+        raise ExperimentRejected("invalid-decoded-completion")
+    return response.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def decode_generated_insertion(tokenizer, generated_ids: list[int],
+                               stop_ids: list[int], termination: str) -> str:
+    """Remove only the terminal stop *token ID*, never text that resembles it.
+
+    classify_generation_termination must validate the token sequence first;
+    repeat key checks here so direct calls cannot silently drop real source.
+    No raw tokens, code or decoder exceptions are included in error output.
+    """
+    if (type(termination) is not str or
+            termination not in ("stop-token", "token-limit") or
+            type(generated_ids) is not list or not generated_ids or
+            type(stop_ids) is not list or not stop_ids or
+            any(type(token) is not int or token < 0
+                for token in (*generated_ids, *stop_ids)) or
+            any(token in stop_ids for token in generated_ids[:-1]) or
+            (generated_ids[-1] in stop_ids) != (termination == "stop-token")):
+        raise ExperimentRejected("invalid-generated-decoding-boundary")
+    # The stop token is part of measured generation length but never part
+    # of an insertion accepted in the editor or compared to a reference.
+    insert_ids = generated_ids[:-1] if termination == "stop-token" else generated_ids
+    try:
+        decoded = tokenizer.decode(insert_ids, skip_special_tokens=False)
+        return normalize_completion(decoded)
+    except (AttributeError, RuntimeError, TypeError, ValueError, UnicodeError):
+        raise ExperimentRejected("invalid-generated-decoding") from None
 
 
 def summarize(results: list[dict]) -> dict:
@@ -211,8 +238,9 @@ def run_local(fixture_set: list[dict], args) -> dict:
             )
             # Raw completion remains in memory only; no IDs/code/special
             # model errors written into the console or an artifact.
-            completion = tokenizer.decode(tokens, skip_special_tokens=False)
-            insertion = normalize_completion(completion)
+            insertion = decode_generated_insertion(
+                tokenizer, tokens, stop_ids, reason
+            )
             exact = insertion == fixture["expected"]
             # Grammar checks never execute generated programs. Native source
             # is compiled in a disposable directory ONLY on explicit opt-in.
