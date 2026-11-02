@@ -111,7 +111,7 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
   it("treats regexes after || and && as literals rather than executable TypeScript", () => {
     const cases = [
       "const re = previous || /interface Fake extends Hidden/;\nconst real = 1;",
-      String.raw`const re = enabled && /https?:\\/\\/example\\/async/;` +
+      String.raw`const re = enabled && /https?:\/\/example\/async/;` +
         "\nconst actual = 2;"
     ];
     for (const source of cases) {
