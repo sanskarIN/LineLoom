@@ -122,6 +122,13 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(summary["inputTokenAccounting"],
                          "tokenizer-encoded-fim-prompt-ids-v1")
         self.assertEqual(summary["inputTokenCount"], 2083)
+        self.assertEqual(len(summary["inputLengthSequenceSha256"]), 64)
+        self.assertEqual(smoke.prompt_token_summary(results), summary)
+        reordered = smoke.prompt_token_summary([results[1], results[0], results[2]])
+        self.assertEqual(reordered["inputTokenCount"], summary["inputTokenCount"])
+        self.assertEqual(reordered["inputTokensByLanguage"], summary["inputTokensByLanguage"])
+        self.assertNotEqual(reordered["inputLengthSequenceSha256"],
+                            summary["inputLengthSequenceSha256"])
         self.assertEqual(summary["inputTokensByLanguage"]["rust"],
                          {"attempts": 2, "totalTokens": 35})
         self.assertEqual(summary["inputTokensByLanguage"]["typescript"],
