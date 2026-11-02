@@ -235,6 +235,43 @@ describe("active-language fenced completion filtering", () => {
     expect(cleanCompletion("```python\nprint(1)\n```", "", "", true)).toBe("print(1)");
   });
 
+  it("checks the language of a fenced response even after a known chat introduction", () => {
+    const introductions = ["Here's the code:", "Here is the code:", "Here is code:", "Completion:"];
+    for (const intro of introductions) {
+      const wrong = intro + "\n```python\nprint(1)\n```";
+      expect(cleanCompletion(wrong, "", "", true, 8, "typescript"), intro).toBe("");
+      const allowed = intro + "\n```typescript\nconst x = 1;\n```";
+      expect(cleanCompletion(allowed, "", "", true, 8, "typescript"), intro).toBe("const x = 1;");
+    }
+    // CRLF and boundary control tokens are normalized before the same validation.
+    expect(cleanCompletion("<|im_start|>assistant\r\nHere is the code:\r\n```python\r\nprint(1)\r\n```<|im_end|>",
+      "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("<|im_start|>assistant\r\nHere is the code:\r\n```typescript\r\nconst x = 1;\r\n```<|im_end|>",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+  });
+
+  it("rejects unrecognized single-line prose before a code fence rather than inserting markdown", () => {
+    for (const before of ["Try this:", "## Suggested implementation", "A quick answer:"]) {
+      expect(cleanCompletion(before + "\n```python\nprint(1)\n```",
+        "", "", true, 8, "typescript")).toBe("");
+      expect(cleanCompletion(before + "\n```typescript\nconst x = 1;\n```",
+        "", "", true, 8, "typescript")).toBe("");
+    }
+  });
+
+  it("preserves ordinary code, string literals and source-exact single fences", () => {
+    const source = "const message = \"Here is the code:\";";
+    expect(cleanCompletion(source, "", "", true, 8, "typescript")).toBe(source);
+    expect(cleanCompletion("```typescript\nlet result = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("let result = 1;");
+    expect(cleanCompletion("Here is the code:\n```mydsl\nconst custom = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("const custom = 1;");
+    expect(cleanCompletion("Here is the code:\n```python\nprint(1)",
+      "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("Here is the code:\n```typescript\nconst x = 1;",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+  });
+
   it("also checks a truncated fence header while allowing compatible partial code", () => {
     expect(cleanCompletion("```python\nprint(1)", "", "", true, 8, "typescript")).toBe("");
     expect(cleanCompletion("```typescript\nconst ok = 1;", "", "", true, 8, "typescript"))
