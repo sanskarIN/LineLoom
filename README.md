@@ -91,7 +91,9 @@ The status bar differentiates **autocomplete enabled** from **model availability
 
 ## Session acceptance metrics — in GitHub v1.4.0 preview
 
-The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview. See [sidebar privacy and status](docs/sidebar.md).
+The GitHub v1.4.0 preview distinguishes **suggestions offered** from **VS Code item acceptance callbacks**, using up to 128 random one-shot tokens and aggregate in-memory counters. No code, file identities, event logs, analytics or stored acceptance history. Counts are not proof of quality and the feature is included in the v1.4.0 GitHub preview, not v1.3.0 stable or v1.3.1 preview.
+
+**Unreleased acceptance receipt hardening (issue #101):** each one-shot callback token now expires after five minutes of monotonic process time; stale or replayed callbacks cannot inflate acceptance counts. Expired receipts are pruned before issuing new tokens, while the 128-token in-memory cap remains unchanged. This affects only aggregate session accounting, not suggestion insertion, completion model quality or physical editor QA. Acceptance after the expiry window may legitimately go uncounted; no code, paths, model labels or persistent identifiers are recorded. See [sidebar privacy and status](docs/sidebar.md).
 
 ## Changes after v1.4.1 — included in GitHub v1.4.2 preview
 
