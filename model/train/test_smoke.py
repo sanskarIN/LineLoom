@@ -25,12 +25,75 @@ class LocalSmokeTests(unittest.TestCase):
             self.assertEqual(len(selected), 8)
             self.assertTrue(all(s["language"] == language for s in selected))
 
-    def test_fim_boundary_normalization_is_conservative(self):
-        self.assertEqual(smoke.normalize_completion(" x + 2\r\n"), " x + 2\n")
-        self.assertEqual(smoke.normalize_completion("print(x)<|fim_suffix|>rest"), "print(x)")
-        self.assertEqual(smoke.normalize_completion("return 42<|endoftext|>"), "return 42")
-        self.assertEqual(smoke.normalize_completion("a + b<|im_end|>"), "a + b")
-        self.assertEqual(smoke.normalize_completion("value   "), "value   ")
+    def test_fim_boundary_normalization_preserves_literal_marker_text(self):
+        normalize = smoke.normalize_completion
+        self.assertEqual(normalize(" x + 2\r\n"), " x + 2\n")
+        self.assertEqual(normalize("line\rnext"), "line\nnext")
+        self.assertEqual(normalize('print("<|fim_suffix|>")'), 'print("<|fim_suffix|>")')
+        self.assertEqual(normalize('return "<|endoftext|>"'), 'return "<|endoftext|>"')
+        self.assertEqual(normalize("a + b<|im_end|>"), "a + b<|im_end|>")
+        self.assertEqual(normalize("value   "), "value   ")
+        with self.assertRaises(ExperimentRejected):
+            normalize(None)
+
+    def test_token_id_stop_handling_keeps_literal_marker_source(self):
+        class TestTokenizer:
+            def __init__(self):
+                self.calls = []
+
+            def decode(self, token_ids, *, skip_special_tokens):
+                self.calls.append((list(token_ids), skip_special_tokens))
+                vocab = {5: 'return "<|fim_suffix|>"', 6: ' + "<|endoftext|>"',
+                         7: "\r\n", 99: "<|fim_suffix|>"}
+                return "".join(vocab[token] for token in token_ids)
+
+        tokenizer = TestTokenizer()
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [5, 6, 99], [99], "stop-token"
+            ), 'return "<|fim_suffix|>" + "<|endoftext|>"'
+        )
+        self.assertEqual(tokenizer.calls[-1], ([5, 6], False))
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [5, 7], [99], "token-limit"
+            ), 'return "<|fim_suffix|>"\n'
+        )
+        self.assertEqual(tokenizer.calls[-1], ([5, 7], False))
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [99], [99], "stop-token"
+            ), ""
+        )
+        self.assertEqual(tokenizer.calls[-1], ([], False))
+
+    def test_token_id_decoder_rejects_bad_termination_and_sanitizes_errors(self):
+        class FakeTokenizer:
+            def decode(self, *_args, **_kwargs):
+                raise RuntimeError("PRIVATE_MODEL_TEXT")
+
+        cases = [
+            ([1, 99], [99], "token-limit"),
+            ([1, 2], [99], "stop-token"),
+            ([99, 1], [99], "token-limit"),
+            ([99, 99], [99], "stop-token"),
+            ([True], [99], "token-limit"),
+            ([1], [], "token-limit"),
+            ([], [99], "token-limit"),
+            ([1], [99], "unchecked"),
+            ([1], [99], True),
+        ]
+        for tokens, stops, reason in cases:
+            with self.subTest(tokens=tokens, reason=reason):
+                with self.assertRaises(ExperimentRejected):
+                    smoke.decode_generated_insertion(
+                        FakeTokenizer(), tokens, stops, reason
+                    )
+        with self.assertRaises(ExperimentRejected) as caught:
+            smoke.decode_generated_insertion(
+                FakeTokenizer(), [1, 2], [99], "token-limit"
+            )
+        self.assertNotIn("PRIVATE_MODEL_TEXT", str(caught.exception))
 
     def test_aggregates_have_only_fixed_language_counts(self):
         result = smoke.summarize([
@@ -234,8 +297,8 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 8)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v9")
-        self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v10")
+        self.assertEqual(result["generationPolicy"], "greedy-fim-v3")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
         self.assertEqual(len(result["requestSpecSha256"]), 64)
