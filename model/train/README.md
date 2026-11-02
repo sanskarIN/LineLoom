@@ -425,6 +425,38 @@ This change adds no network calls, model downloads, trained weights,
 automatic compiler execution or public release. Real model benchmarks
 still require independent checkpoint and dataset reviews.
 
+### Exact encoded FIM token-ID parity (smoke protocol v12)
+
+Earlier input validation required equal encoded **prompt lengths**, but two
+tokenizers can produce different token IDs with the same lengths. This
+could make a base-versus-adapter latency or quality comparison unfair
+despite a passing length check. Approved local inference now computes a
+SHA-256 fingerprint of the actual bounded token-ID sequence for each
+original checked-in public FIM fixture. Those intermediate fingerprints
+stay in memory. Only a second SHA-256 digest of the **ordered,
+language-labeled token-ID fingerprints and counts** is included in the
+source-free report as `inputTokenSequenceSha256`.
+
+The offline comparator checks the digest shape and **requires exact
+reported token-ID sequence parity** in addition to matching the previous
+input-length digest and five-language token totals. It emits
+`inputTokenSequenceParityVerified: true` only when both independently
+submitted reports contain the same digest. The current smoke protocol is
+`lineloom-hf-synthetic-smoke-v12` and the comparison protocol is
+`lineloom-hf-synthetic-comparison-v11`; the generation policy remains
+`greedy-fim-v3`. Legacy reports are rejected instead of being silently
+mixed with the new measurement contract.
+
+These fingerprints are checks of **self-reported, locally calculated
+inputs**, not cryptographic proof that a model actually received those
+IDs or that its weights, hardware, CUDA kernels, clock, process load or
+execution order matched. Cryptographic hashes are deterministic, not
+secret, and do not represent an authentication mechanism. Only fixed
+public synthetic fixtures are eligible: no private source, per-probe
+IDs or token values are written to report output. No training, checkpoint
+downloads, benchmarks with real weights, or extension releases were made
+by this change.
+
 ## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same
@@ -447,7 +479,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v11` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v12` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -459,7 +491,7 @@ a local adapter report.
 ### Language regression review in offline comparisons (development)
 
 The local comparison output uses
-`lineloom-hf-synthetic-comparison-v10` and includes
+`lineloom-hf-synthetic-comparison-v11` and includes
 `languageRegressionReview`, plus three fixed-language-only lists:
 `strictExactRegressedLanguages` (fewer exact matches),
 `syntaxPassRegressedLanguages` (fewer Python AST/TypeScript parser passes),
