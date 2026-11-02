@@ -363,6 +363,31 @@ environment; it cannot establish runtime behavior, user acceptance,
 semantics or model quality. It does not train, merge, publish or register
 model weights and does not change the extension.
 
+### Generated FIM stop-token integrity (smoke protocol v10)
+
+Previously the synthetic HF smoke runner removed any decoded text after
+`<|fim_suffix|>`, `<|endoftext|>` or `<|im_end|>`. That could
+incorrectly truncate a **real source-code string literal** containing
+marker-like text, and distort both strict-match and syntax-check results.
+The runner now removes an ending EOS/FIM-suffix token **only when the
+actual terminal token ID matches a configured stop ID**. Literal marker
+text encoded as ordinary tokens remains part of the generated insertion.
+The existing strict termination classifier rejects unexpected stop IDs
+before the end of generation. Line endings are still normalized.
+
+Because the scoring behavior and request specification changed,
+`lineloom-hf-synthetic-smoke-v10` with `greedy-fim-v3` replaces
+the previous smoke protocol and `greedy-fim-v2`. Old smoke reports
+must not be compared to new ones, even if their displayed fixture scope
+and model metadata appear identical. The independent offline comparator
+continues to use its own **comparison protocol v9**, and verifies the
+current smoke protocol and exact generation-request fingerprint.
+
+This change does **not** run inference or establish a trained model's
+quality; tests use synthetic token-ID decoders without GPU dependencies.
+Reported generated-token totals still count the actual final stop ID,
+while the code insertion used for syntax and exact matching does not.
+
 ## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same
@@ -385,7 +410,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v9` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v10` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
