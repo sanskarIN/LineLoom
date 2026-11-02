@@ -39,7 +39,7 @@ const PYTHON_ENV = Object.fromEntries(
 function classifyPythonSource(source) {
   const executable = process.platform === "win32" ? "python" : "python3";
   const result = spawnSync(executable, ["-I", "-S", "-X", "utf8", "-c", PYTHON_AST_SCRIPT], {
-    input: source, encoding: "utf8", timeout: 2_500, maxBuffer: 128,
+    // On busy Windows CI runners, isolated Python startup can exceed 2.5s.\n    // Keep a fixed 5s watchdog; parser failure still returns "unchecked".\n    input: source, encoding: "utf8", timeout: 5_000, maxBuffer: 128,
     windowsHide: true, env: PYTHON_ENV, stdio: ["pipe", "pipe", "ignore"]
   });
   if (result.status !== 0 || result.error ||
