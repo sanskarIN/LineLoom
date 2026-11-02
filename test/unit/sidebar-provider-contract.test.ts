@@ -16,6 +16,19 @@ describe("native sidebar privacy and accessibility contract", () => {
     expect(provider).toContain("item.accessibilityInformation");
     expect(provider).toContain('role: data.command ? "button" : undefined');
   });
+  it("provides icon-free screen-reader status and refreshes after trust grant", () => {
+    const status = readFileSync("src/ui/status.ts", "utf8");
+    expect(status).toContain("this.item.accessibilityInformation");
+    expect(status).toContain("display.accessibilityLabel");
+    expect(status).toContain("vscode.workspace.isTrusted");
+    expect(status).not.toMatch(/\.getText\s*\(|\bfetch\s*\(/);
+    const grantStart = extension.indexOf("vscode.workspace.onDidGrantWorkspaceTrust(");
+    expect(grantStart).toBeGreaterThan(-1);
+    const grantHandler = extension.slice(grantStart, extension.indexOf("  // Ignore-file edits", grantStart));
+    expect(grantHandler).toContain("status.set(currentState, readConfig().autoTrigger)");
+    expect(grantHandler).toContain("sidebar.refresh()");
+    expect(grantHandler).not.toMatch(/generateCompletion\s*\(|listModels\s*\(|\bfetch\s*\(/);
+  });
   it("refreshes after editor switches without starting an inference request", () => {
     expect(extension).toContain('command("lineloom.cancel", () => {');
     expect(extension).toContain("engine?.cancel();");

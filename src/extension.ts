@@ -699,6 +699,9 @@ export function activate(context: vscode.ExtensionContext): void {
     relatedPickerRevision++;
     engine?.resetTransientFailures();
     clearIgnoreCache();
+    // A restricted status bar must not stay stale after explicit trust grant.
+    // Re-render locally; never connect to Ollama as part of this UI update.
+    status.set(currentState, readConfig().autoTrigger);
     sidebar.refresh();
   }));
   // Ignore-file edits are a live privacy policy change. Invalidate both
