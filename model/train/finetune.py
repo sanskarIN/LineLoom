@@ -249,6 +249,44 @@ def verify_finite_lora_weights(parameters, isfinite) -> None:
         raise ExperimentRejected("no-trainable-lora-parameters")
 
 
+def verify_finite_optimizer_state(states, is_tensor, isfinite) -> None:
+    """Reject non-finite AdamW moments even when current LoRA weights are finite.
+
+    AdamW momentum can become non-finite before the next optimizer update
+    exposes corrupted model weights. Check populated, known state fields only;
+    never serialize tensor contents, keys from arbitrary backends or exceptions.
+    Injectable tensor operations allow offline tests without PyTorch/GPU.
+    """
+    seen = False
+    required = {"step", "exp_avg", "exp_avg_sq"}
+    permitted = required | {"max_exp_avg_sq"}
+    try:
+        for state in states:
+            if (type(state) is not dict or
+                    not required.issubset(state) or
+                    not set(state).issubset(permitted)):
+                raise ExperimentRejected("invalid-adamw-state")
+            seen = True
+            for key, value in state.items():
+                tensor = is_tensor(value)
+                if type(tensor) is not bool:
+                    raise ExperimentRejected("invalid-adamw-state")
+                if tensor:
+                    valid = isfinite(value).all().item()
+                    if type(valid) is not bool or not valid:
+                        raise ExperimentRejected("nonfinite-adamw-state")
+                elif (key != "step" or type(value) not in (int, float) or
+                      not math.isfinite(value) or value < 1):
+                    raise ExperimentRejected("invalid-adamw-state")
+    except ExperimentRejected:
+        raise
+    except (ValueError, TypeError, RuntimeError, OverflowError,
+            AttributeError, KeyError):
+        raise ExperimentRejected("invalid-adamw-state-check") from None
+    if not seen:
+        raise ExperimentRejected("empty-adamw-state")
+
+
 def validation_export_gate(before: dict, after: dict,
                            required: bool) -> dict:
     """Optional fail-closed adapter export gate; no model or GPU imports.
@@ -434,6 +472,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         # Finite gradients do not guarantee finite optimizer-updated weights.
         with torch.no_grad():
             verify_finite_lora_weights(parameters, torch.isfinite)
+            verify_finite_optimizer_state(
+                optimizer.state.values(), torch.is_tensor, torch.isfinite
+            )
 
     model.eval()
     with torch.no_grad():
@@ -457,6 +498,9 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # A final check must precede every adapter filesystem write.
     with torch.no_grad():
         verify_finite_lora_weights(parameters, torch.isfinite)
+        verify_finite_optimizer_state(
+            optimizer.state.values(), torch.is_tensor, torch.isfinite
+        )
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
     # PEFT adapter only; base model is NEVER copied, merged or exported.

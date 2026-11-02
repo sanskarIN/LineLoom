@@ -577,3 +577,21 @@ parameters can add synchronization and runtime overhead on a real GPU;
 **this performance cost and training stability remain unmeasured**.
 These source changes do not execute training, verify model quality,
 or authorize checkpoint/dataset use or model publication.
+
+### Finite AdamW optimizer-state integrity (source-only, unreleased)
+
+Adapter-weight checks do not detect a NaN or Infinity that exists **only in
+AdamW's internal first/second-moment buffers**. An explicitly approved
+local training experiment now verifies initialized AdamW state immediately
+after every optimizer step and again before making any adapter output
+directory. Every state record must contain the expected `step`, `exp_avg`
+and `exp_avg_sq` fields; an optional `max_exp_avg_sq` field is accepted
+for AMSGrad compatibility. Non-finite tensor values, invalid state types or
+missing state fail closed before adapter export. Error output never includes
+tensor contents, private source, paths or backend exception messages.
+
+These checks inspect optimizer-state buffers as well as adapter weights,
+so CUDA synchronization and additional compute are possible. Their
+GPU overhead and real-training impact have **not been measured**.
+Offline tests use only synthetic stand-ins and do not import PyTorch,
+execute training, establish training quality, or authorize a model release.
