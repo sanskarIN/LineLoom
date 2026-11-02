@@ -30,7 +30,7 @@ except ImportError:
 try:
     from .smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
-        classify_generation_termination,
+        prompt_token_summary, classify_generation_termination,
         checked_runtime_profile
     )
     from .integrity import (
@@ -43,7 +43,7 @@ try:
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
-        classify_generation_termination,
+        prompt_token_summary, classify_generation_termination,
         checked_runtime_profile
     )
     from integrity import (
@@ -255,6 +255,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
                            "syntaxOutcome": syntax_outcome,
                            "generationMs": generation_ms,
                            "generationTokens": len(tokens),
+                           "promptTokens": len(prompt_ids),
                            "terminationReason": reason})
     verify_smoke_inputs_unchanged(
         base_dir, base_identity,
@@ -280,6 +281,7 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
         **generated_syntax_summary(result, native_compilers=native_syntax),
+        **prompt_token_summary(result),
         **generation_latency_summary(result, args.max_new_tokens),
         "limitation": ("Strict synthetic equality and limited grammar checks; "
                        "native syntax is only checked with separately approved "
