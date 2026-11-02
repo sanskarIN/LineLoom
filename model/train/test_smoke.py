@@ -245,6 +245,29 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertNotIn("fn ", proc.stdout)
         self.assertEqual(proc.stderr, "")
 
+    def test_native_compiler_mode_requires_run_and_separate_approval(self):
+        script = str(Path(smoke.__file__).resolve())
+        cases = (
+            ["--native-syntax"],
+            ["--native-syntax", "--approve-local-compilers"],
+            ["--native-syntax", "--run"],
+        )
+        for flags in cases:
+            with self.subTest(flags=flags):
+                result = subprocess.run(
+                    [sys.executable, script] + flags,
+                    capture_output=True, text=True, timeout=20
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("smoke was rejected", result.stderr)
+        normal = subprocess.run(
+            [sys.executable, script, "--language", "rust"],
+            capture_output=True, text=True, timeout=20
+        )
+        self.assertEqual(normal.returncode, 0, normal.stderr)
+        self.assertNotIn("syntaxAccounting", normal.stdout)
+
     def test_real_adapter_smoke_refuses_missing_receipt_before_model_import(self):
         with tempfile.TemporaryDirectory() as temp:
             base = Path(temp) / "base"

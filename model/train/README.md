@@ -321,6 +321,48 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
+## Optional native syntax checks of real local synthetic generations
+
+By default, the explicit `smoke.py --run` checks **generated Python AST
+and TypeScript parser syntax only**; Rust, C and C++ generated completions
+remain `unchecked`. For a separately authorized local experiment, the
+following opts in to native *compiler syntax checks* for only the original
+checked-in public Rust, C and C++ FIM fixtures (replace checkpoint details
+with the independently reviewed local files; no automatic downloads):
+
+```sh
+python model/train/smoke.py --run --approve-checkpoint \
+  --base-dir /path/to/reviewed-checkpoint --base-revision REVIEWED_40_HEX_REVISION \
+  --device cpu --language all \
+  --native-syntax --approve-local-compilers
+```
+
+The example revision is intentionally invalid until replaced. Both
+`--native-syntax` and `--approve-local-compilers` plus `--run`
+are mandatory. Nothing in default planning discovers or executes a
+compiler. Optional mode requires installed, independently reviewed
+`rustc`, `cc` and/or `c++` for selected languages, and **fails
+closed** when a required compiler is missing. Rust invokes metadata-only
+compilation; C/C++ use `-fsyntax-only`. All calls use bounded source
+(8,192 characters), fixed compiler arguments, a 12-second timeout, a
+minimal environment, discarded stdout/stderr and disposable temporary
+files. No compiled program is executed. **This is not a security sandbox
+for hostile generated source or toolchains**: syntax checking may read
+source through language features, and requires local developer consent.
+Run only with reviewed local compilers in a suitable isolated environment.
+
+Approved mode reports `syntaxAccounting:
+python-typescript-native-compiler-v2`, with all selected languages
+counted as `checked`. The default remains
+`python-ast-typescript-parser-v1`, with native languages `unchecked`.
+The offline base-vs-adapter comparator refuses to mix the modes and
+validates every count. No original source, generated code, fixture IDs,
+temporary paths or compiler diagnostics appear in the aggregate report.
+A compiler exit status checks syntax/compilability in the local
+environment; it cannot establish runtime behavior, user acceptance,
+semantics or model quality. It does not train, merge, publish or register
+model weights and does not change the extension.
+
 ## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same

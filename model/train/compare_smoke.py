@@ -19,14 +19,14 @@ try:
         fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from .integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
-    from .generated_syntax import SYNTAX_ACCOUNTING
+    from .generated_syntax import SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING
 except ImportError:
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, read_public_fixtures, checked_runtime_profile
     )
     from integrity import PROTOCOL as ADAPTER_RECEIPT_PROTOCOL
-    from generated_syntax import SYNTAX_ACCOUNTING
+    from generated_syntax import SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING
 
 MAX_REPORT_BYTES = 32 * 1024
 SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -116,8 +116,10 @@ def _validated_report(report: dict, kind: str) -> dict:
         counted += group["strictExactMatches"]
     if counted != exact:
         raise SmokeReportRejected("mismatched-language-totals")
-    if report.get("syntaxAccounting") != SYNTAX_ACCOUNTING:
+    accounting = report.get("syntaxAccounting")
+    if accounting not in (SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING):
         raise SmokeReportRejected("invalid-syntax-accounting")
+    native_checked = accounting == NATIVE_SYNTAX_ACCOUNTING
     syntax = report.get("syntaxByLanguage")
     if not isinstance(syntax, dict) or set(syntax) != set(LANGUAGES):
         raise SmokeReportRejected("invalid-syntax-language-groups")
@@ -134,10 +136,10 @@ def _validated_report(report: dict, kind: str) -> dict:
                     for key in ("checked", "passed", "failed", "unchecked")) or
                 entry["checked"] + entry["unchecked"] != expected_count or
                 entry["passed"] + entry["failed"] != entry["checked"] or
-                (lang in ("python", "typescript") and
+                ((native_checked or lang in ("python", "typescript")) and
                  (entry["checked"] != expected_count or entry["unchecked"] != 0 or
                   groups[lang]["strictExactMatches"] > entry["passed"])) or
-                (lang not in ("python", "typescript") and
+                (not native_checked and lang not in ("python", "typescript") and
                  (entry["checked"] != 0 or entry["passed"] != 0 or
                   entry["failed"] != 0 or
                   entry["unchecked"] != expected_count))):
@@ -243,6 +245,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "requestSpecSha256", "baseRevisionDeclared",
         "baseConfigSha256", "tokenizerSha256", "baseWeightsSha256",
         "baseWeightFiles", "syntheticAttempts", "runtimeProfile",
+        "syntaxAccounting",
     )
     if any(left[field] != right[field] for field in same):
         raise SmokeReportRejected("incomparable-smoke-reports")
@@ -330,7 +333,7 @@ def compare_reports(base: dict, adapter: dict) -> dict:
         "runtimeProfileComparable": True,
         "runtimeProfileFieldsChecked": 8,
         "syntheticAttemptsPerModel": left["syntheticAttempts"],
-        "syntaxAccounting": SYNTAX_ACCOUNTING,
+        "syntaxAccounting": left["syntaxAccounting"],
         "syntaxCheckedPerModel": left["syntaxChecked"],
         "syntaxUncheckedPerModel": left["syntaxUnchecked"],
         "basePythonAstPassed": left["syntaxByLanguage"]["python"]["passed"],
@@ -354,6 +357,8 @@ def compare_reports(base: dict, adapter: dict) -> dict:
             if left["syntaxFailed"] or right["syntaxFailed"] else
             "NO_SYNTAX_CHECKS_FOR_SCOPE"
             if left["syntaxChecked"] == 0 else
+            "ALL_LANGUAGES_GRAMMAR_CHECKED_NATIVE_COMPILERS_OPTED_IN"
+            if left["syntaxAccounting"] == NATIVE_SYNTAX_ACCOUNTING else
             "PYTHON_TYPESCRIPT_PARSERS_ONLY_OTHER_LANGUAGES_UNCHECKED"
         ),
         "baseStrictExactMatches": left["strictExactMatches"],
@@ -401,9 +406,11 @@ def compare_reports(base: dict, adapter: dict) -> dict:
                        "even equal totals do not prove per-probe length parity. "
                        "A token-limit exit may truncate an otherwise valid completion; "
                        "a stop-token exit does not establish code correctness. "
-                       "Python AST and TypeScript parser only check grammar and never "
-                       "execute generated code; Rust, C and C++ generated outputs "
-                       "remain unchecked. No type or semantic correctness is established."),
+                       "Python AST, TypeScript parser and optional native compiler "
+                       "checks inspect grammar but never execute generated programs. "
+                       "Native compiler checks require explicit opt-in, are not "
+                       "a hostile-code sandbox, and remain unchecked by default. "
+                       "No type or semantic correctness is established."),
     }
 
 
