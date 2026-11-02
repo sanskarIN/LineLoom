@@ -115,12 +115,18 @@ export function scanRustCode(source: string): RustScan {
       state = "string";
       continue;
     }
-    // Complete Rust char or byte-char tokens are masked; lifetimes are not.
-    const character = /^(?:b)?'(?:\\.|[^'\\\n])'/u.exec(text.slice(index, index + 5));
-    if (character && character[0]) {
-      mask(character[0]);
-      index += character[0].length;
-      continue;
+    // Only scan for a char token at a possible quote boundary. Rust permits
+    // escaped hex and braced Unicode scalars; an incomplete character token
+    // or lifetime ('a, 'static) must stay visible as code, not be guessed.
+    // The 20-unit cap bounds both lookahead and allocation per candidate.
+    if (current === "'" || (current === "b" && text[index + 1] === "'")) {
+      const character = /^(?:b)?'(?:\\(?:[0nrt\\'"]|x[0-9a-fA-F]{2}|u\{[0-9a-fA-F_]{1,12}\})|[^'\\\r\n])'/u
+        .exec(text.slice(index, index + 20));
+      if (character) {
+        mask(character[0]);
+        index += character[0].length;
+        continue;
+      }
     }
     masked.push(current);
     index++;

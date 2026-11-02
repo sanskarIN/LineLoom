@@ -180,6 +180,50 @@ describe("Rust feature-aware autocomplete guidance", () => {
     expect(literal.code).toContain("impl Trait");
   });
 
+  it("masks Rust escaped hex, braced Unicode, and astral char literals", () => {
+    const literals = [
+      String.raw`'\x41'`,
+      String.raw`b'\x7F'`,
+      String.raw`'\u{1F680}'`,
+      String.raw`'\u{1_F680}'`,
+      String.raw`'\''`,
+      String.raw`'\\'`,
+      "'🦀'", "' '"
+    ];
+    for (const literal of literals) {
+      const source = "let symbol = " + literal + "; impl Real for Thing {}";
+      const scan = scanRustCode(source);
+      expect(scan.state, literal).toBe("code");
+      expect(scan.code, literal).not.toContain(literal);
+      expect(scan.code, literal).toContain("impl Real for Thing");
+    }
+  });
+
+  it("does not confuse Rust lifetimes or malformed char escapes with literals", () => {
+    const lifetime = scanRustCode("fn borrow<'a>(x: &'a str) -> &'static str { x }");
+    expect(lifetime.code).toContain("borrow<'a>");
+    expect(lifetime.code).toContain("&'static");
+    for (const invalid of [
+      String.raw`'\xGG'`,
+      String.raw`'\u{ZZZZ}'`,
+      "'unterminated"
+    ]) {
+      const scan = scanRustCode("let value = " + invalid);
+      expect(scan.code, invalid).toContain(invalid);
+    }
+  });
+
+  it("keeps native FIM prompt bytes unchanged with escaped Rust char tokens", () => {
+    const source = String.raw`fn main() { let ch = '\u{1F980}'; let next = `;
+    const context = extractContext(source + "other();", source.length, 2048);
+    for (const model of ["qwen2.5-coder:1.5b", "lineloom-code:dev"]) {
+      expect(buildPrompt(rust, context, model)).toEqual({
+        prompt: context.prefix,
+        suffix: context.suffix
+      });
+    }
+  });
+
   it("keeps untrusted comment/string content out of safe fixed hints", () => {
     const secret = "PRIVATE_TOKEN_DO_NOT_ECHO_123";
     const hints = rustContextHints("fn f() { /* " + secret + " trait Foo async fn */ match input {");
