@@ -1,6 +1,6 @@
 # LineLoom language controls
 
-LineLoom registers the VS Code inline-completion provider for twelve language IDs (nine enabled by default):
+LineLoom registers the VS Code inline-completion provider for thirteen language IDs (nine enabled by default):
 
 | VS Code ID | Language | Typical extensions | Preview status |
 | --- | --- | --- | --- |
@@ -15,7 +15,8 @@ LineLoom registers the VS Code inline-completion provider for twelve language ID
 | `cpp` | C++ | `.cpp`, `.cc`, `.cxx`, `.hpp` | Experimental in v0.4.0 |
 | `html` | HTML | `.html`, `.htm` | New experimental, opt-in only |
 | `css` | CSS | `.css` | New experimental, opt-in only |
-| `lua` | Lua | `.lua` | New experimental, opt-in only; editor language mode may require an extension |
+| `lua` | Lua | `.lua` | Experimental, opt-in only; editor language mode may require an extension |
+| `cuda-cpp` | CUDA C++ | `.cu`, `.cuh` | New experimental, opt-in only; editor mode provided by VS Code or a CUDA extension |
 
 Actual support uses the **language mode reported by VS Code**, not the filename alone. For example, `.h` files may be recognized as either C or C++ depending on the selected editor mode. If needed, use **Change Language Mode** in VS Code.
 
@@ -27,9 +28,45 @@ Open **Command Palette → LineLoom: Manage Autocomplete Languages**, check the 
 "lineloom.enabledLanguages": ["python", "typescript", "rust", "go"]
 ```
 
-The existing nine defaults are unchanged. To try HTML, CSS or Lua, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"` or `"lua"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
+The existing nine defaults are unchanged. To try HTML, CSS, Lua or CUDA C++, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"`, `"lua"` or `"cuda-cpp"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
+
+## CUDA C++ completion (issue #138; unreleased, opt-in)
+
+The new **CUDA C++** language selection is registered as `cuda-cpp`,
+matching the VS Code language mode used by the built-in CUDA C++ grammar
+for `.cu` and `.cuh`. Some optional language extensions identify CUDA files
+as `cuda`, which is also recognized by the inline provider and mapped to
+the same `cuda-cpp` settings/model selection. Language detection is based
+on the **actual editor mode**, never just a filename or guessed source.
+
+CUDA remains **disabled by default**, and enabling it does not install a
+compiler, GPU toolkit or new Ollama model. Opt in through **LineLoom:
+Manage Autocomplete Languages** or add `"cuda-cpp"` to the existing
+`lineloom.enabledLanguages` array. You may optionally assign an installed
+local model using **LineLoom: Assign Language Model**; `cuda-cpp` is the
+canonical override key, even for a document reporting mode `cuda`.
+A `cpp` model override does not silently carry over to CUDA.
+
+For generic local instruction-mode models, CUDA receives conservative
+guidance on host/device qualifiers, kernel launches, bounds checks, thread
+indexing, memory spaces and synchronization. Existing fixed C++ lexical
+hints are used without interpolating identifiers or source text into those
+hints. Explicit native FIM models still receive byte-identical prefix
+and suffix. CUDA fences (`cuda`, `cuda-cpp`, `cu`) are recognized for
+CUDA editors; ordinary C and C++ code fences are allowed in CUDA editors,
+but CUDA-only fences are rejected in ordinary C/C++ editors.
+
+This is a **source-level language support milestone**, not evidence of a
+real model's CUDA accuracy, CUDA compile correctness, GPU behavior or
+physical editor acceptance. No CUDA compiler, CUDA runtime, SDK, GPU
+drivers or model weights are bundled, and CUDA generated code is not
+compiled or executed by LineLoom. Explicitly selected related-file
+context still follows its separate narrow source-file allowlist and
+privacy gates; this change does not expand that allowlist. Standard
+workspace trust, ignore-file, remote endpoint consent, cancellation and
+file policy rules remain in effect.
 
 ## Rust completion context (instruction-mode models)
 

@@ -43,8 +43,8 @@ export function buildPrompt(language: LanguageSpec, context: DocumentContext, mo
       // Rust hints are allowlisted instructions derived only from the
       // already-approved prefix; never interpolate code/comments into hints.
       ...(language.id === "rust" ? rustContextHints(context.prefix) : []),
-      ...(language.id === "c" || language.id === "cpp"
-        ? nativeContextHints(context.prefix, language.id) : []),
+      ...(language.id === "c" || language.id === "cpp" || language.id === "cuda-cpp"
+        ? nativeContextHints(context.prefix, language.id === "cuda-cpp" ? "cpp" : language.id) : []),
       ...(language.id === "python" || language.id === "javascript" || language.id === "typescript"
         ? scriptContextHints(context.prefix, language.id) : []),
       ...(related.length ? [

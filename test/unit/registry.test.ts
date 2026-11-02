@@ -8,7 +8,7 @@ describe("language registry", () => {
   it("registers original and experimental language IDs exactly once", () => {
     expect(LANGUAGES.map(x => x.id)).toEqual([
       "python", "javascript", "typescript", "rust", "kotlin",
-      "go", "java", "c", "cpp", "html", "css", "lua"
+      "go", "java", "c", "cpp", "html", "css", "lua", "cuda-cpp"
     ]);
     expect(new Set(LANGUAGES.map(x => x.id)).size).toBe(LANGUAGES.length);
   });
@@ -19,12 +19,15 @@ describe("language registry", () => {
     expect(getLanguage("c")?.extensions).toContain(".c");
     expect(getLanguage("go")?.extensions).toContain(".go");
     expect(getLanguage("java")?.extensions).toContain(".java");
+    expect(getLanguage("cuda-cpp")?.extensions).toEqual([".cu", ".cuh"]);
+    expect(getLanguage("cuda")?.id).toBe("cuda-cpp");
     expect(getLanguage("unknown")).toBeUndefined();
   });
   it("defaults to every supported language and preserves explicitly empty selections", () => {
     expect(normalizeEnabledLanguages(undefined)).toEqual(DEFAULT_ENABLED_LANGUAGES);
     expect(normalizeEnabledLanguages([])).toEqual([]);
     expect(normalizeEnabledLanguages(null)).toEqual([]);
+    expect(DEFAULT_ENABLED_LANGUAGES).not.toContain("cuda-cpp");
   });
   it("rejects unknown languages and deduplicates configured IDs", () => {
     const ids = normalizeEnabledLanguages(["python", "python", "go", "unknown", 123, "cpp"]);
@@ -32,5 +35,7 @@ describe("language registry", () => {
     expect(isLanguageEnabled(getLanguage("cpp")!, ids)).toBe(true);
     expect(isLanguageEnabled(getLanguage("java")!, ids)).toBe(false);
     expect(isLanguageEnabled(getLanguage("javascriptreact")!, ["javascript"])).toBe(true);
+    expect(normalizeEnabledLanguages(["cuda-cpp", "cuda-cpp", "cuda"])).toEqual(["cuda-cpp"]);
+    expect(isLanguageEnabled(getLanguage("cuda")!, ["cuda-cpp"])).toBe(true);
   });
 });

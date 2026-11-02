@@ -208,6 +208,24 @@ describe("active-language fenced completion filtering", () => {
     expect(cleanCompletion("```cpp\nstd::string x;\n```", "", "", true, 8, "c")).toBe("");
   });
 
+  it("accepts CUDA fences only in CUDA mode with safe C++/C fallbacks", () => {
+    const code = "__global__ void kernel() {}";
+    for (const label of ["cuda", "cuda-cpp", "cu"]) {
+      expect(cleanCompletion("```" + label + "\n" + code + "\n```", "", "", true, 8, "cuda-cpp"))
+        .toBe(code);
+      expect(cleanCompletion("```" + label + "\n" + code + "\n```", "", "", true, 8, "cpp"))
+        .toBe("");
+    }
+    expect(cleanCompletion("```cpp\nint value = 3;\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("int value = 3;");
+    expect(cleanCompletion("```c\nint value = 3;\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("int value = 3;");
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("");
+    expect(cleanCompletion("```cu\n" + code, "", "", true, 8, "cuda-cpp"))
+      .toBe(code);
+  });
+
   it("preserves plain code, unlabeled fences, unknown custom labels and legacy calls", () => {
     const code = "const x = 1;";
     expect(cleanCompletion(code, "", "", true, 8, "typescript")).toBe(code);

@@ -101,6 +101,29 @@ describe("prompt generation", () => {
     }
   });
 
+  it("provides CUDA-aware local instructions without rewriting native FIM source", () => {
+    const cuda = getLanguage("cuda-cpp")!;
+    const source = "__global__ void scale(float* items) {\n" +
+      "  int index = blockIdx.x * blockDim.x + threadIdx.x;\n  ";
+    const ctx = extractContext(source, source.length, 2048);
+    const ordinary = buildPrompt(cuda, ctx, "generic-local:latest");
+    expect(ordinary.prompt).toContain("Language: CUDA C++.");
+    expect(ordinary.prompt).toContain("kernel launch syntax");
+    expect(ordinary.prompt).toContain("memory spaces");
+    expect(ordinary.prompt).toContain("C++");
+    expect(ordinary.suffix).toBeUndefined();
+    const fimContext = {
+      ...ctx, prefix: "__global__ void kernel() {\n  ", suffix: "\n}"
+    };
+    const fim = buildPrompt(cuda, fimContext, "qwen2.5-coder:1.5b");
+    expect(fim).toEqual({ prompt: fimContext.prefix, suffix: fimContext.suffix });
+    const selectedContext = buildPrompt(cuda, fimContext, "qwen2.5-coder:1.5b", [
+      "// selected CUDA helper"
+    ]);
+    expect(selectedContext.suffix).toBeUndefined();
+    expect(selectedContext.prompt).toContain("untrusted reference data");
+  });
+
   it("supplies a language-specific instruction for generic models in all languages", () => {
     for (const spec of LANGUAGES) {
       const prompt = buildPrompt(spec, context, "generic-model:latest").prompt;

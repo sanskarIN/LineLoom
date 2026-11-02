@@ -12,6 +12,7 @@ const fenceLanguages: Readonly<Record<string, SupportedLanguage | "other">> = {
   "c++": "cpp", cxx: "cpp", cc: "cpp",
   go: "go", golang: "go", java: "java",
   kt: "kotlin", kotlin: "kotlin", html: "html", css: "css", lua: "lua",
+  cuda: "cuda-cpp", "cuda-cpp": "cuda-cpp", cu: "cuda-cpp",
   ruby: "other", php: "other", swift: "other", bash: "other",
   sh: "other", shell: "other", powershell: "other",
   sql: "other", json: "other", yaml: "other", yml: "other",
@@ -30,7 +31,8 @@ export function isCompatibleFencedLanguage(
   if (!declared) return true;
   if (declared === activeLanguage) return true;
   return (activeLanguage === "typescript" && declared === "javascript") ||
-    (activeLanguage === "cpp" && declared === "c");
+    (activeLanguage === "cpp" && declared === "c") ||
+    (activeLanguage === "cuda-cpp" && (declared === "cpp" || declared === "c"));
 }
 
 /**

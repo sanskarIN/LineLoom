@@ -442,7 +442,9 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(output, status, sidebar, engine);
   context.subscriptions.push(vscode.window.registerTreeDataProvider("lineloom.dashboard", sidebar));
-  const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
+  const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" },
+    // Alternate CUDA mode is supplied by some third-party language extensions.
+    { language: "cuda", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
   function command(id: string, fn: (...args: unknown[]) => unknown): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, fn));
