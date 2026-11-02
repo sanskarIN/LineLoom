@@ -112,6 +112,36 @@ class LocalSmokeTests(unittest.TestCase):
         with self.assertRaises(ExperimentRejected):
             smoke.summarize([{"language": "python", "exact": "yes"}])
 
+    def test_input_prompt_token_counts_are_bounded_source_free_and_complete(self):
+        results = [
+            {"language": "rust", "promptTokens": 10, "secret": "PRIVATE_CODE"},
+            {"language": "rust", "promptTokens": 25},
+            {"language": "typescript", "promptTokens": 2048},
+        ]
+        summary = smoke.prompt_token_summary(results)
+        self.assertEqual(summary["inputTokenAccounting"],
+                         "tokenizer-encoded-fim-prompt-ids-v1")
+        self.assertEqual(summary["inputTokenCount"], 2083)
+        self.assertEqual(summary["inputTokensByLanguage"]["rust"],
+                         {"attempts": 2, "totalTokens": 35})
+        self.assertEqual(summary["inputTokensByLanguage"]["typescript"],
+                         {"attempts": 1, "totalTokens": 2048})
+        self.assertEqual(summary["inputTokensByLanguage"]["python"],
+                         {"attempts": 0, "totalTokens": 0})
+        self.assertNotIn("PRIVATE_CODE", json.dumps(summary))
+        self.assertNotIn("secret", json.dumps(summary))
+        for value in (True, None, 0, -1, 2049, 1.5, "5"):
+            with self.subTest(value=repr(value)), self.assertRaises(ValueError):
+                smoke.prompt_token_summary([{"language": "rust", "promptTokens": value}])
+        for invalid in (
+            [], None, "invalid",
+            [{"language": "other", "promptTokens": 10}],
+            [{"language": "rust"}],
+            [{"language": "rust", "promptTokens": 1}] * 41,
+        ):
+            with self.subTest(invalid=repr(invalid)[:28]), self.assertRaises(ValueError):
+                smoke.prompt_token_summary(invalid)
+
     def test_generation_timing_nearest_rank_and_no_source_output(self):
         from_smoke = smoke.generation_latency_summary([
             {"language": "rust", "generationMs": 8, "generationTokens": 2,
@@ -297,7 +327,7 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 8)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v10")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v11")
         self.assertEqual(result["generationPolicy"], "greedy-fim-v3")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
