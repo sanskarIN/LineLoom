@@ -12,7 +12,7 @@ try:
     from .smoke_report import read_public_fixtures, SmokeReportRejected, LANGUAGES
 except ImportError:
     from generated_syntax import (
-        SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
+        SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
         classify_generated_syntax, generated_syntax_summary
     )
     from smoke_report import read_public_fixtures, SmokeReportRejected, LANGUAGES
