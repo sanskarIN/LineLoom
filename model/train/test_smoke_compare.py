@@ -16,7 +16,7 @@ try:
     from .smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary,
-        prompt_token_summary
+        prompt_token_summary, fingerprint_prompt_token_ids
     )
 except ImportError:
     import compare_smoke
@@ -24,7 +24,7 @@ except ImportError:
     from smoke_report import (
         GENERATION_POLICY, LANGUAGES, PROTOCOL, SmokeReportRejected,
         fingerprints, hash_local_metadata_file, read_public_fixtures, generation_latency_summary,
-        prompt_token_summary
+        prompt_token_summary, fingerprint_prompt_token_ids
     )
 
 
@@ -69,7 +69,10 @@ def simulated_report(kind: str, language: str = "all", tokens: int = 64,
         for index, item in enumerate(selected)
     ], tokens)
     inputs = prompt_token_summary([
-        {"language": item["language"], "promptTokens": 16 + index % 5}
+        {"language": item["language"], "promptTokens": 16 + index % 5,
+         "promptIdsSha256": fingerprint_prompt_token_ids(
+             [index + 1] * (16 + index % 5)
+         )}
         for index, item in enumerate(selected)
     ])
     return {
@@ -166,7 +169,7 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["rust"]["adapterMinusBase"], 1)
         self.assertEqual(result["perLanguage"]["cpp"]["attemptsPerModel"], 8)
         self.assertEqual(result["verdict"], "DESCRIPTIVE_SYNTHETIC_COUNTS_ONLY")
-        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v10")
+        self.assertEqual(result["comparisonProtocol"], "lineloom-hf-synthetic-comparison-v11")
         self.assertEqual(result["latencyMeasurement"], "monotonic-generation-only-v1")
         self.assertEqual(result["generationP50DeltaMs"], 20)
         self.assertEqual(result["generationP95DeltaMs"], 38)
@@ -263,7 +266,8 @@ class CompareSmokeTests(unittest.TestCase):
         result = compare_smoke.compare_reports(base, adapter)
         self.assertTrue(result["inputTokenParityVerified"])
         self.assertTrue(result["inputLengthSequenceParityVerified"])
-        self.assertEqual(result["inputTokenParityScope"], "per-language-sums-and-ordered-length-digest-v2")
+        self.assertTrue(result["inputTokenSequenceParityVerified"])
+        self.assertEqual(result["inputTokenParityScope"], "per-language-sums-and-ordered-token-id-digests-v3")
         self.assertEqual(result["inputTokensPerModel"], base["inputTokenCount"])
         self.assertEqual(
             result["perLanguage"]["rust"]["inputTokensPerModel"],
@@ -288,7 +292,10 @@ class CompareSmokeTests(unittest.TestCase):
         )
         lengths[first], lengths[second] = lengths[second], lengths[first]
         changed = prompt_token_summary([
-            {"language": item["language"], "promptTokens": lengths[i]}
+            {"language": item["language"], "promptTokens": lengths[i],
+             "promptIdsSha256": fingerprint_prompt_token_ids(
+                 [i + 1] * lengths[i]
+             )}
             for i, item in enumerate(selected)
         ])
         self.assertEqual(changed["inputTokenCount"], adapter["inputTokenCount"])
@@ -296,6 +303,27 @@ class CompareSmokeTests(unittest.TestCase):
         self.assertNotEqual(changed["inputLengthSequenceSha256"],
                             adapter["inputLengthSequenceSha256"])
         adapter["inputLengthSequenceSha256"] = changed["inputLengthSequenceSha256"]
+        with self.assertRaises(SmokeReportRejected):
+            compare_smoke.compare_reports(base, adapter)
+
+    def test_token_ids_change_rejects_comparison_despite_identical_lengths(self):
+        base = simulated_report("local-base-model")
+        adapter = simulated_report("local-lora-adapter")
+        selected = read_public_fixtures("all")
+        mutated = prompt_token_summary([
+            {"language": fixture["language"], "promptTokens": 16 + i % 5,
+             "promptIdsSha256": fingerprint_prompt_token_ids(
+                 [i + 2] + [i + 1] * (15 + i % 5)
+             )}
+            for i, fixture in enumerate(selected)
+        ])
+        self.assertEqual(mutated["inputTokenCount"], adapter["inputTokenCount"])
+        self.assertEqual(mutated["inputTokensByLanguage"], adapter["inputTokensByLanguage"])
+        self.assertEqual(mutated["inputLengthSequenceSha256"],
+                         adapter["inputLengthSequenceSha256"])
+        self.assertNotEqual(mutated["inputTokenSequenceSha256"],
+                            adapter["inputTokenSequenceSha256"])
+        adapter["inputTokenSequenceSha256"] = mutated["inputTokenSequenceSha256"]
         with self.assertRaises(SmokeReportRejected):
             compare_smoke.compare_reports(base, adapter)
 
@@ -308,6 +336,8 @@ class CompareSmokeTests(unittest.TestCase):
             ("inputTokenCount", True),
             ("inputTokenCount", -1),
             ("inputLengthSequenceSha256", "broken"),
+            ("inputTokenSequenceSha256", "broken"),
+            ("inputTokenSequenceSha256", True),
             ("inputLengthSequenceSha256", None),
             ("inputTokenCount", adapter["inputTokenCount"] + 1),
             ("inputTokensByLanguage", {}),
