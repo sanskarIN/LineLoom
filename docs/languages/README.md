@@ -119,10 +119,10 @@ migration and any additional release are postponed.
 ## JavaScript/TypeScript regexp expression boundaries (development source)
 
 The local instruction-mode lexical scanner now recognizes regex literals at
-expression starts immediately after arrow-function (\`=>\`) and logical
-(\`||\`, \`&&\`) operators. Their contents are masked before choosing
-allowlisted autocomplete hints, so text resembling \`async function\` or
-\`interface\` inside regex patterns does not become fabricated syntax
+expression starts immediately after arrow-function (`=>`) and logical
+(`||`, `&&`) operators. Their contents are masked before choosing
+allowlisted autocomplete hints, so text resembling `async function` or
+`interface` inside regex patterns does not become fabricated syntax
 context. Escaped slashes inside a regex remain literal content; ordinary
 division after these operators is still scanned as source.
 
