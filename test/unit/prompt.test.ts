@@ -103,10 +103,9 @@ describe("prompt generation", () => {
 
   it("provides CUDA-aware local instructions without rewriting native FIM source", () => {
     const cuda = getLanguage("cuda-cpp")!;
-    const ctx = extractContext(
-      "__global__ void scale(float* items) {\n  int index = blockIdx.x * blockDim.x + threadIdx.x;\n  ",
-      99, 2048
-    );
+    const source = "__global__ void scale(float* items) {\n" +
+      "  int index = blockIdx.x * blockDim.x + threadIdx.x;\n  ";
+    const ctx = extractContext(source, source.length, 2048);
     const ordinary = buildPrompt(cuda, ctx, "generic-local:latest");
     expect(ordinary.prompt).toContain("Language: CUDA C++.");
     expect(ordinary.prompt).toContain("kernel launch syntax");
