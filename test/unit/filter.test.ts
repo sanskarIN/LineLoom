@@ -187,6 +187,7 @@ describe("completion filtering", () => {
   it("rejects leftover protocol headers at response boundaries without changing code strings", () => {
     for (const invalid of [
       "<|im_start|>system\nreturn x;<|im_end|>",
+      "  <|im_start|>user\nreturn x;",
       "<|im_start|>assistant",
       "<|fim_suffix|>return x;",
       "return x;<|im_start|>user",
