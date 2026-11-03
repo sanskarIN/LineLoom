@@ -184,6 +184,23 @@ describe("completion filtering", () => {
     }
   });
 
+  it("rejects leftover protocol headers at response boundaries without changing code strings", () => {
+    for (const invalid of [
+      "<|im_start|>system\nreturn x;<|im_end|>",
+      "  <|im_start|>user\nreturn x;",
+      "<|im_start|>assistant",
+      "<|fim_suffix|>return x;",
+      "return x;<|im_start|>user",
+      "<|im_start|>assistant\nreturn x;<|im_start|>user"
+    ]) {
+      expect(cleanCompletion(invalid, "", "", true), invalid).toBe("");
+    }
+    const literal = 'const marker = "<|im_start|>";';
+    expect(cleanCompletion(literal, "", "", true)).toBe(literal);
+    expect(cleanCompletion("<|im_start|>assistant\n" + literal + "<|im_end|>",
+      "", "", true)).toBe(literal);
+  });
+
   it("validates fenced languages after nested envelopes and preserves code literals", () => {
     const fence = String.fromCharCode(96).repeat(3);
     const wrapped = "<|im_start|>assistant\n<|fim_middle|>" +
@@ -297,6 +314,29 @@ describe("active-language fenced completion filtering", () => {
       "", "", true, 8, "typescript")).toBe("");
     expect(cleanCompletion("Here is the code:\n```typescript\nconst x = 1;",
       "", "", true, 8, "typescript")).toBe("const x = 1;");
+  });
+
+  it("checks indented and whitespace-separated fence labels before extracting code", () => {
+    const fence = "```";
+    for (const separator of [" ", "  ", "\t", " \t"]) {
+      const wrong = "  " + fence + separator + "python\nprint(1)\n" + fence;
+      const right = "  " + fence + separator + "typescript\nconst ok = 1;\n" + fence;
+      expect(cleanCompletion(wrong, "", "", true, 8, "typescript"), separator).toBe("");
+      expect(cleanCompletion(right, "", "", true, 8, "typescript"), separator)
+        .toBe("const ok = 1;");
+      expect(cleanCompletion(fence + separator + "python\nprint(1)", "", "", true, 8, "typescript"))
+        .toBe("");
+      expect(cleanCompletion(fence + separator + "typescript\nconst ok = 1;",
+        "", "", true, 8, "typescript")).toBe("const ok = 1;");
+    }
+    // Unknown labels and unlabeled code still follow the legacy behavior.
+    expect(cleanCompletion("``` custom\nconst x = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+    expect(cleanCompletion("```  \nconst x = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+    // A nested chat wrapper must not bypass the same check.
+    expect(cleanCompletion("<|im_start|>assistant\n``` python\nprint(1)\n```<|im_end|>",
+      "", "", true, 8, "typescript")).toBe("");
   });
 
   it("also checks a truncated fence header while allowing compatible partial code", () => {

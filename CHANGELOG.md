@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — completion output boundary hardening
+
+- Validate a recognized Markdown code-fence language even when spaces or tabs separate the opening backticks from its label, including incomplete fences and chat-wrapped responses. This prevents wrong-language snippets from bypassing the active editor-language check.
+- Reject unconsumed FIM/chat protocol markers at generated-response boundaries instead of inserting malformed model headers; preserve ordinary code and string literals containing marker-like text.
+- Add source-only regression tests. No VSIX, model weights, registry publication or publisher-ID change is implied.
+
 ## Unreleased — optional per-language LoRA validation export gate
 
 - Add `--fail-on-validation-regression` for explicitly approved local LoRA experiments. Block adapter export if any target language's sample-mean or token-weighted loss increases, even when the overall loss improves; also block aggregate and macro loss regressions.

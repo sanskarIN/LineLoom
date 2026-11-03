@@ -142,18 +142,29 @@ export function cleanCompletion(
   const unwrapped = unwrapModelBoundaries(value);
   if (unwrapped === undefined) return "";
   value = unwrapped;
+  // Fail closed on unconsumed model protocol markers at a response boundary.
+  // A malformed or truncated chat header must not reach the editor as code.
+  // Do not search inside ordinary code literals: marker-looking strings are
+  // valid source and remain byte-exact.
+  const unconsumedStart =
+    /^[ \t]*<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>/u.test(value);
+  const unconsumedEnd =
+    /<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>[ \t]*$/u.test(value);
+  const danglingChatRole =
+    /<\|im_start\|>(?:assistant|user|system|developer)[ \t]*$/u.test(value);
+  if (unconsumedStart || unconsumedEnd || danglingChatRole) return "";
   // A clearly wrong-language fenced response should not become editor ghost text.
   // Also inspect incomplete fences (where the closing marker was truncated).
-  const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
+  const fenceHeader = /^\s*```[ \t]*([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
   if (fenceHeader && !isCompatibleFencedLanguage(fenceHeader[1], activeLanguage)) return "";
   // A different, unrecognized one-line introduction followed immediately
   // by a fence is not code. Reject it instead of accidentally inserting prose
   // or bypassing the fence language check; do not guess how to rewrite it.
   if (!fenceHeader && /^[^\n]{1,160}\n[ \t]*```[a-zA-Z0-9+#_-]*[^\n]*\n/u.test(value)) return "";
   // Prefer the first fenced code block, dropping explanations that follow it.
-  const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
+  const fenced = /^\s*```[ \t]*(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
   if (fenced) value = fenced[1];
-  else value = value.replace(/^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
+  else value = value.replace(/^\s*```[ \t]*(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
   const tail = prefix.slice(-160);
