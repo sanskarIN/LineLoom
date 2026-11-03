@@ -2,7 +2,7 @@
 
 **Publisher migration:** [SanskarCodes → Sanskar installation and maintainer checklist](publisher-migration.md) (new registry listings not yet verified).
 
-**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.3.1](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.1), published the same day; it is not a stable or registry release. Open VSX v1.3.0 Stable was independently verified as latest on 2026-10-25, and the maintainer separately updated Marketplace to v1.3.0. GitHub stable, previews and package-manager versions remain independent; check each distribution's own version.
+**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.4.3](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3), published 2026-11-01 with **two separate preview VSIX identities**: `SanskarCodes.lineloom` and `Sanskar.lineloom`. This is **not** a stable release, automatic publisher migration or independent registry update. Open VSX v1.3.0 Stable was verified on 2026-10-25 and Marketplace was separately updated to v1.3.0 by the maintainer; verify each live registry before quoting its current version. GitHub previews, registries, and the npm CLI are independent. No first-party LineLoom Code model weights have been released.
 
 This is a documentation index for users, maintainers and contributors. Proposed plans are labeled separately from implemented features.
 
@@ -12,7 +12,9 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | --- | --- |
 | [Main README](../README.md) | What LineLoom is, install methods, settings, supported languages and general setup |
 | [GitHub v1.3.0 stable release](releases/v1.3.0.md) | Downloadable stable VSIX, checksum and shipped features |
-| [GitHub v1.3.1 pre-release](releases/v1.3.1.md) | Preview VSIX and SHA-256, sidebar refinements, explicitly outstanding manual QA |
+| [GitHub v1.4.3 pre-release](releases/v1.4.3.md) | Dual-publisher GitHub-only preview VSIX files, separate SHA-256 checksums and manual migration limits |
+| [GitHub v1.4.2 pre-release](releases/v1.4.2.md) | Opt-in HTML/CSS/Lua, native FIM routing and model-research tooling (no trained weights) |
+| [GitHub v1.3.1 pre-release](releases/v1.3.1.md) | Earlier preview VSIX, sidebar refinements and outstanding manual QA |
 | [Native sidebar](sidebar.md) | Control Center commands, model status, privacy and opt-in related-file selection |
 | [Quick Actions](quick-actions/README.md) | Status-bar actions and workflows |
 | [Troubleshooting](troubleshooting/README.md) | First-run, model and editor issues |
