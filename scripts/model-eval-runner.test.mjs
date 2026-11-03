@@ -158,6 +158,30 @@ test("times out stalled fetch, passes the abort signal and returns source-free f
   assert.ok(!JSON.stringify(result).includes("private-transport-body"));
 });
 
+test("enforces the deadline even if an injected fetch never settles or honors abort", async () => {
+  let capturedSignal;
+  let watchdog;
+  try {
+    const result = await Promise.race([
+      run((_url, options) => {
+        capturedSignal = options.signal;
+        return new Promise(() => {}); // Deliberately non-cooperative mock transport.
+      }, { timeoutMs: 10 }),
+      new Promise(resolve => {
+        watchdog = setTimeout(() => resolve({ hung: true }), 750);
+      })
+    ]);
+    assert.equal(result.hung, undefined);
+    assert.equal(capturedSignal.aborted, true);
+    assert.deepEqual(result, {
+      fixtureId: fixture.id, language: fixture.language,
+      category: fixture.category, ok: false, exact: false
+    });
+  } finally {
+    clearTimeout(watchdog);
+  }
+});
+
 test("does not report a completed benchmark if Ollama stalls after done", async () => {
   let transportCancelled = false;
   const body = new ReadableStream({

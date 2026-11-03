@@ -2,6 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — bounded local model-evaluator deadlines
+
+- Race synthetic Ollama fetch and strict stream decoding against one request abort deadline. A transport that ignores `AbortSignal` can no longer hold an optional benchmark indefinitely.
+- Preserve source-free failure outputs and non-blocking cancellation; add a deterministic hanging-fetch test with an independent watchdog. No model inference or training was performed.
+
 ## Unreleased — source-preserving standalone Markdown fences
 
 - Parse only a standalone closing fence line as the end of a model response, preserving literal triple backticks embedded in strings or comments rather than truncating code.
