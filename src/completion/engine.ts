@@ -15,6 +15,7 @@ import { RELATED_FILE_LIMIT, validateRelatedSelection } from "../context/related
 import { shouldAutoComplete, shouldRequestAtCursor, hasSingleInsertionCursor, isSafeInsertionBoundary } from "./trigger";
 import { buildPrompt } from "./prompt";
 import { cleanCompletion } from "./filter";
+import { settleOnAbort } from "./settle-on-abort";
 import { mayComplete } from "../privacy/exclusions";
 import { readConfig, validateEndpoint } from "../settings/config";
 import { generateCompletion } from "../models/ollama";
@@ -313,11 +314,14 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
       this.metrics.requests++;
       this.onState("generating");
       try {
-        const raw = await generateCompletion(url.origin, {
+        // An uncooperative fetch or stream might ignore AbortSignal. Settle
+        // the editor request at the existing timeout or user cancellation,
+        // while still aborting the underlying transport on a best-effort basis.
+        const raw = await settleOnAbort(controller.signal, () => generateCompletion(url.origin, {
           model, prompt: prompt.prompt, suffix: prompt.suffix,
           numPredict: config.maxOutputTokens, contextSize: config.contextSize,
           temperature: config.temperature, keepAlive: config.keepAlive
-        }, controller.signal);
+        }, controller.signal));
         // Privacy policies are checked again after the model responds. These
         // filesystem reads await I/O; settings, trust or endpoint consent can
         // change while they run, before VS Code dispatches a cancellation event.
