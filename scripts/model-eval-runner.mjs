@@ -25,22 +25,36 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
     throw new Error("invalid-evaluation-timeout");
   }
   const controller = new AbortController();
+  // In normal operation Node fetch and the stream reader respect AbortSignal.
+  // Independently race the deadline: a nonstandard or misbehaving transport
+  // must not leave the developer's opt-in evaluation waiting indefinitely.
+  let rejectOnAbort;
+  const deadline = new Promise((_, reject) => {
+    rejectOnAbort = () => reject(new Error("evaluation-aborted"));
+    controller.signal.addEventListener("abort", rejectOnAbort, { once: true });
+  });
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const started = clock();
   try {
-    const response = await fetchImpl("http://127.0.0.1:11434/api/generate", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(createRequest(fixture, model, mode)),
-      signal: controller.signal,
-      redirect: "error"
-    });
+    const response = await Promise.race([
+      fetchImpl("http://127.0.0.1:11434/api/generate", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(createRequest(fixture, model, mode)),
+        signal: controller.signal,
+        redirect: "error"
+      }),
+      deadline
+    ]);
     if (controller.signal.aborted || response?.status !== 200 || !response.body || response.redirected) {
       throw new Error("invalid-http-response");
     }
     // Strict benchmark parsing observes a clean EOF; the request's abort
     // signal also cancels a server that stalls after its terminal frame.
-    const parsed = await consumeOllamaStream(response.body, started, clock, controller.signal);
+    const parsed = await Promise.race([
+      consumeOllamaStream(response.body, started, clock, controller.signal),
+      deadline
+    ]);
     // Handle an abort racing the final streamed frame. A timed-out request
     // must never be reported as a successful completion, even if a mock
     // transport or nonstandard runtime ignored cancellation.
@@ -71,5 +85,6 @@ export async function evaluateSyntheticFixture(fixture, model, mode, {
     };
   } finally {
     clearTimeout(timeout);
+    controller.signal.removeEventListener("abort", rejectOnAbort);
   }
 }
