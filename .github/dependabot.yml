@@ -9,6 +9,10 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: typescript-eslint
         update-types: ["version-update:semver-major"]
+      # VSIX publishing has a separately reviewed, pinned Azure/MSAL graph.
+      # Review new packager majors manually before updating that security gate.
+      - dependency-name: "@vscode/vsce"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
