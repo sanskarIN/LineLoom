@@ -2,6 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — bounded local model-evaluator deadlines
+
+- Race synthetic Ollama fetch and strict stream decoding against one request abort deadline. A transport that ignores `AbortSignal` can no longer hold an optional benchmark indefinitely.
+- Preserve source-free failure outputs and non-blocking cancellation; add a deterministic hanging-fetch test with an independent watchdog. No model inference or training was performed.
+
 ## Unreleased — completion output boundary hardening
 
 - Validate a recognized Markdown code-fence language even when spaces or tabs separate the opening backticks from its label, including incomplete fences and chat-wrapped responses. This prevents wrong-language snippets from bypassing the active editor-language check.
