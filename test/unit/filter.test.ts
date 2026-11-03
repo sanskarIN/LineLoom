@@ -345,6 +345,40 @@ describe("active-language fenced completion filtering", () => {
       .toBe("const ok = 1;");
   });
 
+  it("preserves inline triple backticks inside fenced code instead of truncating", () => {
+    const fence = String.fromCharCode(96).repeat(3);
+    const source = [
+      'const literal = "' + fence + '";',
+      "console.log(literal);"
+    ].join("\n");
+    expect(cleanCompletion(fence + "typescript\n" + source + "\n" + fence,
+      "", "", true, 8, "typescript")).toBe(source);
+    // Only a standalone closing fence ends a block, even with indentation
+    // and explanatory prose after the actual closing delimiter.
+    const withExplanation = fence + " typescript\n" + source +
+      "\n  " + fence + "\nExplanation: the string contains three ticks.";
+    expect(cleanCompletion(withExplanation, "", "", true, 8, "typescript")).toBe(source);
+    // An incomplete response with no standalone closing line retains source.
+    expect(cleanCompletion(fence + "typescript\n" + source,
+      "", "", true, 8, "typescript")).toBe(source);
+  });
+
+  it("preserves unfenced code comments ending with triple backticks", () => {
+    const source = 'return result; // ' + String.fromCharCode(96).repeat(3);
+    expect(cleanCompletion(source, "", "", true, 8, "typescript")).toBe(source);
+    const python = "return result  # " + String.fromCharCode(96).repeat(3);
+    expect(cleanCompletion(python, "", "", true, 8, "python")).toBe(python);
+  });
+
+  it("still rejects mismatched languages when code contains inline fences", () => {
+    const fence = String.fromCharCode(96).repeat(3);
+    const source = 'const marker = "' + fence + '";\nreturn marker;';
+    expect(cleanCompletion(fence + "python\n" + source + "\n" + fence,
+      "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion(fence + "typescript\n" + source + "\n" + fence,
+      "", "", true, 8, "typescript")).toBe(source);
+  });
+
   it("does not misread a code-string containing fence markers as a fence", () => {
     const text = 'const example = "```python";';
     expect(cleanCompletion(text, "", "", true, 8, "typescript")).toBe(text);
