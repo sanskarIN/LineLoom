@@ -42,9 +42,11 @@ try {
   const source = JSON.parse(readFileSync("package.json", "utf8"));
   const packaged = JSON.parse(execFileSync("unzip", ["-p", path, "extension/package.json"], { encoding: "utf8" }));
   for (const key of ["name", "publisher", "version"]) {
-    assert.equal(packaged[key], source[key], "Mismatched packaged " + key);
+    if (key !== "publisher") assert.equal(packaged[key], source[key], "Mismatched packaged " + key);
   }
-  assert.equal(packaged.publisher, "SanskarCodes");
+  const expectedPublisher = process.env.LINELOOM_EXPECT_PUBLISHER || source.publisher;
+  assert.ok(["SanskarCodes", "Sanskar"].includes(expectedPublisher), "Unapproved publisher identity");
+  assert.equal(packaged.publisher, expectedPublisher);
   assert.equal(packaged.name, "lineloom");
   assert.match(packaged.version, /^\d+\.\d+\.\d+$/, "Package must have a semantic three-part version");
   assert.equal(packaged.version, source.version);

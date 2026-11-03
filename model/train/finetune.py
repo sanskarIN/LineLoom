@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import random
@@ -21,7 +22,8 @@ import stat
 try:
     from .sampling import (
         balanced_sample_indices, validation_metrics, compare_validation_losses,
-        optimizer_step_token_scales, training_token_exposure
+        review_validation_nonregression, optimizer_step_token_scales,
+        training_token_exposure
     )
     from .integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
@@ -30,7 +32,8 @@ try:
 except ImportError:
     from sampling import (
         balanced_sample_indices, validation_metrics, compare_validation_losses,
-        optimizer_step_token_scales, training_token_exposure
+        review_validation_nonregression, optimizer_step_token_scales,
+        training_token_exposure
     )
     from integrity import (
         PROTOCOL as ADAPTER_RECEIPT_PROTOCOL, IntegrityRejected,
@@ -204,6 +207,107 @@ def encode_fim(sample: dict, tokenizer, max_tokens: int) -> dict:
     }
 
 
+def clip_gradients_safely(clipper, parameters) -> float:
+    """Fail before optimizer.step on non-finite gradient norms.
+
+    The real torch.nn.utils.clip_grad_norm_ must support the strict
+    error_if_nonfinite flag; don't fall back to its permissive default.
+    The returned norm is numeric only and never goes into experiment reports.
+    A local failure must not publish/save an adapter.
+    """
+    try:
+        norm = float(clipper(
+            parameters, max_norm=1.0, error_if_nonfinite=True
+        ))
+    except (ValueError, TypeError, RuntimeError, OverflowError):
+        raise ExperimentRejected("invalid-training-gradient-norm") from None
+    if not math.isfinite(norm) or norm < 0:
+        raise ExperimentRejected("invalid-training-gradient-norm")
+    return norm
+
+
+
+def verify_finite_lora_weights(parameters, isfinite) -> None:
+    """Reject corrupted LoRA weights before another step or adapter export.
+
+    Called with torch.isfinite on trainable parameters only; kept injectable
+    so the contract is tested without importing PyTorch or loading private data.
+    Do not echo tensor values or backend exception messages.
+    """
+    seen = False
+    try:
+        for parameter in parameters:
+            seen = True
+            verdict = isfinite(parameter).all().item()
+            if type(verdict) is not bool or not verdict:
+                raise ExperimentRejected("nonfinite-lora-weight")
+    except ExperimentRejected:
+        raise
+    except (ValueError, TypeError, RuntimeError, OverflowError, AttributeError):
+        raise ExperimentRejected("invalid-lora-weight-check") from None
+    if not seen:
+        raise ExperimentRejected("no-trainable-lora-parameters")
+
+
+def verify_finite_optimizer_state(states, is_tensor, isfinite) -> None:
+    """Reject non-finite AdamW moments even when current LoRA weights are finite.
+
+    AdamW momentum can become non-finite before the next optimizer update
+    exposes corrupted model weights. Check populated, known state fields only;
+    never serialize tensor contents, keys from arbitrary backends or exceptions.
+    Injectable tensor operations allow offline tests without PyTorch/GPU.
+    """
+    seen = False
+    required = {"step", "exp_avg", "exp_avg_sq"}
+    permitted = required | {"max_exp_avg_sq"}
+    try:
+        for state in states:
+            if (type(state) is not dict or
+                    not required.issubset(state) or
+                    not set(state).issubset(permitted)):
+                raise ExperimentRejected("invalid-adamw-state")
+            seen = True
+            for key, value in state.items():
+                tensor = is_tensor(value)
+                if type(tensor) is not bool:
+                    raise ExperimentRejected("invalid-adamw-state")
+                if tensor:
+                    valid = isfinite(value).all().item()
+                    if type(valid) is not bool or not valid:
+                        raise ExperimentRejected("nonfinite-adamw-state")
+                elif (key != "step" or type(value) not in (int, float) or
+                      not math.isfinite(value) or value < 1):
+                    raise ExperimentRejected("invalid-adamw-state")
+    except ExperimentRejected:
+        raise
+    except (ValueError, TypeError, RuntimeError, OverflowError,
+            AttributeError, KeyError):
+        raise ExperimentRejected("invalid-adamw-state-check") from None
+    if not seen:
+        raise ExperimentRejected("empty-adamw-state")
+
+
+def validation_export_gate(before: dict, after: dict,
+                           required: bool) -> dict:
+    """Optional fail-closed adapter export gate; no model or GPU imports.
+
+    The comparison checks numerical reconciliation and counts, but it
+    cannot independently prove identical validation sample identities.
+    """
+    if type(required) is not bool:
+        raise ExperimentRejected("invalid-validation-export-gate")
+    try:
+        review = review_validation_nonregression(before, after, LANGUAGES)
+    except ValueError:
+        raise ExperimentRejected("invalid-validation-review") from None
+    if required and review["validationNonRegressionStatus"] != "NO_RECORDED_REGRESSION":
+        raise ExperimentRejected("validation-regression-rejected")
+    return {
+        "validationRegressionExportGateEnabled": required,
+        **review
+    }
+
+
 def pad_examples(examples: list[dict], pad_token_id: int) -> dict:
     if not examples:
         raise ExperimentRejected("empty-batch")
@@ -361,8 +465,16 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
             if not torch.isfinite(output.loss).all():
                 raise ExperimentRejected("nonfinite-training-loss")
             (output.loss * scale).backward()
-        torch.nn.utils.clip_grad_norm_(parameters, max_norm=1.0)
+        # A finite mean training loss does not imply finite gradients:
+        # backpropagation, scaling and clipping can still overflow.
+        clip_gradients_safely(torch.nn.utils.clip_grad_norm_, parameters)
         optimizer.step()
+        # Finite gradients do not guarantee finite optimizer-updated weights.
+        with torch.no_grad():
+            verify_finite_lora_weights(parameters, torch.isfinite)
+            verify_finite_optimizer_state(
+                optimizer.state.values(), torch.is_tensor, torch.isfinite
+            )
 
     model.eval()
     with torch.no_grad():
@@ -372,11 +484,23 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
     # in an under-represented language. Held-out TEST data stays untouched.
     validation = validation_metrics(validation_samples, losses, LANGUAGES,
                                     validation_target_tokens)
+    # Opt-in artifact gate must execute BEFORE creating an output directory
+    # or calling model.save_pretrained(). The default training path remains
+    # available for investigating regressions in private experiments.
+    export_review = validation_export_gate(
+        validation_before, validation, args.fail_on_validation_regression
+    )
 
     # Rehash metadata and weights after optimization so an on-disk
     # checkpoint change cannot silently become an adapter receipt.
     if base_checkpoint_fingerprint(model_dir) != base_identity:
         raise ExperimentRejected("base-checkpoint-changed-during-experiment")
+    # A final check must precede every adapter filesystem write.
+    with torch.no_grad():
+        verify_finite_lora_weights(parameters, torch.isfinite)
+        verify_finite_optimizer_state(
+            optimizer.state.values(), torch.is_tensor, torch.isfinite
+        )
     output_dir = check_output_destination(Path(args.output_dir))
     output_dir.mkdir(parents=True, exist_ok=False, mode=0o700)
     # PEFT adapter only; base model is NEVER copied, merged or exported.
@@ -404,6 +528,7 @@ def train(manifest: dict, data_digest: str, args: argparse.Namespace) -> dict:
         **validation,
         "validationBeforeTraining": validation_before,
         **compare_validation_losses(validation_before, validation, LANGUAGES),
+        **export_review,
         "trainSamples": len(train_set),
         "validationSamples": len(validation_set),
         "testSamplesUsed": 0,
@@ -422,6 +547,8 @@ def parser() -> argparse.ArgumentParser:
     )
     cli.add_argument("--manifest", required=True)
     cli.add_argument("--train", action="store_true", help="Explicitly enable training (default: plan only)")
+    cli.add_argument("--fail-on-validation-regression", action="store_true",
+                     help="Do not export local adapter if any reviewed language loss regresses")
     cli.add_argument("--approve-rights", action="store_true")
     cli.add_argument("--approve-checkpoint", action="store_true")
     cli.add_argument("--base-dir")
@@ -443,6 +570,8 @@ def main() -> int:
                 256 <= args.max_tokens <= 4096 and
                 0 <= args.seed <= 2_147_483_647):
             raise ExperimentRejected("invalid-bounds")
+        if args.fail_on_validation_regression and not args.train:
+            raise ExperimentRejected("validation-regression-gate-requires-train")
         if args.train:
             if not (args.approve_rights and args.approve_checkpoint and
                     args.base_dir and args.base_revision and args.output_dir):

@@ -1,3 +1,40 @@
+import type { SupportedLanguage } from "../languages/registry";
+
+/**
+ * Use only an explicit model-provided fence label to detect an obvious
+ * language mismatch; unlabeled and unrecognized custom labels are allowed.
+ */
+const fenceLanguages: Readonly<Record<string, SupportedLanguage | "other">> = {
+  py: "python", python: "python", python3: "python",
+  js: "javascript", javascript: "javascript", jsx: "javascript",
+  ts: "typescript", typescript: "typescript", tsx: "typescript",
+  rs: "rust", rust: "rust", c: "c", cpp: "cpp",
+  "c++": "cpp", cxx: "cpp", cc: "cpp",
+  go: "go", golang: "go", java: "java",
+  kt: "kotlin", kotlin: "kotlin", html: "html", css: "css", lua: "lua",
+  cuda: "cuda-cpp", "cuda-cpp": "cuda-cpp", cu: "cuda-cpp",
+  ruby: "other", php: "other", swift: "other", bash: "other",
+  sh: "other", shell: "other", powershell: "other",
+  sql: "other", json: "other", yaml: "other", yml: "other",
+  markdown: "other", md: "other"
+};
+
+/** Only directionally safe compatibility is allowed across known languages. */
+export function isCompatibleFencedLanguage(
+  label: string | undefined, activeLanguage?: SupportedLanguage
+): boolean {
+  if (!label || !activeLanguage) return true;
+  // Ignore inherited Object keys such as constructor or toString.
+  const key = label.toLowerCase();
+  const declared = Object.prototype.hasOwnProperty.call(fenceLanguages, key)
+    ? fenceLanguages[key] : undefined;
+  if (!declared) return true;
+  if (declared === activeLanguage) return true;
+  return (activeLanguage === "typescript" && declared === "javascript") ||
+    (activeLanguage === "cpp" && declared === "c") ||
+    (activeLanguage === "cuda-cpp" && (declared === "cpp" || declared === "c"));
+}
+
 /**
  * Reject unsafe/invisible control characters in model-generated ghost text
  * rather than silently deleting bytes and accidentally changing source code.
@@ -70,22 +107,53 @@ function isConfidentPrefixEcho(value: string, echo: string): boolean {
   return hasCompleteEchoBoundary(value, echo.length);
 }
 
+/**
+ * Some local models nest chat and FIM envelopes in either order. Unwrap only
+ * recognized boundary markers and the existing fixed preamble; never search
+ * inside generated code literals. Excessively nested envelopes fail closed
+ * instead of leaking control tokens into an editor insertion.
+ */
+function unwrapModelBoundaries(raw: string): string | undefined {
+  let value = raw;
+  for (let pass = 0; pass < 16; pass++) {
+    const next = value
+      .replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "")
+      .replace(/^<\|im_start\|>assistant[^\n]*\n/, "")
+      .replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "")
+      .replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>\s*)+$/, "");
+    if (next === value) return value;
+    value = next;
+  }
+  return undefined;
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
-export function cleanCompletion(raw: string, prefix: string, suffix: string, multiLine: boolean, maxLines = 8): string {
+export function cleanCompletion(
+  raw: string, prefix: string, suffix: string, multiLine: boolean,
+  maxLines = 8, activeLanguage?: SupportedLanguage
+): string {
   // Even a loopback model can return malformed or direction-spoofing text.
   // Never "repair" such output into different executable source.
   if (containsUnsafeUnicode(raw)) return "";
   // Normalise line endings without trimming meaningful leading Python indentation.
   let value = raw.replace(/\r\n?/g, "\n");
-  // Remove boundary-only control tokens without touching tokens inside code literals.
-  value = value.replace(/^(?:<\|(?:fim_prefix|fim_middle)\|>)+/, "");
-  value = value.replace(/(?:<\|(?:fim_suffix|endoftext|im_end)\|>)+\s*$/, "");
-  value = value.replace(/^<\|im_start\|>assistant[^\n]*\n/, "");
+  // Unwrap mixed local-model envelopes before checking a declared fence
+  // language. Do not strip arbitrary prose or modify embedded code literals.
+  const unwrapped = unwrapModelBoundaries(value);
+  if (unwrapped === undefined) return "";
+  value = unwrapped;
+  // A clearly wrong-language fenced response should not become editor ghost text.
+  // Also inspect incomplete fences (where the closing marker was truncated).
+  const fenceHeader = /^\s*```([a-zA-Z0-9+#_-]+)?[^\n]*\n/.exec(value);
+  if (fenceHeader && !isCompatibleFencedLanguage(fenceHeader[1], activeLanguage)) return "";
+  // A different, unrecognized one-line introduction followed immediately
+  // by a fence is not code. Reject it instead of accidentally inserting prose
+  // or bypassing the fence language check; do not guess how to rewrite it.
+  if (!fenceHeader && /^[^\n]{1,160}\n[ \t]*```[a-zA-Z0-9+#_-]*[^\n]*\n/u.test(value)) return "";
   // Prefer the first fenced code block, dropping explanations that follow it.
   const fenced = /^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
   if (fenced) value = fenced[1];
   else value = value.replace(/^\s*```(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
-  value = value.replace(/^(?:Here(?:'s| is) (?:the )?code:?|Completion:?)\s*\n/i, "");
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
   const tail = prefix.slice(-160);

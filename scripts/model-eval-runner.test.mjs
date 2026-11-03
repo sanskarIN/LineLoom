@@ -176,6 +176,31 @@ test("does not report a completed benchmark if Ollama stalls after done", async 
   assert.ok(!JSON.stringify(result).includes(fixture.expected));
 });
 
+test("timeout remains a source-free failure if stream cancel never resolves", async () => {
+  let cancelInvocations = 0;
+  const body = new ReadableStream({
+    start(controller) { controller.enqueue(encoder.encode(frame("PRIVATE_RESULT", true))); },
+    cancel() {
+      cancelInvocations++;
+      return new Promise(() => {});
+    }
+  });
+  let watchdog;
+  try {
+    const outcome = await Promise.race([
+      run(async () => ({ status: 200, redirected: false, body }), { timeoutMs: 10 }),
+      new Promise(resolve => { watchdog = setTimeout(() => resolve({ hung: true }), 750); })
+    ]);
+    assert.equal(outcome.hung, undefined);
+    assert.equal(outcome.ok, false);
+    assert.equal(outcome.exact, false);
+    assert.ok(!JSON.stringify(outcome).includes("PRIVATE_RESULT"));
+    assert.equal(cancelInvocations, 1);
+  } finally {
+    clearTimeout(watchdog);
+  }
+});
+
 test("rejects post-terminal private server data on an additional transport chunk", async () => {
   const result = await run(async () => ({
     status: 200, redirected: false,

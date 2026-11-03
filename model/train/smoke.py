@@ -30,6 +30,7 @@ except ImportError:
 try:
     from .smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
+        prompt_token_summary, fingerprint_prompt_token_ids,
         classify_generation_termination,
         checked_runtime_profile
     )
@@ -39,9 +40,11 @@ try:
     )
     from .generated_syntax import classify_generated_syntax, generated_syntax_summary
     from .typescript_syntax import classify_typescript_syntax
+    from .native_syntax import classify_native_syntax
 except ImportError:
     from smoke_report import (
         fingerprints, read_public_fixtures, generation_latency_summary,
+        prompt_token_summary, fingerprint_prompt_token_ids,
         classify_generation_termination,
         checked_runtime_profile
     )
@@ -51,6 +54,7 @@ except ImportError:
     )
     from generated_syntax import classify_generated_syntax, generated_syntax_summary
     from typescript_syntax import classify_typescript_syntax
+    from native_syntax import classify_native_syntax
 
 
 def select_public_fixtures(language: str) -> list[dict]:
@@ -59,15 +63,42 @@ def select_public_fixtures(language: str) -> list[dict]:
 
 
 def normalize_completion(response: str) -> str:
-    """Compare only a hypothetical FIM insertion, never surrounding source.
+    """Normalize line endings, but never remove marker-like source text.
 
-    The public synthetic exact-string score is not compile correctness:
-    a valid alternative implementation can still fail strict matching.
+    A decoded literal containing '<|endoftext|>' is not proof that the
+    tokenizer emitted an actual EOS token. Only the generated token IDs
+    can establish that. Strict matching remains descriptive, not correctness.
     """
-    normalized = response.replace("\r\n", "\n").replace("\r", "\n")
-    for marker in ("<|fim_suffix|>", "<|endoftext|>", "<|im_end|>"):
-        normalized = normalized.split(marker, 1)[0]
-    return normalized
+    if type(response) is not str:
+        raise ExperimentRejected("invalid-decoded-completion")
+    return response.replace("\r\n", "\n").replace("\r", "\n")
+
+
+def decode_generated_insertion(tokenizer, generated_ids: list[int],
+                               stop_ids: list[int], termination: str) -> str:
+    """Remove only the terminal stop *token ID*, never text that resembles it.
+
+    classify_generation_termination must validate the token sequence first;
+    repeat key checks here so direct calls cannot silently drop real source.
+    No raw tokens, code or decoder exceptions are included in error output.
+    """
+    if (type(termination) is not str or
+            termination not in ("stop-token", "token-limit") or
+            type(generated_ids) is not list or not generated_ids or
+            type(stop_ids) is not list or not stop_ids or
+            any(type(token) is not int or token < 0
+                for token in (*generated_ids, *stop_ids)) or
+            any(token in stop_ids for token in generated_ids[:-1]) or
+            (generated_ids[-1] in stop_ids) != (termination == "stop-token")):
+        raise ExperimentRejected("invalid-generated-decoding-boundary")
+    # The stop token is part of measured generation length but never part
+    # of an insertion accepted in the editor or compared to a reference.
+    insert_ids = generated_ids[:-1] if termination == "stop-token" else generated_ids
+    try:
+        decoded = tokenizer.decode(insert_ids, skip_special_tokens=False)
+        return normalize_completion(decoded)
+    except (AttributeError, RuntimeError, TypeError, ValueError, UnicodeError):
+        raise ExperimentRejected("invalid-generated-decoding") from None
 
 
 def summarize(results: list[dict]) -> dict:
@@ -113,6 +144,9 @@ def verify_smoke_inputs_unchanged(base_dir: Path, expected_identity: dict,
 
 def run_local(fixture_set: list[dict], args) -> dict:
     """Only local model files; optional PEFT adapter is never uploaded/merged."""
+    native_syntax = getattr(args, "native_syntax", False)
+    if native_syntax and getattr(args, "approve_local_compilers", False) is not True:
+        raise ExperimentRejected("native-compiler-approval-required")
     # Fail closed before importing ML frameworks or loading any weights:
     # merely having adapter.safetensors is insufficient for comparison.
     if args.adapter_dir:
@@ -206,18 +240,25 @@ def run_local(fixture_set: list[dict], args) -> dict:
             )
             # Raw completion remains in memory only; no IDs/code/special
             # model errors written into the console or an artifact.
-            completion = tokenizer.decode(tokens, skip_special_tokens=False)
-            insertion = normalize_completion(completion)
+            insertion = decode_generated_insertion(
+                tokenizer, tokens, stop_ids, reason
+            )
             exact = insertion == fixture["expected"]
-            # Standard-library AST only: does not import or execute the
-            # generated program; non-Python languages are explicitly unchecked.
+            # Grammar checks never execute generated programs. Native source
+            # is compiled in a disposable directory ONLY on explicit opt-in.
+            native_parser = (lambda selected, middle: classify_native_syntax(
+                selected, middle, approved=True
+            )) if native_syntax else None
             syntax_outcome = classify_generated_syntax(
-                fixture, insertion, parse_typescript=classify_typescript_syntax
+                fixture, insertion, parse_typescript=classify_typescript_syntax,
+                parse_native=native_parser
             )
             result.append({"language": fixture["language"], "exact": exact,
                            "syntaxOutcome": syntax_outcome,
                            "generationMs": generation_ms,
                            "generationTokens": len(tokens),
+                           "promptTokens": len(prompt_ids),
+                           "promptIdsSha256": fingerprint_prompt_token_ids(prompt_ids),
                            "terminationReason": reason})
     verify_smoke_inputs_unchanged(
         base_dir, base_identity,
@@ -242,12 +283,14 @@ def run_local(fixture_set: list[dict], args) -> dict:
         "runtimeProfile": runtime_profile,
         "maxNewTokens": args.max_new_tokens,
         **summarize(result),
-        **generated_syntax_summary(result),
+        **generated_syntax_summary(result, native_compilers=native_syntax),
+        **prompt_token_summary(result),
         **generation_latency_summary(result, args.max_new_tokens),
-        "limitation": ("Strict synthetic equality and Python/TypeScript parser-only grammar; "
-                       "C, C++ and Rust generated code remains unchecked. "
-                       "No generated code execution, type correctness, "
-                       "compiler, human, editor or deployment QA.")
+        "limitation": ("Strict synthetic equality and limited grammar checks; "
+                       "native syntax is only checked with separately approved "
+                       "local compilers, otherwise Rust/C/C++ remain unchecked. "
+                       "No generated program execution, isolated security sandbox, "
+                       "semantic correctness, human/editor or deployment QA.")
     }
 
 
@@ -263,6 +306,10 @@ def parser() -> argparse.ArgumentParser:
     cli.add_argument("--adapter-dir", help="Optional directory holding an independently trained local LoRA adapter")
     cli.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
     cli.add_argument("--max-new-tokens", type=int, default=64)
+    cli.add_argument("--native-syntax", action="store_true",
+                     help="Opt in to local Rust/C/C++ compiler checks of generated synthetic code")
+    cli.add_argument("--approve-local-compilers", action="store_true",
+                     help="Explicitly approve compiler subprocesses; not a security sandbox")
     return cli
 
 
@@ -271,6 +318,8 @@ def main() -> int:
     try:
         if not 1 <= args.max_new_tokens <= 128:
             raise ExperimentRejected("invalid-token-cap")
+        if args.native_syntax and not (args.run and args.approve_local_compilers):
+            raise ExperimentRejected("native-compiler-approval-required")
         fixtures = select_public_fixtures(args.language)
         if not args.run:
             print(json.dumps({

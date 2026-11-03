@@ -337,5 +337,258 @@ class LocalGateTests(unittest.TestCase):
             (path / "tokenizer.json").write_text("{}", encoding="utf-8")
             self.assertEqual(finetune.validate_local_checkpoint(path), path.resolve())
 
+
+class StrictGradientClippingTests(unittest.TestCase):
+    def test_clips_with_strict_nonfinite_check_before_optimizer_update(self):
+        seen = []
+        weights = [object(), object()]
+
+        def simulated_clip(parameters, *, max_norm, error_if_nonfinite):
+            seen.append((parameters, max_norm, error_if_nonfinite))
+            return 1.25
+
+        self.assertEqual(finetune.clip_gradients_safely(simulated_clip, weights), 1.25)
+        self.assertEqual(seen, [(weights, 1.0, True)])
+
+    def test_nonfinite_negative_and_bad_norms_fail_closed(self):
+        for invalid in (float("nan"), float("inf"), -float("inf"), -1.0, "bad", None):
+            with self.subTest(invalid=str(invalid)):
+                with self.assertRaises(finetune.ExperimentRejected):
+                    finetune.clip_gradients_safely(
+                        lambda *args, **kwargs: invalid, ["synthetic-parameter"])
+
+    def test_backend_errors_are_sanitized_not_forwarded(self):
+        for issue in (RuntimeError("PRIVATE_SOURCE_TEXT"),
+                      ValueError("PRIVATE_SOURCE_TEXT"),
+                      OverflowError("PRIVATE_SOURCE_TEXT"),
+                      TypeError("PRIVATE_SOURCE_TEXT")):
+            def fail(*args, **kwargs):
+                raise issue
+            with self.subTest(type=type(issue).__name__):
+                with self.assertRaises(finetune.ExperimentRejected) as caught:
+                    finetune.clip_gradients_safely(fail, ["synthetic-parameter"])
+                self.assertNotIn("PRIVATE_SOURCE_TEXT", str(caught.exception))
+
+    def test_zero_gradient_norm_is_finite_but_not_reported(self):
+        self.assertEqual(finetune.clip_gradients_safely(
+            lambda *args, **kwargs: 0.0, []), 0.0)
+
+class FiniteLoraWeightTests(unittest.TestCase):
+    class FiniteMask:
+        def __init__(self, verdict):
+            self.verdict = verdict
+
+        def all(self):
+            return self
+
+        def item(self):
+            return self.verdict
+
+    def test_accepts_all_finite_updated_weights(self):
+        observed = []
+        parameters = ["synthetic-q-weight", "synthetic-v-weight"]
+
+        def isfinite(parameter):
+            observed.append(parameter)
+            return self.FiniteMask(True)
+
+        self.assertIsNone(finetune.verify_finite_lora_weights(parameters, isfinite))
+        self.assertEqual(observed, parameters)
+
+    def test_rejects_one_corrupted_weight_and_invalid_mask(self):
+        for value in (False, None, 1, "true"):
+            with self.subTest(verdict=repr(value)):
+                observed = []
+
+                def isfinite(parameter):
+                    observed.append(parameter)
+                    return self.FiniteMask(True if parameter == "q" else value)
+
+                with self.assertRaises(finetune.ExperimentRejected):
+                    finetune.verify_finite_lora_weights(["q", "v", "later"], isfinite)
+                self.assertEqual(observed, ["q", "v"])
+
+    def test_rejects_empty_trainable_parameter_list(self):
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.verify_finite_lora_weights([], lambda _: self.FiniteMask(True))
+
+    def test_backend_failures_do_not_expose_tensor_or_source_details(self):
+        for error in (RuntimeError("PRIVATE_SOURCE_TEXT"),
+                      ValueError("PRIVATE_SOURCE_TEXT"),
+                      TypeError("PRIVATE_SOURCE_TEXT"),
+                      OverflowError("PRIVATE_SOURCE_TEXT"),
+                      AttributeError("PRIVATE_SOURCE_TEXT")):
+            def broken(_):
+                raise error
+            with self.subTest(error=type(error).__name__):
+                with self.assertRaises(finetune.ExperimentRejected) as caught:
+                    finetune.verify_finite_lora_weights(["fake"], broken)
+                self.assertNotIn("PRIVATE_SOURCE_TEXT", str(caught.exception))
+
+    def test_checks_after_optimizer_step_and_before_adapter_creation(self):
+        source = Path(finetune.__file__).read_text(encoding="utf-8")
+        body = source[source.index("def train("):source.index("def parser(")]
+        self.assertLess(body.index("optimizer.step()"),
+                        body.index("verify_finite_lora_weights(parameters, torch.isfinite)"))
+        self.assertEqual(body.count("verify_finite_lora_weights(parameters, torch.isfinite)"), 2)
+        self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
+                        body.index("output_dir.mkdir("))
+        self.assertLess(body.rindex("verify_finite_lora_weights(parameters, torch.isfinite)"),
+                        body.index("\n    model.save_pretrained("))
+
+
+class FiniteOptimizerStateTests(unittest.TestCase):
+    class FakeTensor:
+        def __init__(self, verdict):
+            self.verdict = verdict
+
+        def all(self):
+            return self
+
+        def item(self):
+            return self.verdict
+
+    @staticmethod
+    def is_tensor(value):
+        return isinstance(value, FiniteOptimizerStateTests.FakeTensor)
+
+    @staticmethod
+    def isfinite(value):
+        return value
+
+    @classmethod
+    def state(cls, **changes):
+        values = {
+            "step": cls.FakeTensor(True),
+            "exp_avg": cls.FakeTensor(True),
+            "exp_avg_sq": cls.FakeTensor(True),
+        }
+        values.update(changes)
+        return values
+
+    def verify(self, states):
+        return finetune.verify_finite_optimizer_state(
+            states, self.is_tensor, self.isfinite
+        )
+
+    def test_accepts_finite_adamw_states_and_optional_amsgrad_momentum(self):
+        self.assertIsNone(self.verify([
+            self.state(), self.state(step=2),
+            self.state(max_exp_avg_sq=self.FakeTensor(True))
+        ]))
+
+    def test_rejects_nonfinite_moments_and_step_before_next_update(self):
+        for name in ("step", "exp_avg", "exp_avg_sq", "max_exp_avg_sq"):
+            for verdict in (False, None, 1, "true"):
+                with self.subTest(name=name, verdict=repr(verdict)):
+                    with self.assertRaises(finetune.ExperimentRejected) as caught:
+                        self.verify([self.state(**{name: self.FakeTensor(verdict)})])
+                    self.assertEqual(str(caught.exception), "nonfinite-adamw-state")
+
+    def test_rejects_empty_missing_unknown_and_wrong_type_states(self):
+        cases = (
+            [],
+            [{}],
+            [{"step": 1, "exp_avg": self.FakeTensor(True)}],
+            [self.state(untrusted=self.FakeTensor(True))],
+            [self.state(exp_avg=0)],
+            [self.state(step=0)],
+            [self.state(step=float("inf"))],
+            [self.state(step=True)],
+            ["synthetic-invalid-state"],
+        )
+        for state in cases:
+            with self.subTest(state_type=type(state).__name__):
+                with self.assertRaises(finetune.ExperimentRejected):
+                    self.verify(state)
+
+    def test_backend_failure_is_sanitized_and_cannot_log_private_tensors(self):
+        for exception in (
+            RuntimeError("PRIVATE_SOURCE_VALUE"),
+            ValueError("PRIVATE_SOURCE_VALUE"),
+            TypeError("PRIVATE_SOURCE_VALUE"),
+            AttributeError("PRIVATE_SOURCE_VALUE"),
+        ):
+            def broken(_):
+                raise exception
+            with self.subTest(error=type(exception).__name__):
+                with self.assertRaises(finetune.ExperimentRejected) as caught:
+                    finetune.verify_finite_optimizer_state(
+                        [self.state()], self.is_tensor, broken
+                    )
+                self.assertNotIn("PRIVATE_SOURCE_VALUE", str(caught.exception))
+
+    def test_optimizer_state_check_occurs_after_steps_and_before_export(self):
+        source = Path(finetune.__file__).read_text(encoding="utf-8")
+        body = source[source.index("def train("):source.index("def parser(")]
+        call = "verify_finite_optimizer_state("
+        self.assertEqual(body.count(call), 2)
+        self.assertLess(body.index("optimizer.step()"), body.index(call))
+        self.assertLess(body.rindex(call), body.index("output_dir.mkdir("))
+        self.assertLess(body.rindex(call), body.index("\n    model.save_pretrained("))
+
+
+class AdapterValidationExportGateTests(unittest.TestCase):
+    def setUp(self):
+        records = [
+            {"language": language, "split": "validation"}
+            for language in finetune.LANGUAGES
+        ]
+        self.before = finetune.validation_metrics(
+            records, [2] * 5, finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+        self.regressed = finetune.validation_metrics(
+            records, [1, 1, 1, 1, 3], finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+        self.better = finetune.validation_metrics(
+            records, [1] * 5, finetune.LANGUAGES, [1, 2, 3, 4, 5]
+        )
+
+    def test_optional_gate_blocks_one_language_regression(self):
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, self.regressed, True)
+        descriptive = finetune.validation_export_gate(
+            self.before, self.regressed, False
+        )
+        self.assertFalse(descriptive["validationRegressionExportGateEnabled"])
+        self.assertEqual(descriptive["validationNonRegressionStatus"],
+                         "REGRESSION_RECORDED")
+        self.assertEqual(descriptive["validationRegressedLanguages"],
+                         ["typescript"])
+
+    def test_opt_in_passes_good_validation_and_rejects_malformed(self):
+        ready = finetune.validation_export_gate(self.before, self.better, True)
+        self.assertTrue(ready["validationRegressionExportGateEnabled"])
+        self.assertEqual(ready["validationNonRegressionStatus"],
+                         "NO_RECORDED_REGRESSION")
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, self.better, 1)
+        with self.assertRaises(finetune.ExperimentRejected):
+            finetune.validation_export_gate(self.before, {}, True)
+
+    def test_gate_is_wired_before_any_adapter_output_write(self):
+        source = Path(finetune.__file__).read_text(encoding="utf-8")
+        start = source.index("def train(")
+        end = source.index("def parser(", start)
+        body = source[start:end]
+        self.assertLess(body.index("export_review = validation_export_gate("),
+                        body.index("output_dir.mkdir("))
+        self.assertLess(body.index("export_review = validation_export_gate("),
+                        body.index("\n    model.save_pretrained("))
+        self.assertIn("**export_review", body)
+
+    def test_plan_rejects_training_only_gate_without_model_loading(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "synthetic-dataset.json"
+            path.write_text(json.dumps(synthetic_manifest()), encoding="utf-8")
+            result = subprocess.run([
+                sys.executable, str(Path(finetune.__file__).resolve()),
+                "--manifest", str(path), "--fail-on-validation-regression"
+            ], capture_output=True, text=True, timeout=25)
+            self.assertEqual(result.returncode, 1)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn(str(path), result.stderr)
+
+
 if __name__ == "__main__":
     unittest.main()

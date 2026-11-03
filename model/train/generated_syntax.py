@@ -3,8 +3,9 @@
 Source is reconstructed only from a checked-in synthetic fixture and local
 inference result. Python ast.parse does not execute code. No generated source,
 AST, errors, temporary files or fixture IDs are ever returned.
-Rust, C, and C++ generated code remains unchecked. TypeScript uses a bounded
-local parser subprocess; neither path executes model-generated code.
+Rust, C, and C++ remain unchecked by default; explicitly approved local
+compiler checks may inspect disposable synthetic source. TypeScript uses a
+bounded local parser; no generated binary is executed.
 """
 from __future__ import annotations
 
@@ -16,12 +17,13 @@ except ImportError:
     from smoke_report import LANGUAGES, SmokeReportRejected
 
 SYNTAX_ACCOUNTING = "python-ast-typescript-parser-v1"
+NATIVE_SYNTAX_ACCOUNTING = "python-typescript-native-compiler-v2"
 MAX_SYNTHETIC_SOURCE_CHARS = 8192
 
 
 def classify_generated_syntax(fixture: dict, insertion: str,
-                              *, parse_typescript=None) -> str:
-    """Return Python/TypeScript grammar result; other languages unchecked.
+                              *, parse_typescript=None, parse_native=None) -> str:
+    """Return grammar result; native languages require an opt-in parser.
 
     Only the original public synthetic source may be supplied by the
     optional local runner. This pure helper never executes a completion.
@@ -31,7 +33,12 @@ def classify_generated_syntax(fixture: dict, insertion: str,
             type(insertion) is not str):
         raise SmokeReportRejected("invalid-generated-syntax-input")
     if fixture["language"] in ("rust", "c", "cpp"):
-        return "unchecked"
+        if parse_native is None:
+            return "unchecked"
+        outcome = parse_native(fixture, insertion)
+        if type(outcome) is not str or outcome not in ("passed", "failed"):
+            raise SmokeReportRejected("invalid-native-parser-status")
+        return outcome
     if fixture["language"] == "typescript":
         if parse_typescript is None:
             raise SmokeReportRejected("typescript-parser-required")
@@ -51,9 +58,10 @@ def classify_generated_syntax(fixture: dict, insertion: str,
     return "passed"
 
 
-def generated_syntax_summary(results: list[dict]) -> dict:
+def generated_syntax_summary(results: list[dict], *, native_compilers: bool = False) -> dict:
     """Emit only bounded five-language counts; never content or IDs."""
-    if not isinstance(results, list) or not 1 <= len(results) <= 40:
+    if (type(native_compilers) is not bool or
+            not isinstance(results, list) or not 1 <= len(results) <= 40):
         raise SmokeReportRejected("invalid-generated-syntax-results")
     by_language = {
         language: {"attempts": 0, "checked": 0, "passed": 0,
@@ -65,10 +73,9 @@ def generated_syntax_summary(results: list[dict]) -> dict:
             raise SmokeReportRejected("invalid-generated-syntax-language")
         language = item["language"]
         status = item.get("syntaxOutcome")
-        if (language in ("python", "typescript") and
-                status not in ("passed", "failed") or
-                language not in ("python", "typescript") and
-                status != "unchecked"):
+        required = native_compilers or language in ("python", "typescript")
+        if (required and status not in ("passed", "failed") or
+                not required and status != "unchecked"):
             raise SmokeReportRejected("invalid-generated-syntax-status")
         bucket = by_language[language]
         bucket["attempts"] += 1
@@ -78,7 +85,8 @@ def generated_syntax_summary(results: list[dict]) -> dict:
             bucket["checked"] += 1
             bucket[status] += 1
     result = {
-        "syntaxAccounting": SYNTAX_ACCOUNTING,
+        "syntaxAccounting": (NATIVE_SYNTAX_ACCOUNTING if native_compilers
+                             else SYNTAX_ACCOUNTING),
         "syntaxChecked": sum(x["checked"] for x in by_language.values()),
         "syntaxPassed": sum(x["passed"] for x in by_language.values()),
         "syntaxFailed": sum(x["failed"] for x in by_language.values()),

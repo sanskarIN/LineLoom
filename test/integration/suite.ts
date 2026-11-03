@@ -25,6 +25,7 @@ export async function run(): Promise<void> {
     "lineloom.setup", "lineloom.performance",
     "lineloom.quickActions", "lineloom.toggleAutomatic", "lineloom.selectLanguageModel",
     "lineloom.cancel", "lineloom.selectRelatedFiles", "lineloom.clearRelatedFiles",
+    "lineloom.toggleFilePause", "lineloom.clearFilePauses",
     "lineloom.refreshSidebar", "lineloom.openSidebar", "lineloom.checkActiveModel"
   ];
   const commands = await vscode.commands.getCommands(true);
@@ -142,6 +143,7 @@ export async function run(): Promise<void> {
   offlineSidebar.dispose();
   let mockEmptyResponses = false;
   let mockUnsafeOutput = false;
+  let mockWrongLanguageFence: "plain" | "prefaced" | false = false;
   let mockTransientFailure = false;
   let holdGeneration = false;
   let heldGenerationStarted: (() => void) | undefined;
@@ -181,6 +183,8 @@ export async function run(): Promise<void> {
       }
       if (mockUnsafeOutput) {
         response.end(JSON.stringify({ response: "42" + String.fromCharCode(0x202e), done: true }) + "\n");
+      } else if (mockWrongLanguageFence) {
+        response.end(JSON.stringify({ response: mockWrongLanguageFence === "prefaced" ? "Here is the code:\n```python\nprint(42)\n```" : "```python\nprint(42)\n```", done: true }) + "\n");
       } else if (mockEmptyResponses) {
         response.end(JSON.stringify({ done: true }) + "\n");
       } else {
@@ -428,6 +432,23 @@ export async function run(): Promise<void> {
           triggerKind: vscode.InlineCompletionTriggerKind.Invoke,
           selectedCompletionInfo: undefined
         };
+        // User-invoked per-file pauses must block even manual suggestions,
+        // before touching the network. The other file remains eligible.
+        const pauseBaseline = generationCalls;
+        assert.equal(engine.setFilePaused(document.uri, true), true);
+        assert.equal(engine.isFilePaused(document.uri), true);
+        assert.equal(engine.isFilePaused(permitted.uri), false);
+        assert.equal(await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        ), undefined, "Manual completion must also be denied in a paused file");
+        assert.equal(generationCalls, pauseBaseline, "Paused file must not contact Ollama");
+        assert.equal(engine.setFilePaused(document.uri, false), true);
+        assert.equal(engine.isFilePaused(document.uri), false);
+        // Verify the real extension commands are registered and network-free.
+        await vscode.commands.executeCommand("lineloom.toggleFilePause");
+        assert.equal(generationCalls, pauseBaseline);
+        await vscode.commands.executeCommand("lineloom.clearFilePauses");
+        assert.equal(generationCalls, pauseBaseline);
         await configuration.update("languageModels", { typescript: "lineloom-typed:latest" }, vscode.ConfigurationTarget.Global);
         const first = await engine.provideInlineCompletionItems(document, position, trigger, cancellation.token);
         assert.ok(first?.length, "Expected inline completion from the mocked model");
@@ -449,6 +470,34 @@ export async function run(): Promise<void> {
         assert.equal(second[0].command?.command, "lineloom.recordSuggestionAccepted");
         assert.equal(engine.getStats().cacheHits, 1, "Expected an exact suggestion cache hit");
 
+        // Actual editor-host path: a TypeScript editor must never offer a
+        // Python-fenced reply from the fake local model as ghost text.
+        engine.cancel();
+        // Verify both ordinary and chat-prefaced wrong-language output via
+        // the real mocked HTTP /api/generate extension-host pathway.
+        for (const variant of ["plain", "prefaced"] as const) {
+          const fencedBaseline = generationCalls;
+          mockWrongLanguageFence = variant;
+          try {
+            const wrongLanguage = await engine.provideInlineCompletionItems(
+              document, position, trigger, cancellation.token
+            );
+            assert.equal(wrongLanguage, undefined,
+              "A mismatched " + variant + " language fence must be rejected before insertion");
+            assert.equal(generationCalls, fencedBaseline + 1,
+              "Must exercise a real /api/generate response, not cache reuse");
+          } finally {
+            mockWrongLanguageFence = false;
+            engine.cancel();
+          }
+        }
+        const matchingLanguage = await engine.provideInlineCompletionItems(
+          document, position, trigger, cancellation.token
+        );
+        assert.ok(matchingLanguage?.length,
+          "A rejected fenced reply must not poison future compatible completions");
+        assert.equal(matchingLanguage[0].insertText, "42");
+
         // Real editor-host privacy regression: no cross-file source enters the
         // request while the preference is disabled, even with a stored selection.
         engine.setRelatedFiles([permitted.uri]);
@@ -456,7 +505,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(disabledContext?.length);
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false,
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), false,
           "Opted-out completion must not include selected related source");
 
         // The only additional source is the user's explicit, bounded,
@@ -467,7 +516,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(selectedContext?.length, "Allowed user-selected related file should complete");
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), true,
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), true,
           "Opted-in related file must be passed as untrusted reference text");
         assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
         assert.equal(isSupportedRelatedCandidate(document.uri, permitted.uri), true);
@@ -556,7 +605,7 @@ export async function run(): Promise<void> {
           document, position, trigger, cancellation.token
         );
         assert.ok(clearedRelated?.length);
-        assert.equal(lastPromptSent.includes("Reference 1 (untrusted)"), false);
+        assert.equal(lastPromptSent.includes("Reference 1 (untrusted source lines):\n| "), false);
 
         // Inference duration diagnostics are opt-in, unlike source-free
         // request counters. Opt-out must clear measurements without disabling
@@ -762,6 +811,30 @@ export async function run(): Promise<void> {
         engine.cancel();
         assert.equal(await queuedBeforeNetwork, undefined, "Queued generation must stop before HTTP");
         assert.equal(generationCalls, callsBeforeQueuedCancel, "Stop during debounce must not contact Ollama");
+
+        // Burst typing should supersede an older queued automatic request.
+        // The rejected request must settle without triggering Ollama, while
+        // the latest request still passes through every ordinary privacy gate.
+        engine.cancel();
+        const callsBeforeBurst = generationCalls;
+        const automaticBurst = {
+          triggerKind: vscode.InlineCompletionTriggerKind.Automatic,
+          selectedCompletionInfo: undefined
+        };
+        const staleBurst = engine.provideInlineCompletionItems(
+          document, position, automaticBurst, cancellation.token
+        );
+        const newestBurst = engine.provideInlineCompletionItems(
+          document, position, automaticBurst, cancellation.token
+        );
+        assert.equal(await staleBurst, undefined,
+          "Superseded queued request must settle without a suggestion");
+        const newestResult = await newestBurst;
+        assert.ok(newestResult?.length,
+          "The newest automatic request must still complete after debounce");
+        assert.equal(generationCalls, callsBeforeBurst + 1,
+          "Only the latest eligible automatic request should contact Ollama");
+        engine.cancel();
         await configuration.update("debounceMs", 0, vscode.ConfigurationTarget.Global);
 
         // Explicit cancellation must abort an in-flight model request, reject
@@ -952,7 +1025,7 @@ export async function run(): Promise<void> {
         assert.equal(generic?.[0]?.insertText, "42");
         assert.equal(lastSuffixSent, undefined,
           "Unrecognized models must never receive an assumed FIM suffix");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Generic models must retain the bounded instruction prompt");
         await configuration.update("model", "lineloom-test:latest", vscode.ConfigurationTarget.Global);
         engine.cancel();
@@ -979,7 +1052,7 @@ export async function run(): Promise<void> {
         assert.ok(lastPromptSent.includes("Rust match arms:"), "Rust match guidance must be present");
         assert.ok(lastPromptSent.includes("Rust Result/Option:"),
           "Rust Result/Option guidance must be present");
-        assert.ok(lastPromptSent.includes("Code after cursor (untrusted):"),
+        assert.ok(lastPromptSent.includes("Code after cursor (untrusted source lines):"),
           "Rust suffix must remain visible as untrusted context");
         await configuration.update("model", "lineloom-code:dev", vscode.ConfigurationTarget.Global);
         engine.cancel();

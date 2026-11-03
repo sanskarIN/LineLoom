@@ -2,15 +2,13 @@ name: Deploy LineLoom GitHub Pages
 on:
   push:
     branches: [main]
-    paths:
-      - "site/**"
-      - ".github/workflows/pages.yml"
+    # Publish verified current site on each main push, keeping deployment history.
   workflow_dispatch:
 permissions:
   contents: read
 concurrency:
   group: lineloom-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 jobs:
   build:
     name: Verify and upload static website

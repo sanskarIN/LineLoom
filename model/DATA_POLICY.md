@@ -134,3 +134,23 @@ and opt-out declarations are still user-entered claims requiring independent
 verification. This audit is a fail-closed local heuristic, not a legal
 approval, a complete plagiarism detector, a proof of no contamination or
 authorization to export training data.
+
+### Held-out target-only contamination screening (unreleased source)
+
+A FIM training example has three parts: prefix, **supervised middle**, and
+suffix. The dataset preflight now additionally rejects matching long,
+informative middle spans across train/validation/test repository groups, even
+when the surrounding context differs substantially. It also screens long
+supervised middles against the original public synthetic evaluation targets.
+The detector requires at least 64 normalized characters and eight lexical
+tokens; for near matches it additionally requires at least 96 characters
+and high character-shingle overlap. Short conventional code such as a simple
+return expression is **not** treated as conclusive evidence of copied training
+data. Whole-example, rights, opt-out and repository-family checks still apply.
+
+This deliberately conservative bounded heuristic is neither exhaustive nor
+proof of independent samples. A long shared idiom may cause a false positive;
+substantially edited or short contaminated answers may still escape. These
+cases require human review and separately permissioned holdouts. The audit
+never exports source text, training records or filenames. No GPU training or
+model publication is performed by this change.

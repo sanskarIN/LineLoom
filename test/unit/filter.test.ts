@@ -172,7 +172,141 @@ describe("completion filtering", () => {
     expect(cleanCompletion("let x = 1;<|endoftext|>", "", "", true)).toBe("let x = 1;");
     expect(cleanCompletion("<|im_start|>assistant\n42<|im_end|>", "", "", true)).toBe("42");
   });
+  it("unwraps interleaved chat and FIM markers without suggesting model tokens", () => {
+    const wrapped = [
+      "<|im_start|>assistant\n<|fim_middle|>return x;<|fim_suffix|><|im_end|>",
+      "<|fim_middle|><|im_start|>assistant\nreturn x;<|im_end|><|fim_suffix|>",
+      "Completion:\n<|fim_middle|>return x;<|endoftext|>",
+      "Here's the code:\n<|im_start|>assistant\n<|fim_middle|>return x;<|im_end|> \n<|fim_suffix|>"
+    ];
+    for (const raw of wrapped) {
+      expect(cleanCompletion(raw, "", "", true), raw).toBe("return x;");
+    }
+  });
+
+  it("validates fenced languages after nested envelopes and preserves code literals", () => {
+    const fence = String.fromCharCode(96).repeat(3);
+    const wrapped = "<|im_start|>assistant\n<|fim_middle|>" +
+      fence + "python\nprint(1)\n" + fence + "<|fim_suffix|><|im_end|>";
+    expect(cleanCompletion(wrapped, "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion(wrapped, "", "", true, 8, "python")).toBe("print(1)");
+    const literal = 'const m = "<|fim_middle|><|im_end|>";';
+    expect(cleanCompletion(literal, "", "", true)).toBe(literal);
+  });
+
+  it("rejects excessive nested model envelopes rather than inserting leftover markers", () => {
+    const nested = "<|im_start|>assistant\n".repeat(20) + "return x;";
+    expect(cleanCompletion(nested, "", "", true)).toBe("");
+  });
+
   it("does not rewrite control-token text inside an ordinary code string", () =>
     expect(cleanCompletion('const s = "<|fim_middle|>";', "", "", true)).toBe('const s = "<|fim_middle|>";'));
 
+});
+
+
+describe("active-language fenced completion filtering", () => {
+  it("rejects clearly mismatched fenced model responses", () => {
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("```typescript\nconst x: number = 1;\n```", "", "", true, 8, "python")).toBe("");
+    expect(cleanCompletion("```rust\nlet x = 3;\n```", "", "", true, 8, "cpp")).toBe("");
+    expect(cleanCompletion("```bash\necho unsafe\n```", "", "", true, 8, "javascript")).toBe("");
+    expect(cleanCompletion("```json\n{\"x\": 1}\n```", "", "", true, 8, "python")).toBe("");
+  });
+
+  it("accepts recognized aliases for Python, Rust, TSX, C++, Go", () => {
+    expect(cleanCompletion("```py\nprint(2)\n```", "", "", true, 8, "python")).toBe("print(2)");
+    expect(cleanCompletion("```rs\nlet answer = 3;\n```", "", "", true, 8, "rust")).toBe("let answer = 3;");
+    expect(cleanCompletion("```tsx\nconst V = () => <span />;\n```", "", "", true, 8, "typescript"))
+      .toBe("const V = () => <span />;");
+    expect(cleanCompletion("```c++\nstd::string name;\n```", "", "", true, 8, "cpp"))
+      .toBe("std::string name;");
+    expect(cleanCompletion("```golang\nfmt.Println(3)\n```", "", "", true, 8, "go"))
+      .toBe("fmt.Println(3)");
+  });
+
+  it("permits JS in TypeScript and C in C++, but not reverse assumptions", () => {
+    expect(cleanCompletion("```javascript\nconst x = 1;\n```", "", "", true, 8, "typescript"))
+      .toBe("const x = 1;");
+    expect(cleanCompletion("```c\nint x = 1;\n```", "", "", true, 8, "cpp"))
+      .toBe("int x = 1;");
+    expect(cleanCompletion("```typescript\nconst x: number = 1;\n```", "", "", true, 8, "javascript"))
+      .toBe("");
+    expect(cleanCompletion("```cpp\nstd::string x;\n```", "", "", true, 8, "c")).toBe("");
+  });
+
+  it("accepts CUDA fences only in CUDA mode with safe C++/C fallbacks", () => {
+    const code = "__global__ void kernel() {}";
+    for (const label of ["cuda", "cuda-cpp", "cu"]) {
+      expect(cleanCompletion("```" + label + "\n" + code + "\n```", "", "", true, 8, "cuda-cpp"))
+        .toBe(code);
+      expect(cleanCompletion("```" + label + "\n" + code + "\n```", "", "", true, 8, "cpp"))
+        .toBe("");
+    }
+    expect(cleanCompletion("```cpp\nint value = 3;\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("int value = 3;");
+    expect(cleanCompletion("```c\nint value = 3;\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("int value = 3;");
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true, 8, "cuda-cpp"))
+      .toBe("");
+    expect(cleanCompletion("```cu\n" + code, "", "", true, 8, "cuda-cpp"))
+      .toBe(code);
+  });
+
+  it("preserves plain code, unlabeled fences, unknown custom labels and legacy calls", () => {
+    const code = "const x = 1;";
+    expect(cleanCompletion(code, "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```mydsl\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```constructor\nconst x = 1;\n```", "", "", true, 8, "typescript")).toBe(code);
+    expect(cleanCompletion("```python\nprint(1)\n```", "", "", true)).toBe("print(1)");
+  });
+
+  it("checks the language of a fenced response even after a known chat introduction", () => {
+    const introductions = ["Here's the code:", "Here is the code:", "Here is code:", "Completion:"];
+    for (const intro of introductions) {
+      const wrong = intro + "\n```python\nprint(1)\n```";
+      expect(cleanCompletion(wrong, "", "", true, 8, "typescript"), intro).toBe("");
+      const allowed = intro + "\n```typescript\nconst x = 1;\n```";
+      expect(cleanCompletion(allowed, "", "", true, 8, "typescript"), intro).toBe("const x = 1;");
+    }
+    // CRLF and boundary control tokens are normalized before the same validation.
+    expect(cleanCompletion("<|im_start|>assistant\r\nHere is the code:\r\n```python\r\nprint(1)\r\n```<|im_end|>",
+      "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("<|im_start|>assistant\r\nHere is the code:\r\n```typescript\r\nconst x = 1;\r\n```<|im_end|>",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+  });
+
+  it("rejects unrecognized single-line prose before a code fence rather than inserting markdown", () => {
+    for (const before of ["Try this:", "## Suggested implementation", "A quick answer:"]) {
+      expect(cleanCompletion(before + "\n```python\nprint(1)\n```",
+        "", "", true, 8, "typescript")).toBe("");
+      expect(cleanCompletion(before + "\n```typescript\nconst x = 1;\n```",
+        "", "", true, 8, "typescript")).toBe("");
+    }
+  });
+
+  it("preserves ordinary code, string literals and source-exact single fences", () => {
+    const source = "const message = \"Here is the code:\";";
+    expect(cleanCompletion(source, "", "", true, 8, "typescript")).toBe(source);
+    expect(cleanCompletion("```typescript\nlet result = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("let result = 1;");
+    expect(cleanCompletion("Here is the code:\n```mydsl\nconst custom = 1;\n```",
+      "", "", true, 8, "typescript")).toBe("const custom = 1;");
+    expect(cleanCompletion("Here is the code:\n```python\nprint(1)",
+      "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("Here is the code:\n```typescript\nconst x = 1;",
+      "", "", true, 8, "typescript")).toBe("const x = 1;");
+  });
+
+  it("also checks a truncated fence header while allowing compatible partial code", () => {
+    expect(cleanCompletion("```python\nprint(1)", "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion("```typescript\nconst ok = 1;", "", "", true, 8, "typescript"))
+      .toBe("const ok = 1;");
+  });
+
+  it("does not misread a code-string containing fence markers as a fence", () => {
+    const text = 'const example = "```python";';
+    expect(cleanCompletion(text, "", "", true, 8, "typescript")).toBe(text);
+  });
 });

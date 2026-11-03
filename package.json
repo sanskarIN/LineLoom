@@ -1,7 +1,7 @@
 {
   "name": "lineloom",
   "displayName": "LineLoom",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "publisher": "SanskarCodes",
   "description": "Privacy-first, open-source AI code autocomplete for VS Code, powered by local models.",
   "license": "MIT",
@@ -28,7 +28,8 @@
     "cpp",
     "html",
     "css",
-    "lua"
+    "lua",
+    "cuda"
   ],
   "repository": {
     "type": "git",
@@ -73,6 +74,16 @@
       {
         "command": "lineloom.toggleAutomatic",
         "title": "Pause or Resume Automatic Suggestions",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.toggleFilePause",
+        "title": "Pause or Resume Suggestions for This File",
+        "category": "LineLoom"
+      },
+      {
+        "command": "lineloom.clearFilePauses",
+        "title": "Resume All Session-Paused Files",
         "category": "LineLoom"
       },
       {
@@ -191,7 +202,8 @@
               "cpp",
               "html",
               "css",
-              "lua"
+              "lua",
+              "cuda-cpp"
             ]
           },
           "default": [
@@ -206,7 +218,7 @@
             "cpp"
           ],
           "uniqueItems": true,
-          "description": "Language IDs permitted for inline suggestions. HTML, CSS, and Lua are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
+          "description": "Language IDs permitted for inline suggestions. HTML, CSS, Lua, and CUDA C++ are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
         },
         "lineloom.autoTrigger": {
           "type": "boolean",
@@ -315,7 +327,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional installed Ollama model tags for each supported language ID. HTML, CSS, and Lua remain disabled until explicitly added to lineloom.enabledLanguages. Unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. No model downloads are performed."
+          "description": "Optional installed Ollama model tags for each supported language ID. HTML, CSS, Lua, and CUDA C++ remain disabled until explicitly added to lineloom.enabledLanguages. Unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. No model downloads are performed."
         }
       }
     },
@@ -355,7 +367,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run test:publisher-packaging && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -381,7 +393,9 @@
     "model:adapter:verify": "python model/train/verify_adapter.py",
     "model:smoke:compare": "python model/train/compare_smoke.py",
     "model:reference:syntax": "python model/train/audit_reference_syntax.py",
-    "test:model-training": "python -m unittest discover -s model/train -p test_*.py"
+    "test:model-training": "python -m unittest discover -s model/train -p test_*.py",
+    "package:publisher-preview": "node scripts/package-publisher.mjs",
+    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs"
   },
   "dependencies": {
     "ignore": "^7.0.13"
@@ -396,7 +410,7 @@
     "eslint": "^10.13.0",
     "prettier": "^3.5.0",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.72.0",
+    "typescript-eslint": "^8.72.1",
     "vitest": "^5.0.5"
   },
   "icon": "assets/icons/lineloom.png",

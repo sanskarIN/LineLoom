@@ -34,7 +34,9 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
     private readonly getRelatedFileCount: () => number = () => 0,
     private readonly getModelReadiness: () => ModelReadiness = () => "not-checked",
     private readonly getFilePrivacy: () => ManualFilePrivacy = () => "not-checked",
-    private readonly getActiveModelReadiness: () => ModelReadiness = () => "not-checked"
+    private readonly getActiveModelReadiness: () => ModelReadiness = () => "not-checked",
+    private readonly getActiveFilePaused: () => boolean = () => false,
+    private readonly getPausedFileCount: () => number = () => 0
   ) {}
 
   refresh(): void { this.changes.fire(undefined); }
@@ -84,6 +86,9 @@ export class LineLoomSidebar implements vscode.TreeDataProvider<SidebarNode>, vs
       activeModelReadiness: this.getActiveModelReadiness(),
       crossFileContextEnabled: config.crossFileContext,
       relatedFileCount: this.getRelatedFileCount(),
+      activeLocalFile: vscode.window.activeTextEditor?.document.uri.scheme === "file",
+      activeFilePaused: this.getActiveFilePaused(),
+      pausedFileCount: this.getPausedFileCount(),
       averageLatencyMs: config.performanceDiagnostics && stats?.measuredRequests
         ? stats.totalLatencyMs / stats.measuredRequests : undefined,
       recentLatencySamples: config.performanceDiagnostics ? stats?.recentLatencySamples : undefined,

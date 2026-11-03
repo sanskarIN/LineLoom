@@ -321,6 +321,142 @@ Python standard library. They check seeded repeatability, distribution,
 bucket coverage, rejection of validation/test contamination, nonfinite
 losses and independence from the process-global PRNG.
 
+## Optional native syntax checks of real local synthetic generations
+
+By default, the explicit `smoke.py --run` checks **generated Python AST
+and TypeScript parser syntax only**; Rust, C and C++ generated completions
+remain `unchecked`. For a separately authorized local experiment, the
+following opts in to native *compiler syntax checks* for only the original
+checked-in public Rust, C and C++ FIM fixtures (replace checkpoint details
+with the independently reviewed local files; no automatic downloads):
+
+```sh
+python model/train/smoke.py --run --approve-checkpoint \
+  --base-dir /path/to/reviewed-checkpoint --base-revision REVIEWED_40_HEX_REVISION \
+  --device cpu --language all \
+  --native-syntax --approve-local-compilers
+```
+
+The example revision is intentionally invalid until replaced. Both
+`--native-syntax` and `--approve-local-compilers` plus `--run`
+are mandatory. Nothing in default planning discovers or executes a
+compiler. Optional mode requires installed, independently reviewed
+`rustc`, `cc` and/or `c++` for selected languages, and **fails
+closed** when a required compiler is missing. Rust invokes metadata-only
+compilation; C/C++ use `-fsyntax-only`. All calls use bounded source
+(8,192 characters), fixed compiler arguments, a 12-second timeout, a
+minimal environment, discarded stdout/stderr and disposable temporary
+files. No compiled program is executed. **This is not a security sandbox
+for hostile generated source or toolchains**: syntax checking may read
+source through language features, and requires local developer consent.
+Run only with reviewed local compilers in a suitable isolated environment.
+
+Approved mode reports `syntaxAccounting:
+python-typescript-native-compiler-v2`, with all selected languages
+counted as `checked`. The default remains
+`python-ast-typescript-parser-v1`, with native languages `unchecked`.
+The offline base-vs-adapter comparator refuses to mix the modes and
+validates every count. No original source, generated code, fixture IDs,
+temporary paths or compiler diagnostics appear in the aggregate report.
+A compiler exit status checks syntax/compilability in the local
+environment; it cannot establish runtime behavior, user acceptance,
+semantics or model quality. It does not train, merge, publish or register
+model weights and does not change the extension.
+
+### Generated FIM stop-token integrity (smoke protocol v10)
+
+Previously the synthetic HF smoke runner removed any decoded text after
+`<|fim_suffix|>`, `<|endoftext|>` or `<|im_end|>`. That could
+incorrectly truncate a **real source-code string literal** containing
+marker-like text, and distort both strict-match and syntax-check results.
+The runner now removes an ending EOS/FIM-suffix token **only when the
+actual terminal token ID matches a configured stop ID**. Literal marker
+text encoded as ordinary tokens remains part of the generated insertion.
+The existing strict termination classifier rejects unexpected stop IDs
+before the end of generation. Line endings are still normalized.
+
+Because the scoring behavior and request specification changed,
+`lineloom-hf-synthetic-smoke-v10` with `greedy-fim-v3` replaces
+the previous smoke protocol and `greedy-fim-v2`. Old smoke reports
+must not be compared to new ones, even if their displayed fixture scope
+and model metadata appear identical. The independent offline comparator
+continues to use its own **comparison protocol v9**, and verifies the
+current smoke protocol and exact generation-request fingerprint.
+
+This change does **not** run inference or establish a trained model's
+quality; tests use synthetic token-ID decoders without GPU dependencies.
+Reported generated-token totals still count the actual final stop ID,
+while the code insertion used for syntax and exact matching does not.
+
+### Input prompt-token parity for latency comparison (smoke protocol v11)
+
+Local Hugging Face FIM generation time depends on **both the input prompt
+length** and the generated output length. Previously the smoke reports
+counted generated tokens only. The runner now records how many tokenizer
+IDs were passed to each approved public synthetic FIM prompt, bounded to
+1–2,048 per sample. Only allowlisted **overall and per-language sums**
+are emitted, using `inputTokenAccounting:
+tokenizer-encoded-fim-prompt-ids-v1`, `inputTokenCount`, and
+`inputTokensByLanguage`. Individual probe lengths, token IDs, generated
+source, private paths and identifiers are not reported.
+
+`lineloom-hf-synthetic-smoke-v11` replaces smoke v10; generation policy
+remains `greedy-fim-v3`. The read-only comparator now uses
+`lineloom-hf-synthetic-comparison-v10`, validates all prompt-token count
+bounds and per-language sums, and refuses to compare base and adapter
+reports unless each language has identical aggregate input-token counts.
+The report also includes `inputLengthSequenceSha256`, a digest
+of the **ordered, language-labeled prompt-token lengths** from the fixed
+public fixture sequence. No per-probe token lengths or token IDs are
+printed. The comparator requires matching digests as well as matching
+per-language sums, detecting reordered or changed prompt-token workloads
+that equal totals alone would miss.
+
+Its output includes `inputTokenParityVerified`,
+`inputLengthSequenceParityVerified`, `inputTokensPerModel`, and
+per-language `inputTokensPerModel` values. These checks establish
+**only equality of the reported input-token workloads**. A forged report
+or a different hidden backend cannot be authenticated by a matching hash;
+hardware/driver load and runtime parity remain unverified. Generated
+output lengths can still differ, and p50/p95 remain generation-only
+measurements, not editor latency or standardized tokens-per-second throughput.
+
+This change adds no network calls, model downloads, trained weights,
+automatic compiler execution or public release. Real model benchmarks
+still require independent checkpoint and dataset reviews.
+
+### Exact encoded FIM token-ID parity (smoke protocol v12)
+
+Earlier input validation required equal encoded **prompt lengths**, but two
+tokenizers can produce different token IDs with the same lengths. This
+could make a base-versus-adapter latency or quality comparison unfair
+despite a passing length check. Approved local inference now computes a
+SHA-256 fingerprint of the actual bounded token-ID sequence for each
+original checked-in public FIM fixture. Those intermediate fingerprints
+stay in memory. Only a second SHA-256 digest of the **ordered,
+language-labeled token-ID fingerprints and counts** is included in the
+source-free report as `inputTokenSequenceSha256`.
+
+The offline comparator checks the digest shape and **requires exact
+reported token-ID sequence parity** in addition to matching the previous
+input-length digest and five-language token totals. It emits
+`inputTokenSequenceParityVerified: true` only when both independently
+submitted reports contain the same digest. The current smoke protocol is
+`lineloom-hf-synthetic-smoke-v12` and the comparison protocol is
+`lineloom-hf-synthetic-comparison-v11`; the generation policy remains
+`greedy-fim-v3`. Legacy reports are rejected instead of being silently
+mixed with the new measurement contract.
+
+These fingerprints are checks of **self-reported, locally calculated
+inputs**, not cryptographic proof that a model actually received those
+IDs or that its weights, hardware, CUDA kernels, clock, process load or
+execution order matched. Cryptographic hashes are deterministic, not
+secret, and do not represent an authentication mechanism. Only fixed
+public synthetic fixtures are eligible: no private source, per-probe
+IDs or token values are written to report output. No training, checkpoint
+downloads, benchmarks with real weights, or extension releases were made
+by this change.
+
 ## Comparing local HF base-versus-adapter smoke reports (protocol v9)
 
 After **independently approved** local base and adapter runs on the same
@@ -343,7 +479,7 @@ than 32 KiB. Only one of the fixed checked-in synthetic scopes
 (`all`, `rust`, `c`, `cpp`, `python`, `typescript`) is valid.
 
 Real local `smoke.py --run` reports now include the
-`lineloom-hf-synthetic-smoke-v9` protocol, deterministic
+`lineloom-hf-synthetic-smoke-v12` protocol, deterministic
 `fixtureSetSha256`, `requestSpecSha256`, checked-in fixture scope,
 greedy generation contract, fixed local base config/tokenizer SHA-256,
 and the **user-declared** 40-character base revision. The comparator
@@ -351,6 +487,25 @@ recomputes fixture and FIM request hashes against the current checkout
 and refuses plans, legacy reports, corrupted counts, mixed base revisions,
 different settings, or comparisons without a local base report followed by
 a local adapter report.
+
+### Language regression review in offline comparisons (development)
+
+The local comparison output uses
+`lineloom-hf-synthetic-comparison-v11` and includes
+`languageRegressionReview`, plus three fixed-language-only lists:
+`strictExactRegressedLanguages` (fewer exact matches),
+`syntaxPassRegressedLanguages` (fewer Python AST/TypeScript parser passes),
+and `tokenLimitExitIncreasedLanguages` (more truncated generations).
+This makes it harder for an overall improvement to conceal a loss for
+one target language. Empty lists mean **no regression recorded in these
+limited aggregate measurements**, not that a model is better or ready to
+publish. Rust, C and C++ generated syntax is still **unchecked**.
+
+This is an offline descriptive comparison, **not** an automatic
+training/export gate, model selection rule, statistical significance test,
+compiler check or real-editor validation. It uses only previously verified
+bounded aggregate counts and fixed language labels, never code, paths,
+model responses, probe IDs or network access.
 
 The comparison output contains **allowlisted strict-match counts,
 generation-only latency p50/p95, and generated-token totals** by language
@@ -509,3 +664,89 @@ modified along with an adapter by someone who controls both files.
 They only detect accidental mismatch and basic tampering, and are NOT
 distribution approvals. Real GPU training, model correctness, independent
 quality evaluation and production readiness remain unverified.
+
+### Held-out FIM target leakage guard (source-only)
+
+The offline Node preflight now checks long informative `middle` spans across
+train/validation/test split boundaries and public original synthetic probes,
+not only prefix + middle + suffix as a whole. Changed surrounding context
+must not disguise reuse of a supervised answer. Short commonplace answers
+remain allowed because they are not reliable evidence of copying.
+This is not a guarantee that the dataset is clean; independent human rights,
+provenance, near-duplicate and red-team review remains required. Offline
+planning and training use the same fail-closed audit before records are accepted.
+
+### Strict non-finite gradient rejection (unreleased source)
+
+During an explicitly approved local LoRA experiment, the trainer now uses
+`torch.nn.utils.clip_grad_norm_(..., error_if_nonfinite=True)` and also
+checks the returned scalar before every optimizer update. A finite forward
+loss alone does not guarantee finite gradients. NaN/Infinity or an unsupported
+strict clipping backend stops the experiment **before optimizer.step** and
+before an adapter can be written. Error output stays sanitized and reveals
+no private samples, model outputs, gradient values or local paths.
+
+The new regression tests use an injected stand-in clipper and run without
+PyTorch, CUDA, network access or training data. Actual GPU training stability,
+accuracy or reproducibility remains unverified; no weights were trained.
+
+### Optional validation non-regression gate for adapter export (unreleased)
+
+A local LoRA experiment can be run with `--fail-on-validation-regression`
+**together with** `--train` and all existing explicit approval flags.
+After the final validation pass, LineLoom compares the **same declared
+validation records** against the before-training losses. If the sample-mean
+or supervised-token-weighted loss increases for *any* of Rust, C, C++,
+Python or TypeScript, or an overall/macro loss increases, it rejects the
+experiment **before creating an adapter output directory**. The comparisons
+use the existing six-decimal reporting tolerance. A missing, malformed,
+inconsistent, non-finite or mismatched validation report also fails closed.
+
+The default local training path still allows saving a private exploratory
+adapter after a detected regression, with the regression review recorded as
+numeric, source-free metadata. The optional gate records whether it was
+requested, the affected language IDs and the aggregate signal names only.
+It never logs example contents, generated code or file paths.
+
+**This is not a quality guarantee or release authorization.** Training
+and validation samples must still be independently reviewed, repository-
+isolated, and free of contamination; sample identity cannot be attested
+by the aggregate loss report. Small validation sets may fluctuate. No
+training, checkpoint download or model publication is performed by the
+repository change.
+
+### Finite LoRA parameter integrity (source-only, unreleased)
+
+An approved local LoRA training run now verifies **all trainable adapter
+parameters** with `torch.isfinite` after **each optimizer update** and again
+immediately before the adapter output directory is created. Finite training
+loss and a finite clipped gradient norm alone cannot prove that the optimizer
+produced finite updated weights. A NaN, Infinity, an invalid finiteness
+result, or an inspection error fails closed: the experiment does not export
+an adapter. Neither parameter values nor backend errors are printed.
+
+The standard-library regression tests exercise finite and corrupted
+synthetic weights, invalid checks, sanitized failures and ordering without
+importing torch or allocating model weights. Inspecting all adapter
+parameters can add synchronization and runtime overhead on a real GPU;
+**this performance cost and training stability remain unmeasured**.
+These source changes do not execute training, verify model quality,
+or authorize checkpoint/dataset use or model publication.
+
+### Finite AdamW optimizer-state integrity (source-only, unreleased)
+
+Adapter-weight checks do not detect a NaN or Infinity that exists **only in
+AdamW's internal first/second-moment buffers**. An explicitly approved
+local training experiment now verifies initialized AdamW state immediately
+after every optimizer step and again before making any adapter output
+directory. Every state record must contain the expected `step`, `exp_avg`
+and `exp_avg_sq` fields; an optional `max_exp_avg_sq` field is accepted
+for AMSGrad compatibility. Non-finite tensor values, invalid state types or
+missing state fail closed before adapter export. Error output never includes
+tensor contents, private source, paths or backend exception messages.
+
+These checks inspect optimizer-state buffers as well as adapter weights,
+so CUDA synchronization and additional compute are possible. Their
+GPU overhead and real-training impact have **not been measured**.
+Offline tests use only synthetic stand-ins and do not import PyTorch,
+execute training, establish training quality, or authorize a model release.

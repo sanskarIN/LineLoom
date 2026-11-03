@@ -19,7 +19,10 @@ import { isEndpointSelectionCurrent } from "./settings/selection-state";
 import { listModels, showModel } from "./models/ollama";
 import { ollamaFailureMessage } from "./models/errors";
 
-const SETTINGS_FILTER = "@ext:SanskarCodes.lineloom";
+function settingsFilter(context: vscode.ExtensionContext): string {
+  // The two publisher IDs are separate extensions; open settings for this one.
+  return "@ext:" + context.extension.id;
+}
 let engine: CompletionEngine | undefined;
 
 async function approveEndpoint(context: vscode.ExtensionContext, ask: boolean): Promise<string | undefined> {
@@ -321,15 +324,18 @@ async function setupGuide(
   switch (action) {
     case "Check Connection": await checkConnection(context, readiness, refresh); break;
     case "Select Model": await selectModel(context); break;
-    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER); break;
+    case "Open Settings": await vscode.commands.executeCommand("workbench.action.openSettings", settingsFilter(context)); break;
     case "Ollama Website": await vscode.env.openExternal(vscode.Uri.parse("https://ollama.com/download")); break;
   }
 }
 async function openQuickActions(): Promise<void> {
   const config = readConfig();
+  const uri = vscode.window.activeTextEditor?.document.uri;
+  const activeFilePaused = uri?.scheme === "file" ? engine?.isFilePaused(uri) : undefined;
   const choice = await vscode.window.showQuickPick(
     quickActions(config.enabled, config.autoTrigger, config.performanceDiagnostics,
-      config.crossFileContext, engine?.getRelatedFileCount() ?? 0).map((action) => ({
+      config.crossFileContext, engine?.getRelatedFileCount() ?? 0,
+       activeFilePaused, engine?.getPausedFileCount() ?? 0).map((action) => ({
       label: action.label, description: action.description, command: action.command
     })),
     { placeHolder: "LineLoom Quick Actions — choose an action" }
@@ -402,7 +408,10 @@ function showDiagnostics(output: vscode.OutputChannel, context: vscode.Extension
 }
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel("LineLoom Diagnostics");
-  const status = new LineLoomStatus();
+  const status = new LineLoomStatus(() => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    return uri?.scheme === "file" && Boolean(engine?.isFilePaused(uri));
+  });
   let currentState: CompletionState = "ready";
   // Invalidate overlapping pickers when privacy, settings or editor state changes.
   let relatedPickerRevision = 0;
@@ -416,7 +425,12 @@ export function activate(context: vscode.ExtensionContext): void {
     () => engine?.getRelatedFileCount() ?? 0,
     () => modelReadiness.state,
     () => filePrivacy.state,
-    () => activeModelReadiness.state
+    () => activeModelReadiness.state,
+    () => {
+      const uri = vscode.window.activeTextEditor?.document.uri;
+      return uri?.scheme === "file" && Boolean(engine?.isFilePaused(uri));
+    },
+    () => engine?.getPausedFileCount() ?? 0
   );
   engine = new CompletionEngine(
     (state) => {
@@ -428,7 +442,9 @@ export function activate(context: vscode.ExtensionContext): void {
   );
   context.subscriptions.push(output, status, sidebar, engine);
   context.subscriptions.push(vscode.window.registerTreeDataProvider("lineloom.dashboard", sidebar));
-  const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" }];
+  const selectors: vscode.DocumentSelector = [...LANGUAGES.map((language) => ({ language: language.id, scheme: "file" })), { language: "javascriptreact", scheme: "file" }, { language: "typescriptreact", scheme: "file" },
+    // Alternate CUDA mode is supplied by some third-party language extensions.
+    { language: "cuda", scheme: "file" }];
   context.subscriptions.push(vscode.languages.registerInlineCompletionItemProvider(selectors, engine));
   function command(id: string, fn: (...args: unknown[]) => unknown): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, fn));
@@ -457,6 +473,33 @@ export function activate(context: vscode.ExtensionContext): void {
     sidebar.refresh();
   });
   command("lineloom.quickActions", () => openQuickActions());
+  command("lineloom.toggleFilePause", () => {
+    const uri = vscode.window.activeTextEditor?.document.uri;
+    if (!uri || uri.scheme !== "file") {
+      void vscode.window.showInformationMessage("LineLoom: open a local file to pause suggestions.");
+      return;
+    }
+    const previouslyPaused = engine?.isFilePaused(uri) ?? false;
+    if (!engine?.setFilePaused(uri, !previouslyPaused)) {
+      void vscode.window.showWarningMessage(
+        "LineLoom: 128 files are paused this session; resume one or clear pauses before adding another."
+      );
+      return;
+    }
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage(previouslyPaused
+      ? "LineLoom: suggestions resumed for this file."
+      : "LineLoom: manual and automatic suggestions paused for this file until resumed or session end.");
+  });
+  command("lineloom.clearFilePauses", () => {
+    engine?.clearPausedFiles();
+    currentState = readConfig().enabled ? "ready" : "disabled";
+    status.set(currentState, readConfig().autoTrigger);
+    sidebar.refresh();
+    void vscode.window.showInformationMessage("LineLoom: session-only file pauses cleared.");
+  });
   command("lineloom.refreshSidebar", () => sidebar.refresh());
   command("lineloom.openSidebar", () => vscode.commands.executeCommand("workbench.view.extension.lineloom"));
   command("lineloom.toggleAutomatic", async () => {
@@ -531,7 +574,7 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window.showInformationMessage("LineLoom: selected " + chosen.length +
       " related file(s). Privacy rules are rechecked before every model request.");
   });
-  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", SETTINGS_FILTER));
+  command("lineloom.openSettings", () => vscode.commands.executeCommand("workbench.action.openSettings", settingsFilter(context)));
   command("lineloom.diagnostics", () => showDiagnostics(output, context));
   command("lineloom.copySupportSummary", async () => {
     const config = readConfig();
@@ -629,6 +672,8 @@ export function activate(context: vscode.ExtensionContext): void {
       relatedPickerRevision++;
       engine?.setRelatedFiles([]);
       engine?.cancelIfEditorChanged(editor);
+      // Recompute active-file pause state without revealing file identity.
+      status.set(currentState, readConfig().autoTrigger);
       sidebar.refresh();
     }),
     vscode.window.onDidChangeTextEditorSelection((event) => {
@@ -654,6 +699,9 @@ export function activate(context: vscode.ExtensionContext): void {
     relatedPickerRevision++;
     engine?.resetTransientFailures();
     clearIgnoreCache();
+    // A restricted status bar must not stay stale after explicit trust grant.
+    // Re-render locally; never connect to Ollama as part of this UI update.
+    status.set(currentState, readConfig().autoTrigger);
     sidebar.refresh();
   }));
   // Ignore-file edits are a live privacy policy change. Invalidate both

@@ -38,6 +38,14 @@ download any AI model.
 
 ## Bounded lexical scanner maintenance (development source)
 
+The scanner additionally recognizes complete Rust hex (`'\\x41'`), braced
+Unicode (`'\\u{1F980}'`) and escaped quote/backslash character literals,
+including byte-character forms. The bounded token lookahead runs only at
+possible literal openings, retains Unicode/lifetime distinctions and never
+edits user source. Malformed or incomplete escape sequences are not
+silently interpreted as complete literals. Unit regressions cover these
+cases and unchanged native FIM prompt bytes; no real-model gain is claimed.
+
 The Rust scanner now avoids constructing the remaining input substring at
 every character. Comment and raw-string closing delimiters are checked at
 the current offset, and raw-string openings inspect at most 255 `#`

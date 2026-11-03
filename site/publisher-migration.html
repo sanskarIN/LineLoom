@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="LineLoom publisher migration guide from SanskarCodes.lineloom to Sanskar.lineloom, with safe reinstall steps.">
+  <link rel="canonical" href="https://sanskarin.github.io/LineLoom/publisher-migration.html">
+  <link rel="icon" type="image/svg+xml" href="./assets/lineloom.svg">
+  <link rel="stylesheet" href="./styles.css">
+  <title>Publisher migration to Sanskar — LineLoom</title>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header"><div class="shell nav">
+    <a class="brand" href="./" aria-label="LineLoom home"><img src="./assets/lineloom.svg" alt="" width="34" height="34"><span>Line<span class="brand-accent">Loom</span></span></a>
+    <nav class="nav-links" aria-label="Help navigation"><a href="./">Home</a><a href="./install.html">Install help</a><a href="#steps">Migration steps</a><a href="#status">Publication status</a></nav>
+    <a class="nav-github" href="https://github.com/sanskarIN/LineLoom/releases">GitHub releases</a>
+  </div></header>
+  <main class="shell install-doc" id="main">
+    <p class="section-kicker">LINELOOM / PUBLISHER TRANSITION</p>
+    <h1>Moving to <span class="brand-accent">Sanskar</span>.</h1>
+    <p class="doc-intro"><strong>v1.4.3 GitHub migration preview available.</strong> The current, already published extension ID is <code>SanskarCodes.lineloom</code>. The planned new ID is <code>Sanskar.lineloom</code>. They are <strong>different VS Code extensions</strong>, not an automatic in-place update. No new Marketplace or Open VSX listing is claimed live by this page.</p>
+    <section class="doc-block" id="status">
+      <h2>Before you download</h2>
+      <p>Continue using the currently verified <a href="https://marketplace.visualstudio.com/items?itemName=SanskarCodes.lineloom">VS Code Marketplace listing</a> or <a href="https://open-vsx.org/extension/SanskarCodes/lineloom">Open VSX listing</a> for stable v1.3.0. The <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3">published v1.4.3 GitHub pre-release</a> has separate <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-SanskarCodes.vsix"><code>LineLoom-1.4.3-SanskarCodes.vsix</code></a> and <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.vsix"><code>LineLoom-1.4.3-Sanskar.vsix</code></a> packages, each with independently verified <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-SanskarCodes.sha256">legacy</a> and <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.sha256">new-publisher</a> SHA-256 checksums. This is a GitHub pre-release, not an update to either extension registry.</p>
+      <p>Publishing under the new ID cannot transfer installs, reviews, extension-private storage or publisher ownership. The maintainer will verify both new listings independently before directing stable users to them.</p>
+    </section>
+    <section class="doc-block" id="steps">
+      <h2>Move safely between publishers</h2>
+      <ol>
+        <li>Note or back up your current <code>lineloom.*</code> VS Code settings, including local model, language overrides and excluded paths.</li>
+        <li>Download the <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.vsix"><strong>Sanskar</strong> preview VSIX</a> and <a href="https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.sha256">its SHA-256 checksum</a> from the verified v1.4.3 GitHub release, then check the digest.</li>
+        <li>In VS Code's Extensions view, uninstall the old <code>SanskarCodes.lineloom</code> extension and reload the editor. Do not leave both enabled because they share commands and configuration keys.</li>
+        <li>Choose Extensions → … → <strong>Install from VSIX…</strong>, open <code>LineLoom-1.4.3-Sanskar.vsix</code>, and reload if requested.</li>
+        <li>Recheck your privacy exclusions, local Ollama model and remote endpoint consent. Existing user settings may survive, but extension-private data and approvals do not automatically transfer.</li>
+      </ol>
+      <div class="command doc-command"><code>code --uninstall-extension SanskarCodes.lineloom</code><button class="copy" type="button" data-copy="code --uninstall-extension SanskarCodes.lineloom" aria-label="Copy old extension uninstall command">Copy</button></div>
+      <div class="command doc-command"><code>code --install-extension ./LineLoom-1.4.3-Sanskar.vsix</code><button class="copy" type="button" data-copy="code --install-extension ./LineLoom-1.4.3-Sanskar.vsix" aria-label="Copy new VSIX install command">Copy</button></div>
+      <p>Use these commands after downloading and verifying the published package. A VSIX must be installed <strong>inside VS Code</strong>, not with the separate Visual Studio VSIX Installer.</p>
+    </section>
+    <section class="doc-block" id="rollback">
+      <h2>Prefer to remain on the old publisher?</h2>
+      <p>Keep <code>SanskarCodes.lineloom</code>. For the latest independently verified stable build, use <a href="https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0">GitHub v1.3.0 stable</a>. The new namespace is optional while this preview is being validated. For maintainer publishing instructions, see the <a href="https://github.com/sanskarIN/LineLoom/blob/main/docs/publisher-migration.md">full migration checklist</a>.</p>
+    </section>
+  </main>
+  <footer class="footer"><div class="shell footer-bottom"><span>© 2026 LineLoom contributors · MIT License</span><a href="./install.html">Installation guide</a></div></footer>
+  <script src="./site.js" defer></script>
+</body>
+</html>

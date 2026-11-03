@@ -35,7 +35,7 @@ npm run model:eval -- --model lineloom-code:dev --mode auto --language rust
 - Each language has eight hand-authored, synthetic checks. Category-specific results distinguish common expressions, statements, suffix awareness, type usage, and indentation. **Synthetic strict matches can reject valid alternative implementations**.
 - `auto` uses prefix/suffix generation for explicitly recognized `qwen2.5-coder` and `lineloom-code` model tags, matching extension routing; unrecognized models use a bounded instruction format. `--mode fim` forces FIM only when the locally installed model actually supports it, and `--mode instruction` forces the generic protocol.
 - Only aggregate counts, per-language/per-category strict matches, nearest-rank p50/p95 duration/first-token latency, and **fixture-level outcome totals without fixture IDs** are printed. `fixtureOutcomes` reports how many synthetic fixtures were evaluated, repeated, matched at least once, matched on every attempt, or had mixed exact-match outcomes. Failed requests count as non-matches. `exactEveryAttempt` also includes one-run fixtures; use `repeated` to distinguish repeated observations. These are descriptive synthetic results, **not statistical pass@k, real-editor acceptance or proven model quality**. Model text, prompts, paths and server errors are not logged. A failed request returns a failure count and a nonzero process exit code.
-- The evaluator stream decoder validates NDJSON finalization, malformed fields, UTF-8 boundaries and strict output/byte/record limits. It now requires clean EOF after a terminal frame (no hidden later chunks) and uses the existing per-request timeout to abort stalled servers after `done`. The VS Code extension still cancels promptly at `done`, rejecting only already-buffered contradictory events. Tests use offline synthetic streams rather than real model access.
+- The evaluator stream decoder validates NDJSON finalization, malformed fields, UTF-8 boundaries and strict output/byte/record limits. It requires clean EOF after a terminal frame (no hidden later chunks) and uses the existing per-request timeout to abort stalled servers after `done`. Cancellation cleanup is best-effort and non-blocking: a misbehaving stream whose `cancel()` promise never settles must not hang a timed-out or invalid benchmark request. This is verified with simulated in-memory streams, not real-model measurements. The VS Code extension still cancels promptly at `done`, rejecting only already-buffered contradictory events.
 - Run one **named model and mode at a time** on the same local machine, with warmed and cold trials recorded separately in human-written notes. Do not compare claims across different hardware without annotation.
 - For a **voluntary, real local two-model comparison** without saving separate JSON reports, use `npm run model:eval:pair:dry -- --baseline model-a:tag --candidate model-b:tag --mode fim --runs 3` to verify the offline scope, then use `npm run model:eval:pair -- --baseline model-a:tag --candidate model-b:tag --mode fim --runs 3` if both models are already installed in Ollama. The prompt mode must be explicitly the same for both models (either `fim` or `instruction`). Each repetition runs one complete fixture pass for each model; first-model order alternates across repetitions. Model identifiers and generated source are omitted from aggregate output. The runner does **not** control cache warm-up, loaded weights, quantization or hardware and does **not** prove real-editor usefulness. `pairedStrictExact.fixtureStability` counts each unique synthetic fixture once and distinguishes repeatable candidate/baseline wins, ties, mixed results, incomplete attempts and single-run results; repeated requests are correlated, not independent evidence.
 - Human review of syntax correctness, unsafe code, indentation, duplicate suffix, irrelevant outputs, keyboard UX and actual VS Code acceptance remains **NOT RUN** until recorded separately.
@@ -86,6 +86,26 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v10 instruction-context framing (development source)
+
+The optional local synthetic evaluator now quotes untrusted fixture source
+using the same **source-line data-lane convention** as the VS Code extension:
+`| ` on each line, not forgeable `<before>`/`<after>` wrappers.
+It displays unusual newline separators as escaped Unicode sequences and
+keeps the native-FIM request prefix/suffix **byte-exact**. The request SHA-256
+binds this new format. Because it changes the instruction prompt,
+the top-level report protocol is now **`lineloom-synthetic-v10`**.
+Version v9 and earlier reports are **not comparable**, including for the
+unchanged FIM route; rerun both locally under v10.
+
+The benchmark is still **not the full editor prompt**: it intentionally
+does not reproduce per-language Rust/C/C++ static hints or selected related
+files. Matching a formatting convention does not prove model quality,
+prompt-injection protection or compiler-valid completions. No local
+inference/training, model download, weight release or new published extension
+version was performed. See the
+[protocol framing section](EVALUATION_PROTOCOL.md#3a0-instruction-mode-quoted-source-framing-ollama-v10).
+
 ## Ollama v9 output-token measurement (development source)
 
 Real opt-in, local Ollama evaluation can now record terminal `eval_count`
@@ -104,7 +124,8 @@ based on unadjusted completion latency. These are still just synthetic
 measurements; user-editor acceptance, generation validity and real
 checkpoint testing must be verified independently.
 
-This change advances the Ollama report identity to `lineloom-synthetic-v9`.
+The historical v9 telemetry milestone advanced the Ollama report identity
+to `lineloom-synthetic-v9`. The current protocol is **v10** (above).
 Older reports must be rerun on the reviewed fixture set to compare.
 See [evaluation protocol section 4d](EVALUATION_PROTOCOL.md#4d-ollama-generation-token-telemetry-ollama-v9).
 
@@ -128,6 +149,18 @@ check or safe-to-run verdict. The Ollama benchmark identifier is now
 under v8; v7 or earlier reports cannot be mixed into a controlled comparison.
 See [evaluation protocol section 4c](EVALUATION_PROTOCOL.md#4c-native-generated-code-scanner-coverage-ollama-v8).
 
+The C/C++ delimiter scanner accounts for backslash-LF and backslash-CRLF
+physical-line splicing **before** recognizing line comments or brackets.
+Otherwise a continued `//` comment could be mistaken for unmatched code.
+Rust is not normalized this way. Both the original input-size limit and
+the `unchecked` result for unsupported cases are preserved. This is a
+scanner accuracy fix, **not** a new parser, model benchmark, compiler
+verification or extension release. Because it changes scanner evidence, the
+reported native-scanner method is now `bounded-native-delimiter-coverage-v2`.
+Old `v1` method reports are rejected by the comparator, even when the
+broader synthetic benchmark protocol is unchanged. Rerun **both** baseline
+and candidate using the same checkout and method before comparing results.
+
 ## Ollama v7 native generated-code structure warnings (development source)
 
 The real local Ollama synthetic evaluator adds a **bounded lexical** diagnostic
@@ -149,8 +182,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v9` and cannot be compared
-to previous v1–v8 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v10` and cannot be compared
+to previous v1–v9 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**

@@ -1,28 +1,52 @@
 import type { CompletionState } from "../completion/engine";
 
-/** Pure, source-free native status bar wording; never probes model or files. */
-export interface StatusPresentation { text: string; tooltip: string; }
-export function statusPresentation(state: CompletionState, automatic = true): StatusPresentation {
+/**
+ * Pure native status bar presentation: never reads editor source or connects to Ollama.
+ * Accessible names are icon-free and explicitly describe the action and state.
+ */
+export interface StatusPresentation {
+  text: string;
+  tooltip: string;
+  accessibilityLabel: string;
+}
+export function statusPresentation(
+  state: CompletionState, automatic = true, filePaused = false,
+  workspaceTrusted = true
+): StatusPresentation {
   const action = " • Click for Quick Actions";
+  const present = (text: string, message: string): StatusPresentation => ({
+    text,
+    tooltip: message + action,
+    accessibilityLabel: "LineLoom: " + message + ". Open Quick Actions"
+  });
+  // The setting is authoritative when the entire extension is disabled.
+  if (state === "disabled") {
+    return present("$(circle-slash) LineLoom Off", "Autocomplete is disabled");
+  }
+  // Workspace Trust blocks both manual and automatic requests even if
+  // the last engine state was ready, generating or temporarily unavailable.
+  if (!workspaceTrusted) {
+    return present("$(lock) LineLoom Restricted",
+      "Workspace is restricted; manual and automatic completions are blocked until trusted");
+  }
+  if (filePaused) {
+    return present("$(debug-pause) LineLoom File Paused",
+      "Manual and automatic completions are paused for this file only; other files are unaffected");
+  }
   switch (state) {
     case "ready":
-      return {
-        text: "$(sparkle) " + (automatic ? "LineLoom" : "LineLoom Manual"),
-        tooltip: (automatic
+      return present("$(sparkle) " + (automatic ? "LineLoom" : "LineLoom Manual"),
+        automatic
           ? "Autocomplete enabled; Ollama model and active-file rules are not automatically verified"
-          : "Automatic suggestions paused; manual completion remains available; model and file rules are not automatically verified"
-        ) + action
-      };
+          : "Automatic suggestions paused; manual completion remains available; model and file rules are not automatically verified");
     case "generating":
-      return { text: "$(sync~spin) LineLoom",
-        tooltip: "Generating a suggestion; useful output is not guaranteed" + action };
-    case "disabled":
-      return { text: "$(circle-slash) LineLoom Off", tooltip: "Autocomplete is disabled" + action };
+      return present("$(sync~spin) LineLoom",
+        "Generating a suggestion; useful output is not guaranteed");
     case "unavailable":
-      return { text: "$(warning) LineLoom",
-        tooltip: "Completion unavailable; manually check Ollama, the effective model and endpoint approval" + action };
+      return present("$(warning) LineLoom",
+        "Completion unavailable; manually check Ollama, the effective model and endpoint approval");
     case "error":
-      return { text: "$(error) LineLoom",
-        tooltip: "Completion error; open diagnostics for source-free details" + action };
+      return present("$(error) LineLoom",
+        "Completion error; open diagnostics for source-free details");
   }
 }

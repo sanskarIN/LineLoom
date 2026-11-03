@@ -54,7 +54,7 @@ test("dry run computes reviewed hashes but never contacts a model", () => {
   const chosen = selectedPairedFixtures(fixtures, options);
   assert.equal(chosen.length, 8);
   const result = pairedDryRun(chosen, options);
-  assert.equal(result.benchmarkProtocol, "lineloom-synthetic-v9");
+  assert.equal(result.benchmarkProtocol, "lineloom-synthetic-v10");
   assert.equal(result.networkCalls, 0);
   assert.equal(result.requestsPerModel, 24);
   assert.equal(result.totalRequestsPlanned, 48);

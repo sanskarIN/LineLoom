@@ -25,12 +25,75 @@ class LocalSmokeTests(unittest.TestCase):
             self.assertEqual(len(selected), 8)
             self.assertTrue(all(s["language"] == language for s in selected))
 
-    def test_fim_boundary_normalization_is_conservative(self):
-        self.assertEqual(smoke.normalize_completion(" x + 2\r\n"), " x + 2\n")
-        self.assertEqual(smoke.normalize_completion("print(x)<|fim_suffix|>rest"), "print(x)")
-        self.assertEqual(smoke.normalize_completion("return 42<|endoftext|>"), "return 42")
-        self.assertEqual(smoke.normalize_completion("a + b<|im_end|>"), "a + b")
-        self.assertEqual(smoke.normalize_completion("value   "), "value   ")
+    def test_fim_boundary_normalization_preserves_literal_marker_text(self):
+        normalize = smoke.normalize_completion
+        self.assertEqual(normalize(" x + 2\r\n"), " x + 2\n")
+        self.assertEqual(normalize("line\rnext"), "line\nnext")
+        self.assertEqual(normalize('print("<|fim_suffix|>")'), 'print("<|fim_suffix|>")')
+        self.assertEqual(normalize('return "<|endoftext|>"'), 'return "<|endoftext|>"')
+        self.assertEqual(normalize("a + b<|im_end|>"), "a + b<|im_end|>")
+        self.assertEqual(normalize("value   "), "value   ")
+        with self.assertRaises(ExperimentRejected):
+            normalize(None)
+
+    def test_token_id_stop_handling_keeps_literal_marker_source(self):
+        class TestTokenizer:
+            def __init__(self):
+                self.calls = []
+
+            def decode(self, token_ids, *, skip_special_tokens):
+                self.calls.append((list(token_ids), skip_special_tokens))
+                vocab = {5: 'return "<|fim_suffix|>"', 6: ' + "<|endoftext|>"',
+                         7: "\r\n", 99: "<|fim_suffix|>"}
+                return "".join(vocab[token] for token in token_ids)
+
+        tokenizer = TestTokenizer()
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [5, 6, 99], [99], "stop-token"
+            ), 'return "<|fim_suffix|>" + "<|endoftext|>"'
+        )
+        self.assertEqual(tokenizer.calls[-1], ([5, 6], False))
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [5, 7], [99], "token-limit"
+            ), 'return "<|fim_suffix|>"\n'
+        )
+        self.assertEqual(tokenizer.calls[-1], ([5, 7], False))
+        self.assertEqual(
+            smoke.decode_generated_insertion(
+                tokenizer, [99], [99], "stop-token"
+            ), ""
+        )
+        self.assertEqual(tokenizer.calls[-1], ([], False))
+
+    def test_token_id_decoder_rejects_bad_termination_and_sanitizes_errors(self):
+        class FakeTokenizer:
+            def decode(self, *_args, **_kwargs):
+                raise RuntimeError("PRIVATE_MODEL_TEXT")
+
+        cases = [
+            ([1, 99], [99], "token-limit"),
+            ([1, 2], [99], "stop-token"),
+            ([99, 1], [99], "token-limit"),
+            ([99, 99], [99], "stop-token"),
+            ([True], [99], "token-limit"),
+            ([1], [], "token-limit"),
+            ([], [99], "token-limit"),
+            ([1], [99], "unchecked"),
+            ([1], [99], True),
+        ]
+        for tokens, stops, reason in cases:
+            with self.subTest(tokens=tokens, reason=reason):
+                with self.assertRaises(ExperimentRejected):
+                    smoke.decode_generated_insertion(
+                        FakeTokenizer(), tokens, stops, reason
+                    )
+        with self.assertRaises(ExperimentRejected) as caught:
+            smoke.decode_generated_insertion(
+                FakeTokenizer(), [1, 2], [99], "token-limit"
+            )
+        self.assertNotIn("PRIVATE_MODEL_TEXT", str(caught.exception))
 
     def test_aggregates_have_only_fixed_language_counts(self):
         result = smoke.summarize([
@@ -48,6 +111,78 @@ class LocalSmokeTests(unittest.TestCase):
             smoke.summarize([{"language": "other", "exact": True}])
         with self.assertRaises(ExperimentRejected):
             smoke.summarize([{"language": "python", "exact": "yes"}])
+
+    def test_input_prompt_token_counts_are_bounded_source_free_and_complete(self):
+        results = [
+            {"language": "rust", "promptTokens": 10,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([4] * 10),
+             "secret": "PRIVATE_CODE"},
+            {"language": "rust", "promptTokens": 25,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([6] * 25)},
+            {"language": "typescript", "promptTokens": 2048,
+             "promptIdsSha256": smoke.fingerprint_prompt_token_ids([8] * 2048)},
+        ]
+        summary = smoke.prompt_token_summary(results)
+        self.assertEqual(summary["inputTokenAccounting"],
+                         "tokenizer-encoded-fim-prompt-ids-v1")
+        self.assertEqual(summary["inputTokenCount"], 2083)
+        self.assertEqual(len(summary["inputLengthSequenceSha256"]), 64)
+        self.assertEqual(len(summary["inputTokenSequenceSha256"]), 64)
+        self.assertEqual(smoke.prompt_token_summary(results), summary)
+        reordered = smoke.prompt_token_summary([results[1], results[0], results[2]])
+        self.assertEqual(reordered["inputTokenCount"], summary["inputTokenCount"])
+        self.assertEqual(reordered["inputTokensByLanguage"], summary["inputTokensByLanguage"])
+        self.assertNotEqual(reordered["inputLengthSequenceSha256"],
+                            summary["inputLengthSequenceSha256"])
+        self.assertNotEqual(reordered["inputTokenSequenceSha256"],
+                            summary["inputTokenSequenceSha256"])
+        self.assertEqual(summary["inputTokensByLanguage"]["rust"],
+                         {"attempts": 2, "totalTokens": 35})
+        self.assertEqual(summary["inputTokensByLanguage"]["typescript"],
+                         {"attempts": 1, "totalTokens": 2048})
+        self.assertEqual(summary["inputTokensByLanguage"]["python"],
+                         {"attempts": 0, "totalTokens": 0})
+        self.assertNotIn("PRIVATE_CODE", json.dumps(summary))
+        self.assertNotIn("secret", json.dumps(summary))
+        same_lengths_different_ids = [dict(result) for result in results]
+        same_lengths_different_ids[0]["promptIdsSha256"] = (
+            smoke.fingerprint_prompt_token_ids([5] * 10)
+        )
+        changed = smoke.prompt_token_summary(same_lengths_different_ids)
+        self.assertEqual(changed["inputTokenCount"], summary["inputTokenCount"])
+        self.assertEqual(changed["inputLengthSequenceSha256"],
+                         summary["inputLengthSequenceSha256"])
+        self.assertNotEqual(changed["inputTokenSequenceSha256"],
+                            summary["inputTokenSequenceSha256"])
+        for invalid in ("ABC" * 21 + "A", "z" * 64, True, None, ""):
+            broken = [dict(results[0], promptIdsSha256=invalid)]
+            with self.subTest(digest=repr(invalid)[:12]), self.assertRaises(ValueError):
+                smoke.prompt_token_summary(broken)
+        for value in (True, None, 0, -1, 2049, 1.5, "5"):
+            with self.subTest(value=repr(value)), self.assertRaises(ValueError):
+                smoke.prompt_token_summary([{"language": "rust", "promptTokens": value}])
+        for invalid in (
+            [], None, "invalid",
+            [{"language": "other", "promptTokens": 10}],
+            [{"language": "rust"}],
+            [{"language": "rust", "promptTokens": 1}] * 41,
+        ):
+            with self.subTest(invalid=repr(invalid)[:28]), self.assertRaises(ValueError):
+                smoke.prompt_token_summary(invalid)
+
+    def test_real_prompt_token_id_digest_requires_bounded_integer_sequence(self):
+        digest = smoke.fingerprint_prompt_token_ids([101, 42, 9])
+        self.assertEqual(len(digest), 64)
+        self.assertEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42, 9]))
+        self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 9, 42]))
+        self.assertNotEqual(digest, smoke.fingerprint_prompt_token_ids([101, 42]))
+        self.assertRegex(digest, r"^[0-9a-f]{64}$")
+        for invalid in (
+            None, [], (), [True], [-1], ["1"], [1.5],
+            [2 ** 31], [0] * 2049, "private", [[1]],
+        ):
+            with self.subTest(kind=repr(invalid)[:30]), self.assertRaises(ValueError):
+                smoke.fingerprint_prompt_token_ids(invalid)
 
     def test_generation_timing_nearest_rank_and_no_source_output(self):
         from_smoke = smoke.generation_latency_summary([
@@ -234,8 +369,8 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertEqual(result["perLanguage"]["cpp"], 8)
         self.assertEqual(result["networkCalls"], 0)
         self.assertFalse(result["realModelInferenceExecuted"])
-        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v9")
-        self.assertEqual(result["generationPolicy"], "greedy-fim-v2")
+        self.assertEqual(result["benchmarkProtocol"], "lineloom-hf-synthetic-smoke-v12")
+        self.assertEqual(result["generationPolicy"], "greedy-fim-v3")
         self.assertEqual(result["selectedLanguage"], "cpp")
         self.assertEqual(len(result["fixtureSetSha256"]), 64)
         self.assertEqual(len(result["requestSpecSha256"]), 64)
@@ -244,6 +379,29 @@ class LocalSmokeTests(unittest.TestCase):
         self.assertNotIn("rust-arithmetic", proc.stdout)
         self.assertNotIn("fn ", proc.stdout)
         self.assertEqual(proc.stderr, "")
+
+    def test_native_compiler_mode_requires_run_and_separate_approval(self):
+        script = str(Path(smoke.__file__).resolve())
+        cases = (
+            ["--native-syntax"],
+            ["--native-syntax", "--approve-local-compilers"],
+            ["--native-syntax", "--run"],
+        )
+        for flags in cases:
+            with self.subTest(flags=flags):
+                result = subprocess.run(
+                    [sys.executable, script] + flags,
+                    capture_output=True, text=True, timeout=20
+                )
+                self.assertEqual(result.returncode, 1)
+                self.assertEqual(result.stdout, "")
+                self.assertIn("smoke was rejected", result.stderr)
+        normal = subprocess.run(
+            [sys.executable, script, "--language", "rust"],
+            capture_output=True, text=True, timeout=20
+        )
+        self.assertEqual(normal.returncode, 0, normal.stderr)
+        self.assertNotIn("syntaxAccounting", normal.stdout)
 
     def test_real_adapter_smoke_refuses_missing_receipt_before_model_import(self):
         with tempfile.TemporaryDirectory() as temp:

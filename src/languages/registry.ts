@@ -1,5 +1,5 @@
 /** VS Code language IDs, not filename-only inference. */
-export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua";
+export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp";
 export interface LanguageSpec {
   id: SupportedLanguage;
   label: string;
@@ -18,10 +18,15 @@ export const LANGUAGES: readonly LanguageSpec[] = [
   { id: "cpp", label: "C++", extensions: [".cc", ".cpp", ".cxx", ".hpp", ".hxx", ".hh"], guidance: "Respect C++ standard, RAII, headers, templates and visible namespaces." },
   { id: "html", label: "HTML", extensions: [".html", ".htm"], guidance: "Respect document structure, matching tags, attribute quoting and accessible markup." },
   { id: "css", label: "CSS", extensions: [".css"], guidance: "Respect existing selectors, cascade conventions, property syntax and brace matching." },
-  { id: "lua", label: "Lua", extensions: [".lua"], guidance: "Respect Lua local scope, tables, block endings and the existing runtime version." }
+  { id: "lua", label: "Lua", extensions: [".lua"], guidance: "Respect Lua local scope, tables, block endings and the existing runtime version." },
+  { id: "cuda-cpp", label: "CUDA C++", extensions: [".cu", ".cuh"], guidance: "Respect CUDA host/device qualifiers, kernel launch syntax, thread indexing, bounds checks, memory spaces and synchronization; preserve existing C++ types and architecture constraints." }
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
-const aliases: Record<string, SupportedLanguage> = { javascriptreact: "javascript", typescriptreact: "typescript" };
+const aliases: Record<string, SupportedLanguage> = {
+  javascriptreact: "javascript", typescriptreact: "typescript",
+  // Official VS Code mode is cuda-cpp; some optional CUDA extensions use cuda.
+  cuda: "cuda-cpp"
+};
 export function getLanguage(id: string): LanguageSpec | undefined {
   return byId.get((aliases[id] ?? id) as SupportedLanguage);
 }

@@ -60,7 +60,7 @@ async function main() {
     const candidate = inspectVsix(candidateArchive, process.env.LINELOOM_EXPECT_PRE_RELEASE === "1");
     const source = JSON.parse(readFileSync("package.json", "utf8"));
     const stableBaselines = new Set(["1.2.0", "1.3.0"]);
-    const previewBaselines = new Set(["1.2.3", "1.2.4", "1.4.1"]);
+    const previewBaselines = new Set(["1.2.3", "1.2.4", "1.4.1", "1.4.2"]);
     assert.ok(stableBaselines.has(previous.version) || previewBaselines.has(previous.version),
       "Baseline must be a pinned published stable or preview version");
     assert.equal(previous.preRelease, previewBaselines.has(previous.version),

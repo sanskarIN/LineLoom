@@ -2,6 +2,54 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — optional per-language LoRA validation export gate
+
+- Add `--fail-on-validation-regression` for explicitly approved local LoRA experiments. Block adapter export if any target language's sample-mean or token-weighted loss increases, even when the overall loss improves; also block aggregate and macro loss regressions.
+- Always record a source-free numeric-only validation review in private experiment receipts; reject malformed token-weighted metrics. Add standard-library tests without a checkpoint or GPU.
+- No new release, model weights, publisher migration or real-model performance claim.
+
+## Unreleased — Python/JavaScript/TypeScript language-aware hints
+
+- Add bounded Python, JavaScript and TypeScript syntax hints for generic local instruction-mode completions. Fixed-text guidance covers async, typing, modules, error handling, and comment/literal continuation, without embedding code tokens or reading extra files.
+- Mask comments, Python triple-quoted strings and JavaScript template/regular-expression content before recognizing constructs; preserve native FIM prompt bytes and existing privacy policy. Add unit tests for masking, hint limits and language separation.
+- No trained model, real Ollama quality claim, publisher migration or new release. Public v1.4.3 VSIX assets remain unchanged.
+
+## Unreleased — active-language fenced code checks
+
+- Reject model responses with an explicitly recognized incompatible Markdown code-fence language; retain compatible aliases, native source output, and unknown/unlabeled fence behavior.
+- Wire the active VS Code language into the output filter and cover common Python, Rust, TypeScript, JavaScript, C/C++ and Go cases, truncated fences, and unknown labels in unit tests.
+- Source-only improvement. No new release or publisher migration.
+
+## Unreleased — cancellation of superseded automatic debounce waits
+
+- Automatic completion debounce now uses one latest-request-only, cancellable timer. New requests, manual invocations, explicit Stop, file pause, editor switches and extension disposal release old pending timers/listeners immediately instead of waiting for their delay to expire.
+- Preserve cache, context, privacy, endpoint approval, request generation, and manual bypass behavior. Add unit and mocked editor-host tests for supersession, timeout, cancellation and listener cleanup.
+- This is a local scheduler improvement; no measured real-model latency claim, publisher migration or new published version.
+
+## Unreleased — LineLoom Code training target contamination preflight
+
+- Detect substantial duplicated or lightly edited FIM supervised middle targets across independently declared train/validation/test splits, even when prefix/suffix source context is different. Include long public benchmark target screening and retain short-common-answer tolerance.
+- Add offline synthetic audit and CLI privacy regression tests; no private source text or identifiers enter reports or error messages, and the existing LoRA planning gate continues to use this audit.
+- No real checkpoint, GPU training, new model weights, publisher migration or release.
+
+## Unreleased — LineLoom Code strict gradient clipping
+
+- During future opt-in local LoRA training, require strict PyTorch non-finite gradient detection and a finite, nonnegative clip norm before each optimizer step. Reject and sanitize runtime errors rather than saving numerically corrupted adapters.
+- Add framework-free Python unit tests for strict flag propagation, non-finite norms, backend failure redaction and valid zero/finite norms.
+- No GPU training, trained model, new release or publisher migration.
+
+## v1.4.3 — published GitHub dual-publisher pre-release (2026-11-01)
+
+- Build two independently verified pre-release VSIX identities from the same source: `SanskarCodes.lineloom` for existing users and `Sanskar.lineloom` for migration testing. **The tracked package remains SanskarCodes until publisher migration is independently verified.**
+- Document manual uninstall/reinstall, configuration preservation boundaries, separate SHA-256 receipts and non-transfer of extension-private state. Do not claim the new Marketplace/Open VSX URLs are live before checking them.
+- Add an isolated staging packager, separate identity checks, synthetic CLI migration smoke coverage and an owner-gated GitHub-only publisher workflow. See [migration guide](docs/publisher-migration.md) and [v1.4.3 preview notes](docs/releases/v1.4.3.md).
+
+## Unreleased — session-only per-file completion controls
+
+- Add Pause/Resume Suggestions for This File and Resume All Session-Paused Files to Quick Actions, the Command Palette and the native Control Center. The status bar now shows a clear File Paused state for an affected active local file. Pauses block manual and automatic completions, cancel in-flight requests, and never change user settings.
+- Keep at most 128 in-memory SHA-256 file identity digests; never save source paths. Other files remain eligible; pausing applies to the full active extension session. Include unit and mocked editor-host coverage.
+- This feature is on source `main` only after merge; publishing v1.4.3 does not retroactively add it to existing VSIX assets.
+
 ## Unreleased — source after v1.4.2 (not distributed)
 
 - [PR #164](https://github.com/sanskarIN/LineLoom/pull/164): prevent the prefix-echo cleanup from truncating an otherwise valid generated identifier. Match complete UTF-16/Unicode identifier boundaries, preserve genuine short keyword echoes, and cover both cases with focused regression tests.

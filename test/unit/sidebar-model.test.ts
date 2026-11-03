@@ -126,6 +126,68 @@ describe("LineLoom local sidebar model", () => {
   });
 });
 
+describe("restricted-workspace status and recommendation precedence", () => {
+  it("never offers a paused file resume when workspace trust denies inference", () => {
+    const blocked = sidebarSections({
+      ...snapshot, enabled: true, workspaceTrusted: false,
+      completionState: "ready", activeLocalFile: true, activeFilePaused: true,
+      activeEditor: { ...snapshot.activeEditor, eligibility: "Workspace restricted" }
+    }).flatMap(section => section.items);
+    expect(blocked.find(item => item.id === "next-step")).toMatchObject({
+      label: "Next: Review Workspace Trust", icon: "shield"
+    });
+    expect(blocked.find(item => item.id === "next-step")?.command).toBeUndefined();
+    expect(blocked.find(item => item.id === "state")).toMatchObject({
+      description: "Blocked — workspace restricted", icon: "shield"
+    });
+    expect(blocked.find(item => item.id === "editor-eligibility")?.description)
+      .toContain("Workspace restricted");
+    expect(JSON.stringify(blocked)).not.toContain("http://");
+  });
+
+  it("lets global Disable outrank trust and file-pause state, but never masks trust when enabled", () => {
+    const disabled = sidebarSections({
+      ...snapshot, enabled: false, workspaceTrusted: false,
+      completionState: "generating", activeFilePaused: true
+    }).flatMap(section => section.items);
+    expect(disabled.find(item => item.id === "state")?.description).toBe("Disabled");
+    expect(disabled.find(item => item.id === "next-step")?.command).toBe("lineloom.enable");
+    for (const state of ["ready", "generating", "unavailable", "error"] as const) {
+      const entries = sidebarSections({
+        ...snapshot, workspaceTrusted: false, completionState: state,
+        activeFilePaused: true
+      }).flatMap(group => group.items);
+      expect(entries.find(item => item.id === "state")?.description).toBe("Blocked — workspace restricted");
+      expect(entries.find(item => item.id === "next-step")?.label).toBe("Next: Review Workspace Trust");
+    }
+    const trusted = sidebarSections({
+      ...snapshot, workspaceTrusted: true, activeFilePaused: true
+    }).flatMap(group => group.items);
+    expect(trusted.find(item => item.id === "next-step")?.command).toBe("lineloom.toggleFilePause");
+  });
+});
+
+describe("session-only file pause presentation", () => {
+  it("shows pause/resume and no private file identifiers in the sidebar", () => {
+    const eligible = sidebarSections({ ...snapshot, activeLocalFile: true, activeFilePaused: false });
+    const editor = eligible.find(s => s.id === "editor")!;
+    expect(editor.items.find(x => x.id === "editor-file-pause")?.command).toBe("lineloom.toggleFilePause");
+    const paused = sidebarSections({
+      ...snapshot, activeLocalFile: true, activeFilePaused: true, pausedFileCount: 2
+    });
+    const entries = paused.flatMap(s => s.items);
+    expect(entries.find(x => x.id === "editor-eligibility")?.description).toMatch(/manual and automatic blocked/);
+    expect(entries.find(x => x.id === "editor-file-pause")?.label).toContain("Resume");
+    expect(entries.find(x => x.id === "editor-resume-all")?.command).toBe("lineloom.clearFilePauses");
+    expect(recommendedSidebarAction({
+      ...snapshot, activeFilePaused: true
+    })).toMatchObject({ command: "lineloom.toggleFilePause", label: "Next: Resume Suggestions for This File" });
+    expect(JSON.stringify(paused)).not.toMatch(/\/private\//);
+    const noEditor = sidebarSections({ ...snapshot, activeLocalFile: false, activeFilePaused: false });
+    expect(noEditor.flatMap(s => s.items).some(x => x.id === "editor-file-pause")).toBe(false);
+  });
+});
+
 describe("related context sidebar consent disclosure", () => {
   it("shows opt-in status, never paths, and gives a clear command only for active selections", () => {
     const off = sidebarSections({ ...snapshot, crossFileContextEnabled: false, relatedFileCount: 2 })

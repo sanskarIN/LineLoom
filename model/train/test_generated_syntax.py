@@ -6,13 +6,13 @@ import unittest
 
 try:
     from .generated_syntax import (
-        SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
+        SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
         classify_generated_syntax, generated_syntax_summary
     )
     from .smoke_report import read_public_fixtures, SmokeReportRejected, LANGUAGES
 except ImportError:
     from generated_syntax import (
-        SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
+        SYNTAX_ACCOUNTING, NATIVE_SYNTAX_ACCOUNTING, MAX_SYNTHETIC_SOURCE_CHARS,
         classify_generated_syntax, generated_syntax_summary
     )
     from smoke_report import read_public_fixtures, SmokeReportRejected, LANGUAGES
@@ -51,6 +51,47 @@ class GeneratedSyntaxTests(unittest.TestCase):
                 )
                 self.assertEqual(classify_generated_syntax(fixture, "???"),
                                  "unchecked")
+
+    def test_native_parser_is_only_used_when_explicitly_supplied(self):
+        case = read_public_fixtures("rust")[0]
+        invoked = []
+        def parse_native(fixture, insertion):
+            invoked.append((fixture["language"], insertion))
+            return "failed" if insertion == "?" else "passed"
+        self.assertEqual(classify_generated_syntax(case, "?"), "unchecked")
+        self.assertEqual(classify_generated_syntax(
+            case, case["expected"], parse_native=parse_native
+        ), "passed")
+        self.assertEqual(classify_generated_syntax(
+            case, "?", parse_native=parse_native
+        ), "failed")
+        self.assertEqual(invoked, [
+            ("rust", case["expected"]), ("rust", "?")
+        ])
+        for invalid in ("unchecked", True, None, "unavailable"):
+            with self.subTest(invalid=repr(invalid)), self.assertRaises(SmokeReportRejected):
+                classify_generated_syntax(
+                    case, "?", parse_native=lambda _f, _i: invalid
+                )
+
+    def test_native_syntax_summary_is_opt_in_and_counts_all_five_languages(self):
+        measurements = [
+            {"language": lang, "syntaxOutcome": "passed"}
+            for lang in LANGUAGES
+        ]
+        summary = generated_syntax_summary(measurements, native_compilers=True)
+        self.assertEqual(summary["syntaxAccounting"], NATIVE_SYNTAX_ACCOUNTING)
+        self.assertEqual(summary["syntaxChecked"], 5)
+        self.assertEqual(summary["syntaxUnchecked"], 0)
+        self.assertEqual(summary["syntaxByLanguage"]["cpp"]["passed"], 1)
+        with self.assertRaises(SmokeReportRejected):
+            generated_syntax_summary(measurements)
+        with self.assertRaises(SmokeReportRejected):
+            generated_syntax_summary([
+                {"language": "c", "syntaxOutcome": "unchecked"}
+            ], native_compilers=True)
+        with self.assertRaises(SmokeReportRejected):
+            generated_syntax_summary(measurements, native_compilers=1)
 
     def test_typescript_requires_explicit_parser_and_does_not_assume_success(self):
         case = read_public_fixtures("typescript")[0]

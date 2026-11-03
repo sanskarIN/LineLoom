@@ -40,6 +40,9 @@ export interface SidebarSnapshot {
   filePrivacy?: ManualFilePrivacy;
   crossFileContextEnabled?: boolean;
   relatedFileCount?: number;
+  activeLocalFile?: boolean;
+  activeFilePaused?: boolean;
+  pausedFileCount?: number;
 }
 
 export interface SidebarEntry {
@@ -116,6 +119,11 @@ export function recommendedSidebarAction(snapshot: SidebarSnapshot): SidebarEntr
     "Suggestions are off; enabling does not contact Ollama.", "play", "lineloom.enable");
   if (!snapshot.workspaceTrusted) return entry("Next: Review Workspace Trust",
     "Use VS Code's Workspace Trust controls; inference is blocked in restricted workspaces.", "shield");
+  if (snapshot.activeFilePaused) return entry(
+    "Next: Resume Suggestions for This File",
+    "Resume manual and automatic suggestions for this file only.",
+    "play", "lineloom.toggleFilePause"
+  );
 
   // Match the deliberately bounded, settings-only messages from editor-context.ts.
   // Never mistake "Allowed by settings" for a verified file privacy decision.
@@ -180,12 +188,15 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
         {
           id: "state", label: "Engine Status",
           description: !snapshot.enabled ? "Disabled" :
+            !snapshot.workspaceTrusted ? "Blocked — workspace restricted" :
             snapshot.completionState === "ready" ? "Ready (model not automatically verified)" :
             snapshot.completionState === "generating" ? "Generating" :
             snapshot.completionState === "disabled" ? "Disabled" :
             snapshot.completionState === "unavailable" ? "Unavailable — check Ollama" :
             "Error — open diagnostics",
-          icon: snapshot.completionState === "generating" ? "sync" :
+          icon: !snapshot.enabled ? "circle-slash" :
+            !snapshot.workspaceTrusted ? "shield" :
+            snapshot.completionState === "generating" ? "sync" :
             snapshot.completionState === "error" ? "error" :
             snapshot.completionState === "unavailable" ? "warning" : "info"
         },
@@ -246,8 +257,28 @@ export function sidebarSections(snapshot: SidebarSnapshot): SidebarSection[] {
             (snapshot.activeEditor.modelSource ? " (" + snapshot.activeEditor.modelSource + ")" : ""),
           icon: "symbol-method" },
         { id: "editor-eligibility", label: "Completion Status",
-          description: snapshot.activeEditor.eligibility,
-          icon: snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+          description: !snapshot.enabled ? "Autocomplete disabled" :
+            !snapshot.workspaceTrusted ? "Workspace restricted (completion blocked)" :
+            snapshot.activeFilePaused ? "Paused for this session (manual and automatic blocked)" :
+            snapshot.activeEditor.eligibility,
+          icon: !snapshot.enabled ? "circle-slash" :
+            !snapshot.workspaceTrusted ? "shield" :
+            snapshot.activeFilePaused ? "debug-pause" :
+            snapshot.activeEditor.eligibility.startsWith("Allowed by settings") ? "check" : "info" },
+        ...(snapshot.activeLocalFile ? [{
+          id: "editor-file-pause",
+          label: snapshot.activeFilePaused ? "Resume Suggestions for This File" : "Pause Suggestions for This File",
+          description: "Session only; block manual and automatic completion in this file",
+          icon: snapshot.activeFilePaused ? "play" : "debug-pause",
+          command: "lineloom.toggleFilePause"
+        }] : []),
+        ...((snapshot.pausedFileCount ?? 0) > 0 ? [{
+          id: "editor-resume-all",
+          label: "Resume All Session-Paused Files",
+          description: (snapshot.pausedFileCount ?? 0) + " file(s) paused in memory",
+          icon: "clear-all",
+          command: "lineloom.clearFilePauses"
+        }] : []),
         { id: "active-model-readiness", label: "Last Active Model Check",
           description: activeModelReadinessDescription(snapshot.activeModelReadiness),
           icon: snapshot.activeModelReadiness === "available" ? "check" :

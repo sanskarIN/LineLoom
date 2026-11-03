@@ -60,6 +60,18 @@ test("recognized checked-in language/category scopes and modes compare offline",
     }
   }
 });
+test("refuses saved v9 reports after instruction framing changes in v10", () => {
+  for (const mode of ["instruction", "fim"]) {
+    const valid = report({ mode, runs: 2 });
+    assert.equal(valid.benchmarkProtocol, "lineloom-synthetic-v10");
+    assert.equal(validateComparableReport(valid).benchmarkProtocol, "lineloom-synthetic-v10");
+    const legacy = { ...valid, benchmarkProtocol: "lineloom-synthetic-v9" };
+    assert.throws(() => validateComparableReport(legacy));
+    assert.throws(() => compareModelReports(legacy, valid));
+    assert.throws(() => compareModelReports(valid, legacy));
+  }
+});
+
 test("rejects fabricated matching hashes and rearranged attempt allocations", () => {
   const valid = report();
   const fake = { ...valid,

@@ -161,3 +161,16 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
   downloads, registry publishing or automatic Ollama model migration.
   Requires an actual approved model/adapter for real measurements;
   no weights or measured quality are currently available.
+
+
+## Queued autocomplete responsiveness (unreleased source)
+
+The automatic typing debounce now settles superseded waits immediately using a
+single cancellable latest-request gate. Manual requests bypass the timer;
+Stop, privacy revocation, file pausing and editor switches cancel it.
+No duplicate automatic model generation is authorized by this optimization.
+No source, file URI or prompt text is stored by the gate. Only the verified
+existing request path can reach Ollama after a delay. Unit and mocked
+VS Code editor-host tests protect timer cleanup and burst behavior;
+actual real-model latency measurements and physical editor QA remain pending.
+Publisher migration and new releases remain paused.

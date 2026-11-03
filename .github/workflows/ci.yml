@@ -28,7 +28,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install locked dependencies
@@ -44,7 +44,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - name: Install locked dependencies
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - run: npm ci
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '22'
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: '3.11'
       - run: npm ci
@@ -150,6 +150,17 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           xvfb-run -a npm run test:upgrade-vsix -- "LineLoom-1.2.4.vsix" "LineLoom-${VERSION}.vsix"
+      - name: Build and verify separate Sanskar publisher preview candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          npm run package:publisher-preview -- "LineLoom-${VERSION}-Sanskar.vsix"
+          LINELOOM_EXPECT_PUBLISHER=Sanskar LINELOOM_EXPECT_PRE_RELEASE=1 npm run verify:vsix -- "LineLoom-${VERSION}-Sanskar.vsix"
+          sha256sum "LineLoom-${VERSION}-Sanskar.vsix" > "LineLoom-${VERSION}-Sanskar.sha256"
+          sha256sum --check "LineLoom-${VERSION}-Sanskar.sha256"
+          LINELOOM_EXPECT_PUBLISHER=Sanskar xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}-Sanskar.vsix"
+          git diff --exit-code -- package.json package-lock.json
       - uses: actions/upload-artifact@v7
         with:
           name: lineloom-${{ env.LINELOOM_CANDIDATE_VERSION }}-stable-channel-ci-candidate
@@ -157,4 +168,6 @@ jobs:
           path: |
             LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}.vsix
             LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}.sha256
+            LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}-Sanskar.vsix
+            LineLoom-${{ env.LINELOOM_CANDIDATE_VERSION }}-Sanskar.sha256
           if-no-files-found: error
