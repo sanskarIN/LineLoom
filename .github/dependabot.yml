@@ -13,6 +13,10 @@ updates:
       # Review new packager majors manually before updating that security gate.
       - dependency-name: "@vscode/vsce"
         update-types: ["version-update:semver-major"]
+      # API declaration upgrades can exceed engines.vscode, breaking VSIX packaging.
+      # Review editor-version compatibility before updating the types baseline.
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:semver-minor", "version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
