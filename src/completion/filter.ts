@@ -147,7 +147,7 @@ export function cleanCompletion(
   // Do not search inside ordinary code literals: marker-looking strings are
   // valid source and remain byte-exact.
   const controlBoundary =
-    /^(?:<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>)|(?:<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>)[ \t]*$/u;
+    /^<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>|<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>[ \t]*$|<\|im_start\|>(?:assistant|user|system|developer)[ \t]*$/u;
   if (controlBoundary.test(value)) return "";
   // A clearly wrong-language fenced response should not become editor ghost text.
   // Also inspect incomplete fences (where the closing marker was truncated).
