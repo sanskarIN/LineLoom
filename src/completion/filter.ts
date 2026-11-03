@@ -147,7 +147,7 @@ export function cleanCompletion(
   // Do not search inside ordinary code literals: marker-looking strings are
   // valid source and remain byte-exact.
   const unconsumedStart =
-    /^<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>/u.test(value);
+    /^[ \t]*<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>/u.test(value);
   const unconsumedEnd =
     /<\|(?:im_start|im_end|fim_prefix|fim_middle|fim_suffix|endoftext)\|>[ \t]*$/u.test(value);
   const danglingChatRole =
