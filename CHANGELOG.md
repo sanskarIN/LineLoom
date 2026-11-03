@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — bounded live generation cancellation
+
+- A live VS Code request now settles on manual cancellation, supersession or the configured deadline even when a non-cooperative inference transport ignores its abort signal.
+- Preserve existing privacy and endpoint consent checks, best-effort network cancellation and sanitized failure states. Source-free tests cover stalled transports, late model responses, cancellation before dispatch and listener cleanup.
+- No new trained model, real Ollama quality benchmark, extension release, package publishing or publisher migration.
+
 ## Unreleased — bounded local model-evaluator deadlines
 
 - Race synthetic Ollama fetch and strict stream decoding against one request abort deadline. A transport that ignores `AbortSignal` can no longer hold an optional benchmark indefinitely.
