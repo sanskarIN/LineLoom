@@ -161,10 +161,16 @@ export function cleanCompletion(
   // by a fence is not code. Reject it instead of accidentally inserting prose
   // or bypassing the fence language check; do not guess how to rewrite it.
   if (!fenceHeader && /^[^\n]{1,160}\n[ \t]*```[a-zA-Z0-9+#_-]*[^\n]*\n/u.test(value)) return "";
-  // Prefer the first fenced code block, dropping explanations that follow it.
-  const fenced = /^\s*```[ \t]*(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n([\s\S]*?)\n?```/.exec(value);
-  if (fenced) value = fenced[1];
-  else value = value.replace(/^\s*```[ \t]*(?:[a-zA-Z0-9+#_-]+)?[^\n]*\n/, "").replace(/\n?```\s*$/, "");
+  // A closing Markdown delimiter must occupy its own line. Backticks
+  // embedded inside generated source strings or comments are not delimiters.
+  // Never strip trailing backticks from source that was not fenced at all.
+  if (fenceHeader) {
+    const body = value.slice(fenceHeader[0].length);
+    const closingFence = /(?:^|\n)[ \t]*```[ \t]*(?=\n|$)/u.exec(body);
+    // Models sometimes stop before emitting a closing fence: preserve the
+    // generated code exactly as received after the known opening header.
+    value = closingFence ? body.slice(0, closingFence.index) : body;
+  }
   if (/^(?:Certainly|Sure[,!]|As an AI|I can help)/i.test(value.trimStart())) return "";
   // A model may return a large part of code already present before the cursor.
   const tail = prefix.slice(-160);
