@@ -25,7 +25,7 @@ describe("Ollama endpoint requests", () => {
       const controller = new AbortController();
       const fetchMock = vi.fn(() => new Promise<Response>(() => {}));
       vi.stubGlobal("fetch", fetchMock);
-      const pending = endpoint === "tags"
+      const pending: Promise<unknown> = endpoint === "tags"
         ? listModels(origin, controller.signal)
         : showModel(origin, "local:latest", controller.signal);
       await Promise.resolve();
