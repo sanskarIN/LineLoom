@@ -944,16 +944,19 @@ export async function run(): Promise<void> {
         }
         // Exercise experimental opt-in modes in a real extension host,
         // including the default-deny inference boundary and model overrides.
-        // Lua language mode is not built into all editor distributions, so
-        // only test it when this host actually registers it.
+        // Lua and C# language modes can depend on installed editor language
+        // providers. Skip only when this host lacks that mode; manual tests
+        // must still cover it in a configured physical VS Code installation.
         const registeredModes = new Set(await vscode.languages.getLanguages());
         for (const [filename, languageId, languageLabel] of [
           ["editor-optin.html", "html", "HTML"],
           ["editor-optin.css", "css", "CSS"],
-          ["editor-optin.lua", "lua", "Lua"]
+          ["editor-optin.lua", "lua", "Lua"],
+          ["editor-optin.cs", "csharp", "C#"]
         ] as const) {
           if (!registeredModes.has(languageId)) {
-            assert.equal(languageId, "lua", "HTML/CSS built-in language mode missing");
+            assert.ok(languageId === "lua" || languageId === "csharp",
+              "HTML/CSS built-in language mode missing");
             continue;
           }
           let optDocument: vscode.TextDocument = await vscode.workspace.openTextDocument(
