@@ -57,7 +57,10 @@ function containsUnsafeUnicode(value: string): boolean {
         (point >= 0x2060 && point <= 0x2064) ||
         (point >= 0x2066 && point <= 0x206f) ||
         point === 0xfeff ||
-        (point >= 0xd800 && point <= 0xdfff)) return true;
+        (point >= 0xd800 && point <= 0xdfff) ||
+        // Supplementary Unicode tag characters are invisible in editors and
+        // can disguise generated comments or string content.
+        (point >= 0xe0000 && point <= 0xe007f)) return true;
   }
   return false;
 }
