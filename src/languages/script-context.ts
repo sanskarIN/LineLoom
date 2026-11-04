@@ -33,16 +33,27 @@ function regexCanStart(output: readonly string[]): boolean {
   let end = output.length;
   while (end && /\s/u.test(output[end - 1])) end--;
   if (end === 0) return true;
-  if (/[=([{,:;!?]/u.test(output[end - 1])) return true;
-  // These operators expect a fresh expression. Without this guard a regex
-  // after an arrow or logical operator is parsed as ordinary code and its
-  // payload can accidentally enable misleading fixed autocomplete hints.
-  // Inspect two already-scanned characters; do not regex-search user text.
+  const last = output[end - 1];
+  // A slash following a binary/unary expression operator can begin a regex,
+  // including single |, &, ^, *, /, + and -. Without masking that operand,
+  // its contents may be mistaken for executable async/type declarations.
+  if (/[=([{,:;!?|&^~*%/]/u.test(last)) return true;
+  if (last === "+" || last === "-") {
+    // Postfix increment/decrement are completed operands, so a following
+    // slash is division rather than the start of a regex literal.
+    if (end > 1 && output[end - 2] === last) return false;
+    return true;
+  }
+  // These operators expect a fresh expression. Inspect only a tiny portion
+  // of already-scanned source, never expose or interpolate user identifiers.
   const operator = output.slice(Math.max(0, end - 2), end).join("");
   if (operator === "=>" || operator === "||" || operator === "&&") return true;
-  return /\b(?:return|throw|case|yield|await)\s*$/u.test(
-    output.slice(Math.max(0, end - 32), end).join("")
-  );
+  const tail = output.slice(Math.max(0, end - 32), end).join("");
+  const keyword = /\b(?:return|throw|case|yield|await)\s*$/u.exec(tail);
+  if (!keyword) return false;
+  // obj.return / denominator and obj.await / denominator are division:
+  // property names that resemble keywords must not start regex mode.
+  return !tail.slice(0, keyword.index).trimEnd().endsWith(".");
 }
 
 /** Bounded scanner: mask template text but inspect executable JS/TS interpolations. */
