@@ -37,7 +37,7 @@ function regexCanStart(output: readonly string[]): boolean {
   // A slash following a binary/unary expression operator can begin a regex,
   // including single |, &, ^, *, /, + and -. Without masking that operand,
   // its contents may be mistaken for executable async/type declarations.
-  if (/[=([{,:;!?|&^~*%\/]/u.test(last)) return true;
+  if (/[=([{,:;!?|&^~*%/]/u.test(last)) return true;
   if (last === "+" || last === "-") {
     // Postfix increment/decrement are completed operands, so a following
     // slash is division rather than the start of a regex literal.
