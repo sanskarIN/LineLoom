@@ -1,4 +1,5 @@
 import { validateEndpoint } from "../settings/endpoint";
+import { settleOnAbort } from "../completion/settle-on-abort";
 export interface OllamaModel { name: string; size?: number }
 export interface GenerateInput {
   model: string; prompt: string; suffix?: string; numPredict: number;
@@ -20,8 +21,15 @@ async function readableResponse(response: Response): Promise<Response> {
   return response;
 }
 export async function listModels(origin: string, signal?: AbortSignal): Promise<OllamaModel[]> {
-  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), { signal: requestSignal(signal), redirect: "error" }));
-  const body: unknown = await readBoundedJson(response);
+  // A server or proxy may ignore AbortSignal during fetch or while streaming
+  // /api/tags. Bound the complete manual discovery operation, not just fetch.
+  const activeSignal = requestSignal(signal);
+  const body: unknown = await settleOnAbort(activeSignal, async () => {
+    const response = await readableResponse(await fetch(endpointUrl(origin, "/api/tags"), {
+      signal: activeSignal, redirect: "error"
+    }));
+    return readBoundedJson(response, activeSignal);
+  });
   if (!body || typeof body !== "object" || !("models" in body) || !Array.isArray(body.models)) throw new Error("Unexpected /api/tags response.");
   // The endpoint may be remote and untrusted. Model names flow into native
   // QuickPick UI and settings, so enforce a strict bounded Ollama tag shape.
@@ -45,17 +53,22 @@ export async function listModels(origin: string, signal?: AbortSignal): Promise<
   return models;
 }
 export async function showModel(origin: string, model: string, signal?: AbortSignal): Promise<boolean> {
-  const response = await fetch(endpointUrl(origin, "/api/show"), {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model }), signal: requestSignal(signal), redirect: "error"
-  });
-  if (response.status === 404) {
+  const activeSignal = requestSignal(signal);
+  // A non-cooperative /api/show fetch must not leave the manually invoked
+  // model availability check pending after cancellation or the deadline.
+  return settleOnAbort(activeSignal, async () => {
+    const response = await fetch(endpointUrl(origin, "/api/show"), {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ model }), signal: activeSignal, redirect: "error"
+    });
+    if (response.status === 404) {
+      void response.body?.cancel().catch(() => undefined);
+      return false;
+    }
+    await readableResponse(response);
     void response.body?.cancel().catch(() => undefined);
-    return false;
-  }
-  await readableResponse(response);
-  void response.body?.cancel().catch(() => undefined);
-  return true;
+    return true;
+  });
 }
 /**
  * Decode response bodies losslessly. The default TextDecoder replaces bad UTF-8
@@ -76,9 +89,14 @@ function decodeResponseChunk(decoder: TextDecoder, bytes?: Uint8Array): string {
  * return an unresolved Promise after the response/error was fully parsed.
  */
 /** Limit model discovery responses before parsing JSON from an untrusted endpoint. */
-async function readBoundedJson(response: Response): Promise<unknown> {
+async function readBoundedJson(response: Response, signal: AbortSignal): Promise<unknown> {
   if (!response.body) throw new Error("Ollama returned an empty model list response.");
   const reader = response.body.getReader();
+  // Best-effort stream cleanup when cancellation interrupts a stalled read.
+  // The outer deadline race still settles even if cancel() itself hangs.
+  const onAbort = (): void => { void reader.cancel().catch(() => undefined); };
+  signal.addEventListener("abort", onAbort, { once: true });
+  if (signal.aborted) onAbort();
   const decoder = new TextDecoder("utf-8", { fatal: true });
   let bytes = 0;
   let json = "";
@@ -92,6 +110,7 @@ async function readBoundedJson(response: Response): Promise<unknown> {
     }
     return JSON.parse(json + decodeResponseChunk(decoder)) as unknown;
   } finally {
+    signal.removeEventListener("abort", onAbort);
     // Do not wait for a server-controlled stream's cancel() promise.
     // A malformed stream or successful terminal event must settle even
     // when the underlying transport never acknowledges cancellation.
