@@ -264,6 +264,21 @@ describe("active-language fenced completion filtering", () => {
     expect(cleanCompletion("```cpp\nstd::string x;\n```", "", "", true, 8, "c")).toBe("");
   });
 
+  it("recognizes C# fenced output without confusing it with C or C++", () => {
+    const example = "public int Value { get; init; }";
+    for (const name of ["c#", "cs", "csharp"]) {
+      const fenced = "```" + name + "\n" + example + "\n```";
+      expect(cleanCompletion(fenced, "", "", true, 8, "csharp")).toBe(example);
+      expect(cleanCompletion(fenced, "", "", true, 8, "c")).toBe("");
+      expect(cleanCompletion(fenced, "", "", true, 8, "cpp")).toBe("");
+    }
+    expect(cleanCompletion("```cpp\nint value = 1;\n```",
+      "", "", true, 8, "csharp")).toBe("");
+    expect(cleanCompletion("```python\nprint(1)\n```",
+      "", "", true, 8, "csharp")).toBe("");
+    expect(cleanCompletion(example, "", "", true, 8, "csharp")).toBe(example);
+  });
+
   it("accepts CUDA fences only in CUDA mode with safe C++/C fallbacks", () => {
     const code = "__global__ void kernel() {}";
     for (const label of ["cuda", "cuda-cpp", "cu"]) {

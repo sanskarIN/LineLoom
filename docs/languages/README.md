@@ -1,6 +1,6 @@
 # LineLoom language controls
 
-LineLoom registers the VS Code inline-completion provider for thirteen language IDs (nine enabled by default):
+LineLoom registers the VS Code inline-completion provider for fourteen language IDs (nine enabled by default):
 
 | VS Code ID | Language | Typical extensions | Preview status |
 | --- | --- | --- | --- |
@@ -16,7 +16,8 @@ LineLoom registers the VS Code inline-completion provider for thirteen language 
 | `html` | HTML | `.html`, `.htm` | New experimental, opt-in only |
 | `css` | CSS | `.css` | New experimental, opt-in only |
 | `lua` | Lua | `.lua` | Experimental, opt-in only; editor language mode may require an extension |
-| `cuda-cpp` | CUDA C++ | `.cu`, `.cuh` | New experimental, opt-in only; editor mode provided by VS Code or a CUDA extension |
+| `cuda-cpp` | CUDA C++ | `.cu`, `.cuh` | Experimental, opt-in only; editor mode provided by VS Code or a CUDA extension |
+| `csharp` | C# | `.cs`, `.csx` | New experimental, opt-in only; C# language mode required |
 
 Actual support uses the **language mode reported by VS Code**, not the filename alone. For example, `.h` files may be recognized as either C or C++ depending on the selected editor mode. If needed, use **Change Language Mode** in VS Code.
 
@@ -28,9 +29,38 @@ Open **Command Palette → LineLoom: Manage Autocomplete Languages**, check the 
 "lineloom.enabledLanguages": ["python", "typescript", "rust", "go"]
 ```
 
-The existing nine defaults are unchanged. To try HTML, CSS, Lua or CUDA C++, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"`, `"lua"` or `"cuda-cpp"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
+The existing nine defaults are unchanged. To try HTML, CSS, Lua, CUDA C++ or C#, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"`, `"lua"`, `"cuda-cpp"` or `"csharp"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
+
+## C# completion (issue #138; unreleased, opt-in)
+
+LineLoom now recognizes VS Code's `csharp` language ID for `.cs` and
+`.csx` editors. This experimental mode is **disabled by default**. To
+enable it, select **C#** under **LineLoom: Manage Autocomplete Languages**
+or include `"csharp"` in `lineloom.enabledLanguages`. A `.cs` filename
+alone is insufficient: VS Code must report its editor language as
+`csharp`, and all existing workspace-trust, file-privacy and endpoint
+approval checks still apply.
+
+C# has an independent optional Ollama model override through
+`lineloom.languageModels.csharp`; no C/C++ or Java override is silently
+reused. Generic instruction-mode prompts use only fixed guidance on
+nullable references, `using`, async/await, generics, exceptions and
+existing .NET API contracts. The output filter understands explicit
+`csharp`, `cs` and `c#` Markdown fences and rejects recognized C,
+C++, Python and other incompatible language fences. Unlabeled output
+retains the existing behavior. Native FIM inference still supplies
+the previously approved prefix/suffix unchanged.
+
+This **does not** install the C#/.NET SDK, a VS Code language service,
+an Ollama model or trained LineLoom Code weights. It does not compile,
+type-check or execute model-generated code, and real local-model C#
+quality and physical-editor/accessibility checks remain **NOT RUN**.
+The first-party model research target remains Rust, C, C++, Python and
+TypeScript; C# registration does not silently expand that model's
+training or quality claims. Selected related-file context remains
+separately opt-in under its existing allowlist.
 
 ## CUDA C++ completion (issue #138; unreleased, opt-in)
 

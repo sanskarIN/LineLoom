@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — experimental C# autocomplete opt-in
+
+- Register VS Code's `csharp` language ID for `.cs` and `.csx`, with fixed conservative .NET guidance, language-specific installed Ollama override and existing local/privacy/endpoint gates.
+- Keep the same nine enabled defaults. C# requires deliberate opt-in; explicitly tagged C#/CS Markdown responses are checked for language compatibility without treating C# as C/C++.
+- Add language registry, manifest and completion-filter regressions and source-only documentation. No C# model training, compilation or quality measurements, VSIX release, registry publication or publisher migration.
+
 ## Unreleased — bounded manual model discovery cancellation
 
 - Enforce the existing eight-second discovery/availability deadline around the entire Ollama `/api/tags` and `/api/show` operation, including non-cooperative fetches and stalled model-list streams.

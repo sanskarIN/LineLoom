@@ -1,5 +1,5 @@
 /** VS Code language IDs, not filename-only inference. */
-export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp";
+export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp" | "csharp";
 export interface LanguageSpec {
   id: SupportedLanguage;
   label: string;
@@ -19,7 +19,8 @@ export const LANGUAGES: readonly LanguageSpec[] = [
   { id: "html", label: "HTML", extensions: [".html", ".htm"], guidance: "Respect document structure, matching tags, attribute quoting and accessible markup." },
   { id: "css", label: "CSS", extensions: [".css"], guidance: "Respect existing selectors, cascade conventions, property syntax and brace matching." },
   { id: "lua", label: "Lua", extensions: [".lua"], guidance: "Respect Lua local scope, tables, block endings and the existing runtime version." },
-  { id: "cuda-cpp", label: "CUDA C++", extensions: [".cu", ".cuh"], guidance: "Respect CUDA host/device qualifiers, kernel launch syntax, thread indexing, bounds checks, memory spaces and synchronization; preserve existing C++ types and architecture constraints." }
+  { id: "cuda-cpp", label: "CUDA C++", extensions: [".cu", ".cuh"], guidance: "Respect CUDA host/device qualifiers, kernel launch syntax, thread indexing, bounds checks, memory spaces and synchronization; preserve existing C++ types and architecture constraints." },
+  { id: "csharp", label: "C#", extensions: [".cs", ".csx"], guidance: "Respect C# nullable reference types, namespaces, using directives, generics, async/await, exception handling and existing .NET API contracts; do not invent types or members." }
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
 const aliases: Record<string, SupportedLanguage> = {
