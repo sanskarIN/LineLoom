@@ -5,7 +5,7 @@
  */
 export type ScriptLanguage = "python" | "javascript" | "typescript";
 export type ScriptState = "code" | "comment" | "block-comment" | "single" |
-  "double" | "triple-single" | "triple-double" | "template" | "regex";
+  "double" | "triple-single" | "triple-double" | "template" | "regex" | "fstring-format";
 export interface ScriptScan { code: string; state: ScriptState }
 
 const PY = {
@@ -67,12 +67,60 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
   // inside ${...} must not close the outer interpolation, and braces in
   // strings/comments/regexes must not affect its depth.
   const templates: Array<{ interpolationDepth: number }> = [];
+  // Python f-strings may contain real executable replacement fields. Keep
+  // their literal text masked, and use bounded depth instead of parsing/eval.
+  // A nested f-string in an expression receives an independent frame.
+  const pythonFStrings: Array<{
+    quote: "single" | "double" | "triple-single" | "triple-double";
+    delimiter: string;
+    expressionDepth: number;
+    bracketDepth: number;
+  }> = [];
   let i = 0;
   const mask = (part: string): void => {
     for (const c of part) output.push(c === "\n" ? "\n" : " ");
   };
   while (i < text.length) {
     const c = text[i];
+    const pythonFrame = python ? pythonFStrings[pythonFStrings.length - 1] : undefined;
+    // In f-string text, doubled braces and escaped quote characters are data.
+    // Only an unescaped single opening brace begins executable Python code.
+    if (pythonFrame && state === pythonFrame.quote && pythonFrame.expressionDepth === 0) {
+      if (c === "\\" && i + 1 < text.length) {
+        mask(text.slice(i, i + 2));
+        i += 2;
+      } else if (text.startsWith(pythonFrame.delimiter, i)) {
+        mask(pythonFrame.delimiter);
+        i += pythonFrame.delimiter.length;
+        pythonFStrings.pop();
+        state = "code";
+      } else if (text.startsWith("{{", i) || text.startsWith("}}", i)) {
+        mask(text.slice(i, i + 2));
+        i += 2;
+      } else if (c === "{") {
+        mask(c);
+        pythonFrame.expressionDepth = 1;
+        pythonFrame.bracketDepth = 0;
+        state = "code";
+        i++;
+      } else {
+        mask(c);
+        i++;
+      }
+      continue;
+    }
+    if (pythonFrame && state === "fstring-format") {
+      // Format specifications and conversions are presentation text. Mask
+      // them conservatively, including nested format-field syntax, rather
+      // than interpreting format text as executable code.
+      mask(c);
+      i++;
+      if (c === "}") {
+        pythonFrame.expressionDepth = 0;
+        state = pythonFrame.quote;
+      }
+      continue;
+    }
     if (state === "comment") {
       if (c === "\n") { output.push("\n"); state = "code"; }
       else output.push(" ");
@@ -131,6 +179,52 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
       mask(c);
       i++;
       continue;
+    }
+    if (python && (c === "f" || c === "F" || c === "r" || c === "R")) {
+      // Accept f/F and fr/rf (case-insensitive) only at an identifier
+      // boundary. Ordinary and raw non-f strings retain existing behavior.
+      const previous = i >= 2 && /[\\uDC00-\\uDFFF]/u.test(text[i - 1])
+        ? text.slice(i - 2, i) : text.slice(Math.max(0, i - 1), i);
+      const prefix = !/[\\p{L}\\p{M}\\p{N}_]/u.test(previous)
+        ? /^(?:[fF][rR]?|[rR][fF])(?=['"])/u.exec(text.slice(i, i + 3))?.[0]
+        : undefined;
+      if (prefix) {
+        const quoteAt = i + prefix.length;
+        const quote = text[quoteAt];
+        const triple = text.startsWith(quote.repeat(3), quoteAt);
+        const delimiter = quote.repeat(triple ? 3 : 1);
+        const literal = (quote === "'" ? (triple ? "triple-single" : "single")
+          : (triple ? "triple-double" : "double")) as
+          "single" | "double" | "triple-single" | "triple-double";
+        mask(text.slice(i, quoteAt + delimiter.length));
+        i = quoteAt + delimiter.length;
+        pythonFStrings.push({ quote: literal, delimiter, expressionDepth: 0, bracketDepth: 0 });
+        state = literal;
+        continue;
+      }
+    }
+    if (pythonFrame && pythonFrame.expressionDepth > 0) {
+      if (c === "{" ) pythonFrame.expressionDepth++;
+      else if (c === "}") {
+        pythonFrame.expressionDepth--;
+        if (pythonFrame.expressionDepth === 0) {
+          mask(c);
+          i++;
+          state = pythonFrame.quote;
+          continue;
+        }
+      } else if (c === "(" || c === "[") pythonFrame.bracketDepth++;
+      else if ((c === ")" || c === "]") && pythonFrame.bracketDepth > 0) {
+        pythonFrame.bracketDepth--;
+      } else if (c === ":" && pythonFrame.expressionDepth === 1 &&
+          pythonFrame.bracketDepth === 0) {
+        // At top level a colon begins format text. Ambiguous Python lambda
+        // expressions are intentionally treated as text (a safe missed hint).
+        mask(c);
+        i++;
+        state = "fstring-format";
+        continue;
+      }
     }
     if (python && c === "#") { mask(c); state = "comment"; i++; continue; }
     if (!python && text.startsWith("//", i)) { mask("//"); state = "comment"; i += 2; continue; }
