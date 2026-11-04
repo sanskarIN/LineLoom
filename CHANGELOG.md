@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — bounded manual model discovery cancellation
+
+- Enforce the existing eight-second discovery/availability deadline around the entire Ollama `/api/tags` and `/api/show` operation, including non-cooperative fetches and stalled model-list streams.
+- Abort a stalled model-list reader on a best-effort basis and return a sanitized cancellation without waiting on server-controlled cleanup. Add mock regressions for ignored aborts, pre-cancelled requests and blocked response bodies.
+- Local/approved endpoint policy remains unchanged. No new trained model, inference measurements, extension release or publisher migration.
+
 ## Unreleased — invisible Unicode tag completion safety
 
 - Reject default-ignorable supplementary Unicode tag characters (U+E0000–U+E007F) anywhere in model-generated ghost text instead of silently removing or inserting hidden source content.
