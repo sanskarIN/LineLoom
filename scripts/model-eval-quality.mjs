@@ -18,7 +18,10 @@ function unsafeUnicode(value) {
         cp === 0x200e || cp === 0x200f ||
         (cp >= 0x2028 && cp <= 0x202e) ||
         (cp >= 0x2060 && cp <= 0x206f) ||
-        cp === 0xfeff || (cp >= 0xd800 && cp <= 0xdfff)) return true;
+        cp === 0xfeff || (cp >= 0xd800 && cp <= 0xdfff) ||
+        // Match the editor completion filter: supplementary tag characters
+        // U+E0000–U+E007F are invisible and cannot be inserted as ghost text.
+        (cp >= 0xe0000 && cp <= 0xe007f)) return true;
   }
   return false;
 }

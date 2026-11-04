@@ -60,15 +60,17 @@ test("recognized checked-in language/category scopes and modes compare offline",
     }
   }
 });
-test("refuses saved v9 reports after instruction framing changes in v10", () => {
+test("refuses v10 and older reports after changing unsafe Unicode scoring in v11", () => {
   for (const mode of ["instruction", "fim"]) {
     const valid = report({ mode, runs: 2 });
-    assert.equal(valid.benchmarkProtocol, "lineloom-synthetic-v10");
-    assert.equal(validateComparableReport(valid).benchmarkProtocol, "lineloom-synthetic-v10");
-    const legacy = { ...valid, benchmarkProtocol: "lineloom-synthetic-v9" };
-    assert.throws(() => validateComparableReport(legacy));
-    assert.throws(() => compareModelReports(legacy, valid));
-    assert.throws(() => compareModelReports(valid, legacy));
+    assert.equal(valid.benchmarkProtocol, "lineloom-synthetic-v11");
+    assert.equal(validateComparableReport(valid).benchmarkProtocol, "lineloom-synthetic-v11");
+    for (const oldProtocol of ["lineloom-synthetic-v10", "lineloom-synthetic-v9"]) {
+      const legacy = { ...valid, benchmarkProtocol: oldProtocol };
+      assert.throws(() => validateComparableReport(legacy));
+      assert.throws(() => compareModelReports(legacy, valid));
+      assert.throws(() => compareModelReports(valid, legacy));
+    }
   }
 });
 

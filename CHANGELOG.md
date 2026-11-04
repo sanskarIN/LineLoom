@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — v11 model-evaluation Unicode safety diagnostics
+
+- Flag invisible supplementary Unicode tags U+E0000–U+E007F as `unsafeUnicode` in the offline synthetic model evaluator, matching the editor's already-shipped model-output filter; preserve valid supplementary letters, emoji and ZWJ/ZWNJ text.
+- Bump the synthetic report protocol to `lineloom-synthetic-v11`, refusing comparisons with v10 or earlier results because safety-signal interpretation changed despite unchanged fixtures and request hashes.
+- Add source-free regression tests and evaluation guidance. No real Ollama inference, human quality metrics, trained weights, VSIX release or publisher migration.
+
 ## Unreleased — experimental C# autocomplete opt-in
 
 - Register VS Code's `csharp` language ID for `.cs` and `.csx`, with fixed conservative .NET guidance, language-specific installed Ollama override and existing local/privacy/endpoint gates.

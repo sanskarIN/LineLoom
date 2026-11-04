@@ -14,7 +14,7 @@ test("fixed format signal enums cannot reproduce generated source", () => {
   assert.deepEqual(output, ["markdownFence"]);
   assert.ok(FORMAT_SIGNAL_NAMES.includes(output[0]));
   assert.ok(!JSON.stringify(output).includes("SECRET_MARKER"));
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v10");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v11");
 });
 test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify(" \r\n "), ["empty"]);
@@ -23,6 +23,21 @@ test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify("let value = 0; \u202e"), ["unsafeUnicode"]);
   assert.deepEqual(classify("let flag = true;\r\n"), []);
 });
+test("v11 treats invisible supplementary tags like the editor completion filter", () => {
+  // The four-byte UTF-8 tag code points are not covered by BMP format ranges.
+  // A benchmark must flag them even when the rest of the suggestion is valid.
+  for (const point of [0xe0000, 0xe0001, 0xe0020, 0xe0061, 0xe007f]) {
+    const raw = "let value = 1;" + String.fromCodePoint(point);
+    assert.deepEqual(classify(raw), ["unsafeUnicode"]);
+  }
+  // Do not misclassify ordinary supplementary letters, emoji, or the ZWJ
+  // used in identifiers and emoji sequences as unsafe.
+  for (const value of ["𐐀", "🚀", "x\u200cy", "x\u200dy", "👩‍💻"]) {
+    assert.deepEqual(classify("let name = " + value + ";"), []);
+  }
+  assert.deepEqual(classify("return 1;" + String.fromCharCode(0xd800)), ["unsafeUnicode"]);
+});
+
 test("flags significant copied prefix or suffix, not trivial brackets", () => {
   assert.ok(classify(fixture.prefix.slice(-20) + "return 4").includes("prefixEcho"));
   assert.ok(classify("return value;" + fixture.suffix.trim()).includes("suffixEcho"));

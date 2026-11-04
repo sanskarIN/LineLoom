@@ -11,8 +11,11 @@ import { summarizeTokenAccounting } from "./model-eval-token-accounting.mjs";
 export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "typescript"]);
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
-/** Bump when prompt construction, generation settings or matching changes. */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v10";
+/** Bump when prompt construction, generation settings or scoring changes.
+ * v11 counts invisible supplementary Unicode tags as unsafe output, matching
+ * the editor filter; prior reports must not be silently reinterpreted.
+ */
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v11";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
