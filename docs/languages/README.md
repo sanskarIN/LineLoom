@@ -35,6 +35,12 @@ Removing an ID turns off LineLoom's model requests for that language. Choosing *
 
 ## C# completion (issue #138; unreleased, opt-in)
 
+The [C# manual acceptance checklist](../qa/opt-in-csharp-acceptance.md)
+separates editor-host mock coverage from required physical C#/Ollama,
+keyboard, accessibility and operating-system verification. Automated tests
+cannot establish C# code quality.
+
+
 LineLoom now recognizes VS Code's `csharp` language ID for `.cs` and
 `.csx` editors. This experimental mode is **disabled by default**. To
 enable it, select **C#** under **LineLoom: Manage Autocomplete Languages**
