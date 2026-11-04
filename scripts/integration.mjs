@@ -57,6 +57,7 @@ try {
   await writeFile(path.join(fixture, "editor-optin.html"), "<main><p>", "utf8");
   await writeFile(path.join(fixture, "editor-optin.css"), ".card { padding: ", "utf8");
   await writeFile(path.join(fixture, "editor-optin.lua"), "local answer = ", "utf8");
+  await writeFile(path.join(fixture, "editor-optin.cs"), "public static int Answer() { return ", "utf8");
   await writeFile(path.join(fixture, "editor-fim.ts"), "const answer = /* preserved suffix */", "utf8");
   // Only the editor download can be retried; test/extension failures must
   // remain visible and must never be retried as if they were network errors.
