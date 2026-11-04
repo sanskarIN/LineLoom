@@ -8,12 +8,12 @@ import { summarizeActiveEditor } from "../../src/ui/editor-context";
 import { buildPrompt } from "../../src/completion/prompt";
 import { extractContext } from "../../src/context/extract";
 
-describe("opt-in HTML, CSS, Lua and CUDA C++ completion modes", () => {
-  const additions = ["html", "css", "lua", "cuda-cpp"] as const;
+describe("opt-in HTML, CSS, Lua, CUDA C++ and C# completion modes", () => {
+  const additions = ["html", "css", "lua", "cuda-cpp", "csharp"] as const;
 
   it("registers each language once with a distinct VS Code mode and guidance", () => {
     expect(new Set(LANGUAGES.map(language => language.id)).size).toBe(LANGUAGES.length);
-    expect(LANGUAGES).toHaveLength(13);
+    expect(LANGUAGES).toHaveLength(14);
     for (const id of additions) {
       const spec = getLanguage(id);
       expect(spec?.id).toBe(id);
@@ -32,8 +32,8 @@ describe("opt-in HTML, CSS, Lua and CUDA C++ completion modes", () => {
     for (const id of additions) {
       expect(isLanguageEnabled(getLanguage(id)!, normalizeEnabledLanguages(undefined))).toBe(false);
     }
-    expect(normalizeEnabledLanguages(["lua", "html", "css", "cuda-cpp", "lua", "unexpected"]))
-      .toEqual(["lua", "html", "css", "cuda-cpp"]);
+    expect(normalizeEnabledLanguages(["lua", "html", "css", "cuda-cpp", "csharp", "lua", "unexpected"]))
+      .toEqual(["lua", "html", "css", "cuda-cpp", "csharp"]);
     expect(normalizeEnabledLanguages([])).toEqual([]);
   });
 
@@ -51,12 +51,12 @@ describe("opt-in HTML, CSS, Lua and CUDA C++ completion modes", () => {
   it("accepts valid optional model overrides but does not enable inference by itself", () => {
     const overrides = normalizeLanguageModels({
       html: "markup-local", css: "style-local", lua: "lua-local",
-      "cuda-cpp": "cuda-local",
+      "cuda-cpp": "cuda-local", csharp: "csharp-local",
       plaintext: "ignored", python: "python-local", unknown: "ignored"
     });
     expect(overrides).toEqual({
       python: "python-local", html: "markup-local", css: "style-local", lua: "lua-local",
-      "cuda-cpp": "cuda-local"
+      "cuda-cpp": "cuda-local", csharp: "csharp-local"
     });
     for (const id of additions) {
       const blocked = summarizeActiveEditor({
