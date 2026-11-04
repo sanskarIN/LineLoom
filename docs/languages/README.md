@@ -175,6 +175,13 @@ Language registration is not a guarantee that any particular installed Ollama mo
 Generic local **instruction-mode** models receive up to four fixed, language-specific
 hints inferred from the already-approved bounded prefix. Python guidance covers
 async, typing, exceptions, context managers, match/case and decorators.
+The developer-only Python f-string scanner now recognizes executable
+replacement expressions in `f`/`F`, `fr` and `rf` strings, while masking
+literal text, doubled braces and format specifications. Nested f-strings,
+strings, comments and nested braces are handled conservatively. This remains
+a bounded lexical heuristic, **not** Python parsing or a guarantee that
+complex format specifications, lambda expressions or generated completions
+are semantically correct.
 JavaScript covers modules, Promise/async, functions and exceptions; TypeScript
 also covers interfaces and types. The scanner masks comments, ordinary and
 triple-quoted strings, JavaScript templates, and common regexp literals.
