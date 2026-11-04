@@ -68,7 +68,7 @@ describe("Python bounded lexical guidance", () => {
       expect(scan.code, prefix).not.toContain("async fake()");
       expect(scan.code, prefix).toContain("await fetch_data()");
     }
-    const nested = 'text = f"outer {f\\'inner {await fetch_data()}\\' + repr({\\'x\\': 1})}"';
+    const nested = "text = f\"outer {f'inner {await fetch_data()}' + repr({'x': 1})}\"";
     const scan = scanScriptCode(nested, "python");
     expect(scan.state).toBe("code");
     expect(scan.code).toContain("await fetch_data()");
@@ -87,7 +87,7 @@ describe("Python bounded lexical guidance", () => {
     const nestedFormat = 'text = f"{value:{width}} {await fetch_data()}"';
     expect(scanScriptCode(nestedFormat, "python").code).toContain("await fetch_data()");
     expect(scriptContextHints(nestedFormat, "python").join(" ")).toContain("Python async");
-    expect(scriptContextHints('text = r\\'f"{await hidden()}"\\'', "python")).toEqual([]);
+    expect(scriptContextHints("text = r'f\"{await hidden()}\"'", "python")).toEqual([]);
   });
 
   it("leaves native Python FIM prefix and suffix bytes unchanged", () => {
