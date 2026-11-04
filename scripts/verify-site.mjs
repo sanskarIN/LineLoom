@@ -255,3 +255,17 @@ test("official Marketplace and Open VSX listings are visible throughout publishe
   assert.ok(!publisherGuide.includes("Open VSX is not published/verified yet"), "Remove old unlaunched registry language");
   assert.ok(!readme.includes("Open VSX publication is still"), "Remove old unlaunched registry language");
 });
+
+test("voluntary support links use the canonical Buy Me a Coffee account", () => {
+  const funding = readFileSync(resolve(root, ".github/FUNDING.yml"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  const bmcUrl = "https://buymeacoffee.com/sanskarIN";
+
+  assert.match(funding, /^buy_me_a_coffee: sanskarIN$/m);
+  assert.ok(readme.includes(`[Buy Me a Coffee](${bmcUrl})`));
+  assert.ok(page.includes(`href="${bmcUrl}"`));
+  assert.doesNotMatch(funding, /buy_me_a_coffee:\s*SanskarCodes/i);
+  for (const [name, content] of [["README", readme], ["homepage", page]]) {
+    assert.ok(!content.includes("buymeacoffee.com/SanskarCodes"), `${name} must not link to the retired support handle`);
+  }
+});
