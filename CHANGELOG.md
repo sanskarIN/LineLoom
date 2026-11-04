@@ -2,6 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — invisible Unicode tag completion safety
+
+- Reject default-ignorable supplementary Unicode tag characters (U+E0000–U+E007F) anywhere in model-generated ghost text instead of silently removing or inserting hidden source content.
+- Add source-only unit regressions that preserve legitimate astral letters and emoji. No physical editor QA, new VSIX, publisher migration, trained model or real-model benchmark is claimed.
+
 ## Unreleased — bounded live generation cancellation
 
 - A live VS Code request now settles on manual cancellation, supersession or the configured deadline even when a non-cooperative inference transport ignores its abort signal.

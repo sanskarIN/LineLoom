@@ -143,6 +143,18 @@ describe("completion filtering", () => {
       expect(cleanCompletion(raw, "", "", true), codePoint.toString(16)).toBe("");
     }
   });
+  it("rejects invisible supplementary Unicode tag characters", () => {
+    // These U+E0000..U+E007F code points are default-ignorable.
+    // Reject the entire generated insertion instead of silently modifying it.
+    for (const codePoint of [0xe0001, 0xe0020, 0xe0061, 0xe007f]) {
+      const raw = "const value = 1; // " + String.fromCodePoint(codePoint) + " hidden";
+      expect(cleanCompletion(raw, "", "", true), codePoint.toString(16)).toBe("");
+    }
+    // Legitimate non-BMP letters and emoji are not tag characters.
+    expect(cleanCompletion("const 𐐀name = '🚀';", "", "", true))
+      .toBe("const 𐐀name = '🚀';");
+  });
+
   it("preserves Unicode joiners for international identifiers and emoji", () => {
     const source = "const नाम\u200cसूची = '👩\u200d💻';";
     expect(cleanCompletion(source, "", "", true)).toBe(source);
