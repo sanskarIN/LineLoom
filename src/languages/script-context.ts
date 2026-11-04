@@ -183,9 +183,9 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
     if (python && (c === "f" || c === "F" || c === "r" || c === "R")) {
       // Accept f/F and fr/rf (case-insensitive) only at an identifier
       // boundary. Ordinary and raw non-f strings retain existing behavior.
-      const previous = i >= 2 && /[\\uDC00-\\uDFFF]/u.test(text[i - 1])
+      const previous = i >= 2 && /[\uDC00-\uDFFF]/u.test(text[i - 1])
         ? text.slice(i - 2, i) : text.slice(Math.max(0, i - 1), i);
-      const prefix = !/[\\p{L}\\p{M}\\p{N}_]/u.test(previous)
+      const prefix = !/[\p{L}\p{M}\p{N}_]/u.test(previous)
         ? /^(?:[fF][rR]?|[rR][fF])(?=['"])/u.exec(text.slice(i, i + 3))?.[0]
         : undefined;
       if (prefix) {
@@ -204,7 +204,7 @@ export function scanScriptCode(source: string, language: ScriptLanguage): Script
       }
     }
     if (pythonFrame && pythonFrame.expressionDepth > 0) {
-      if (c === "{" ) pythonFrame.expressionDepth++;
+      if (c === "{") pythonFrame.expressionDepth++;
       else if (c === "}") {
         pythonFrame.expressionDepth--;
         if (pythonFrame.expressionDepth === 0) {
