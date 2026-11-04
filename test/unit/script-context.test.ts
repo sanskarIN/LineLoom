@@ -158,6 +158,19 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
     }
   });
 
+  it("keeps regex braces inside template interpolations masked", () => {
+    const tick = String.fromCharCode(96);
+    const source = "const label = " + tick +
+      "prefix ${flag | /[}]interface Hidden/.test(input) ? 'yes' : 'no'}" +
+      tick + ";\nconst actual = 3;";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("flag | ");
+    expect(scan.code).toContain("const actual = 3;");
+    expect(scan.code).not.toContain("interface Hidden");
+    expect(scriptContextHints(source, "typescript")).toEqual([]);
+  });
+
   it("keeps division after postfix updates and keyword-named properties as code", () => {
     const source = "const a = counter++ / divisor;\n" +
       "const b = counter-- / divisor;\n" +
