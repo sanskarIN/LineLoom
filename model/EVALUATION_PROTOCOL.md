@@ -53,8 +53,8 @@ The source benchmark v10 recognizes `lineloom-code` and
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The Ollama report protocol is `lineloom-synthetic-v10`, which does not
-compare with earlier v1–v9 reports; regenerate both reports locally.
+The current Ollama report protocol is `lineloom-synthetic-v11`, which does not
+compare with earlier v1–v10 reports; regenerate both reports locally.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -88,6 +88,25 @@ This change is **protocol and test implementation only**, not a model run,
 human-editor evaluation, trained model, automatic Ollama installation or a
 published release. Produce new baseline/candidate reports on the same commit
 and hardware before making any measured comparisons.
+
+## 3a1. Invisible supplementary Unicode safety scoring (Ollama v11)
+
+The v11 `unsafeUnicode` format signal now also detects invisible
+supplementary Unicode tag code points U+E0000–U+E007F, matching the
+extension's generated-ghost-text rejection rule. Before this change,
+v10 synthetic reports undercounted unsafe output containing these tags.
+Valid astral letters and emoji, including ZWNJ/ZWJ sequences, remain
+allowed and are not counted as unsafe for this reason.
+
+The signal name, checked-in public fixture set, generation request format,
+and deterministic request/fixture SHA-256 procedures are otherwise
+unchanged. **The diagnostic meaning changed**, so report protocol v11
+rejects all v10 and older saved reports in offline comparison, including
+when their request and fixture hashes happen to match. Run both baseline
+and candidate again under the same v11 code, model controls and machine
+before comparing. A dry run still makes no model request and a mock test
+is not a real-model quality or human safety outcome. No weights or data
+are trained, downloaded, uploaded or released by this change.
 
 ## 3a. Run a same-scope paired local comparison (optional)
 
