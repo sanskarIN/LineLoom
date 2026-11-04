@@ -19,6 +19,55 @@ async function withDeadline<T>(request: Promise<T>): Promise<T> {
 }
 
 describe("Ollama endpoint requests", () => {
+  it("settles cancelled model discovery and lookup when fetch ignores abort", async () => {
+    const origin = "http://127.0.0.1:11434";
+    for (const endpoint of ["tags", "show"] as const) {
+      const controller = new AbortController();
+      const fetchMock = vi.fn(() => new Promise<Response>(() => {}));
+      vi.stubGlobal("fetch", fetchMock);
+      const pending: Promise<unknown> = endpoint === "tags"
+        ? listModels(origin, controller.signal)
+        : showModel(origin, "local:latest", controller.signal);
+      await Promise.resolve();
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      controller.abort("PRIVATE_CANCEL_REASON");
+      await expect(withDeadline(pending)).rejects.toMatchObject({
+        name: "AbortError", message: "Generation cancelled."
+      });
+    }
+  });
+
+  it("does not start aborted model discovery or lookup", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(listModels("http://127.0.0.1:11434", controller.signal))
+      .rejects.toMatchObject({ name: "AbortError" });
+    await expect(showModel("http://127.0.0.1:11434", "local", controller.signal))
+      .rejects.toMatchObject({ name: "AbortError" });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("settles a stalled /api/tags response body and attempts cancellation", async () => {
+    let cancelStarted = false;
+    const body = new ReadableStream<Uint8Array>({
+      start() { /* Intentionally never supplies bytes or EOF. */ },
+      cancel() {
+        cancelStarted = true;
+        return new Promise<void>(() => {});
+      }
+    });
+    const getReader = vi.spyOn(body, "getReader");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body)));
+    const controller = new AbortController();
+    const pending = listModels("http://127.0.0.1:11434", controller.signal);
+    await vi.waitFor(() => expect(getReader).toHaveBeenCalledTimes(1));
+    controller.abort();
+    await expect(withDeadline(pending)).rejects.toMatchObject({ name: "AbortError" });
+    expect(cancelStarted).toBe(true);
+  });
+
   it("rejects a bounded catalog overflow even when stream cancellation never settles", async () => {
     let cancelStarted = false;
     const body = new ReadableStream<Uint8Array>({
