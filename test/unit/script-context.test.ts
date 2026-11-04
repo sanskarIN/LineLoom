@@ -136,6 +136,44 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
     expect(scan.code).toContain("score / divisor;");
   });
 
+  it("masks regex literals after single expression operators without creating fake hints", () => {
+    const cases = [
+      "const r = flag | /interface Hidden/;\nconst actual = 1;",
+      "const r = flag & /async function Fake/;\nconst actual = 2;",
+      "const r = flag ^ /await fake()/;\nconst actual = 3;",
+      "const r = value + /interface Hidden/;\nconst actual = 4;",
+      "const r = value - /async function Fake/;\nconst actual = 5;",
+      "const r = value * /interface Hidden/;\nconst actual = 6;",
+      "const r = value / /async function Fake/;\nconst actual = 7;",
+      "const r = value % /interface Hidden/;\nconst actual = 8;",
+      "const r = ~ /async function Fake/;\nconst actual = 9;"
+    ];
+    for (const source of cases) {
+      const scan = scanScriptCode(source, "typescript");
+      expect(scan.state, source).toBe("code");
+      expect(scan.code, source).toContain("const actual = ");
+      expect(scan.code, source).not.toContain("interface Hidden");
+      expect(scan.code, source).not.toContain("async function Fake");
+      expect(scriptContextHints(source, "typescript"), source).toEqual([]);
+    }
+  });
+
+  it("keeps division after postfix updates and keyword-named properties as code", () => {
+    const source = "const a = counter++ / divisor;\n" +
+      "const b = counter-- / divisor;\n" +
+      "const c = config.await / divisor;\n" +
+      "const d = config.return / divisor;\n" +
+      "async function actual() {}";
+    const scan = scanScriptCode(source, "typescript");
+    expect(scan.state).toBe("code");
+    expect(scan.code).toContain("counter++ / divisor");
+    expect(scan.code).toContain("counter-- / divisor");
+    expect(scan.code).toContain("config.await / divisor");
+    expect(scan.code).toContain("config.return / divisor");
+    expect(scan.code).toContain("async function actual");
+    expect(scriptContextHints(source, "typescript").join(" ")).toContain("Promise contracts");
+  });
+
   it("keeps native FIM source bytes unchanged for arrow-returned regex code", () => {
     const source = String.raw`const predicate = value => /async function Fake/.test(value);` +
       "\nconst next = ";
