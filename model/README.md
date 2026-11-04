@@ -87,7 +87,20 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
-## Ollama v10 instruction-context framing (development source)
+## Ollama v11 unsafe Unicode scoring parity (unreleased source)
+
+The synthetic evaluator now flags supplementary invisible Unicode tag
+characters U+E0000–U+E007F as `unsafeUnicode`, matching the VS Code
+completion filter. This changes how format diagnostics are counted even
+though the fixture set and FIM/instruction request generation are otherwise
+unchanged. The current report protocol is **`lineloom-synthetic-v11`**:
+v10 and older saved reports must not be compared with v11 results, even
+when their request-spec and fixture hashes match. Re-run both actual
+models under v11 to obtain comparable source-free numbers; no model
+run or quality improvement is claimed. Existing checkpoint, rights,
+training and physical editor release gates remain unmet.
+
+## Ollama v10 instruction-context framing (historical development milestone)
 
 The optional local synthetic evaluator now quotes untrusted fixture source
 using the same **source-line data-lane convention** as the VS Code extension:
@@ -183,8 +196,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v10` and cannot be compared
-to previous v1–v9 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v11` and cannot be compared
+to previous v1–v10 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**
