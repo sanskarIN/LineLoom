@@ -218,6 +218,42 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
     }
   });
 
+  it("masks regex literals after prefix and statement keywords", () => {
+    const cases = [
+      "const result = typeof /interface Hidden/;\nconst actual = 1;",
+      "void /async function Fake/.test(value);\nconst actual = 2;",
+      "delete /interface Hidden/.cache;\nconst actual = 3;",
+      "if (enabled) ready(); else /async function Fake/.test(value);\nconst actual = 4;",
+      "do /interface Hidden/.test(value); while (false);\nconst actual = 5;",
+      "const result = typeof /* gap */ /async function Fake/;\nconst actual = 6;"
+    ];
+    for (const source of cases) {
+      const scan = scanScriptCode(source, "typescript");
+      expect(scan.state, source).toBe("code");
+      expect(scan.code, source).toContain("const actual = ");
+      expect(scan.code, source).not.toContain("interface Hidden");
+      expect(scan.code, source).not.toContain("async function Fake");
+      expect(scriptContextHints(source, "typescript"), source).toEqual([]);
+    }
+    expect(scanScriptCode("const kind = typeof /await hidden(", "typescript").state)
+      .toBe("regex");
+    expect(scriptContextHints("const kind = typeof /await hidden(", "typescript"))
+      .toEqual([expect.stringContaining("literal")]);
+  });
+
+  it("preserves division after properties named for expression keywords", () => {
+    const source = "const a = record.typeof / factor;\n" +
+      "const b = record.void / factor;\n" +
+      "const c = record.delete / factor;\n" +
+      "const d = record.else / factor;\n" +
+      "const e = record.do / factor;";
+    const scan = scanScriptCode(source, "javascript");
+    expect(scan.state).toBe("code");
+    for (const name of ["typeof", "void", "delete", "else", "do"]) {
+      expect(scan.code).toContain(`record.${name} / factor`);
+    }
+  });
+
   it("keeps regex braces inside template interpolations masked", () => {
     const tick = String.fromCharCode(96);
     const source = "const label = " + tick +
