@@ -23,7 +23,7 @@ export function stageNewPublisher(sourceRoot, destination) {
   assert.equal(source.main, "./dist/extension.js");
   // Build a *curated* staging directory: no user files, secrets, training
   // datasets, repository metadata, or dependency directories can be copied.
-  for (const relative of ["README.md", "CHANGELOG.md", "LICENSE", "dist", "assets/icons"]) {
+  for (const relative of ["README.md", "CHANGELOG.md", "LICENSE", "PRIVACY.md", ".vscodeignore", "dist", "assets/icons"]) {
     const src = join(sourceRoot, relative);
     assert.ok(existsSync(src), "Missing package prerequisite: " + relative);
     const dest = join(destination, relative);
