@@ -267,6 +267,50 @@ describe("JavaScript and TypeScript bounded lexical guidance", () => {
     expect(scriptContextHints(source, "typescript")).toEqual([]);
   });
 
+  it("masks regular-expression statements after completed JS/TS control headers", () => {
+    const cases = [
+      "if (ready) /interface Fake extends Hidden/.test(value);\nconst actual = 1;",
+      "while (enabled) /async function Hidden/.test(value);\nconst actual = 2;",
+      "for (let i = 0; i < 2; i++) /await secret_call()/.test(value);\nconst actual = 3;",
+      "if (check(nested(value))) /interface Fake/.test(value);\nconst actual = 4;",
+      "if /* comment */ (ready) /async function Hidden/.test(value);\nconst actual = 5;"
+    ];
+    for (const source of cases) {
+      const scan = scanScriptCode(source, "typescript");
+      expect(scan.state, source).toBe("code");
+      expect(scan.code, source).toContain("const actual = ");
+      expect(scan.code, source).not.toContain("interface Fake");
+      expect(scan.code, source).not.toContain("async function Hidden");
+      expect(scan.code, source).not.toContain("await secret_call");
+      expect(scriptContextHints(source, "typescript"), source).toEqual([]);
+    }
+    const openRegex = "if (ready) /interface Fake";
+    expect(scanScriptCode(openRegex, "typescript").state).toBe("regex");
+    expect(scriptContextHints(openRegex, "typescript")).toEqual([
+      expect.stringContaining("literal")
+    ]);
+    // Non-strict JavaScript also permits with control conditions.
+    const withRegex = "with (settings) /async function Hidden/.test(input);";
+    expect(scanScriptCode(withRegex, "javascript").code).not.toContain("async function Hidden");
+    expect(scriptContextHints(withRegex, "javascript")).toEqual([]);
+  });
+
+  it("preserves division after calls, grouped expressions and identifier lookalikes", () => {
+    const sources = [
+      "const ratio = calculate(total) / divisor;",
+      "const ratio = (total) / divisor;",
+      "const ratio = wrapper(condition(value)) / divisor;",
+      "const ratio = object.if(value) / divisor;",
+      "const ratio = 数据if(value) / divisor;",
+      "const ratio = config.while(enabled) / divisor;"
+    ];
+    for (const source of sources) {
+      const scan = scanScriptCode(source, "javascript");
+      expect(scan.state, source).toBe("code");
+      expect(scan.code, source).toContain(" / divisor;");
+    }
+  });
+
   it("keeps division after postfix updates and keyword-named properties as code", () => {
     const source = "const a = counter++ / divisor;\n" +
       "const b = counter-- / divisor;\n" +
