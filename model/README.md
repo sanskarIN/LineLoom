@@ -87,13 +87,35 @@ The change adds no installed model, real benchmark result, or automatic
 download. Explicit `--mode instruction` still allows a controlled
 generic-model baseline.
 
+## Ollama v12 reasoning-envelope diagnostics (unreleased source)
+
+The opt-in, **loopback-only synthetic model evaluator** now reports a
+`reasoningEnvelope` quality signal when a local model begins a completion
+with a standalone `<think>` section, including the same opening tag after
+recognized Ollama chat or FIM markers. Both complete and truncated reasoning
+preambles are flagged. Marker-like text inside ordinary code strings or
+later in the response is not classified as a leading reasoning envelope.
+
+This is a **source-free format diagnostic**; raw reasoning text is not placed
+in benchmark reports, and the strict exact-continuation metric is unchanged.
+The production extension separately filters conservative, complete leading
+reasoning blocks before offering ghost text. A format signal is not evidence
+that a model produces accurate or safe completions.
+
+Because the available format-signal set has changed, the current benchmark
+protocol is **`lineloom-synthetic-v12`**. v11 and older saved reports must
+not be compared against v12 results. Re-run both models using the same
+fixtures, mode and repetition count to obtain comparable aggregate results.
+No new trained weights, actual inference measurements or publisher release
+are claimed by this implementation.
+
 ## Ollama v11 unsafe Unicode scoring parity (unreleased source)
 
 The synthetic evaluator now flags supplementary invisible Unicode tag
 characters U+E0000–U+E007F as `unsafeUnicode`, matching the VS Code
 completion filter. This changes how format diagnostics are counted even
 though the fixture set and FIM/instruction request generation are otherwise
-unchanged. The current report protocol is **`lineloom-synthetic-v11`**:
+unchanged. At that milestone, the report protocol was **`lineloom-synthetic-v11`**:
 v10 and older saved reports must not be compared with v11 results, even
 when their request-spec and fixture hashes match. Re-run both actual
 models under v11 to obtain comparable source-free numbers; no model
@@ -196,8 +218,8 @@ a false parser success. The source-free comparator requires matching Python
 parser coverage and reports parser failure deltas. Rust, C and C++ model
 suggestions remain grammar-unchecked.
 
-The current report format is `lineloom-synthetic-v11` and cannot be compared
-to previous v1–v10 Ollama reports; rerun both models with the same parser
+The current report format is `lineloom-synthetic-v12` and cannot be compared
+to previous v1–v11 Ollama reports; rerun both models with the same parser
 environment. Historical notes above describe the earlier v5 development
 milestone. **No local inference, trained LineLoom Code weights, model-quality
 baseline, or release publication is established by these changes.**

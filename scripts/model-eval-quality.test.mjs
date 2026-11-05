@@ -14,7 +14,7 @@ test("fixed format signal enums cannot reproduce generated source", () => {
   assert.deepEqual(output, ["markdownFence"]);
   assert.ok(FORMAT_SIGNAL_NAMES.includes(output[0]));
   assert.ok(!JSON.stringify(output).includes("SECRET_MARKER"));
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v11");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v12");
 });
 test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify(" \r\n "), ["empty"]);
@@ -23,7 +23,44 @@ test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify("let value = 0; \u202e"), ["unsafeUnicode"]);
   assert.deepEqual(classify("let flag = true;\r\n"), []);
 });
-test("v11 treats invisible supplementary tags like the editor completion filter", () => {
+test("v12 detects leading reasoning envelopes without exposing their contents", () => {
+  const reasoning = "<think>\nPRIVATE_REASONING_DO_NOT_PRINT\n</think>\nreturn value;";
+  const wrapped = [
+    reasoning,
+    "<|im_start|>assistant\n" + reasoning + "<|im_end|>",
+    "<|fim_middle|><|im_start|>assistant\n" + reasoning,
+    "<|im_start|>assistant\n<|fim_middle|>" + reasoning,
+    "<think>\nPRIVATE_UNCLOSED_REASONING",
+    "<think>"
+  ];
+  for (const raw of wrapped) {
+    const signals = classify(raw);
+    assert.ok(signals.includes("reasoningEnvelope"));
+    assert.ok(FORMAT_SIGNAL_NAMES.includes("reasoningEnvelope"));
+    assert.ok(!JSON.stringify(signals).includes("PRIVATE_REASONING"));
+    assert.ok(!JSON.stringify(signals).includes("PRIVATE_UNCLOSED"));
+  }
+  assert.deepEqual(classify('const marker = "<think>literal</think>";'), []);
+  assert.deepEqual(classify('print("<think>not a model preamble</think>")'), []);
+  assert.deepEqual(classify("const value = 1;\n<think>\nnot leading"), []);
+  assert.deepEqual(classify("<think>inline source-like text</think>"), []);
+});
+
+test("v12 source-free reasoning signal is counted in benchmark summaries", () => {
+  const report = summarizeMeasurements([
+    { fixtureId: "test-1", language: "rust", category: "statement",
+      ok: true, exact: false, formatSignals: ["reasoningEnvelope"], firstTokenMs: 2, totalMs: 5 },
+    { fixtureId: "test-2", language: "python", category: "type",
+      ok: true, exact: true, formatSignals: [], firstTokenMs: 3, totalMs: 6 }
+  ], 2, "private-model-tag", "fim");
+  assert.equal(report.formatDiagnostics.signals.reasoningEnvelope, 1);
+  assert.equal(report.formatDiagnostics.completedWithoutFormatSignals, 1);
+  // The benchmark report deliberately identifies the model; only the fixed
+  // format-diagnostic lane must remain model-tag and source-free.
+  assert.ok(!JSON.stringify(report.formatDiagnostics).includes("private-model-tag"));
+});
+
+test("invisible supplementary tags still match the editor completion filter", () => {
   // The four-byte UTF-8 tag code points are not covered by BMP format ranges.
   // A benchmark must flag them even when the rest of the suggestion is valid.
   for (const point of [0xe0000, 0xe0001, 0xe0020, 0xe0061, 0xe007f]) {

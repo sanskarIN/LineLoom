@@ -60,12 +60,12 @@ test("recognized checked-in language/category scopes and modes compare offline",
     }
   }
 });
-test("refuses v10 and older reports after changing unsafe Unicode scoring in v11", () => {
+test("refuses v11 and older reports after changing format scoring in v12", () => {
   for (const mode of ["instruction", "fim"]) {
     const valid = report({ mode, runs: 2 });
-    assert.equal(valid.benchmarkProtocol, "lineloom-synthetic-v11");
-    assert.equal(validateComparableReport(valid).benchmarkProtocol, "lineloom-synthetic-v11");
-    for (const oldProtocol of ["lineloom-synthetic-v10", "lineloom-synthetic-v9"]) {
+    assert.equal(valid.benchmarkProtocol, "lineloom-synthetic-v12");
+    assert.equal(validateComparableReport(valid).benchmarkProtocol, "lineloom-synthetic-v12");
+    for (const oldProtocol of ["lineloom-synthetic-v11", "lineloom-synthetic-v10", "lineloom-synthetic-v9"]) {
       const legacy = { ...valid, benchmarkProtocol: oldProtocol };
       assert.throws(() => validateComparableReport(legacy));
       assert.throws(() => compareModelReports(legacy, valid));
@@ -134,6 +134,18 @@ test("source-free regression review flags worse counts and format artifacts", ()
   assert.equal(compared.regressionReview.latencyComparable, true);
   assert.ok(!JSON.stringify(compared.regressionReview).includes("sensitive-model-tag"));
 });
+test("v12 comparator flags increasing reasoning envelopes without exposing model text", () => {
+  const base = report({ count: 2 });
+  const candidate = report({ count: 2 });
+  candidate.formatDiagnostics.completedWithoutFormatSignals -= 1;
+  candidate.formatDiagnostics.signals.reasoningEnvelope += 1;
+  const compared = compareModelReports(base, candidate);
+  assert.equal(compared.completionFormatSignalDelta.reasoningEnvelope, 1);
+  assert.ok(compared.regressionReview.flags.includes("more-format-artifacts"));
+  assert.ok(compared.regressionReview.increasedFormatSignals.includes("reasoningEnvelope"));
+  assert.ok(!JSON.stringify(compared).includes("PRIVATE_EVALUATOR_REASONING"));
+});
+
 test("regression review does not treat tiny or incomparable latency changes as proven regression", () => {
   const base = report({ count: 2 });
   const candidate = report({ count: 2 });

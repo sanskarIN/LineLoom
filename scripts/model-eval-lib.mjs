@@ -12,10 +12,11 @@ export const EVAL_LANGUAGES = Object.freeze(["rust", "c", "cpp", "python", "type
 export const EVAL_MODES = Object.freeze(["auto", "fim", "instruction"]);
 export const EVAL_CATEGORIES = Object.freeze(["expression", "statement", "suffix", "type", "indentation"]);
 /** Bump when prompt construction, generation settings or scoring changes.
- * v11 counts invisible supplementary Unicode tags as unsafe output, matching
- * the editor filter; prior reports must not be silently reinterpreted.
+ * v12 adds the reasoning-envelope format signal. Reports using earlier
+ * scoring must not be silently compared even with identical fixtures and
+ * generated request hashes. No model or training change is implied.
  */
-export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v11";
+export const EVAL_BENCHMARK_PROTOCOL = "lineloom-synthetic-v12";
 /**
  * Deterministic fingerprint for the *checked-in, public, original* fixtures.
  * Binds not only IDs, but language, category, prefix, suffix and reference
