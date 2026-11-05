@@ -7,7 +7,7 @@ import { inspectNativeGeneratedStructure } from "./model-eval-native-structure.m
 
 export const FORMAT_SIGNAL_NAMES = Object.freeze([
   "empty", "markdownFence", "chatPreamble", "specialToken",
-  "unsafeUnicode", "prefixEcho", "suffixEcho", "nativeDelimiterMismatch"
+  "reasoningEnvelope", "unsafeUnicode", "prefixEcho", "suffixEcho", "nativeDelimiterMismatch"
 ]);
 function unsafeUnicode(value) {
   for (const character of value) {
@@ -25,6 +25,30 @@ function unsafeUnicode(value) {
   }
   return false;
 }
+/**
+ * Detect a model-origin reasoning preamble without reading or exposing its
+ * content. Recognized chat/FIM framing may appear in either order. Only a
+ * leading, line-bounded <think> marker qualifies; marker text inside source
+ * string literals or later code remains unclassified.
+ *
+ * Both complete and truncated opening reasoning sections are a quality
+ * signal. This is a metric only: editor insertion sanitization remains in
+ * src/completion/filter.ts, and strict exact-match scoring stays unchanged.
+ */
+function startsWithReasoningEnvelope(value) {
+  let remaining = value;
+  // The model may nest recognized chat and FIM openers; bound unwrapping.
+  for (let depth = 0; depth < 8; depth++) {
+    if (/^<think>(?:\n|$)/u.test(remaining)) return true;
+    const fim = /^<\|(?:fim_prefix|fim_middle)\|>/u.exec(remaining);
+    if (fim) { remaining = remaining.slice(fim[0].length); continue; }
+    const chat = /^<\|im_start\|>assistant[^\n]*\n/u.exec(remaining);
+    if (chat) { remaining = remaining.slice(chat[0].length); continue; }
+    break;
+  }
+  return /^<think>(?:\n|$)/u.test(remaining);
+}
+
 export function classifyCompletionFormat(
   raw, fixture, insertion = raw,
   nativeStructureOutcome = inspectNativeGeneratedStructure(fixture, insertion)
@@ -37,6 +61,7 @@ export function classifyCompletionFormat(
   if (/(?:^|\n)\s*\x60{3}/.test(generated)) flags.add("markdownFence");
   if (/^\s*(?:Certainly\b|Sure[,! ]|As an AI\b|Here(?:'s| is) (?:the )?code\b|Completion:)/i.test(generated)) flags.add("chatPreamble");
   if (/<\|(?:fim_prefix|fim_middle|fim_suffix|endoftext|im_start|im_end)\|>/.test(generated)) flags.add("specialToken");
+  if (startsWithReasoningEnvelope(generated)) flags.add("reasoningEnvelope");
   if (unsafeUnicode(generated)) flags.add("unsafeUnicode");
   const limit = Math.min(160, prefix.length, generated.length);
   for (let n = limit; n >= 12; n--) {
