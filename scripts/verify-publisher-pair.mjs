@@ -72,15 +72,19 @@ export function verifyPublisherPair(legacy, next) {
       "VSIX identity does not match the extension name");
   }
 
-  // Compare complete shipped runtime and icon trees; an extra or omitted file
-  // is a mismatch, even if extension.js happens to be unchanged.
-  const runtimeFile = path => path.startsWith("extension/dist/") ||
-    path.startsWith("extension/assets/icons/");
-  const oldRuntime = legacy.entries.filter(runtimeFile).sort();
-  const newRuntime = next.entries.filter(runtimeFile).sort();
-  assert.equal(JSON.stringify(oldRuntime), JSON.stringify(newRuntime),
-    "Publisher VSIX runtime/icon file lists differ");
-  for (const path of [...new Set([...required, ...oldRuntime])]) {
+  // Every published payload file must exist under both identities. Comparing
+  // only dist/ and icons/ could miss an unexpected script, data file, or
+  // modified root metadata shipped with just one publisher package.
+  // Zip directory entries contain no bytes; only actual files are compared.
+  const filesIn = archive => archive.entries.filter(path => !path.endsWith("/")).sort();
+  const oldFilesOrdered = filesIn(legacy);
+  const nextFilesOrdered = filesIn(next);
+  assert.equal(JSON.stringify(oldFilesOrdered), JSON.stringify(nextFilesOrdered),
+    "Publisher VSIX archive file lists differ");
+  for (const path of oldFilesOrdered) {
+    // Identity metadata is verified independently (the publisher differs);
+    // the rest of the package must be byte-for-byte the same.
+    if (path === "extension/package.json" || path === "extension.vsixmanifest") continue;
     assert.equal(fingerprint(legacy.read(path)), fingerprint(next.read(path)),
       "Publisher VSIX file content differs: " + path);
   }
@@ -90,7 +94,7 @@ export function verifyPublisherPair(legacy, next) {
     .includes("Microsoft.VisualStudio.Code.PreRelease");
   assert.equal(oldPreview, newPreview, "Publisher package release channels differ");
   console.log("PASS: publisher identity is the only manifest-contract difference; " +
-    "shared runtime, icons and documentation are byte-identical; release channels match.");
+    "all other shipped files are byte-identical; release channels match.");
 }
 
 function fromZip(path) {
