@@ -60,7 +60,7 @@ export class ContinuationCache {
   private entry: Stored | undefined;
   constructor(private readonly ttlMs = 12_000, private readonly maxTyped = 32) {}
 
-  remember(point: ContinuationPoint, suggestion: string, now = Date.now()): void {
+  remember(point: ContinuationPoint, suggestion: string, now = performance.now()): void {
     if (!suggestion || suggestion.length > 6_000 || hasUnpairedSurrogate(suggestion)) {
       this.entry = undefined;
       return;
@@ -73,7 +73,7 @@ export class ContinuationCache {
     };
   }
 
-  remainder(point: ContinuationPoint, now = Date.now()): string | undefined {
+  remainder(point: ContinuationPoint, now = performance.now()): string | undefined {
     const saved = this.entry;
     if (!saved) return;
     if (saved.expires <= now) {

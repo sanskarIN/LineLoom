@@ -13,7 +13,7 @@ export class TransientFailureBackoff {
     private readonly maxMs = 30_000
   ) {}
 
-  shouldSkip(fingerprint: string, now = Date.now()): boolean {
+  shouldSkip(fingerprint: string, now = performance.now()): boolean {
     const entry = this.entries.get(fingerprint);
     if (!entry) return false;
     // Preserve the failure streak after the timer expires. A genuine
@@ -21,7 +21,7 @@ export class TransientFailureBackoff {
     return now < entry.until;
   }
 
-  recordFailure(fingerprint: string, now = Date.now()): number {
+  recordFailure(fingerprint: string, now = performance.now()): number {
     if (!fingerprint || this.capacity <= 0 || this.baseMs <= 0 || this.maxMs <= 0) return 0;
     const previous = this.entries.get(fingerprint);
     const attempts = Math.min((previous?.attempts ?? 0) + 1, 32);

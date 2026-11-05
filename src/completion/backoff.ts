@@ -7,7 +7,7 @@ export class EmptySuggestionBackoff {
   private readonly entries = new Map<string, number>();
   constructor(private readonly capacity = 16, private readonly ttlMs = 5_000) {}
 
-  shouldSkip(key: string, now = Date.now()): boolean {
+  shouldSkip(key: string, now = performance.now()): boolean {
     const expiry = this.entries.get(key);
     if (expiry === undefined) return false;
     if (expiry <= now) {
@@ -19,7 +19,7 @@ export class EmptySuggestionBackoff {
     return true;
   }
 
-  rememberEmpty(key: string, now = Date.now()): void {
+  rememberEmpty(key: string, now = performance.now()): void {
     if (this.capacity <= 0 || this.ttlMs <= 0) return;
     this.entries.delete(key);
     this.entries.set(key, now + this.ttlMs);
