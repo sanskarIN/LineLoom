@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { verifyPublisherPair } from "./verify-publisher-pair.mjs";
+import { verifyPublisherPair, literalZipPattern } from "./verify-publisher-pair.mjs";
 
 const files = {
   "[Content_Types].xml": "Shared metadata",
@@ -38,6 +38,14 @@ function archive(publisher, overrides = {}) {
     read: path => Buffer.from(entries[path] ?? "")
   };
 }
+
+test("escapes ZIP glob metacharacters before exact-member extraction", () => {
+  assert.equal(literalZipPattern("[Content_Types].xml"), String.raw`\[Content_Types\].xml`);
+  assert.equal(literalZipPattern("star*.txt"), String.raw`star\*.txt`);
+  assert.equal(literalZipPattern("question?.txt"), String.raw`question\?.txt`);
+  assert.equal(literalZipPattern("member[1].txt"), String.raw`member\[1\].txt`);
+  assert.equal(literalZipPattern("extension/readme.md"), "extension/readme.md");
+});
 
 test("two publisher packages may differ only by extension identity", () => {
   const logs = [];
