@@ -2,7 +2,7 @@
 export class SuggestionCache {
   private readonly entries = new Map<string, { value: string; expires: number }>();
   constructor(private readonly capacity = 8, private readonly ttlMs = 15_000) {}
-  get(key: string, now = Date.now()): string | undefined {
+  get(key: string, now = performance.now()): string | undefined {
     const entry = this.entries.get(key);
     if (!entry) return;
     if (entry.expires <= now) {
@@ -13,7 +13,7 @@ export class SuggestionCache {
     this.entries.set(key, entry);
     return entry.value;
   }
-  put(key: string, value: string, now = Date.now()): void {
+  put(key: string, value: string, now = performance.now()): void {
     if (!value) return;
     this.entries.delete(key);
     this.entries.set(key, { value, expires: now + this.ttlMs });
