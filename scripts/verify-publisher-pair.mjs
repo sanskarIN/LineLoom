@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const required = [
   "extension/readme.md", "extension/changelog.md",
-  "extension/LICENSE.txt", "extension/PRIVACY.md",
+  "extension/LICENSE.txt", "extension/PRIVACY.md", "extension/SECURITY.md",
   "extension/dist/extension.js",
   "extension/assets/icons/lineloom.png",
   "extension/assets/icons/sidebar.svg"
