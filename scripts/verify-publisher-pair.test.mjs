@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { verifyPublisherPair } from "./verify-publisher-pair.mjs";
 
 const files = {
+  "[Content_Types].xml": "Shared metadata",
   "extension/readme.md": "Public README",
   "extension/changelog.md": "Release notes",
   "extension/LICENSE.txt": "MIT",
@@ -68,13 +69,31 @@ test("rejects missing assets, added runtime content, and duplicate or unsafe zip
   assert.throws(() => verifyPublisherPair(legacy,
     archive("Sanskar", { omit: ["extension/PRIVACY.md"] })), /missing a required file/);
   assert.throws(() => verifyPublisherPair(legacy,
-    archive("Sanskar", { files: { "extension/dist/extra.js": "code" } })), /runtime\/icon file lists/);
+    archive("Sanskar", { files: { "extension/dist/extra.js": "code" } })), /archive file lists/);
   const duplicated = archive("Sanskar");
   duplicated.entries.push("extension/readme.md");
   assert.throws(() => verifyPublisherPair(legacy, duplicated), /duplicate archive names/);
   const unsafe = archive("Sanskar");
   unsafe.entries.push("extension/../secrets.txt");
   assert.throws(() => verifyPublisherPair(legacy, unsafe), /unsafe entry name/);
+});
+
+test("rejects unexpected non-runtime files and modifications anywhere in the archive", () => {
+  const legacy = archive("SanskarCodes");
+  for (const extra of [
+    "extension/unexpected.json",
+    "extension/notes.txt",
+    "untracked-at-root.bin"
+  ]) {
+    assert.throws(() => verifyPublisherPair(legacy,
+      archive("Sanskar", { files: { [extra]: "surprise payload" } })), /archive file lists/);
+  }
+  assert.throws(() => verifyPublisherPair(legacy,
+    archive("Sanskar", { files: { "[Content_Types].xml": "changed metadata" } })), /file content/);
+  assert.throws(() => verifyPublisherPair(legacy,
+    archive("Sanskar", { files: { "extension/changelog.md": "changed release notes" } })), /file content/);
+  assert.throws(() => verifyPublisherPair(legacy,
+    archive("Sanskar", { omit: ["extension/dist/helper.js"] })), /archive file lists/);
 });
 
 test("rejects spoofed VSIX identity and channel drift", () => {
