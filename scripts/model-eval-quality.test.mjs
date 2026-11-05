@@ -55,7 +55,9 @@ test("v12 source-free reasoning signal is counted in benchmark summaries", () =>
   ], 2, "private-model-tag", "fim");
   assert.equal(report.formatDiagnostics.signals.reasoningEnvelope, 1);
   assert.equal(report.formatDiagnostics.completedWithoutFormatSignals, 1);
-  assert.ok(!JSON.stringify(report).includes("private-model-tag"));
+  // The benchmark report deliberately identifies the model; only the fixed
+  // format-diagnostic lane must remain model-tag and source-free.
+  assert.ok(!JSON.stringify(report.formatDiagnostics).includes("private-model-tag"));
 });
 
 test("invisible supplementary tags still match the editor completion filter", () => {
