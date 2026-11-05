@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { verifyPublisherPair } from "./verify-publisher-pair.mjs";
 
 const files = {
-  "extension/README.md": "Public README",
-  "extension/CHANGELOG.md": "Release notes",
-  "extension/LICENSE": "MIT",
+  "extension/readme.md": "Public README",
+  "extension/changelog.md": "Release notes",
+  "extension/LICENSE.txt": "MIT",
   "extension/PRIVACY.md": "Privacy policy",
   "extension/dist/extension.js": "exports.activate = () => {};",
   "extension/dist/helper.js": "export const helper = true;",
@@ -70,7 +70,7 @@ test("rejects missing assets, added runtime content, and duplicate or unsafe zip
   assert.throws(() => verifyPublisherPair(legacy,
     archive("Sanskar", { files: { "extension/dist/extra.js": "code" } })), /runtime\/icon file lists/);
   const duplicated = archive("Sanskar");
-  duplicated.entries.push("extension/README.md");
+  duplicated.entries.push("extension/readme.md");
   assert.throws(() => verifyPublisherPair(legacy, duplicated), /duplicate archive names/);
   const unsafe = archive("Sanskar");
   unsafe.entries.push("extension/../secrets.txt");
