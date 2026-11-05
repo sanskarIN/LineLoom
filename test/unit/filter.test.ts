@@ -21,6 +21,25 @@ describe("completion filtering", () => {
     expect(cleanCompletion("const alpha", "", "pha;", true)).toBe("const alpha");
     expect(cleanCompletion("myCounter", "", "Counter;", true)).toBe("myCounter");
   });
+  it("preserves identifiers that continue after Unicode connector punctuation or joiners", () => {
+    // A full-looking overlap of "name" must not be removed when the suffix
+    // continues the same identifier using connector punctuation or a joiner.
+    for (const continuation of ["\u203f", "\u2040", "\u200c", "\u200d"]) {
+      const suffix = "name" + continuation + "rest;";
+      expect(cleanCompletion("return name", "", suffix, true), suffix)
+        .toBe("return name");
+      // Nor should matching text after a connector/joiner be cut from the
+      // generated token when the model continues an existing identifier.
+      const generated = "return first" + continuation + "name";
+      expect(cleanCompletion(generated, "", "name;", true), generated)
+        .toBe(generated);
+    }
+    // International identifier text and legitimate punctuation remain intact.
+    const hindi = "return नाम\u200cसूची";
+    expect(cleanCompletion(hindi, "", "सूची;", true)).toBe(hindi);
+    expect(cleanCompletion("return value;;", "", ";", true)).toBe("return value;");
+    expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
+  });
   it("still removes substantive echoed suffixes and repeated closing punctuation", () => {
     expect(cleanCompletion("return result", "", "result;", true)).toBe("return ");
     expect(cleanCompletion("call(x))", "", ")", true)).toBe("call(x)");

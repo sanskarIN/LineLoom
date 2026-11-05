@@ -214,8 +214,11 @@ export function cleanCompletion(
     // Also avoid cutting either identifier *mid-token* on longer matches:
     // "some" before "omega" or "ome;" must not become "s". Only
     // complete-word matches of length >= 3 or punctuation can be removed.
-    const identifier = /[\p{L}\p{M}\p{N}_$]/u;
-    const onlyIdentifier = /^[\p{L}\p{M}\p{N}_$]+$/u.test(overlap);
+    // Match the same Unicode identifier continuations as the prefix-echo
+    // boundary check. Connector punctuation (Pc), ZWNJ and ZWJ must not
+    // make a partial identifier look like a complete suffix overlap.
+    const identifier = /[\p{L}\p{M}\p{N}\p{Pc}$\u200c\u200d]/u;
+    const onlyIdentifier = /^[\p{L}\p{M}\p{N}\p{Pc}$\u200c\u200d]+$/u.test(overlap);
     const cutsGeneratedWord = onlyIdentifier &&
       identifier.test(characterBefore(value, value.length - length));
     const cutsFollowingWord = identifier.test(characterBefore(overlap, overlap.length)) &&
