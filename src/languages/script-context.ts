@@ -49,7 +49,7 @@ function regexCanStart(output: readonly string[]): boolean {
   const operator = output.slice(Math.max(0, end - 2), end).join("");
   if (operator === "=>" || operator === "||" || operator === "&&") return true;
   const tail = output.slice(Math.max(0, end - 32), end).join("");
-  const keyword = /\b(?:return|throw|case|yield|await)\s*$/u.exec(tail);
+  // Statement boundaries and prefix operators can start a new regex operand.\n  // Treat only full keywords as tokens; member access is excluded below.\n  const keyword = /\b(?:return|throw|case|yield|await|typeof|void|delete|else|do)\s*$/u.exec(tail);
   if (!keyword) return false;
   // obj.return / denominator and obj.await / denominator are division:
   // property names that resemble keywords must not start regex mode.
