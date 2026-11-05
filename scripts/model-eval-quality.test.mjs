@@ -14,7 +14,7 @@ test("fixed format signal enums cannot reproduce generated source", () => {
   assert.deepEqual(output, ["markdownFence"]);
   assert.ok(FORMAT_SIGNAL_NAMES.includes(output[0]));
   assert.ok(!JSON.stringify(output).includes("SECRET_MARKER"));
-  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v11");
+  assert.equal(EVAL_BENCHMARK_PROTOCOL, "lineloom-synthetic-v12");
 });
 test("detects empty, chat, protocol, Unicode and normal output", () => {
   assert.deepEqual(classify(" \r\n "), ["empty"]);
@@ -58,7 +58,7 @@ test("v12 source-free reasoning signal is counted in benchmark summaries", () =>
   assert.ok(!JSON.stringify(report).includes("private-model-tag"));
 });
 
-test("v11 treats invisible supplementary tags like the editor completion filter", () => {
+test("invisible supplementary tags still match the editor completion filter", () => {
   // The four-byte UTF-8 tag code points are not covered by BMP format ranges.
   // A benchmark must flag them even when the rest of the suggestion is valid.
   for (const point of [0xe0000, 0xe0001, 0xe0020, 0xe0061, 0xe007f]) {
