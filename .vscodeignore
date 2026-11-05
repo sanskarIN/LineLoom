@@ -21,3 +21,9 @@
 **/model/**
 
 **/model/**
+
+# Separate CLI/package-manager sources and generated release artifacts are not VSIX payloads.
+**/packages/**
+**/*.vsix
+**/*.sha256
+**/*.tgz

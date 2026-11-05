@@ -72,8 +72,10 @@ GitHub extension remains
 4. Run `node scripts/verify-publisher-pair.mjs <legacy.vsix> <Sanskar.vsix>`
    against the two *same-version, same-channel* checked candidate packages.
    This offline gate verifies the complete configuration/command manifest,
-   identical shipped runtime/icon bytes, README, changelog, license, privacy
-   policy and correctly distinct VSIX identity. Passing it **does not**
+   identical full shipped file inventory and byte contents (including runtime,
+   icons, license, privacy policy, README and archive metadata), allowing only
+   the independently verified publisher-specific package and VSIX identity
+   metadata to differ. Unexpected extra files fail the gate. Passing it **does not**
    authorize registry publication or replace human QA.
 5. Publish **only** the matching `Sanskar` package to the **Sanskar**
    publisher on each registry. If also publishing under **SanskarCodes**,
