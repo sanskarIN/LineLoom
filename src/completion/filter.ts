@@ -131,6 +131,29 @@ function unwrapModelBoundaries(raw: string): string | undefined {
   return undefined;
 }
 
+/**
+ * Some reasoning-enabled Ollama models prepend a tagged thought section.
+ * Only recognize a leading, standalone <think> protocol envelope. Never
+ * search inside source or attempt to parse arbitrary XML/JSX markup.
+ * An incomplete or nested leading envelope is not insertable code.
+ */
+function stripLeadingReasoning(value: string, activeLanguage?: SupportedLanguage): string | undefined {
+  // HTML may legitimately start with custom <think> elements.
+  if (activeLanguage === "html") return value;
+  let current = value;
+  for (let pass = 0; pass < 2 && current.startsWith("<think>"); pass++) {
+    if (!current.startsWith("<think>\n")) return;
+    const rest = current.slice("<think>\n".length);
+    // A closing marker must occupy its own line. A quoted or inline
+    // "</think>" inside the reasoning payload cannot end the section.
+    const closing = /(?:^|\n)[ \t]*<\/think>[ \t]*(?:\n|$)/u.exec(rest);
+    if (!closing || rest.slice(0, closing.index).includes("<think>")) return;
+    current = rest.slice(closing.index + closing[0].length);
+  }
+  // Excessively nested or truncated wrappers fail closed, not as ghost text.
+  return current.startsWith("<think>") ? undefined : current;
+}
+
 /** Remove chat-model artifacts; never claim that generated code is syntactically correct. */
 export function cleanCompletion(
   raw: string, prefix: string, suffix: string, multiLine: boolean,
@@ -145,7 +168,9 @@ export function cleanCompletion(
   // language. Do not strip arbitrary prose or modify embedded code literals.
   const unwrapped = unwrapModelBoundaries(value);
   if (unwrapped === undefined) return "";
-  value = unwrapped;
+  const withoutReasoning = stripLeadingReasoning(unwrapped, activeLanguage);
+  if (withoutReasoning === undefined) return "";
+  value = withoutReasoning;
   // Fail closed on unconsumed model protocol markers at a response boundary.
   // A malformed or truncated chat header must not reach the editor as code.
   // Do not search inside ordinary code literals: marker-looking strings are
