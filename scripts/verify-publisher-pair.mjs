@@ -13,8 +13,8 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const required = [
-  "extension/README.md", "extension/CHANGELOG.md",
-  "extension/LICENSE", "extension/PRIVACY.md",
+  "extension/readme.md", "extension/changelog.md",
+  "extension/LICENSE.txt", "extension/PRIVACY.md",
   "extension/dist/extension.js",
   "extension/assets/icons/lineloom.png",
   "extension/assets/icons/sidebar.svg"
