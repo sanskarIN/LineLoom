@@ -62,6 +62,17 @@ test("reports nonmatching, markdown or hidden-control results as aggregate-only 
   assert.ok(!JSON.stringify(result).includes("\u202e"));
 });
 
+test("reports reasoning-tagged model output as a source-free format signal", async () => {
+  const payload = "<think>\nPRIVATE_EVALUATOR_REASONING\n</think>\n" + fixture.expected;
+  const result = await run(async () => goodResponse(frame(payload, true)));
+  assert.equal(result.ok, true);
+  assert.equal(result.exact, false); // Strict raw equality has not been relaxed.
+  assert.ok(result.formatSignals.includes("reasoningEnvelope"));
+  assert.ok(!Object.hasOwn(result, "output"));
+  assert.ok(!JSON.stringify(result).includes("PRIVATE_EVALUATOR_REASONING"));
+  assert.ok(!JSON.stringify(result).includes("<think>"));
+});
+
 test("flags malformed real Rust continuation without claiming a syntax check", async () => {
   const result = await run(async () => goodResponse(frame("2)", true)));
   assert.equal(result.ok, true);
