@@ -97,6 +97,13 @@ export function verifyPublisherPair(legacy, next) {
     "all other shipped files are byte-identical; release channels match.");
 }
 
+/** Info-ZIP interprets internal names as glob patterns, even via execFileSync.
+ * Quote meta-characters so the matched member is exactly the listed entry.
+ */
+export function literalZipPattern(name) {
+  return name.replace(/([*?\[\]\\])/g, "\\$1");
+}
+
 function fromZip(path) {
   // Bound memory and throw on malformed or exceptionally large entries.
   execFileSync("unzip", ["-t", path], { stdio: "pipe", timeout: 60_000 });
@@ -106,7 +113,7 @@ function fromZip(path) {
   return {
     entries: listing.split(/\r?\n/),
     read(name) {
-      return execFileSync("unzip", ["-p", path, name], {
+      return execFileSync("unzip", ["-p", path, literalZipPattern(name)], {
         maxBuffer: 32 * 1024 * 1024, timeout: 60_000
       });
     }
