@@ -8,6 +8,7 @@ const files = {
   "extension/changelog.md": "Release notes",
   "extension/LICENSE.txt": "MIT",
   "extension/PRIVACY.md": "Privacy policy",
+  "extension/SECURITY.md": "Security policy",
   "extension/dist/extension.js": "exports.activate = () => {};",
   "extension/dist/helper.js": "export const helper = true;",
   "extension/assets/icons/lineloom.png": "PNG placeholder",
