@@ -69,13 +69,19 @@ GitHub extension remains
    from the [published GitHub v1.4.3 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3). Confirm the new VSIX
    contains `publisher: "Sanskar"`, `name: "lineloom"` and the real
    preview-channel marker; the old VSIX must contain `SanskarCodes`.
-4. Publish **only** the matching `Sanskar` package to the **Sanskar**
+4. Run `node scripts/verify-publisher-pair.mjs <legacy.vsix> <Sanskar.vsix>`
+   against the two *same-version, same-channel* checked candidate packages.
+   This offline gate verifies the complete configuration/command manifest,
+   identical shipped runtime/icon bytes, README, changelog, license, privacy
+   policy and correctly distinct VSIX identity. Passing it **does not**
+   authorize registry publication or replace human QA.
+5. Publish **only** the matching `Sanskar` package to the **Sanskar**
    publisher on each registry. If also publishing under **SanskarCodes**,
    use the separate legacy VSIX, never upload one identity to both.
-5. Verify both newly published listings, versions, downloadability and
+6. Verify both newly published listings, versions, downloadability and
    publisher namespaces independently before changing homepage primary
    buttons from the current verified `SanskarCodes` listings.
-6. Communicate the manual migration, prompt users to back up settings and
+7. Communicate the manual migration, prompt users to back up settings and
    avoid two concurrently enabled copies. Maintain a rollback link.
 
 Useful references:

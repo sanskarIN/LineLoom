@@ -18,7 +18,8 @@ test("new publisher staging is curated, preserves source and settings identity",
       main: "./dist/extension.js", contributes: { configuration: { properties: { "lineloom.enabled": { default: true } } } } };
     const before = JSON.stringify(manifest, null, 2) + "\n";
     writeFileSync(join(src, "package.json"), before);
-    for (const file of ["README.md", "CHANGELOG.md", "LICENSE"]) writeFileSync(join(src, file), "test");
+    for (const file of ["README.md", "CHANGELOG.md", "LICENSE", "PRIVACY.md"]) writeFileSync(join(src, file), "test");
+    writeFileSync(join(src, ".vscodeignore"), "**/model/**\n");
     writeFileSync(join(src, "dist", "extension.js"), "module.exports = {}");
     writeFileSync(join(src, "assets", "icons", "lineloom.png"), "icon");
     writeFileSync(join(src, "model", "private-data.txt"), "MUST NOT COPY");
@@ -28,6 +29,8 @@ test("new publisher staging is curated, preserves source and settings identity",
     assert.deepEqual(result.contributes, manifest.contributes);
     assert.equal(readFileSync(join(src, "package.json"), "utf8"), before);
     assert.ok(existsSync(join(stage, "dist", "extension.js")));
+    assert.equal(readFileSync(join(stage, "PRIVACY.md"), "utf8"), "test");
+    assert.equal(readFileSync(join(stage, ".vscodeignore"), "utf8"), "**/model/**\n");
     assert.ok(!existsSync(join(stage, "model")));
     assert.ok(!existsSync(join(stage, "node_modules")));
     assert.ok(!existsSync(join(stage, ".github")));

@@ -397,7 +397,7 @@
     "model:reference:syntax": "python model/train/audit_reference_syntax.py",
     "test:model-training": "python -m unittest discover -s model/train -p test_*.py",
     "package:publisher-preview": "node scripts/package-publisher.mjs",
-    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs"
+    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs scripts/verify-publisher-pair.test.mjs"
   },
   "dependencies": {
     "ignore": "^7.0.14"
