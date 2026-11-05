@@ -29,11 +29,42 @@ const JS = {
   nullish: "JavaScript/TypeScript nullish expressions: preserve optional chaining and nullish-coalescing intent."
 } as const;
 
+/**
+ * After a completed control-flow condition, the next statement can start
+ * with a regex: `if (ready) /pattern/.test(value)`. Ordinary call results
+ * and grouped expressions followed by slash still mean division. Scan only
+ * a bounded suffix of masked executable code (never string/comment content).
+ */
+function regexAfterControlCondition(output: readonly string[], closingParen: number): boolean {
+  let nesting = 0;
+  const limit = Math.max(0, closingParen - 1_024);
+  for (let i = closingParen; i >= limit; i--) {
+    if (output[i] === ")") nesting++;
+    else if (output[i] === "(") {
+      nesting--;
+      if (nesting !== 0) continue;
+      const before = output.slice(Math.max(0, i - 64), i).join("");
+      const keyword = /\b(?:if|while|for|with)\s*$/u.exec(before);
+      if (!keyword) return false;
+      const preceding = before.slice(0, keyword.index);
+      // Property keys `object.if(...)` are calls, not statement headers.
+      if (preceding.trimEnd().endsWith(".")) return false;
+      // A word-boundary check alone mistakes Unicode identifiers ending in
+      // "if" (e.g. `数据if(...)`) for the standalone JS keyword.
+      return !/[\p{L}\p{M}\p{N}_$]/u.test(preceding.slice(-1));
+    }
+  }
+  // If the matching opening parenthesis falls outside the bounded window,
+  // decline to infer a regex instead of guessing at the expression shape.
+  return false;
+}
+
 function regexCanStart(output: readonly string[]): boolean {
   let end = output.length;
   while (end && /\s/u.test(output[end - 1])) end--;
   if (end === 0) return true;
   const last = output[end - 1];
+  if (last === ")") return regexAfterControlCondition(output, end - 1);
   // A slash following a binary/unary expression operator can begin a regex,
   // including single |, &, ^, *, /, + and -. Without masking that operand,
   // its contents may be mistaken for executable async/type declarations.
