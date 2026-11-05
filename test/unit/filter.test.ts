@@ -198,6 +198,46 @@ describe("completion filtering", () => {
     expect(cleanCompletion("after", "", "after", true)).toBe(""));
   it("keeps only the leading fenced code block, not follow-up prose", () =>
     expect(cleanCompletion("```go\nfmt.Println(42)\n```\nThis prints a value.", "", "", true)).toBe("fmt.Println(42)"));
+  it("removes a complete leading reasoning section before inserting local model code", () => {
+    const raw = "<think>\nConsider the requested implementation.\n</think>\nreturn computedValue;";
+    expect(cleanCompletion(raw, "", "", true, 8, "python")).toBe("return computedValue;");
+    const wrapped = "<|im_start|>assistant\n" + raw + "<|im_end|>";
+    expect(cleanCompletion(wrapped, "", "", true, 8, "typescript"))
+      .toBe("return computedValue;");
+    // The fenced-language gate must still run on the actual code that follows.
+    const fence = String.fromCharCode(96).repeat(3);
+    const mismatched = "<think>\nDo not insert explanation.\n</think>\n" +
+      fence + "python\nprint(1)\n" + fence;
+    expect(cleanCompletion(mismatched, "", "", true, 8, "typescript")).toBe("");
+    expect(cleanCompletion(mismatched, "", "", true, 8, "python")).toBe("print(1)");
+  });
+
+  it("rejects incomplete or ambiguous leading reasoning without exposing it as ghost text", () => {
+    for (const raw of [
+      "<think>",
+      "<think>\nexplanation without closing marker",
+      "<think>\nexplanation</think>\nreturn token;",
+      "<think>\npart one\n<think>\npart two\n</think>\nreturn token;",
+      "<think>\nQuoted </think> does not close the section.\nreturn token;"
+    ]) {
+      expect(cleanCompletion(raw, "", "", true, 8, "typescript"), raw).toBe("");
+    }
+    expect(cleanCompletion("<think>\ninternal note\n</think>\n", "", "", true, 8, "rust"))
+      .toBe("");
+  });
+
+  it("does not rewrite literal reasoning-like tags inside source or HTML", () => {
+    for (const source of [
+      'const marker = "<think>not a protocol</think>";',
+      "const closing = '</think>';",
+      'print("<think>literal text</think>")'
+    ]) {
+      expect(cleanCompletion(source, "", "", true, 8, "python")).toBe(source);
+    }
+    const markup = "<think>\nvisible custom element\n</think>\n<main>page</main>";
+    expect(cleanCompletion(markup, "", "", true, 8, "html")).toBe(markup);
+  });
+
   it("strips model-boundary FIM and chat markers", () => {
     expect(cleanCompletion("<|fim_middle|>return x;<|fim_suffix|>", "", "", true)).toBe("return x;");
     expect(cleanCompletion("let x = 1;<|endoftext|>", "", "", true)).toBe("let x = 1;");
