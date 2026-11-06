@@ -70,7 +70,7 @@ See the [CLI v0.3.0 manual acceptance checklist](qa/cli-v0.3.0-manual-acceptance
 
 ## CI and release process
 
-1. PR and main-branch changes to `packages/lineloom-cli/**` trigger [package CI](../.github/workflows/package-check.yml) on Windows, macOS and Linux. It checks unit tests, offline behavior, a dry-run and the actual npm tarball contents.
+1. PR and main-branch changes to `packages/lineloom-cli/**` trigger [package CI](../.github/workflows/package-check.yml) on Windows, macOS and Linux. It checks unit tests, offline behavior, a dry-run, the actual npm tarball contents, and an **isolated offline install of the packed tarball** followed by installed-CLI smoke commands. This still does not substitute for a physical-editor test or a real npmjs registry install.
 2. Before the first GitHub Packages release, review package version, pinned extension SHA-256 digests, package security tests, and registry identity. Package CI is **not** a substitute for real desktop installation acceptance.
 3. A separate, **explicitly owner-authorized** file `.github/package-publish-v0.1.0.flag` on `main` triggers [the one-time GitHub Packages publishing workflow](../.github/workflows/package-publish.yml). It validates identity/version and reruns package tests and an independent dependency audit before invoking npm publish.
 4. Only that publisher job receives `packages: write` and the repository `GITHUB_TOKEN`. It cannot publish the VS Code extension to either registry and cannot publish on npmjs.com.

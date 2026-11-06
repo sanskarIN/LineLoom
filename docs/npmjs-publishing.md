@@ -24,6 +24,7 @@ This document covers the optional installer CLI, **`@sanskarin/lineloom-cli`**, 
    npm ci --ignore-scripts --no-audit
    npm test
    npm run check:pack
+   npm run smoke:consumer
    npm audit --audit-level=high --registry=https://registry.npmjs.org
    ```
 

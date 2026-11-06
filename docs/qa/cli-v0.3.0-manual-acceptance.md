@@ -22,6 +22,7 @@ cd packages/lineloom-cli
 npm ci
 npm test
 npm run check:pack
+npm run smoke:consumer
 node bin/lineloom.mjs version
 ```
 

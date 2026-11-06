@@ -43,3 +43,5 @@ jobs:
       - name: Verify published tarball contents
         if: matrix.os == 'ubuntu-latest'
         run: npm run check:pack
+      - name: Smoke-test the packed CLI as an offline npm consumer
+        run: npm run smoke:consumer

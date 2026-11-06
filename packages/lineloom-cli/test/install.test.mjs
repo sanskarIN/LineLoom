@@ -1,13 +1,14 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { parseArgs, run } from "../bin/lineloom.mjs";
+import { isMainModule, parseArgs, run } from "../bin/lineloom.mjs";
 import { getRelease } from "../lib/releases.mjs";
 import { assertTrustedUrl, fetchVerifiedVSIX, installRelease } from "../lib/install.mjs";
 import { verifyLocalVSIX } from "../lib/verify.mjs";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const fixture = Buffer.alloc(2048, 42);
 const digest = createHash("sha256").update(fixture).digest("hex");
@@ -17,6 +18,21 @@ const logger = () => ({
   messages: [],
   log(...args) { this.messages.push(args.join(" ")); },
   error(...args) { this.messages.push(args.join(" ")); }
+});
+
+test("CLI entrypoint accepts canonical file aliases without executing on import", async () => {
+  const moduleUrl = new URL("../bin/lineloom.mjs", import.meta.url);
+  const entry = fileURLToPath(moduleUrl);
+  assert.equal(isMainModule(entry, moduleUrl.href), true);
+  assert.equal(isMainModule(join(tmpdir(), "missing-cli-entry.mjs"), moduleUrl.href), false);
+  assert.equal(isMainModule("", moduleUrl.href), false);
+  if (process.platform === "win32") return; // Symlink creation can require privileges.
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-entrypoint-alias-"));
+  try {
+    const alias = join(dir, "cli-alias.mjs");
+    await symlink(entry, alias);
+    assert.equal(isMainModule(alias, moduleUrl.href), true);
+  } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
 test("channels pin public release assets and preserve the legacy extension publisher", () => {

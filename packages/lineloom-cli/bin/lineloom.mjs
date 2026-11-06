@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-import { pathToFileURL } from "node:url";
+import { fileURLToPath } from "node:url";
+import { realpathSync } from "node:fs";
 import { getRelease } from "../lib/releases.mjs";
 import { installRelease } from "../lib/install.mjs";
 import { installLocalRelease } from "../lib/local-install.mjs";
@@ -126,6 +127,19 @@ export async function run(args = process.argv.slice(2), io = console, deps = {})
   }
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+// Node may resolve the imported module through a canonical path while argv[1]
+// retains an alias (for example macOS /var vs /private/var, or an npm bin symlink).
+// Compare the actual files, not stringified file URLs. Imported/tested modules
+// still never execute commands as a side effect.
+export function isMainModule(entry = process.argv[1], moduleUrl = import.meta.url) {
+  if (!entry) return false;
+  try {
+    return realpathSync(entry) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
+
+if (isMainModule()) {
   process.exitCode = await run();
 }
