@@ -95,5 +95,6 @@ jobs:
           assert.equal(p.name, '@sanskarin/lineloom-cli');
           NODE
           npm run check:pack
+          npm run smoke:consumer
       - name: Stage public package for maintainer approval (not a direct publish)
         run: npm stage publish --access public --ignore-scripts --registry=https://registry.npmjs.org
