@@ -77,6 +77,10 @@ export async function installRelease(spec, { editor = "code", fetchImpl = fetch,
   const target = join(dir, "LineLoom-" + spec.version + ".vsix");
   try {
     const bytes = await fetchVerifiedVSIX(spec, target, fetchImpl);
+    // The download may be slow. Do not trust the earlier installed-extension
+    // snapshot: a legacy copy could have appeared while the VSIX downloaded.
+    // Recheck immediately before the only editor-mutating operation.
+    assertPublisherMigrationReady(spec, editor, runner);
     const outcome = runner(editor, ["--install-extension", target], {
       shell: false, stdio: "inherit"
     });
