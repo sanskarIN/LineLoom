@@ -113,7 +113,50 @@ test("offline Sanskar migration installs only after a successful clean extension
       }
     });
     assert.equal(bytes, fixture.length);
-    assert.deepEqual(calls.map(args => args[0]), ["--list-extensions", "--install-extension"]);
+    assert.deepEqual(calls.map(args => args[0]), ["--list-extensions", "--list-extensions", "--install-extension"]);
     await assert.rejects(lstat(staged), /ENOENT/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+
+test("offline migration refuses a legacy extension that appears after VSIX staging", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-midflight-test-"));
+  const input = join(dir, "preview.vsix");
+  await writeFile(input, fixture);
+  const migrating = { ...spec, publisher: "Sanskar" };
+  const commands = [];
+  try {
+    await assert.rejects(installLocalRelease(migrating, input, {
+      runner(_editor, args) {
+        commands.push(args[0]);
+        assert.deepEqual(args, ["--list-extensions"]);
+        return commands.length === 1
+          ? { status: 0, stdout: "some.extension\n" }
+          : { status: 0, stdout: "SanskarCodes.lineloom\n" };
+      }
+    }), /SanskarCodes\.lineloom is still installed/);
+    assert.deepEqual(commands, ["--list-extensions", "--list-extensions"]);
+    assert.deepEqual(readFileSync(input), fixture);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("offline migration fails closed if the second extension listing becomes unavailable", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-midflight-error-test-"));
+  const input = join(dir, "preview.vsix");
+  await writeFile(input, fixture);
+  const migrating = { ...spec, publisher: "Sanskar" };
+  const commands = [];
+  try {
+    await assert.rejects(installLocalRelease(migrating, input, {
+      runner(_editor, args) {
+        commands.push(args[0]);
+        assert.deepEqual(args, ["--list-extensions"]);
+        return commands.length === 1
+          ? { status: 0, stdout: "" }
+          : { status: 1, stdout: "" };
+      }
+    }), /Cannot check installed extensions/);
+    assert.deepEqual(commands, ["--list-extensions", "--list-extensions"]);
+    assert.deepEqual(readFileSync(input), fixture);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
