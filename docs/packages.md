@@ -75,6 +75,8 @@ See the [CLI v0.3.0 manual acceptance checklist](qa/cli-v0.3.0-manual-acceptance
 
 ## Optional npmjs.com publication (separate action)
 
+**Implementation and owner setup:** [Public npm registry bootstrap and OIDC staged-publishing guide](npmjs-publishing.md). A separate, manually triggered [npmjs staging workflow](../.github/workflows/npmjs-stage.yml) prepares package versions for maintainer approval. It does not require a GitHub npm token secret and cannot publish without an existing npm package and a matching trusted publisher. The checked-in GitHub Packages publisher is unchanged.
+
 Public `npx` without GitHub Packages authentication needs **npmjs.com** publication, with ownership/control of the matching `@sanskarin` scope on npm. Don't assume GitHub account ownership grants npm account ownership. Choose and verify an owned npmjs scope, create the public package, then configure [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) with an explicitly authorized GitHub workflow using OIDC rather than a long-lived secret. The separate npmjs workflow must validate package identity, exact version, pinned hashes, and public provenance before publishing. Never switch `publishConfig.registry` in the GitHub Packages workflow implicitly or claim both registries are synchronized.
 
 See [full extension publishing instructions](publishing.md).

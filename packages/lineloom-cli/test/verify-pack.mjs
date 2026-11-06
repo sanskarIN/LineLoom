@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 const cli = process.env.npm_execpath;
 if (!cli) throw new Error("Run this via npm run check:pack");
 const result = execFileSync(process.execPath, [cli, "pack", "--json", "--dry-run", "--ignore-scripts"], {
@@ -14,5 +15,6 @@ for (const required of [
 assert.ok(files.every(path => !/(^|\/)(test|node_modules|src|\.github)\//.test(path)),
   "Package contains test, build or dependency sources");
 assert.equal(pack.name, "@sanskarin/lineloom-cli");
-assert.equal(pack.version, "0.3.0");
+const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
+assert.equal(pack.version, manifest.version);
 console.log("Package contents verified:", files.join(", "));

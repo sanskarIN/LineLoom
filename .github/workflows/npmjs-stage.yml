@@ -1,0 +1,99 @@
+name: Stage LineLoom CLI on npmjs (OIDC)
+
+# Deliberately manual: the GitHub Packages registry and the VSIX publishers
+# are independent release channels, each with its own authorization gate.
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Exact packages/lineloom-cli/package.json version to stage'
+        required: true
+        type: string
+      confirmation:
+        description: 'Type STAGE_NPMJS_LINELOOM to authorize this staging run'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lineloom-npmjs-${{ github.event.inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  stage:
+    name: Verify then stage @sanskarin/lineloom-cli
+    if: >-
+      github.repository == 'sanskarIN/LineLoom' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.confirmation == 'STAGE_NPMJS_LINELOOM'
+    runs-on: ubuntu-latest
+    environment: npmjs
+    permissions:
+      contents: read
+      id-token: write # OIDC trusted publishing; no NPM_TOKEN is used
+    defaults:
+      run:
+        working-directory: packages/lineloom-cli
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false
+      - name: Use npm CLI supporting stage publishing and OIDC
+        run: |
+          npm install --global 'npm@^11.15.0'
+          node -e "const v=process.versions.node.split('.').map(Number); if(v[0]<24)process.exit(1)"
+          npm --version
+      - name: Validate scoped name, release version, lockfile and isolated GitHub registry
+        env:
+          EXPECTED_VERSION: ${{ inputs.version }}
+        run: |
+          node --input-type=commonjs - <<'NODE'
+          const assert = require('node:assert/strict');
+          const p = require('./package.json');
+          const lock = require('./package-lock.json');
+          assert.equal(p.name, '@sanskarin/lineloom-cli');
+          assert.match(process.env.EXPECTED_VERSION || '', /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?$/);
+          assert.equal(p.version, process.env.EXPECTED_VERSION);
+          assert.equal(lock.name, p.name);
+          assert.equal(lock.version, p.version);
+          assert.equal(lock.packages[''].name, p.name);
+          assert.equal(lock.packages[''].version, p.version);
+          assert.equal(p.repository.url, 'https://github.com/sanskarIN/LineLoom');
+          assert.equal(p.publishConfig.registry, 'https://npm.pkg.github.com');
+          assert.notEqual(p.private, true);
+          for (const field of ['dependencies', 'optionalDependencies', 'peerDependencies']) {
+            assert.ok(!p[field] || Object.keys(p[field]).length === 0, field + ' must stay empty');
+          }
+          for (const lifecycle of [
+            'preinstall','install','postinstall','prepublish','prepublishOnly',
+            'prepare','prepack','postpack','postpublish'
+          ]) assert.ok(!p.scripts?.[lifecycle], 'Disallowed lifecycle: ' + lifecycle);
+          NODE
+      - name: Install, test, inspect archive and audit
+        run: |
+          npm ci --ignore-scripts --no-audit
+          npm test
+          npm run check:pack
+          node bin/lineloom.mjs --help
+          node bin/lineloom.mjs install --dry-run
+          npm audit --audit-level=high --registry=https://registry.npmjs.org
+      - name: Select npmjs only in this ephemeral workspace
+        run: |
+          npm pkg set 'publishConfig.registry=https://registry.npmjs.org' 'publishConfig.access=public'
+          node --input-type=commonjs - <<'NODE'
+          const assert = require('node:assert/strict');
+          const p = require('./package.json');
+          assert.equal(p.publishConfig.registry, 'https://registry.npmjs.org');
+          assert.equal(p.publishConfig.access, 'public');
+          assert.equal(p.name, '@sanskarin/lineloom-cli');
+          NODE
+          npm run check:pack
+      - name: Stage public package for maintainer approval (not a direct publish)
+        run: npm stage publish --access public --ignore-scripts --registry=https://registry.npmjs.org

@@ -33,7 +33,7 @@ lineloom verify ./LineLoom-1.2.0.vsix
 lineloom verify ./LineLoom-1.2.4.vsix --preview
 ```
 
-The verifier requires a regular local .vsix file, has a 10 MiB file size cap, and rejects any checksum mismatch. **These commands are not yet in published CLI v0.1.0.** CLI versions are independent of the extension version. Installing this npm package does not run an automatic extension install; explicitly run `lineloom install`. Distribution through **npmjs.com** requires separate npm scope ownership and publication. Read [package distribution notes](https://github.com/sanskarIN/LineLoom/blob/main/docs/packages.md).
+The verifier requires a regular local .vsix file, has a 10 MiB file size cap, and rejects any checksum mismatch. **These commands are not yet in published CLI v0.1.0.** CLI versions are independent of the extension version. Installing this npm package does not run an automatic extension install; explicitly run `lineloom install`. Distribution through **npmjs.com** requires separate npm scope ownership and publication. Read [package distribution notes](../../docs/packages.md) and the [npmjs.com first-publish / trusted-publishing guide](../../docs/npmjs-publishing.md). Do not assume the source CLI is available through public npm until a maintainer completes the manual bootstrap and approval.
 
 ## Offline VSIX installation (v0.3.0 source candidate)
 
