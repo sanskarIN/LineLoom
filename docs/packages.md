@@ -5,11 +5,11 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 ## GitHub Packages npm installer
 
 - GitHub scope/name: `@sanskarin/lineloom-cli`.
-- Published GitHub Packages version: **`0.1.0`** with historical VSIX pins. Source-only CLI **`0.2.0`** (offline verify) and **`0.3.0`** (offline install, merged in [PR #92](https://github.com/sanskarIN/LineLoom/pull/92)) are not published commands. The current `0.3.0` development source refreshes VSIX pins to **v1.3.0 stable / v1.4.3 SanskarCodes preview**, without silently migrating publisher IDs. CLI versions remain independent of extension versions.
+- Published GitHub Packages version: **`0.1.0`** with historical VSIX pins. Source-only CLI **`0.2.0`** (offline verify) and **`0.3.0`** (offline install, merged in [PR #92](https://github.com/sanskarIN/LineLoom/pull/92)) are not published commands. The current `0.3.0` development source pins **v1.3.0 stable / v1.4.3 preview** with legacy `SanskarCodes` default and an explicit `--preview --publisher Sanskar` choice for the separately verified new-publisher VSIX, without silently migrating users. CLI versions remain independent of extension versions.
 - Source: `packages/lineloom-cli/`.
 - Target: GitHub's npm registry, `https://npm.pkg.github.com`; GitHub Packages attaches it to this repository via package metadata after a successful publish.
 - No dependencies or automatic installation lifecycle scripts.
-- The **published v0.1.0 CLI** pins older, individually reviewed GitHub artifacts: stable v1.2.0 and opt-in preview v1.2.4. The **unpublished 0.3.0 source** now pins v1.3.0 stable and v1.4.3 preview using the legacy `SanskarCodes` VSIX. Do not assume globally installed `lineloom install` downloads these until a newer CLI package is actually published and verified.
+- The **published v0.1.0 CLI** pins older, individually reviewed GitHub artifacts: stable v1.2.0 and opt-in preview v1.2.4. The **unpublished 0.3.0 source** now pins v1.3.0 stable and v1.4.3 preview using the legacy `SanskarCodes` VSIX by default; it also includes an explicitly selectable, distinct `Sanskar` preview pin. Do not assume globally installed `lineloom install` downloads these until a newer CLI package is actually published and verified.
 
 **Published on GitHub Packages (2026-10-24):** [The package publishing workflow](https://github.com/sanskarIN/LineLoom/actions/runs/40085599452) completed successfully with `npm publish` reporting `+ @sanskarin/lineloom-cli@0.1.0` on `https://npm.pkg.github.com` and an independent audit reporting **0 vulnerabilities**. The package metadata links to this repository so GitHub can associate it with the repository's **Packages** section. Public visibility in the GitHub UI and an authenticated end-user install have **not** been independently verified. This package was **not** published on npmjs.com.
 
@@ -20,7 +20,7 @@ LineLoom's **VS Code extension** and optional **npm CLI installer** are differen
 | GitHub extension VSIX | **v1.3.0 stable published** | Explicitly selected related-file context, native sidebar, privacy controls |
 | GitHub Packages `@sanskarin/lineloom-cli` | **v0.1.0 published** | Checksum-pinned download/install for older release VSIX versions; not automatically v1.3.0 |
 | CLI `verify` | **v0.2.0+ source only, unpublished** | Verify a manually downloaded pinned VSIX; refreshed release pins in source v0.3.0 |
-| CLI `install --file` | **v0.3.0 source (unpublished)** | Offline installation from a manually downloaded, checksum-verified official VSIX; preview pinned to `SanskarCodes` |
+| CLI `install --file` | **v0.3.0 source (unpublished)** | Offline installation from a manually downloaded, checksum-verified official VSIX; `SanskarCodes` preview default, explicit `Sanskar` preview opt-in |
 | npmjs.com / Marketplace / Open VSX | **Independent registries** | Verify each live listing; no publication implied by GitHub release or GitHub Packages |
 
 The [future release roadmap](roadmap.md) tracks upgrades and acceptance; consult [PR #92 checks](https://github.com/sanskarIN/LineLoom/pull/92) for integration evidence. Distribution remains independently gated.
@@ -51,14 +51,18 @@ lineloom verify ./LineLoom-1.3.0.vsix
 lineloom verify ./LineLoom-1.4.3-SanskarCodes.vsix --preview
 ```
 
-The v0.2.0 **source-only** verify command reads a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with an existing pinned stable/preview digest. It cannot download, install or contact Ollama. The merged [v0.3.0 source PR #92](https://github.com/sanskarIN/LineLoom/pull/92) adds a separate offline `install --file ./LineLoom-1.2.0.vsix` operation using a bounded staged copy and checksum verification. For local development builds of CLI v0.3.0, `--file` installs only the byte-for-byte pinned official VSIX already on disk. It does not download anything:
+The v0.2.0 **source-only** verify command reads a chosen local VSIX, enforces a 10 MiB bound and compares its SHA-256 with an existing pinned stable/preview digest. It cannot download, install or contact Ollama. The merged [v0.3.0 source PR #92](https://github.com/sanskarIN/LineLoom/pull/92) adds a separate offline `install --file ./LineLoom-1.3.0.vsix` operation using a bounded staged copy and checksum verification. For local development builds of CLI v0.3.0, `--file` installs only the byte-for-byte pinned official VSIX already on disk. It does not download anything:
 
 ```sh
 lineloom install --file ./LineLoom-1.3.0.vsix
 lineloom install --file ./LineLoom-1.4.3-SanskarCodes.vsix --preview
+# After reviewing the publisher migration requirements:
+lineloom install --file ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
 ```
 
-File verification occurs on a private staged copy before the supported editor CLI runs; neither a missing file nor a checksum mismatch can fall back to an online download. The current source pins **extension v1.3.0 stable and v1.4.3 preview (`SanskarCodes` variant only)**; it does not dynamically follow GitHub releases or silently change publisher IDs. These commands require building/running the unpublished development source, and have **not** been included in the published package.
+The `Sanskar` preview has a **different VS Code extension ID**: disable/uninstall the legacy extension, reload VS Code, and review the [manual migration guide](publisher-migration.md) before enabling the new one. The CLI never uninstalls the old identity or migrates settings automatically.
+
+File verification occurs on a private staged copy before the supported editor CLI runs; neither a missing file nor a checksum mismatch can fall back to an online download. The current source pins **extension v1.3.0 stable and v1.4.3 preview**. It defaults to the legacy `SanskarCodes` publisher and can explicitly select `Sanskar` only for the v1.4.3 preview; it never dynamically follows GitHub releases or silently changes publisher IDs. These commands require building/running the unpublished development source, and have **not** been included in the published package.
 
 **Neither CLI 0.2.0 nor 0.3.0 is available in the published v0.1.0 GitHub Packages artifact.** Do not expect these development-only commands to work in the published v0.1.0 package. Publication of either later CLI version requires independent package/security validation, real-editor installation evidence, a new authorization and a new version-specific publishing gate.
 
