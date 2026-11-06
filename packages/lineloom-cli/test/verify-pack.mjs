@@ -10,7 +10,8 @@ const [pack] = JSON.parse(result);
 const files = pack.files.map(file => file.path);
 for (const required of [
   "package.json", "README.md", "LICENSE",
-  "bin/lineloom.mjs", "lib/install.mjs", "lib/local-install.mjs", "lib/releases.mjs", "lib/verify.mjs"
+  "bin/lineloom.mjs", "lib/install.mjs", "lib/local-install.mjs", "lib/releases.mjs",
+  "lib/publisher-check.mjs", "lib/verify.mjs"
 ]) assert.ok(files.includes(required), "Missing packaged file: " + required);
 assert.ok(files.every(path => !/(^|\/)(test|node_modules|src|\.github)\//.test(path)),
   "Package contains test, build or dependency sources");

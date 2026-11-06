@@ -68,3 +68,52 @@ test("offline install removes staged package even on editor failure", async () =
     await assert.rejects(lstat(staged), /ENOENT/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+
+test("offline Sanskar migration blocks the conflicting legacy extension before installation", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-collision-test-"));
+  const input = join(dir, "preview.vsix");
+  const migrating = { ...spec, publisher: "Sanskar" };
+  await writeFile(input, fixture);
+  let calls = 0;
+  try {
+    await assert.rejects(installLocalRelease(migrating, input, {
+      runner(_editor, args) {
+        calls++;
+        assert.deepEqual(args, ["--list-extensions"]);
+        return { status: 0, stdout: "SanskarCodes.lineloom\n" };
+      }
+    }), /SanskarCodes\.lineloom is still installed/);
+    assert.equal(calls, 1);
+    assert.deepEqual(readFileSync(input), fixture);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test("offline Sanskar migration installs only after a successful clean extension listing", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "lineloom-clean-test-"));
+  const input = join(dir, "preview.vsix");
+  await writeFile(input, fixture);
+  const migrating = { ...spec, publisher: "Sanskar" };
+  const calls = [];
+  let staged;
+  try {
+    const bytes = await installLocalRelease(migrating, input, {
+      editor: "codium",
+      runner(editor, args, options) {
+        calls.push([...args]);
+        assert.equal(editor, "codium");
+        assert.equal(options.shell, false);
+        if (args[0] === "--list-extensions") {
+          return { status: 0, stdout: "unrelated.extension\n" };
+        }
+        assert.equal(args[0], "--install-extension");
+        staged = args[1];
+        assert.deepEqual(readFileSync(staged), fixture);
+        return { status: 0 };
+      }
+    });
+    assert.equal(bytes, fixture.length);
+    assert.deepEqual(calls.map(args => args[0]), ["--list-extensions", "--install-extension"]);
+    await assert.rejects(lstat(staged), /ENOENT/);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});

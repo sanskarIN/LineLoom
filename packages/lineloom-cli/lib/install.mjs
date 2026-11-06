@@ -3,6 +3,7 @@ import { mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
+import { assertPublisherMigrationReady } from "./publisher-check.mjs";
 
 const ALLOWED_HOSTS = new Set([
   "github.com", "release-assets.githubusercontent.com", "objects.githubusercontent.com"
@@ -69,6 +70,9 @@ export async function installRelease(spec, { editor = "code", fetchImpl = fetch,
   if (!new Set(["code", "code-insiders", "codium"]).has(editor)) {
     throw new Error("Unsupported editor CLI");
   }
+  // The opt-in Sanskar identity shares commands with SanskarCodes.
+  // Refuse collisions before downloading a VSIX or changing the editor.
+  assertPublisherMigrationReady(spec, editor, runner);
   const dir = await mkdtemp(join(tmpdir(), "lineloom-vsix-"));
   const target = join(dir, "LineLoom-" + spec.version + ".vsix");
   try {

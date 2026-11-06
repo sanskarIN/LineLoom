@@ -53,6 +53,10 @@ The v1.4.3 preview uses the existing `SanskarCodes` identity **by default**. The
 node bin/lineloom.mjs install --preview --publisher Sanskar --dry-run
 ```
 
-Before installing that new publisher ID, back up your `lineloom.*` settings, **uninstall or disable `SanskarCodes.lineloom`** and reload VS Code as described in [the migration guide](../../docs/publisher-migration.md). Two enabled copies can register conflicting commands and completion providers. The CLI does **not** uninstall old extensions, migrate extension-private settings or publish either marketplace listing.
+Before installing that new publisher ID, back up your `lineloom.*` settings, **uninstall `SanskarCodes.lineloom`** and reload VS Code as described in [the migration guide](../../docs/publisher-migration.md). Two enabled copies can register conflicting commands and completion providers.
+
+**New migration safety check (development source):** For an actual `--preview --publisher Sanskar` install, the CLI first runs the selected editor's `--list-extensions` command without a shell. If `SanskarCodes.lineloom` is still installed, the editor cannot list its extensions, or the check fails, installation is refused **before downloading or staging the VSIX**. A merely disabled old extension is still reported as installed; uninstall it to pass the check. The check runs in the selected editor (`code`, `code-insiders` or `codium`), so verify the relevant editor profile yourself. `--dry-run` and `verify` do not inspect installed extensions or change the editor. The default `SanskarCodes` installer path does not gain this new requirement.
+
+The CLI does **not** uninstall old extensions, migrate extension-private settings or publish either marketplace listing.
 
 This command accepts a regular local VSIX, copies it into a private, bounded temporary file, verifies the **staged bytes** against the built-in stable/preview SHA-256 digest, and only then invokes a supported editor CLI. Invalid/tampered downloads are rejected; the temporary copy is removed after success or failure, and the original file is unchanged. `--file` cannot be combined with `--dry-run`. **Not available in the published CLI v0.1.0.** This command neither downloads a VSIX nor contacts Ollama.

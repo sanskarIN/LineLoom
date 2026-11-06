@@ -253,3 +253,30 @@ test("offline CLI never downloads or installs a mismatching artifact", async () 
     assert.match(io.messages.join("\n"), /SHA-256/);
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
+
+
+test("online Sanskar preview refuses a conflicting installed publisher before network access", async () => {
+  const io = logger();
+  let queries = 0;
+  assert.equal(await run(["install", "--preview", "--publisher", "Sanskar"], io, {
+    fetchImpl: () => { throw Error("Network must not be used before migration check"); },
+    runner(command, args, options) {
+      queries++;
+      assert.equal(command, "code");
+      assert.deepEqual(args, ["--list-extensions"]);
+      assert.equal(options.shell, false);
+      return { status: 0, stdout: "other.extension\nSanskarCodes.lineloom\n" };
+    }
+  }), 1);
+  assert.equal(queries, 1);
+  assert.match(io.messages.join("\n"), /SanskarCodes\.lineloom is still installed/);
+});
+
+test("online Sanskar preview refuses unavailable extension inventory before network access", async () => {
+  const io = logger();
+  assert.equal(await run(["install", "--preview", "--publisher", "Sanskar"], io, {
+    fetchImpl: () => { throw Error("Network must not be used before migration check"); },
+    runner: () => ({ status: 1, stdout: "" })
+  }), 1);
+  assert.match(io.messages.join("\n"), /Cannot check installed extensions/);
+});
