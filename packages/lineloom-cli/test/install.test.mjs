@@ -19,10 +19,37 @@ const logger = () => ({
   error(...args) { this.messages.push(args.join(" ")); }
 });
 
-test("channels pin published versions and SHA-256 hashes", () => {
-  assert.equal(getRelease("stable").version, "1.2.0");
-  assert.equal(getRelease("preview").version, "1.2.4");
-  assert.match(getRelease("stable").sha256, /^[a-f0-9]{64}$/);
+test("channels pin public release assets and preserve the legacy extension publisher", () => {
+  assert.deepEqual(
+    {
+      version: getRelease("stable").version, publisher: getRelease("stable").publisher,
+      asset: getRelease("stable").asset, sha256: getRelease("stable").sha256
+    },
+    {
+      version: "1.3.0", publisher: "SanskarCodes",
+      asset: "LineLoom-1.3.0.vsix",
+      sha256: "6af67d3caab5ae7a86dda574870cccb210fc20fbf105e014ce6532c0ff793e25"
+    }
+  );
+  assert.deepEqual(
+    {
+      version: getRelease("preview").version, publisher: getRelease("preview").publisher,
+      asset: getRelease("preview").asset, sha256: getRelease("preview").sha256
+    },
+    {
+      version: "1.4.3", publisher: "SanskarCodes",
+      asset: "LineLoom-1.4.3-SanskarCodes.vsix",
+      sha256: "d16b38b90c95fc2aa765543ede7213a42da8b11a1cc15edba7dd11b9e3649fb8"
+    }
+  );
+  for (const channel of ["stable", "preview"]) {
+    const release = getRelease(channel);
+    assert.equal(
+      release.url,
+      `https://github.com/sanskarIN/LineLoom/releases/download/v${release.version}/${release.asset}`
+    );
+    assert.match(release.sha256, /^[a-f0-9]{64}$/);
+  }
   assert.throws(() => getRelease("latest"));
 });
 
@@ -53,6 +80,15 @@ test("dry-run does not download or run an editor", async () => {
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
   assert.match(io.messages.join("\n"), /Dry run/);
+  assert.match(io.messages.join("\n"), /SanskarCodes\.lineloom/);
+  const previewIo = logger();
+  assert.equal(await run(["install", "--preview", "--dry-run"], previewIo, {
+    fetchImpl: () => { throw Error("Download invoked"); },
+    runner: () => { throw Error("Editor invoked"); }
+  }), 0);
+  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.match(previewIo.messages.join("\n"), /SanskarCodes\.lineloom/);
+  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
 });
 
 test("pinned fixture installs with a shell-free executable and array arguments", async () => {

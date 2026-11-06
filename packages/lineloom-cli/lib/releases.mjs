@@ -1,13 +1,22 @@
-// Pinned release artifact hashes were verified in the repository's release CI.
-// Never trust a checksum fetched alongside a download during installation.
+// Every pinned digest is from a published GitHub Release asset, verified separately
+// from the download during packaging. Never fetch an adjacent checksum at install time.
+// CLI releases are independent of VS Code extension release versions.
+//
+// v1.4.3 ships different VSIX files for separate extension publisher IDs.
+// Keep the existing SanskarCodes publisher pinned for current CLI installs:
+// switching to Sanskar requires deliberate user choice, not a silent CLI update.
 const releases = Object.freeze({
   stable: Object.freeze({
-    version: "1.2.0",
-    sha256: "a968f88faa2515db024cc10cf439213070ac596a9f1eb823263cbd4461951cbd"
+    version: "1.3.0",
+    publisher: "SanskarCodes",
+    asset: "LineLoom-1.3.0.vsix",
+    sha256: "6af67d3caab5ae7a86dda574870cccb210fc20fbf105e014ce6532c0ff793e25"
   }),
   preview: Object.freeze({
-    version: "1.2.4",
-    sha256: "05a715f49fe332ec53c63de80f3ebdabedc8a55c07ce2aa8b000c69ddee2ccec"
+    version: "1.4.3",
+    publisher: "SanskarCodes",
+    asset: "LineLoom-1.4.3-SanskarCodes.vsix",
+    sha256: "d16b38b90c95fc2aa765543ede7213a42da8b11a1cc15edba7dd11b9e3649fb8"
   })
 });
 export function getRelease(channel) {
@@ -16,6 +25,6 @@ export function getRelease(channel) {
   return {
     ...pinned, channel,
     url: "https://github.com/sanskarIN/LineLoom/releases/download/v" + pinned.version +
-      "/LineLoom-" + pinned.version + ".vsix"
+      "/" + pinned.asset
   };
 }

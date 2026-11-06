@@ -25,15 +25,15 @@ npm run check:pack
 node bin/lineloom.mjs version
 ```
 
-The source pins **LineLoom v1.2.0 stable** and **v1.2.4 preview**; it does not download or install v1.3.0/v1.4.2 automatically.
+The updated 0.3.0 development source pins **LineLoom v1.3.0 stable** and **v1.4.3 preview (`SanskarCodes` publisher asset)**. The published 0.1.0 CLI still installs older releases; neither package automatically follows the latest GitHub releases.
 Obtain a VSIX separately from the matching official GitHub Release, verify its release checksum independently and keep it on the local machine.
 The CLI's pinned SHA-256 is authoritative for the subsequent offline invocation, not a newly downloaded or user-supplied replacement hash.
 
 ```sh
-node bin/lineloom.mjs verify ./LineLoom-1.2.0.vsix
-node bin/lineloom.mjs install --file ./LineLoom-1.2.0.vsix
-node bin/lineloom.mjs verify ./LineLoom-1.2.4.vsix --preview
-node bin/lineloom.mjs install --file ./LineLoom-1.2.4.vsix --preview
+node bin/lineloom.mjs verify ./LineLoom-1.3.0.vsix
+node bin/lineloom.mjs install --file ./LineLoom-1.3.0.vsix
+node bin/lineloom.mjs verify ./LineLoom-1.4.3-SanskarCodes.vsix --preview
+node bin/lineloom.mjs install --file ./LineLoom-1.4.3-SanskarCodes.vsix --preview
 ```
 
 These commands are **examples for local manual QA with files you already have**, not instructions to run the published v0.1.0 package.
@@ -42,7 +42,7 @@ These commands are **examples for local manual QA with files you already have**,
 
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
-| Windows + native VS Code CLI | Approved, pinned VSIX installs and appears under the existing `SanskarCodes.lineloom` ID | NOT RUN |
+| Windows + native VS Code CLI | Approved, pinned v1.3.0 or v1.4.3 legacy-publisher VSIX installs and appears under the existing `SanskarCodes.lineloom` ID | NOT RUN |
 | macOS + native VS Code CLI | Offline invocation, permission handling and cleanup behave correctly | NOT RUN |
 | Linux + native VS Code CLI | Offline invocation installs from staged copy without a network fetch | NOT RUN |
 | VS Code Insiders / VSCodium | Explicit `--editor code-insiders` or `--editor codium` routes only to that editor CLI | NOT RUN |
