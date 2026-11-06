@@ -1,5 +1,5 @@
 /** VS Code language IDs, not filename-only inference. */
-export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp" | "csharp";
+export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp" | "csharp" | "swift" | "dart" | "ruby" | "php";
 export interface LanguageSpec {
   id: SupportedLanguage;
   label: string;
@@ -20,7 +20,11 @@ export const LANGUAGES: readonly LanguageSpec[] = [
   { id: "css", label: "CSS", extensions: [".css"], guidance: "Respect existing selectors, cascade conventions, property syntax and brace matching." },
   { id: "lua", label: "Lua", extensions: [".lua"], guidance: "Respect Lua local scope, tables, block endings and the existing runtime version." },
   { id: "cuda-cpp", label: "CUDA C++", extensions: [".cu", ".cuh"], guidance: "Respect CUDA host/device qualifiers, kernel launch syntax, thread indexing, bounds checks, memory spaces and synchronization; preserve existing C++ types and architecture constraints." },
-  { id: "csharp", label: "C#", extensions: [".cs", ".csx"], guidance: "Respect C# nullable reference types, namespaces, using directives, generics, async/await, exception handling and existing .NET API contracts; do not invent types or members." }
+  { id: "csharp", label: "C#", extensions: [".cs", ".csx"], guidance: "Respect C# nullable reference types, namespaces, using directives, generics, async/await, exception handling and existing .NET API contracts; do not invent types or members." },
+  { id: "swift", label: "Swift", extensions: [".swift"], guidance: "Respect Swift optionals, value semantics, actors, async/await, access control and visible module APIs; do not invent declarations." },
+  { id: "dart", label: "Dart", extensions: [".dart"], guidance: "Respect Dart null safety, Future and Stream contracts, class members, imports and existing Flutter widget structure when present." },
+  { id: "ruby", label: "Ruby", extensions: [".rb", ".rake", ".gemspec"], guidance: "Respect Ruby blocks, end delimiters, method visibility, module lookup and the existing project conventions." },
+  { id: "php", label: "PHP", extensions: [".php", ".phtml"], guidance: "Respect PHP opening tags, namespace imports, types, nullability, array syntax and existing framework conventions." }
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
 const aliases: Record<string, SupportedLanguage> = {
