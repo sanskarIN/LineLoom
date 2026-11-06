@@ -48,6 +48,16 @@ node bin/lineloom.mjs verify ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher
 node bin/lineloom.mjs install --file ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
 ```
 
+The opt-in `Sanskar` online and offline installers now check `<editor> --list-extensions` before download or VSIX staging. In manual QA, verify these outcomes:
+
+| Migration preflight (selected editor) | Expected behavior | Evidence |
+| --- | --- | --- |
+| `SanskarCodes.lineloom` still installed (including disabled) | Reject before downloading or installing | NOT RUN |
+| Editor listing CLI missing, non-zero or timed out | Reject before downloading or installing | NOT RUN |
+| Old extension uninstalled and listing succeeds | Continue to SHA-256 verification and normal VSIX installation | NOT RUN |
+| Default `SanskarCodes` stable/preview installer | Does not require the new publisher-migration preflight | Automated unit tests only |
+| `--dry-run` for `Sanskar` | Reports pinned source and publisher without invoking the editor | Automated unit tests PASS; manual NOT RUN |
+
 Record real Windows/macOS/Linux publisher-switch testing as **NOT RUN** until performed. The CLI does not uninstall the old publisher ID, transfer private extension state, or publish an npmjs package. A stable-channel `--publisher Sanskar` without `--preview` must fail closed.
 
 ## Human acceptance matrix
