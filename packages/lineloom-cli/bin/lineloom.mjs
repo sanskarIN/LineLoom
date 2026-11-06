@@ -78,6 +78,7 @@ export async function run(args = process.argv.slice(2), io = console, deps = {})
       return 0;
     }
     io.log("Official " + spec.channel + " release: v" + spec.version);
+    io.log("Extension publisher: " + spec.publisher + " (ID " + spec.publisher + ".lineloom)");
     io.log(command.file ? "Local VSIX: " + command.file : "Source: " + spec.url);
     io.log("Expected SHA-256: " + spec.sha256);
     if (command.dryRun) {
