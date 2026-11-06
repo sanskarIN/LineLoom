@@ -1,6 +1,6 @@
 # LineLoom language controls
 
-LineLoom registers the VS Code inline-completion provider for fourteen language IDs (nine enabled by default):
+LineLoom registers the VS Code inline-completion provider for eighteen language IDs (nine enabled by default):
 
 | VS Code ID | Language | Typical extensions | Preview status |
 | --- | --- | --- | --- |
@@ -17,7 +17,11 @@ LineLoom registers the VS Code inline-completion provider for fourteen language 
 | `css` | CSS | `.css` | New experimental, opt-in only |
 | `lua` | Lua | `.lua` | Experimental, opt-in only; editor language mode may require an extension |
 | `cuda-cpp` | CUDA C++ | `.cu`, `.cuh` | Experimental, opt-in only; editor mode provided by VS Code or a CUDA extension |
-| `csharp` | C# | `.cs`, `.csx` | New experimental, opt-in only; C# language mode required |
+| `csharp` | C# | `.cs`, `.csx` | Experimental, opt-in only; C# language mode required |
+| `swift` | Swift | `.swift` | Experimental, opt-in only; Swift editor language mode required |
+| `dart` | Dart | `.dart` | Experimental, opt-in only; Dart editor language mode required |
+| `ruby` | Ruby | `.rb`, `.rake`, `.gemspec` | Experimental, opt-in only |
+| `php` | PHP | `.php`, `.phtml` | Experimental, opt-in only |
 
 Actual support uses the **language mode reported by VS Code**, not the filename alone. For example, `.h` files may be recognized as either C or C++ depending on the selected editor mode. If needed, use **Change Language Mode** in VS Code.
 
@@ -29,9 +33,37 @@ Open **Command Palette → LineLoom: Manage Autocomplete Languages**, check the 
 "lineloom.enabledLanguages": ["python", "typescript", "rust", "go"]
 ```
 
-The existing nine defaults are unchanged. To try HTML, CSS, Lua, CUDA C++ or C#, explicitly select them in Manage Autocomplete Languages or add `"html"`, `"css"`, `"lua"`, `"cuda-cpp"` or `"csharp"` to the setting. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
+The existing nine defaults are unchanged. To try an experimental language, select it in **Manage Autocomplete Languages** or add its exact VS Code language ID to the setting. This includes `"html"`, `"css"`, `"lua"`, `"cuda-cpp"`, `"csharp"`, `"swift"`, `"dart"`, `"ruby"` and `"php"`. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
+
+## Swift, Dart, Ruby and PHP completion (issue #138; source-only opt-in)
+
+These four additional modes are **disabled by default**. Enable them individually with
+**LineLoom: Manage Autocomplete Languages** or an explicit value in
+`lineloom.enabledLanguages`. The editor must actually report the matching
+language ID (`swift`, `dart`, `ruby` or `php`); file extensions alone do
+not enable suggestions. A language extension may be needed to supply a mode.
+
+Each language can use its own installed Ollama model via
+`lineloom.languageModels.<language-id>`. Adding a model override does **not**
+enable the language or download a model. The existing nine defaults, workspace
+trust, ignore/excluded paths, remote-endpoint consent, source window bounds and
+selected-related-file opt-in remain unchanged.
+
+Generic instruction-mode prompts receive fixed language guidance:
+Swift optionals/value semantics/actors, Dart null safety and Futures/Streams,
+Ruby blocks and `end` delimiters, and PHP namespaces/types/opening tags.
+Native FIM prompts still preserve the approved prefix and suffix byte-for-byte.
+The output filter recognizes these languages' explicit code-fence labels,
+including the `rb` Ruby alias, and rejects known mismatched language fences.
+
+**Limitations:** This is source registration and output-format handling, not
+a new compiler or language server, a syntax validator, a verified improvement
+in generated-code quality, or new LineLoom Code weights. No Ruby, PHP, Swift,
+Dart or Flutter SDK is bundled or run. Real editor, accessibility and
+model-quality acceptance remain **NOT RUN**. The first-party LineLoom Code
+research target remains Rust, C, C++, Python and TypeScript.
 
 ## C# completion (issue #138; unreleased, opt-in)
 

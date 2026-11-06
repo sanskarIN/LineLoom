@@ -30,7 +30,11 @@
     "css",
     "lua",
     "cuda",
-    "csharp"
+    "csharp",
+    "swift",
+    "dart",
+    "ruby",
+    "php"
   ],
   "repository": {
     "type": "git",
@@ -205,7 +209,11 @@
               "css",
               "lua",
               "cuda-cpp",
-              "csharp"
+              "csharp",
+              "swift",
+              "dart",
+              "ruby",
+              "php"
             ]
           },
           "default": [
@@ -220,7 +228,7 @@
             "cpp"
           ],
           "uniqueItems": true,
-          "description": "Language IDs permitted for inline suggestions. HTML, CSS, Lua, CUDA C++, and C# are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
+          "description": "Language IDs permitted for inline suggestions. HTML, CSS, Lua, CUDA C++, C#, Swift, Dart, Ruby, and PHP are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
         },
         "lineloom.autoTrigger": {
           "type": "boolean",
@@ -329,7 +337,7 @@
           "additionalProperties": {
             "type": "string"
           },
-          "description": "Optional installed Ollama model tags for each supported language ID. HTML, CSS, Lua, CUDA C++, and C# remain disabled until explicitly added to lineloom.enabledLanguages. Unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. No model downloads are performed."
+          "description": "Optional installed Ollama model tags for each supported language ID. Experimental languages remain disabled until explicitly added to lineloom.enabledLanguages. Unknown mappings are ignored; JSX/TSX follow JavaScript/TypeScript. No model downloads are performed."
         }
       }
     },

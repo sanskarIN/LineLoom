@@ -13,7 +13,7 @@ describe("opt-in HTML, CSS, Lua, CUDA C++ and C# completion modes", () => {
 
   it("registers each language once with a distinct VS Code mode and guidance", () => {
     expect(new Set(LANGUAGES.map(language => language.id)).size).toBe(LANGUAGES.length);
-    expect(LANGUAGES).toHaveLength(14);
+    expect(LANGUAGES).toHaveLength(18);
     for (const id of additions) {
       const spec = getLanguage(id);
       expect(spec?.id).toBe(id);

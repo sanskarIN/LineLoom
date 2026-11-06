@@ -8,7 +8,8 @@ describe("language registry", () => {
   it("registers original and experimental language IDs exactly once", () => {
     expect(LANGUAGES.map(x => x.id)).toEqual([
       "python", "javascript", "typescript", "rust", "kotlin",
-      "go", "java", "c", "cpp", "html", "css", "lua", "cuda-cpp", "csharp"
+      "go", "java", "c", "cpp", "html", "css", "lua", "cuda-cpp", "csharp",
+      "swift", "dart", "ruby", "php"
     ]);
     expect(new Set(LANGUAGES.map(x => x.id)).size).toBe(LANGUAGES.length);
   });
@@ -22,6 +23,10 @@ describe("language registry", () => {
     expect(getLanguage("cuda-cpp")?.extensions).toEqual([".cu", ".cuh"]);
     expect(getLanguage("cuda")?.id).toBe("cuda-cpp");
     expect(getLanguage("csharp")?.extensions).toEqual([".cs", ".csx"]);
+    expect(getLanguage("swift")?.extensions).toContain(".swift");
+    expect(getLanguage("dart")?.extensions).toContain(".dart");
+    expect(getLanguage("ruby")?.extensions).toContain(".rb");
+    expect(getLanguage("php")?.extensions).toContain(".php");
     expect(getLanguage("unknown")).toBeUndefined();
   });
   it("defaults to every supported language and preserves explicitly empty selections", () => {
@@ -30,6 +35,9 @@ describe("language registry", () => {
     expect(normalizeEnabledLanguages(null)).toEqual([]);
     expect(DEFAULT_ENABLED_LANGUAGES).not.toContain("cuda-cpp");
     expect(DEFAULT_ENABLED_LANGUAGES).not.toContain("csharp");
+    for (const id of ["swift", "dart", "ruby", "php"]) {
+      expect(DEFAULT_ENABLED_LANGUAGES).not.toContain(id);
+    }
   });
   it("rejects unknown languages and deduplicates configured IDs", () => {
     const ids = normalizeEnabledLanguages(["python", "python", "go", "unknown", 123, "cpp"]);
