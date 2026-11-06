@@ -80,6 +80,15 @@ test("dry-run does not download or run an editor", async () => {
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
   assert.match(io.messages.join("\n"), /Dry run/);
+  assert.match(io.messages.join("\n"), /SanskarCodes\.lineloom/);
+  const previewIo = logger();
+  assert.equal(await run(["install", "--preview", "--dry-run"], previewIo, {
+    fetchImpl: () => { throw Error("Download invoked"); },
+    runner: () => { throw Error("Editor invoked"); }
+  }), 0);
+  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.match(previewIo.messages.join("\n"), /SanskarCodes\.lineloom/);
+  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
 });
 
 test("pinned fixture installs with a shell-free executable and array arguments", async () => {
