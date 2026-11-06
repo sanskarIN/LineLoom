@@ -65,6 +65,9 @@ export async function installLocalRelease(spec, sourcePath, { editor = "code", r
     } finally {
       await source.close();
     }
+    // Revalidate after asynchronous file staging and hashing, immediately
+    // before asking the editor to install the verified VSIX.
+    assertPublisherMigrationReady(spec, editor, runner);
     const outcome = runner(editor, ["--install-extension", target], {
       shell: false, stdio: "inherit"
     });
