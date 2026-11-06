@@ -37,6 +37,21 @@ replace `SanskarCodes.lineloom` in either registry.
    Existing `lineloom.*` user settings may remain in VS Code settings.json,
    but extension-private globalState does **not** automatically migrate.
 
+## Optional development-source npm CLI preview
+
+The **unpublished CLI v0.3.0 source** can explicitly select the already-published, checksum-pinned `Sanskar` GitHub preview without needing the new extension's marketplace listing. This is **not** automatic publisher migration. Before installation, follow the backup, uninstall/disable and VS Code reload steps above; the CLI never removes `SanskarCodes.lineloom` or copies extension-private state.
+
+```sh
+# From packages/lineloom-cli in a reviewed local checkout:
+node bin/lineloom.mjs install --preview --publisher Sanskar --dry-run
+# Only after disabling/uninstalling SanskarCodes.lineloom and reloading:
+node bin/lineloom.mjs install --preview --publisher Sanskar
+# Or verify the exact manually downloaded VSIX without installation:
+node bin/lineloom.mjs verify ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
+```
+
+The default `lineloom install --preview` continues to target the separate `SanskarCodes` GitHub preview. No `Sanskar` stable VSIX is pinned, so selecting that publisher without `--preview` is rejected. These development-source commands are **not yet available in the publicly published GitHub Packages CLI 0.1.0** and do not imply npmjs publication.
+
 For CLI users **after the new listing exists**:
 
 ```sh
