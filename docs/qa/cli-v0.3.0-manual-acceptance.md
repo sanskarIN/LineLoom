@@ -38,6 +38,18 @@ node bin/lineloom.mjs install --file ./LineLoom-1.4.3-SanskarCodes.vsix --previe
 
 These commands are **examples for local manual QA with files you already have**, not instructions to run the published v0.1.0 package.
 
+### Separate opt-in Sanskar preview acceptance
+
+The dual-publisher GitHub v1.4.3 release also contains `LineLoom-1.4.3-Sanskar.vsix` with its own pinned checksum. The new-publisher path must be explicitly selected and verified separately. **Do not keep two enabled publisher identities in VS Code**; back up settings and remove/disable `SanskarCodes.lineloom` before a manual installation trial.
+
+```sh
+node bin/lineloom.mjs install --preview --publisher Sanskar --dry-run
+node bin/lineloom.mjs verify ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
+node bin/lineloom.mjs install --file ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
+```
+
+Record real Windows/macOS/Linux publisher-switch testing as **NOT RUN** until performed. The CLI does not uninstall the old publisher ID, transfer private extension state, or publish an npmjs package. A stable-channel `--publisher Sanskar` without `--preview` must fail closed.
+
 ## Human acceptance matrix
 
 | Scenario | Expected result | Evidence |
