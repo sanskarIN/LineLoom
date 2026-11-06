@@ -4,6 +4,7 @@ import { constants } from "node:fs";
 import { lstat, mkdtemp, open, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { assertPublisherMigrationReady } from "./publisher-check.mjs";
 
 const MIN_BYTES = 1024;
 const MAX_BYTES = 10 * 1024 * 1024;
@@ -31,6 +32,9 @@ export async function installLocalRelease(spec, sourcePath, { editor = "code", r
   if (entry.size < MIN_BYTES || entry.size > MAX_BYTES) {
     throw new Error("VSIX is outside allowed size");
   }
+  // An opt-in publisher change requires checking the chosen editor first.
+  // Do not stage or install bytes while the conflicting old ID is installed.
+  assertPublisherMigrationReady(spec, editor, runner);
   const dir = await mkdtemp(join(tmpdir(), "lineloom-local-vsix-"));
   const target = join(dir, "LineLoom-" + spec.version + ".vsix");
   try {
