@@ -47,15 +47,15 @@ export function parseArgs(args) {
 }
 
 const help = "LineLoom VS Code installer (only SHA-256-pinned official releases)\n\n" +
-  "  lineloom install                     Install stable v1.2.0\n" +
-  "  lineloom install --preview           Install pre-release v1.2.4\n" +
+  "  lineloom install                     Install stable v1.3.0\n" +
+  "  lineloom install --preview           Install pre-release v1.4.3 (SanskarCodes)\n" +
   "  lineloom install --editor codium     Use VSCodium CLI (or code-insiders)\n" +
   "  lineloom install --dry-run           Print details without installing\n" +
-  "  lineloom install --file ./LineLoom-1.2.0.vsix           Verify and install offline\n" +
-  "  lineloom install --file ./LineLoom-1.2.4.vsix --preview Offline preview\n" +
+  "  lineloom install --file ./LineLoom-1.3.0.vsix           Verify and install offline\n" +
+  "  lineloom install --file ./LineLoom-1.4.3-SanskarCodes.vsix --preview Offline preview\n" +
   "  lineloom version                     Display pinned versions\n" +
-  "  lineloom verify ./LineLoom-1.2.0.vsix           Verify stable VSIX offline\n" +
-  "  lineloom verify ./LineLoom-1.2.4.vsix --preview Verify preview VSIX offline\n" +
+  "  lineloom verify ./LineLoom-1.3.0.vsix           Verify stable VSIX offline\n" +
+  "  lineloom verify ./LineLoom-1.4.3-SanskarCodes.vsix --preview Verify preview VSIX offline\n" +
   "  lineloom --help                       Show help\n\n" +
   "Requires Node 22+ and a supported editor CLI on PATH. No npm install hooks.\n";
 
