@@ -24,6 +24,20 @@ A temporary file is erased after installation. Digest mismatch, unsafe redirects
 
 **The source is CLI v0.3.0 (development, not published)** with updated stable/preview VSIX pins. GitHub Packages currently serves v0.1.0 with the **older** v1.2.0/v1.2.4 pins; neither the v0.2.0 offline verification, v0.3.0 offline installation, nor the updated pins are available in that published package.
 
+## Offline npm package consumer smoke (development source)
+
+Before publishing the CLI, validate the **actual distributable npm tarball**, not just source imports:
+
+```sh
+cd packages/lineloom-cli
+npm ci --ignore-scripts --no-audit
+npm test
+npm run check:pack
+npm run smoke:consumer
+```
+
+`smoke:consumer` creates a temporary `.tgz` with `npm pack --ignore-scripts`, installs that tarball into an isolated prefix with `npm install --offline --ignore-scripts`, then launches the installed CLI's help, version, legacy-channel dry-runs and explicit `Sanskar` dry-run. It also confirms unsupported stable-channel publisher migration is rejected, and cleans up the temporary files. This does **not** contact a registry, run VS Code, or install an actual VSIX. GitHub Actions performs this smoke test on Windows, macOS and Linux; **real editor and npmjs consumer acceptance are still separate release gates**.
+
 ## Offline VSIX verification (v0.2.0 candidate)
 
 After manually downloading a published VSIX, check its bytes against the embedded official release digest without a network request or installing it:
