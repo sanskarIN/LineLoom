@@ -17,7 +17,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "check:pack": "node test/verify-pack.mjs"
+    "check:pack": "node test/verify-pack.mjs",
+    "smoke:consumer": "node test/consumer-smoke.mjs"
   },
   "repository": {
     "type": "git",
