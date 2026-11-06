@@ -280,3 +280,66 @@ test("online Sanskar preview refuses unavailable extension inventory before netw
   }), 1);
   assert.match(io.messages.join("\n"), /Cannot check installed extensions/);
 });
+
+
+test("online migration rechecks the editor after downloading, before installing", async () => {
+  const migrating = { ...getRelease("preview", "Sanskar"), sha256: digest };
+  const commands = [];
+  let downloads = 0;
+  const bytes = await installRelease(migrating, {
+    fetchImpl: async () => {
+      downloads++;
+      return response(fixture);
+    },
+    runner(_editor, args, options) {
+      commands.push(args[0]);
+      if (args[0] === "--list-extensions") {
+        assert.equal(options.shell, false);
+        return { status: 0, stdout: "other.extension\n" };
+      }
+      assert.equal(args[0], "--install-extension");
+      assert.equal(options.shell, false);
+      return { status: 0 };
+    }
+  });
+  assert.equal(bytes, fixture.length);
+  assert.equal(downloads, 1);
+  assert.deepEqual(commands, ["--list-extensions", "--list-extensions", "--install-extension"]);
+});
+
+test("online migration rejects a conflicting publisher added while downloading", async () => {
+  const migrating = { ...getRelease("preview", "Sanskar"), sha256: digest };
+  const commands = [];
+  let downloads = 0;
+  await assert.rejects(installRelease(migrating, {
+    fetchImpl: async () => {
+      downloads++;
+      return response(fixture);
+    },
+    runner(_editor, args) {
+      commands.push(args[0]);
+      assert.deepEqual(args, ["--list-extensions"]);
+      return commands.length === 1
+        ? { status: 0, stdout: "other.extension\n" }
+        : { status: 0, stdout: "SanskarCodes.lineloom\n" };
+    }
+  }), /SanskarCodes\.lineloom is still installed/);
+  assert.equal(downloads, 1);
+  assert.deepEqual(commands, ["--list-extensions", "--list-extensions"]);
+});
+
+test("online migration fails closed if the second editor query fails", async () => {
+  const migrating = { ...getRelease("preview", "Sanskar"), sha256: digest };
+  const commands = [];
+  await assert.rejects(installRelease(migrating, {
+    fetchImpl: async () => response(fixture),
+    runner(_editor, args) {
+      commands.push(args[0]);
+      assert.deepEqual(args, ["--list-extensions"]);
+      return commands.length === 1
+        ? { status: 0, stdout: "" }
+        : { status: 1, stdout: "" };
+    }
+  }), /Cannot check installed extensions/);
+  assert.deepEqual(commands, ["--list-extensions", "--list-extensions"]);
+});

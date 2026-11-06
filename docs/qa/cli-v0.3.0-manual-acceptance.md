@@ -54,7 +54,9 @@ The opt-in `Sanskar` online and offline installers now check `<editor> --list-ex
 | --- | --- | --- |
 | `SanskarCodes.lineloom` still installed (including disabled) | Reject before downloading or installing | NOT RUN |
 | Editor listing CLI missing, non-zero or timed out | Reject before downloading or installing | NOT RUN |
-| Old extension uninstalled and listing succeeds | Continue to SHA-256 verification and normal VSIX installation | NOT RUN |
+| Old extension uninstalled and both listings succeed | Continue to SHA-256 verification and normal VSIX installation | NOT RUN |
+| Old extension appears after download or offline staging, before editor install | Reject on second `--list-extensions` check; no install command | Automated unit tests added; manual NOT RUN |
+| Second editor listing fails after initial success | Fail closed without installing the staged VSIX | Automated unit tests added; manual NOT RUN |
 | Default `SanskarCodes` stable/preview installer | Does not require the new publisher-migration preflight | Automated unit tests only |
 | `--dry-run` for `Sanskar` | Reports pinned source and publisher without invoking the editor | Automated unit tests PASS; manual NOT RUN |
 
