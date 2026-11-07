@@ -421,7 +421,7 @@
     "prettier": "^3.5.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.72.1",
-    "vitest": "^5.0.5"
+    "vitest": "^5.1.0"
   },
   "icon": "assets/icons/lineloom.png",
   "overrides": {
