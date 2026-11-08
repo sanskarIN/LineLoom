@@ -104,6 +104,16 @@ jobs:
           set -euo pipefail
           VERSION="$(node -p "require('./package.json').version")"
           xvfb-run -a npm run test:install-vsix -- "LineLoom-${VERSION}.vsix"
+      - name: Verify preview parity for both publisher identities before release
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./package.json').version")"
+          npx vsce package --pre-release --no-dependencies -o "LineLoom-${VERSION}-SanskarCodes.vsix"
+          npm run package:publisher-preview -- "LineLoom-${VERSION}-Sanskar.vsix"
+          LINELOOM_EXPECT_PRE_RELEASE=1 LINELOOM_EXPECT_PUBLISHER=SanskarCodes npm run verify:vsix -- "LineLoom-${VERSION}-SanskarCodes.vsix"
+          LINELOOM_EXPECT_PRE_RELEASE=1 LINELOOM_EXPECT_PUBLISHER=Sanskar npm run verify:vsix -- "LineLoom-${VERSION}-Sanskar.vsix"
+          node scripts/verify-publisher-pair.mjs "LineLoom-${VERSION}-SanskarCodes.vsix" "LineLoom-${VERSION}-Sanskar.vsix"
       - name: Download and verify published v1.2.0 stable VSIX
         shell: bash
         run: |

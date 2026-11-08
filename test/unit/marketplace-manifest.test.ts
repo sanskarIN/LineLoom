@@ -74,7 +74,7 @@ describe("Marketplace release manifest", () => {
 
   it("offers a separately staged new-publisher preview without renaming existing installs", () => {
     expect(pkg.publisher).toBe("SanskarCodes");
-    expect(pkg.version).toBe("1.4.3");
+    expect(pkg.version).toBe("1.4.4");
     expect(pkg.scripts["package:publisher-preview"]).toContain("scripts/package-publisher.mjs");
     const staging = readFileSync("scripts/package-publisher.mjs", "utf8");
     expect(staging).toContain('publisher: "Sanskar"');
