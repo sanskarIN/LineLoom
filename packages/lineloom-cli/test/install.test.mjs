@@ -144,18 +144,18 @@ test("dry-run does not download or run an editor", async () => {
     fetchImpl: () => { throw Error("Download invoked"); },
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
-  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.4-SanskarCodes\.vsix/);
   assert.match(previewIo.messages.join("\n"), /SanskarCodes\.lineloom/);
-  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
+  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.4-Sanskar\.vsix/);
   const migrationIo = logger();
   assert.equal(await run(["install", "--preview", "--publisher", "Sanskar", "--dry-run"], migrationIo, {
     fetchImpl: () => { throw Error("Download invoked"); },
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
-  assert.match(migrationIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
+  assert.match(migrationIo.messages.join("\n"), /LineLoom-1\.4\.4-Sanskar\.vsix/);
   assert.match(migrationIo.messages.join("\n"), /ID Sanskar\.lineloom/);
   assert.match(migrationIo.messages.join("\n"), /uninstall\/disable SanskarCodes\.lineloom/);
-  assert.doesNotMatch(migrationIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.doesNotMatch(migrationIo.messages.join("\n"), /LineLoom-1\.4\.4-SanskarCodes\.vsix/);
 });
 
 test("pinned fixture installs with a shell-free executable and array arguments", async () => {
