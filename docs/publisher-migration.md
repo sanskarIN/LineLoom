@@ -57,7 +57,7 @@ replace `SanskarCodes.lineloom` in either registry.
 
 ## Optional development-source npm CLI preview
 
-The **unpublished CLI v0.3.0 source** can explicitly select the already-published, checksum-pinned `Sanskar` GitHub preview without needing the new extension's marketplace listing. This is **not** automatic publisher migration. Before installation, follow the backup, uninstall/disable and VS Code reload steps above; the CLI never removes `SanskarCodes.lineloom` or copies extension-private state.
+The **unpublished CLI v0.3.0 source** currently pins the **older v1.4.3** `Sanskar` GitHub preview, not the newly published v1.4.4 VSIX. Its `install --preview` and `verify` commands use that original checksum pin until the CLI's independent release catalog is updated. For v1.4.4, use VS Code's manual **Install from VSIX** route above (with the v1.4.4 SHA-256). CLI preview installation never needs the new extension's Marketplace listing. This is **not** automatic publisher migration. Before installation, follow the backup, uninstall/disable and VS Code reload steps above; the CLI never removes `SanskarCodes.lineloom` or copies extension-private state.
 
 ```sh
 # From packages/lineloom-cli in a reviewed local checkout:
@@ -65,7 +65,7 @@ node bin/lineloom.mjs install --preview --publisher Sanskar --dry-run
 # Only after disabling/uninstalling SanskarCodes.lineloom and reloading:
 node bin/lineloom.mjs install --preview --publisher Sanskar
 # Or verify the exact manually downloaded VSIX without installation:
-node bin/lineloom.mjs verify ./LineLoom-1.4.4-Sanskar.vsix --preview --publisher Sanskar
+node bin/lineloom.mjs verify ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
 ```
 
 The CLI now checks the selected editor's installed extension IDs with a bounded `--list-extensions` invocation **before downloading a `Sanskar` preview VSIX or staging a locally verified copy, and rechecks immediately before VS Code installation**. This second check reduces the chance of a conflict when extension state changes during a slow download or file verification; it does not eliminate all possible concurrent races. It refuses to proceed if `SanskarCodes.lineloom` is still installed or if the listing cannot be obtained reliably. Uninstall the old publisher, then reload the editor; disabling alone does not satisfy this conservative guard. It does not uninstall anything, alter settings, inspect source files or prove the state of unrelated editor profiles. An explicit `--dry-run` only shows the selected asset without querying the editor.
