@@ -100,7 +100,7 @@ test("model research page distinguishes v9 source, public preview and real infer
     "model/EVALUATION_PROTOCOL.md",
   ]) assert.ok(page.includes(phrase), "Missing research disclosure: " + phrase);
   // A published VSIX and source-only benchmark are different artifacts.
-  const releasedText = page.match(/<strong>Latest GitHub testing preview: v1\.4\.3<\/strong>[^\n]*<\/p>/)?.[0];
+  const releasedText = page.match(/<strong>Latest GitHub testing preview: v1\.4\.4<\/strong>[^\n]*<\/p>/)?.[0];
   assert.ok(releasedText);
   assert.ok(!releasedText.includes("v9"), "Do not imply source-only v9 evaluator shipped with v1.4.2");
   const pagesGuide = readFileSync(resolve(root, "docs/github-pages.md"), "utf8");
@@ -184,7 +184,7 @@ test("public maintainer links use the website without X or LinkedIn", () => {
   assert.ok(page.includes('<a href="https://sanskarin.github.io/">Maintainer website</a>'));
   assert.equal(pkg.homepage, "https://sanskarin.github.io/LineLoom/");
   assert.match(pagesGuide, /GitHub v1\.3\.0 stable is the latest publicly verified GitHub stable download/);
-  assert.match(pagesGuide, /GitHub .*v1\.4\.3.*latest verified published pre-release/);
+  assert.match(pagesGuide, /GitHub .*v1\.4\.4.*latest verified published pre-release/);
   assert.doesNotMatch(pagesGuide, /current stable version is v1\.0\.0/i);
 });
 
