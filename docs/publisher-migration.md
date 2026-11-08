@@ -6,6 +6,24 @@ new identity is `Sanskar.lineloom`. Publisher ownership and publication
 must be completed separately on **each** registry; an unverified new
 Marketplace/Open VSX URL is not evidence of a live downloadable listing.
 
+## Marketplace name-collision gate (do not delete the old extension)
+
+Microsoft's [official VS Code publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
+warns that extension names and display names must be unique in the Marketplace.
+Even though the maintainer now owns publisher `Sanskar`, attempting to create
+`Sanskar.lineloom` alongside `SanskarCodes.lineloom` can be rejected as a
+name collision. **Do not remove the old listing to free its name:** Microsoft's
+guide also says removing an extension permanently reserves the name.
+
+Before any `Sanskar` Marketplace upload, use **Contact Microsoft** in publisher
+management to ask whether Microsoft can officially transfer/reassign the
+existing extension to the new publisher, and whether installs/reviews can be
+preserved. Do not assume such a transfer is supported or completed. If Microsoft
+cannot transfer the exact ID, obtain explicit owner approval for a *distinct*
+new extension name/display name before creating a new listing; this also
+requires a deliberate user migration. GitHub VSIX previews remain installable
+without a Marketplace upload.
+
 ## Why this is a reinstall, not an automatic update
 
 A VS Code extension is identified by `publisher.name`. Therefore the two
