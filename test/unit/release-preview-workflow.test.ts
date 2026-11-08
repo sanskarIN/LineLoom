@@ -87,3 +87,49 @@ describe("v1.4.2 GitHub-only preview publisher integrity", () => {
     expect(workflow).toContain("npm audit --omit=dev --audit-level=moderate");
   });
 });
+
+describe("v1.4.4 gated dual-publisher GitHub pre-release", () => {
+  const workflow = readFileSync(".github/workflows/release-v1.4.4.yml", "utf8");
+  const notes = readFileSync("docs/releases/v1.4.4.md", "utf8");
+  const manifest = JSON.parse(readFileSync("package.json", "utf8"));
+  const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+
+  it("retains the legacy source identity and locks the new preview version", () => {
+    expect(manifest.version).toBe("1.4.4");
+    expect(lock.version).toBe("1.4.4");
+    expect(lock.packages[""].version).toBe("1.4.4");
+    expect(manifest.publisher).toBe("SanskarCodes");
+    expect(workflow).toContain("p.version !== '1.4.4'");
+    expect(workflow).toContain("OWNER_AUTHORIZED_GITHUB_PRE_RELEASE_V1.4.4_DUAL_PUBLISHER_MANUAL_QA_DISCLOSED");
+    expect(workflow).toContain(".github/release-v1.4.4.flag");
+    expect(workflow).toContain("github.ref == 'refs/heads/main'");
+  });
+
+  it("enforces distinct preview artifacts, publisher parity and a pinned published baseline", () => {
+    expect(workflow).toContain("vsce package --pre-release");
+    expect(workflow).toContain("package:publisher-preview");
+    expect(workflow).toContain("LINELOOM_EXPECT_PRE_RELEASE=1");
+    expect(workflow).toContain("LINELOOM_EXPECT_PUBLISHER=Sanskar");
+    expect(workflow).toContain("LINELOOM_EXPECT_PUBLISHER=SanskarCodes");
+    expect(workflow).toContain("verify-publisher-pair.mjs");
+    expect(workflow).toContain("LineLoom-1.4.4-Sanskar.vsix");
+    expect(workflow).toContain("LineLoom-1.4.4-SanskarCodes.vsix");
+    expect(workflow).toContain("LineLoom-1.4.3-SanskarCodes.vsix");
+    expect(workflow).toContain("d16b38b90c95fc2aa765543ede7213a42da8b11a1cc15edba7dd11b9e3649fb8");
+    expect(workflow).toContain("test:upgrade-vsix -- LineLoom-1.4.3-SanskarCodes.vsix LineLoom-1.4.4-SanskarCodes.vsix");
+    expect(workflow).toContain("smoke-publisher-migration.mjs LineLoom-1.4.3-SanskarCodes.vsix LineLoom-1.4.4-Sanskar.vsix");
+  });
+
+  it("publishes to GitHub only and discloses unverified manual acceptance", () => {
+    expect(workflow).toContain("sha256sum --check");
+    expect(workflow).toContain("gh release create v1.4.4");
+    expect(workflow).toContain("--prerelease --latest=false");
+    expect(workflow).toContain("Refuse to overwrite an existing v1.4.4 tag or release");
+    expect(workflow).not.toMatch(/(?:ovsx\\s+publish|vsce\\s+publish|npm\\s+publish)/);
+    expect(notes).toContain("SanskarCodes.lineloom");
+    expect(notes).toContain("Sanskar.lineloom");
+    expect(notes).toContain("Manual QA outstanding");
+    expect(notes).toContain("NOT RUN");
+    expect(notes).toContain("not a stable release");
+  });
+});
