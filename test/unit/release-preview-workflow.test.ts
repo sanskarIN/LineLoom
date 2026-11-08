@@ -12,9 +12,9 @@ describe("historical v1.4.1 GitHub-only preview publisher integrity", () => {
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
 
   it("locks the extension and package metadata to the expected preview version", () => {
-    expect(manifest.version).toBe("1.4.3");
-    expect(lock.version).toBe("1.4.3");
-    expect(lock.packages[""].version).toBe("1.4.3");
+    expect(manifest.version).toBe("1.4.4");
+    expect(lock.version).toBe("1.4.4");
+    expect(lock.packages[""].version).toBe("1.4.4");
     expect(manifest.name).toBe("lineloom");
     expect(manifest.publisher).toBe("SanskarCodes");
     expect(workflow).toContain("p.version !== '1.4.1'");
@@ -50,9 +50,9 @@ describe("v1.4.2 GitHub-only preview publisher integrity", () => {
   const lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
 
   it("pins reviewed package identity while preserving historical v1.4.1", () => {
-    expect(manifest.version).toBe("1.4.3");
-    expect(lock.version).toBe("1.4.3");
-    expect(lock.packages[""].version).toBe("1.4.3");
+    expect(manifest.version).toBe("1.4.4");
+    expect(lock.version).toBe("1.4.4");
+    expect(lock.packages[""].version).toBe("1.4.4");
     expect(manifest.publisher).toBe("SanskarCodes");
     expect(workflow).toContain("p.version !== '1.4.2'");
     expect(workflow).toContain("OWNER_AUTHORIZED_GITHUB_PRE_RELEASE_V1.4.2_MANUAL_QA_DISCLOSED");
@@ -69,7 +69,7 @@ describe("v1.4.2 GitHub-only preview publisher integrity", () => {
     expect(workflow).toContain("d69705cd7f2cc273e455730d8a63b41a8a617e39d02f343bfdb1bf3f9d503c3b");
     expect(workflow).toContain("test:upgrade-vsix -- LineLoom-1.4.1.vsix LineLoom-1.4.2.vsix");
     const smoke = readFileSync("scripts/smoke-upgrade-vsix.mjs", "utf8");
-    expect(smoke).toContain('new Set(["1.2.3", "1.2.4", "1.4.1", "1.4.2"])');
+    expect(smoke).toContain('new Set(["1.2.3", "1.2.4", "1.4.1", "1.4.2", "1.4.3"])');
     expect(smoke).toContain("Baseline must be a pinned published stable or preview version");
     expect(smoke).toContain("Published baseline must have correct stable/preview VSIX metadata");
     expect(workflow).toContain("--prerelease --latest=false");
