@@ -2,9 +2,9 @@
 
 All notable changes follow Semantic Versioning.
 
-## v1.4.4 — dual-publisher GitHub pre-release candidate (November 8, 2026)
+## v1.4.4 — published dual-publisher GitHub pre-release (November 8, 2026)
 
-- Prepare separate pre-release packages for `SanskarCodes.lineloom` and `Sanskar.lineloom`; preserve existing source identity and require full shipped-file parity, isolated installation, publisher migration smoke, and SHA-256 checks before GitHub-only publication.
+- Published separate [GitHub v1.4.4 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) packages for `SanskarCodes.lineloom` and `Sanskar.lineloom`; preserve existing source identity and require full shipped-file parity, isolated installation, publisher migration smoke, and SHA-256 checks as part of GitHub-only publication.
 - Collect the reviewed post-v1.4.3 completion-safety and cancellation fixes, opt-in C#/CUDA C++/Swift/Dart/Ruby/PHP language modes, privacy-preserving language hints and CLI migration guards into one candidate. These are not claims of model accuracy or cross-platform manual QA.
 - Upgrade development Vitest to 5.1.0 with passing CI; use a digest-pinned v1.4.3 legacy preview for the next upgrade smoke.
 - The `Sanskar` Marketplace publisher now has verified maintainer Owner access; uploading and independently validating the `Sanskar.lineloom` listing remains manual. No Marketplace, Open VSX, npmjs, first-party weights or stable release is triggered automatically.

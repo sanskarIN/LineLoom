@@ -1,6 +1,6 @@
 # LineLoom publisher migration: SanskarCodes → Sanskar
 
-**Status (November 8, 2026): the maintainer confirmed Owner access to the existing `Sanskar` Microsoft Visual Studio Marketplace publisher under the intended permanent Microsoft account. No `Sanskar.lineloom` Marketplace extension upload or listing has yet been verified. Open VSX publisher ownership and publication are separate. GitHub v1.4.3 remains the latest publicly verified dual-publisher pre-release until v1.4.4 is independently published.**
+**Status (November 8, 2026): the maintainer confirmed Owner access to the existing `Sanskar` Microsoft Visual Studio Marketplace publisher under the intended permanent Microsoft account. No `Sanskar.lineloom` Marketplace extension upload or listing has yet been verified. Open VSX publisher ownership and publication are separate. GitHub v1.4.4 was publicly released as a dual-publisher pre-release on November 8, 2026; no external registry upload is implied.**
 The original extension identity is `SanskarCodes.lineloom`. The proposed
 new identity is `Sanskar.lineloom`. Publisher ownership and publication
 must be completed separately on **each** registry; an unverified new
@@ -40,15 +40,15 @@ replace `SanskarCodes.lineloom` in either registry.
 2. If you previously allowed a remote Ollama endpoint, the new extension may
    require **fresh approval**; never copy secrets or internal approval state.
 3. Download the independently verified `Sanskar` VSIX only from a published
-   [v1.4.3 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3). Download
-   [LineLoom-1.4.3-Sanskar.vsix](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.vsix) and
-   [its SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.sha256) and verify the digest before installing.
+   [v1.4.4 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4). Download
+   [LineLoom-1.4.4-Sanskar.vsix](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.4/LineLoom-1.4.4-Sanskar.vsix) and
+   [its SHA-256 checksum](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.4/LineLoom-1.4.4-Sanskar.sha256) and verify the digest before installing.
 4. Open Extensions in VS Code and **uninstall** `SanskarCodes.lineloom` before
    enabling `Sanskar.lineloom`. Reload VS Code to clear old command/provider
    registrations. Do not keep two enabled copies: the command IDs and
    configuration namespace are shared, which can cause conflicts.
 5. In VS Code Extensions → `...` → **Install from VSIX…**, choose the verified
-   `LineLoom-1.4.3-Sanskar.vsix` and reload if asked. Do not open the file
+   `LineLoom-1.4.4-Sanskar.vsix` and reload if asked. Do not open the file
    with Visual Studio's (different product) VSIX Installer.
 6. Revisit settings, ensure path exclusions and `lineloom.allowRemoteEndpoints`
    are correct, start your own Ollama, select the model, and test a local file.
@@ -57,7 +57,7 @@ replace `SanskarCodes.lineloom` in either registry.
 
 ## Optional development-source npm CLI preview
 
-The **unpublished CLI v0.3.0 source** can explicitly select the already-published, checksum-pinned `Sanskar` GitHub preview without needing the new extension's marketplace listing. This is **not** automatic publisher migration. Before installation, follow the backup, uninstall/disable and VS Code reload steps above; the CLI never removes `SanskarCodes.lineloom` or copies extension-private state.
+The **unpublished CLI v0.3.0 source** currently pins the **older v1.4.3** `Sanskar` GitHub preview, not the newly published v1.4.4 VSIX. Its `install --preview` and `verify` commands use that original checksum pin until the CLI's independent release catalog is updated. For v1.4.4, use VS Code's manual **Install from VSIX** route above (with the v1.4.4 SHA-256). CLI preview installation never needs the new extension's Marketplace listing. This is **not** automatic publisher migration. Before installation, follow the backup, uninstall/disable and VS Code reload steps above; the CLI never removes `SanskarCodes.lineloom` or copies extension-private state.
 
 ```sh
 # From packages/lineloom-cli in a reviewed local checkout:
@@ -83,11 +83,11 @@ For a manually downloaded and checksum-verified GitHub VSIX:
 
 ```sh
 code --uninstall-extension SanskarCodes.lineloom
-code --install-extension ./LineLoom-1.4.3-Sanskar.vsix
+code --install-extension ./LineLoom-1.4.4-Sanskar.vsix
 ```
 
 The corresponding package for users **staying on the old publisher** is
-`LineLoom-1.4.3-SanskarCodes.vsix` (also a GitHub testing preview). Its
+`LineLoom-1.4.4-SanskarCodes.vsix` (also a GitHub testing preview). Its
 same-ID upgrades must still be tested separately. The current stable
 GitHub extension remains
 [v1.3.0 under SanskarCodes](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0).
@@ -98,8 +98,8 @@ GitHub extension remains
    **Open VSX:** independently confirm the **Sanskar** namespace is claimed by the correct account before attempting any registry upload; Microsoft ownership does not grant Open VSX rights.
 2. Use the signed-in publisher's proper publish credentials, stored privately.
    Do not put publishing tokens in GitHub commits, public logs or release assets.
-3. Obtain both `LineLoom-1.4.3-*.vsix` archives and corresponding SHA-256 files
-   from the [published GitHub v1.4.3 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3). Confirm the new VSIX
+3. Obtain both `LineLoom-1.4.4-*.vsix` archives and corresponding SHA-256 files
+   from the [published GitHub v1.4.4 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4). Confirm the new VSIX
    contains `publisher: "Sanskar"`, `name: "lineloom"` and the real
    preview-channel marker; the old VSIX must contain `SanskarCodes`.
 4. Run `node scripts/verify-publisher-pair.mjs <legacy.vsix> <Sanskar.vsix>`
