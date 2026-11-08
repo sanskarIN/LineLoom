@@ -1,6 +1,6 @@
 # LineLoom publisher migration: SanskarCodes → Sanskar
 
-**Status: GitHub v1.4.3 dual-publisher pre-release published November 1, 2026; marketplace transfer remains incomplete.**
+**Status (November 8, 2026): the maintainer confirmed Owner access to the existing `Sanskar` Microsoft Visual Studio Marketplace publisher under the intended permanent Microsoft account. No `Sanskar.lineloom` Marketplace extension upload or listing has yet been verified. Open VSX publisher ownership and publication are separate. GitHub v1.4.3 remains the latest publicly verified dual-publisher pre-release until v1.4.4 is independently published.**
 The original extension identity is `SanskarCodes.lineloom`. The proposed
 new identity is `Sanskar.lineloom`. Publisher ownership and publication
 must be completed separately on **each** registry; an unverified new
@@ -76,10 +76,8 @@ GitHub extension remains
 
 ## Publisher creation and upload checklist for the maintainer
 
-1. Create/claim the exact publisher ID **Sanskar** in
-   [Visual Studio Marketplace publisher management](https://marketplace.visualstudio.com/manage).
-   Separately create/verify the **Sanskar** namespace in
-   [Open VSX](https://open-vsx.org/). Availability/ownership is **not verified**.
+1. **Visual Studio Marketplace:** ownership of publisher ID **Sanskar** is confirmed by the maintainer on November 8, 2026. Sign in through the permanent Microsoft account and confirm the Members tab still lists the correct Owner. **Do not delete/recreate this publisher.**
+   **Open VSX:** independently confirm the **Sanskar** namespace is claimed by the correct account before attempting any registry upload; Microsoft ownership does not grant Open VSX rights.
 2. Use the signed-in publisher's proper publish credentials, stored privately.
    Do not put publishing tokens in GitHub commits, public logs or release assets.
 3. Obtain both `LineLoom-1.4.3-*.vsix` archives and corresponding SHA-256 files
