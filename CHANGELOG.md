@@ -2,6 +2,11 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — CLI preview pin refresh after v1.4.4
+
+- Update the unpublished `@sanskarin/lineloom-cli@0.3.0` development source to use the independently verified GitHub v1.4.4 preview archives for both `SanskarCodes.lineloom` and the explicit opt-in `Sanskar.lineloom` identity. Keep v1.3.0 as the stable pin and retain mandatory SHA-256 verification.
+- Refresh offline installer tests, distributable npm consumer dry-run assertions, CLI help and manual acceptance docs. No npmjs/GitHub Packages/Marketplace publication or extension binary change occurs in this source-only update.
+
 ## v1.4.4 — published dual-publisher GitHub pre-release (November 8, 2026)
 
 - Published separate [GitHub v1.4.4 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) packages for `SanskarCodes.lineloom` and `Sanskar.lineloom`; preserve existing source identity and require full shipped-file parity, isolated installation, publisher migration smoke, and SHA-256 checks as part of GitHub-only publication.

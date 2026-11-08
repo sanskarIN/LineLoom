@@ -2,7 +2,7 @@
 
 **Status: NOT RUN (physical-editor, offline-network and package-consumer QA).**
 This is a development-source checklist for the merged [offline installer PR #92](https://github.com/sanskarIN/LineLoom/pull/92).
-The root extension remains `1.4.2` development / GitHub `v1.3.0` stable, while the independently published GitHub Packages installer remains **`@sanskarin/lineloom-cli@0.1.0`**.
+The root extension has GitHub `v1.4.4` preview / `v1.3.0` stable, while the independently published GitHub Packages installer remains **`@sanskarin/lineloom-cli@0.1.0`**.
 The `0.3.0` source is **not** a published npm command. No package release or extension publication is authorized by this checklist.
 
 ## Automated evidence versus manual evidence
@@ -26,27 +26,27 @@ npm run smoke:consumer
 node bin/lineloom.mjs version
 ```
 
-The updated 0.3.0 development source pins **LineLoom v1.3.0 stable** and **v1.4.3 preview (`SanskarCodes` publisher asset)**. The published 0.1.0 CLI still installs older releases; neither package automatically follows the latest GitHub releases.
+The updated 0.3.0 development source pins **LineLoom v1.3.0 stable** and **v1.4.4 preview (`SanskarCodes` publisher asset)**. The published 0.1.0 CLI still installs older releases; neither package automatically follows the latest GitHub releases.
 Obtain a VSIX separately from the matching official GitHub Release, verify its release checksum independently and keep it on the local machine.
 The CLI's pinned SHA-256 is authoritative for the subsequent offline invocation, not a newly downloaded or user-supplied replacement hash.
 
 ```sh
 node bin/lineloom.mjs verify ./LineLoom-1.3.0.vsix
 node bin/lineloom.mjs install --file ./LineLoom-1.3.0.vsix
-node bin/lineloom.mjs verify ./LineLoom-1.4.3-SanskarCodes.vsix --preview
-node bin/lineloom.mjs install --file ./LineLoom-1.4.3-SanskarCodes.vsix --preview
+node bin/lineloom.mjs verify ./LineLoom-1.4.4-SanskarCodes.vsix --preview
+node bin/lineloom.mjs install --file ./LineLoom-1.4.4-SanskarCodes.vsix --preview
 ```
 
 These commands are **examples for local manual QA with files you already have**, not instructions to run the published v0.1.0 package.
 
 ### Separate opt-in Sanskar preview acceptance
 
-The dual-publisher GitHub v1.4.3 release also contains `LineLoom-1.4.3-Sanskar.vsix` with its own pinned checksum. The new-publisher path must be explicitly selected and verified separately. **Do not keep two enabled publisher identities in VS Code**; back up settings and remove/disable `SanskarCodes.lineloom` before a manual installation trial.
+The dual-publisher GitHub v1.4.4 release also contains `LineLoom-1.4.4-Sanskar.vsix` with its own pinned checksum. The new-publisher path must be explicitly selected and verified separately. **Do not keep two enabled publisher identities in VS Code**; back up settings and remove/disable `SanskarCodes.lineloom` before a manual installation trial.
 
 ```sh
 node bin/lineloom.mjs install --preview --publisher Sanskar --dry-run
-node bin/lineloom.mjs verify ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
-node bin/lineloom.mjs install --file ./LineLoom-1.4.3-Sanskar.vsix --preview --publisher Sanskar
+node bin/lineloom.mjs verify ./LineLoom-1.4.4-Sanskar.vsix --preview --publisher Sanskar
+node bin/lineloom.mjs install --file ./LineLoom-1.4.4-Sanskar.vsix --preview --publisher Sanskar
 ```
 
 The opt-in `Sanskar` online and offline installers now check `<editor> --list-extensions` before download or VSIX staging. In manual QA, verify these outcomes:
@@ -67,7 +67,7 @@ Record real Windows/macOS/Linux publisher-switch testing as **NOT RUN** until pe
 
 | Scenario | Expected result | Evidence |
 | --- | --- | --- |
-| Windows + native VS Code CLI | Approved, pinned v1.3.0 or v1.4.3 legacy-publisher VSIX installs and appears under the existing `SanskarCodes.lineloom` ID | NOT RUN |
+| Windows + native VS Code CLI | Approved, pinned v1.3.0 or v1.4.4 legacy-publisher VSIX installs and appears under the existing `SanskarCodes.lineloom` ID | NOT RUN |
 | macOS + native VS Code CLI | Offline invocation, permission handling and cleanup behave correctly | NOT RUN |
 | Linux + native VS Code CLI | Offline invocation installs from staged copy without a network fetch | NOT RUN |
 | VS Code Insiders / VSCodium | Explicit `--editor code-insiders` or `--editor codium` routes only to that editor CLI | NOT RUN |

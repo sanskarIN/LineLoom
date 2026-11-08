@@ -53,9 +53,9 @@ test("channels pin public release assets and preserve the legacy extension publi
       asset: getRelease("preview").asset, sha256: getRelease("preview").sha256
     },
     {
-      version: "1.4.3", publisher: "SanskarCodes",
-      asset: "LineLoom-1.4.3-SanskarCodes.vsix",
-      sha256: "d16b38b90c95fc2aa765543ede7213a42da8b11a1cc15edba7dd11b9e3649fb8"
+      version: "1.4.4", publisher: "SanskarCodes",
+      asset: "LineLoom-1.4.4-SanskarCodes.vsix",
+      sha256: "517c1f97c16293d2a874fdb09c73d91406da022fd6b17256003b648898c5891f"
     }
   );
   for (const channel of ["stable", "preview"]) {
@@ -71,7 +71,7 @@ test("channels pin public release assets and preserve the legacy extension publi
   assert.throws(() => getRelease("preview", "OtherPublisher"), /publisher/);
 });
 
-test("explicit new publisher maps only to the separately verified v1.4.3 VSIX", () => {
+test("explicit new publisher maps only to the separately verified v1.4.4 VSIX", () => {
   const release = getRelease("preview", "Sanskar");
   assert.deepEqual(
     {
@@ -79,9 +79,9 @@ test("explicit new publisher maps only to the separately verified v1.4.3 VSIX", 
       sha256: release.sha256, url: release.url
     },
     {
-      version: "1.4.3", publisher: "Sanskar", asset: "LineLoom-1.4.3-Sanskar.vsix",
-      sha256: "5dbf98d0edcf99ce4cb0ebb30a82efd2b092698ad5a74594c7115d33959acb6b",
-      url: "https://github.com/sanskarIN/LineLoom/releases/download/v1.4.3/LineLoom-1.4.3-Sanskar.vsix"
+      version: "1.4.4", publisher: "Sanskar", asset: "LineLoom-1.4.4-Sanskar.vsix",
+      sha256: "44ff4754de2d657184dbdb013542ddfef6f0d156f86315ce357751f373e06b89",
+      url: "https://github.com/sanskarIN/LineLoom/releases/download/v1.4.4/LineLoom-1.4.4-Sanskar.vsix"
     }
   );
   assert.notEqual(release.sha256, getRelease("preview").sha256);
@@ -144,18 +144,18 @@ test("dry-run does not download or run an editor", async () => {
     fetchImpl: () => { throw Error("Download invoked"); },
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
-  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.match(previewIo.messages.join("\n"), /LineLoom-1\.4\.4-SanskarCodes\.vsix/);
   assert.match(previewIo.messages.join("\n"), /SanskarCodes\.lineloom/);
-  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
+  assert.doesNotMatch(previewIo.messages.join("\n"), /LineLoom-1\.4\.4-Sanskar\.vsix/);
   const migrationIo = logger();
   assert.equal(await run(["install", "--preview", "--publisher", "Sanskar", "--dry-run"], migrationIo, {
     fetchImpl: () => { throw Error("Download invoked"); },
     runner: () => { throw Error("Editor invoked"); }
   }), 0);
-  assert.match(migrationIo.messages.join("\n"), /LineLoom-1\.4\.3-Sanskar\.vsix/);
+  assert.match(migrationIo.messages.join("\n"), /LineLoom-1\.4\.4-Sanskar\.vsix/);
   assert.match(migrationIo.messages.join("\n"), /ID Sanskar\.lineloom/);
   assert.match(migrationIo.messages.join("\n"), /uninstall\/disable SanskarCodes\.lineloom/);
-  assert.doesNotMatch(migrationIo.messages.join("\n"), /LineLoom-1\.4\.3-SanskarCodes\.vsix/);
+  assert.doesNotMatch(migrationIo.messages.join("\n"), /LineLoom-1\.4\.4-SanskarCodes\.vsix/);
 });
 
 test("pinned fixture installs with a shell-free executable and array arguments", async () => {
