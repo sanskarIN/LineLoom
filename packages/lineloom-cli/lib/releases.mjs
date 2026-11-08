@@ -1,6 +1,6 @@
 // These checksums were taken from independently published GitHub Release assets.
 // Never fetch adjacent checksums at installation time. The CLI is separate from VSIX releases.
-// The legacy extension publisher stays the default; Sanskar is opt-in for the v1.4.3 preview.
+// The legacy extension publisher stays the default; Sanskar is opt-in for the v1.4.4 preview.
 const releases = Object.freeze({
   stable: Object.freeze({
     SanskarCodes: Object.freeze({
@@ -12,16 +12,16 @@ const releases = Object.freeze({
   }),
   preview: Object.freeze({
     SanskarCodes: Object.freeze({
-      version: "1.4.3",
+      version: "1.4.4",
       publisher: "SanskarCodes",
-      asset: "LineLoom-1.4.3-SanskarCodes.vsix",
-      sha256: "d16b38b90c95fc2aa765543ede7213a42da8b11a1cc15edba7dd11b9e3649fb8"
+      asset: "LineLoom-1.4.4-SanskarCodes.vsix",
+      sha256: "517c1f97c16293d2a874fdb09c73d91406da022fd6b17256003b648898c5891f"
     }),
     Sanskar: Object.freeze({
-      version: "1.4.3",
+      version: "1.4.4",
       publisher: "Sanskar",
-      asset: "LineLoom-1.4.3-Sanskar.vsix",
-      sha256: "5dbf98d0edcf99ce4cb0ebb30a82efd2b092698ad5a74594c7115d33959acb6b"
+      asset: "LineLoom-1.4.4-Sanskar.vsix",
+      sha256: "44ff4754de2d657184dbdb013542ddfef6f0d156f86315ce357751f373e06b89"
     })
   })
 });

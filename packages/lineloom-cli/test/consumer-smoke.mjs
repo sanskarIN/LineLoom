@@ -75,10 +75,12 @@ try {
   assert.match(stable, /Dry run: no download or installation/);
   const preview = runInstalled(entry, ["install", "--preview", "--dry-run"]);
   assert.match(preview, /ID SanskarCodes\.lineloom/);
+  assert.match(preview, /LineLoom-1\.4\.4-SanskarCodes\.vsix/);
   const migration = runInstalled(entry, [
     "install", "--preview", "--publisher", "Sanskar", "--dry-run"
   ]);
   assert.match(migration, /ID Sanskar\.lineloom/);
+  assert.match(migration, /LineLoom-1\.4\.4-Sanskar\.vsix/);
   assert.match(migration, /Dry run: no download or installation/);
   const invalid = spawnSync(process.execPath, [
     entry, "install", "--publisher", "Sanskar", "--dry-run"
