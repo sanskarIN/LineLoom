@@ -25,7 +25,7 @@ test("publisher migration guide keeps future listings distinct from verified exi
   assert.match(migration, /uninstall/i);
   assert.match(migration, /cannot transfer|do not automatically transfer/i);
   assert.match(migration, /no new marketplace.*claimed live|not.*listing.*live/i);
-  assert.ok(migration.includes("LineLoom-1.4.3-Sanskar.vsix"));
+  assert.ok(migration.includes("LineLoom-1.4.4-Sanskar.vsix"));
   for (const [, ref] of migration.matchAll(/(?:href|src)="(\.\/[^"]+)"/g)) {
     assert.ok(existsSync(resolve(dir, ref)), "Missing migration page asset: " + ref);
   }
@@ -37,11 +37,11 @@ test("static site identity follows the release manifest", () => {
   // The development manifest may be newer than publicly published builds.
   // Verify public stable and preview links separately from this source version.
   assert.match(pkg.version, /^1\.(?:2\.[1-9]\d*|3\.\d+|4\.\d+)$/);
-  assert.ok(page.includes("Latest GitHub testing preview: v1.4.3"),
+  assert.ok(page.includes("Latest GitHub testing preview: v1.4.4"),
     "Current published GitHub preview must be discoverable alongside stable.");
-  assert.ok(page.includes("LineLoom-1.4.3-Sanskar.vsix"), "Published preview VSIX must be linked");
-  assert.ok(page.includes("LineLoom-1.4.3-Sanskar.sha256"), "Published preview checksum must be linked");
-  assert.ok(page.includes("LineLoom-1.4.3-SanskarCodes.vsix"), "Both publisher previews must be linked");
+  assert.ok(page.includes("LineLoom-1.4.4-Sanskar.vsix"), "Published preview VSIX must be linked");
+  assert.ok(page.includes("LineLoom-1.4.4-Sanskar.sha256"), "Published preview checksum must be linked");
+  assert.ok(page.includes("LineLoom-1.4.4-SanskarCodes.vsix"), "Both publisher previews must be linked");
   assert.ok(!page.includes("v1.4.0 development (not released)"),
     "Do not describe a published preview as unreleased.");
   assert.ok(page.includes("v1.1.1 pre-release"));
@@ -149,11 +149,11 @@ test("VS Code installation guide covers Visual Studio VSIX Installer association
   assert.match(guide, /Install from VSIX/);
   assert.match(guide, /code --install-extension/);
   assert.ok(guide.includes("LineLoom-1.3.0.vsix"), "Install guide must offer the latest GitHub stable VSIX");
-  assert.ok(guide.includes("Latest GitHub testing preview: v1.4.3"),
+  assert.ok(guide.includes("Latest GitHub testing preview: v1.4.4"),
     "Current GitHub preview must appear in the install guide");
-  assert.ok(guide.includes("LineLoom-1.4.3-Sanskar.vsix"),
+  assert.ok(guide.includes("LineLoom-1.4.4-Sanskar.vsix"),
     "Install guide must link the current preview VSIX");
-  assert.ok(guide.includes("LineLoom-1.4.3-Sanskar.sha256"),
+  assert.ok(guide.includes("LineLoom-1.4.4-Sanskar.sha256"),
     "Install guide must link the current preview checksum");
   assert.match(guide, /v1\.1\.1 pre-release/);
   assert.match(guide, /SanskarCodes/);
