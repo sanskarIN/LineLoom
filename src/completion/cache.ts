@@ -14,7 +14,12 @@ export class SuggestionCache {
     return entry.value;
   }
   put(key: string, value: string, now = performance.now()): void {
-    if (!value) return;
+    if (!value || this.capacity <= 0 || this.ttlMs <= 0) return;
+    // A recently read entry can expire after being moved to the MRU end.
+    // Prune by expiry before the LRU capacity check so live entries survive.
+    for (const [cachedKey, entry] of this.entries) {
+      if (entry.expires <= now) this.entries.delete(cachedKey);
+    }
     this.entries.delete(key);
     this.entries.set(key, { value, expires: now + this.ttlMs });
     while (this.entries.size > this.capacity) {

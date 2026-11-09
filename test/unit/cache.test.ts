@@ -17,6 +17,24 @@ describe("bounded in-memory suggestion cache", () => {
     expect(cache.get("b", 11)).toBeUndefined();
     expect(cache.get("a", 11)).toBe("A");
   });
+  it("prunes expired recent entries instead of evicting a live LRU entry", () => {
+    const cache = new SuggestionCache(2, 100);
+    cache.put("expired", "old", 0);
+    cache.put("live", "live", 80);
+    expect(cache.get("expired", 90)).toBe("old"); // move the soon-expired entry to MRU
+    cache.put("new", "fresh", 110);
+    expect(cache.get("expired", 111)).toBeUndefined();
+    expect(cache.get("live", 111)).toBe("live");
+    expect(cache.get("new", 111)).toBe("fresh");
+  });
+  it("does not retain entries when capacity or TTL is disabled", () => {
+    const disabledCapacity = new SuggestionCache(0, 100);
+    disabledCapacity.put("a", "A", 0);
+    expect(disabledCapacity.get("a", 1)).toBeUndefined();
+    const disabledTtl = new SuggestionCache(2, 0);
+    disabledTtl.put("a", "A", 0);
+    expect(disabledTtl.get("a", 0)).toBeUndefined();
+  });
   it("never stores empty suggestions and can be cleared", () => {
     const cache = new SuggestionCache();
     cache.put("a", "");
