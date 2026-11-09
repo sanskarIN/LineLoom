@@ -21,6 +21,11 @@ export class EmptySuggestionBackoff {
 
   rememberEmpty(key: string, now = performance.now()): void {
     if (this.capacity <= 0 || this.ttlMs <= 0) return;
+    // A recently checked entry may have expired after moving to the MRU end.
+    // Remove expired fingerprints before capacity eviction of live cooldowns.
+    for (const [fingerprint, expiry] of this.entries) {
+      if (expiry <= now) this.entries.delete(fingerprint);
+    }
     this.entries.delete(key);
     this.entries.set(key, now + this.ttlMs);
     while (this.entries.size > this.capacity) {
