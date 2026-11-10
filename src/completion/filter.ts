@@ -14,7 +14,7 @@ const fenceLanguages: Readonly<Record<string, SupportedLanguage | "other">> = {
   "c#": "csharp", cs: "csharp", csharp: "csharp",
   kt: "kotlin", kotlin: "kotlin", html: "html", css: "css", lua: "lua",
   cuda: "cuda-cpp", "cuda-cpp": "cuda-cpp", cu: "cuda-cpp",
-  ruby: "ruby", rb: "ruby", php: "php", swift: "swift", dart: "dart", bash: "other",
+  ruby: "ruby", rb: "ruby", php: "php", swift: "swift", dart: "dart", zig: "zig", bash: "other",
   sh: "other", shell: "other", powershell: "other",
   sql: "other", json: "other", yaml: "other", yml: "other",
   markdown: "other", md: "other"

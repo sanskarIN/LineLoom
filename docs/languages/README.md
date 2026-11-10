@@ -1,6 +1,6 @@
 # LineLoom language controls
 
-LineLoom registers the VS Code inline-completion provider for eighteen language IDs (nine enabled by default):
+LineLoom registers the VS Code inline-completion provider for nineteen language IDs (nine enabled by default):
 
 | VS Code ID | Language | Typical extensions | Preview status |
 | --- | --- | --- | --- |
@@ -22,6 +22,7 @@ LineLoom registers the VS Code inline-completion provider for eighteen language 
 | `dart` | Dart | `.dart` | Experimental, opt-in only; Dart editor language mode required |
 | `ruby` | Ruby | `.rb`, `.rake`, `.gemspec` | Experimental, opt-in only |
 | `php` | PHP | `.php`, `.phtml` | Experimental, opt-in only |
+| `zig` | Zig | `.zig` | Experimental, opt-in only; Zig language mode may require an extension |
 
 Actual support uses the **language mode reported by VS Code**, not the filename alone. For example, `.h` files may be recognized as either C or C++ depending on the selected editor mode. If needed, use **Change Language Mode** in VS Code.
 
@@ -33,9 +34,35 @@ Open **Command Palette → LineLoom: Manage Autocomplete Languages**, check the 
 "lineloom.enabledLanguages": ["python", "typescript", "rust", "go"]
 ```
 
-The existing nine defaults are unchanged. To try an experimental language, select it in **Manage Autocomplete Languages** or add its exact VS Code language ID to the setting. This includes `"html"`, `"css"`, `"lua"`, `"cuda-cpp"`, `"csharp"`, `"swift"`, `"dart"`, `"ruby"` and `"php"`. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
+The existing nine defaults are unchanged. To try an experimental language, select it in **Manage Autocomplete Languages** or add its exact VS Code language ID to the setting. This includes `"html"`, `"css"`, `"lua"`, `"cuda-cpp"`, `"csharp"`, `"swift"`, `"dart"`, `"ruby"`, `"php"` and `"zig"`. In an editor without a Lua language extension, first install a trusted language-mode provider or set the correct VS Code language mode. This is **development source only** until reviewed and released; real-model quality and physical editor accessibility have not yet been tested. The first-party LineLoom Code model track still targets only Rust, C, C++, Python and TypeScript.
 
 Removing an ID turns off LineLoom's model requests for that language. Choosing **no languages** disables all model-backed inline completions, including manual ones. To restore the defaults, reset the setting in VS Code Settings. JSX uses the `javascript` selection and TSX uses the `typescript` selection.
+
+## Zig completion (issue #138; source-only opt-in)
+
+Zig uses the VS Code language ID `zig` for `.zig` files. It is **off by
+default** and must be enabled explicitly in **LineLoom: Manage Autocomplete
+Languages** or via `lineloom.enabledLanguages`. VS Code must report
+`zig` as the active editor language mode; an independently installed,
+trusted Zig language extension may be needed. This change adds no Zig
+compiler, language server, SDK or model download.
+
+An existing, installed Ollama tag can be selected specifically for Zig
+using `lineloom.languageModels.zig`. Model selection alone does not
+enable Zig suggestions. For generic instruction-mode models, fixed Zig
+guidance covers visible Zig version constraints, explicit allocators, error
+unions, optionals, comptime constructs, imports and known types. Recognized
+`zig` code fences are accepted only in Zig mode; known incompatible
+language fences are refused. Native FIM prompt source remains byte-exact
+when no related file is selected.
+
+The original nine enabled languages, trust/privacy checks, opt-in related
+context and separately approved remote endpoint policy are unchanged.
+Selected `.zig` files are **not** added to the optional related-file
+context allowlist in this change. First-party LineLoom Code training
+remains scoped to Rust, C, C++, Python and TypeScript. **Actual Zig
+inference quality, compilation and physical-editor accessibility QA are
+not yet verified.**
 
 ## Swift, Dart, Ruby and PHP completion (issue #138; source-only opt-in)
 
