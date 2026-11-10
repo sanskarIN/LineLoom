@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — experimental Zig completion mode
+
+- Recognize VS Code's `zig` editor language ID with an explicit opt-in, fixed instruction-mode language guidance and optional installed-model override. Preserve the existing nine default-enabled languages.
+- Recognize explicit `zig` Markdown output fences and refuse known incompatible language fences in Zig editors. Native FIM prefix/suffix bytes and existing privacy/consent gates are unchanged.
+- Add mode, settings, default-off, prompt and filter regression tests. No Zig toolchain, trained model, real-model quality claim, VSIX publication, registry release or publisher migration.
+
 ## Unreleased — additional secret-path safeguards
 
 - Extend hard exclusions to dotenv names with hyphen/underscore suffixes, `*.env` files, `.dev.vars-*` / `.secret*` variants and Terraform backend/plan artifacts. These rules apply to ancestor directories and both named/canonical paths.
