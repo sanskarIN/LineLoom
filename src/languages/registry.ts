@@ -1,5 +1,5 @@
 /** VS Code language IDs, not filename-only inference. */
-export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp" | "csharp" | "swift" | "dart" | "ruby" | "php";
+export type SupportedLanguage = "python" | "javascript" | "typescript" | "rust" | "kotlin" | "go" | "java" | "c" | "cpp" | "html" | "css" | "lua" | "cuda-cpp" | "csharp" | "swift" | "dart" | "ruby" | "php" | "zig";
 export interface LanguageSpec {
   id: SupportedLanguage;
   label: string;
@@ -24,7 +24,8 @@ export const LANGUAGES: readonly LanguageSpec[] = [
   { id: "swift", label: "Swift", extensions: [".swift"], guidance: "Respect Swift optionals, value semantics, actors, async/await, access control and visible module APIs; do not invent declarations." },
   { id: "dart", label: "Dart", extensions: [".dart"], guidance: "Respect Dart null safety, Future and Stream contracts, class members, imports and existing Flutter widget structure when present." },
   { id: "ruby", label: "Ruby", extensions: [".rb", ".rake", ".gemspec"], guidance: "Respect Ruby blocks, end delimiters, method visibility, module lookup and the existing project conventions." },
-  { id: "php", label: "PHP", extensions: [".php", ".phtml"], guidance: "Respect PHP opening tags, namespace imports, types, nullability, array syntax and existing framework conventions." }
+  { id: "php", label: "PHP", extensions: [".php", ".phtml"], guidance: "Respect PHP opening tags, namespace imports, types, nullability, array syntax and existing framework conventions." },
+  { id: "zig", label: "Zig", extensions: [".zig"], guidance: "Respect the visible Zig language version, explicit allocators, error unions, optionals, comptime usage, imports and existing type contracts; do not invent APIs." }
 ] as const;
 const byId = new Map(LANGUAGES.map((language) => [language.id, language]));
 const aliases: Record<string, SupportedLanguage> = {
