@@ -34,7 +34,8 @@
     "swift",
     "dart",
     "ruby",
-    "php"
+    "php",
+    "zig"
   ],
   "repository": {
     "type": "git",
@@ -213,7 +214,8 @@
               "swift",
               "dart",
               "ruby",
-              "php"
+              "php",
+              "zig"
             ]
           },
           "default": [
@@ -228,7 +230,7 @@
             "cpp"
           ],
           "uniqueItems": true,
-          "description": "Language IDs permitted for inline suggestions. HTML, CSS, Lua, CUDA C++, C#, Swift, Dart, Ruby, and PHP are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
+          "description": "Language IDs permitted for inline suggestions. HTML, CSS, Lua, CUDA C++, C#, Swift, Dart, Ruby, PHP, and Zig are experimental and disabled by default; enable them explicitly. Empty array disables every language. JSX/TSX follow JavaScript/TypeScript."
         },
         "lineloom.autoTrigger": {
           "type": "boolean",
