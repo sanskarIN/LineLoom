@@ -10,6 +10,24 @@ describe("sensitive file exclusions", () => {
     ]) expect(isSensitivePath(path), path).toBe(true);
   });
 
+  it("protects alternative environment names and Terraform backend/plan files", () => {
+    for (const path of [
+      ".env-production", ".env_local", ".env-backup",
+      ".dev.vars-ci", ".secrets-staging", ".secret_export",
+      "production.env", "config/development.env", "BACKUP.ENV",
+      "infra/remote.tfbackend", "infra/saved.tfplan",
+      "src/.ENV_QA/ordinary.ts", "src\\\\nested\\\\LOCAL.ENV"
+    ]) expect(isSensitivePath(path), path).toBe(true);
+  });
+
+  it("does not deny unrelated source names containing env or Terraform words", () => {
+    for (const path of [
+      "src/environment.ts", "src/.environment.ts", "src/myenv.ts",
+      "docs/myenv-guide.md", "src/app.env.ts",
+      "src/terraform-plan.ts", "src/config.tfbackend.ts"
+    ]) expect(isSensitivePath(path), path).toBe(false);
+  });
+
   it("hard-blocks ignore policies themselves at root and nested paths", () => {
     for (const relativePath of [
       ".gitignore", ".lineloomignore", ".dockerignore", ".npmignore",

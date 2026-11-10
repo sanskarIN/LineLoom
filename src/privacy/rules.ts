@@ -16,7 +16,8 @@ const sensitiveNames = new Set([
   ".gitignore", ".lineloomignore", ".dockerignore", ".npmignore",
   ".envrc", ".pgpass", ".my.cnf", ".s3cfg", "known_hosts"
 ]);
-const riskyExtensions = /\.(?:pem|p12|pfx|p8|key|asc|keystore|jks|sqlite|sqlite3|db|db3|lockb|kdbx|mobileprovision|agekey|tfvars(?:\.json)?|tfstate(?:\.backup)?)$/i;
+// Environment variants and Terraform plan/backend files can contain tokens and secrets.
+const riskyExtensions = /\.(?:env|pem|p12|pfx|p8|key|asc|keystore|jks|sqlite|sqlite3|db|db3|lockb|kdbx|mobileprovision|agekey|tfbackend|tfplan|tfvars(?:\.json)?|tfstate(?:\.backup)?)$/i;
 
 /**
  * Every ancestor is part of the privacy boundary, not just the basename.
@@ -29,9 +30,9 @@ export function isSensitivePath(relativePath: string): boolean {
   return pieces.some((part) => {
     const name = part.toLowerCase();
     return sensitiveSegments.has(name) ||
-      /^\.env(?:\.|$)/.test(name) ||
-      /^\.dev\.vars(?:\.|$)/.test(name) ||
-      /^\.secrets?(?:\.|$)/.test(name) ||
+      /^\.env(?:[._-]|$)/.test(name) ||
+      /^\.dev\.vars(?:[._-]|$)/.test(name) ||
+      /^\.secrets?(?:[._-]|$)/.test(name) ||
       sensitiveNames.has(name) ||
       /^(?:id_rsa|id_ed25519|id_ecdsa|id_dsa|credentials|secrets?|private_key|service-account)(?:[._-]|$)/.test(name) ||
       riskyExtensions.test(name);

@@ -2,6 +2,12 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — additional secret-path safeguards
+
+- Extend hard exclusions to dotenv names with hyphen/underscore suffixes, `*.env` files, `.dev.vars-*` / `.secret*` variants and Terraform backend/plan artifacts. These rules apply to ancestor directories and both named/canonical paths.
+- Update privacy documentation to describe the existing **explicit opt-in**, maximum-two-file related context feature accurately; no automatic workspace indexing or changes to default endpoint approval.
+- Add path-eligibility regression tests. This is source-only work: no new extension binary, registry publication, trained model or model-quality claim.
+
 ## Unreleased — CLI preview pin refresh after v1.4.4
 
 - Update the unpublished `@sanskarin/lineloom-cli@0.3.0` development source to use the independently verified GitHub v1.4.4 preview archives for both `SanskarCodes.lineloom` and the explicit opt-in `Sanskar.lineloom` identity. Keep v1.3.0 as the stable pin and retain mandatory SHA-256 verification.
