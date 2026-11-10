@@ -74,8 +74,10 @@ describe("experimental Zig editor autocomplete (source-only opt-in)", () => {
     const code = "const value: u8 = 42;";
     const wrapped = (label: string) => fence + label + "\n" + code + "\n" + fence;
     expect(cleanCompletion(wrapped("zig"), "", "", true, 8, "zig")).toBe(code);
-    expect(cleanCompletion(wrapped("python"), "", "", true, 8, "zig")).toBe("");
-    expect(cleanCompletion(wrapped("zig"), "", "", true, 8, "python")).toBe("");
+    for (const mismatch of ["python", "rust", "c", "cpp", "typescript"] as const) {
+      expect(cleanCompletion(wrapped(mismatch), "", "", true, 8, "zig")).toBe("");
+      expect(cleanCompletion(wrapped("zig"), "", "", true, 8, mismatch)).toBe("");
+    }
     expect(cleanCompletion(code, "", "", true, 8, "zig")).toBe(code);
   });
 });
