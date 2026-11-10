@@ -9,7 +9,7 @@ describe("language registry", () => {
     expect(LANGUAGES.map(x => x.id)).toEqual([
       "python", "javascript", "typescript", "rust", "kotlin",
       "go", "java", "c", "cpp", "html", "css", "lua", "cuda-cpp", "csharp",
-      "swift", "dart", "ruby", "php"
+      "swift", "dart", "ruby", "php", "zig"
     ]);
     expect(new Set(LANGUAGES.map(x => x.id)).size).toBe(LANGUAGES.length);
   });
@@ -27,6 +27,7 @@ describe("language registry", () => {
     expect(getLanguage("dart")?.extensions).toContain(".dart");
     expect(getLanguage("ruby")?.extensions).toContain(".rb");
     expect(getLanguage("php")?.extensions).toContain(".php");
+    expect(getLanguage("zig")?.extensions).toContain(".zig");
     expect(getLanguage("unknown")).toBeUndefined();
   });
   it("defaults to every supported language and preserves explicitly empty selections", () => {
@@ -35,7 +36,7 @@ describe("language registry", () => {
     expect(normalizeEnabledLanguages(null)).toEqual([]);
     expect(DEFAULT_ENABLED_LANGUAGES).not.toContain("cuda-cpp");
     expect(DEFAULT_ENABLED_LANGUAGES).not.toContain("csharp");
-    for (const id of ["swift", "dart", "ruby", "php"]) {
+    for (const id of ["swift", "dart", "ruby", "php", "zig"]) {
       expect(DEFAULT_ENABLED_LANGUAGES).not.toContain(id);
     }
   });
