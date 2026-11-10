@@ -13,8 +13,8 @@ describe("opt-in Swift, Dart, Ruby and PHP editor modes", () => {
   const additions = ["swift", "dart", "ruby", "php"] as const;
 
   it("registers distinct VS Code IDs without silently enabling inference", () => {
-    expect(LANGUAGES).toHaveLength(18);
-    expect(new Set(LANGUAGES.map(spec => spec.id)).size).toBe(18);
+    expect(LANGUAGES).toHaveLength(19);
+    expect(new Set(LANGUAGES.map(spec => spec.id)).size).toBe(19);
     expect(DEFAULT_ENABLED_LANGUAGES).toEqual([
       "python", "javascript", "typescript", "rust", "kotlin", "go", "java", "c", "cpp"
     ]);
