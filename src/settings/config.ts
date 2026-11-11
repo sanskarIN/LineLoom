@@ -1,5 +1,8 @@
 import * as vscode from "vscode";
-import { normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive, normalizeExcludedPaths } from "./normalize";
+import {
+  normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive,
+  normalizeExcludedPaths, normalizePermissionToggle
+} from "./normalize";
 import { normalizeLanguageModels, type LanguageModels } from "./language-models";
 import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
 export interface LineLoomConfig {
@@ -31,16 +34,16 @@ export function clamp(value: number, lower: number, upper: number): number {
 export function readConfig(): LineLoomConfig {
   const c = vscode.workspace.getConfiguration("lineloom");
   return {
-    enabled: c.get("enabled", true),
-    autoTrigger: c.get("autoTrigger", true),
+    enabled: normalizePermissionToggle(c.get<unknown>("enabled"), true),
+    autoTrigger: normalizePermissionToggle(c.get<unknown>("autoTrigger"), true),
     enabledLanguages: normalizeEnabledLanguages(c.get<unknown>("enabledLanguages")),
 
     minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
-    suppressMidTokenAuto: c.get("suppressMidTokenAuto", true),
+    suppressMidTokenAuto: c.get<unknown>("suppressMidTokenAuto") !== false,
     model: normalizeModelTag(c.get<unknown>("model", "qwen2.5-coder:1.5b")),
     languageModels: normalizeLanguageModels(c.get<unknown>("languageModels")),
     endpoint: normalizeEndpointSetting(c.get<unknown>("endpoint", "http://127.0.0.1:11434")),
-    allowRemoteEndpoints: c.get("allowRemoteEndpoints", false),
+    allowRemoteEndpoints: normalizePermissionToggle(c.get<unknown>("allowRemoteEndpoints")),
     debounceMs: clamp(c.get("debounceMs", 250), 0, 3000),
     timeoutMs: clamp(c.get("timeoutMs", 12000), 1000, 120000),
     maxContextChars: clamp(c.get("maxContextChars", 8000), 512, 30000),
