@@ -1,9 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
-  normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive, normalizeExcludedPaths
+  normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive, normalizeExcludedPaths,
+  normalizePermissionToggle
 } from "../../src/settings/normalize";
 
 describe("fail-closed settings normalization", () => {
+  it("only grants enable and remote permissions from literal booleans", () => {
+    expect(normalizePermissionToggle(true)).toBe(true);
+    expect(normalizePermissionToggle(false)).toBe(false);
+    expect(normalizePermissionToggle(undefined)).toBe(false);
+    expect(normalizePermissionToggle(undefined, true)).toBe(true);
+    expect(normalizePermissionToggle(false, true)).toBe(false);
+    for (const invalid of [null, 0, 1, "true", "false", [], {}, ["true"]]) {
+      expect(normalizePermissionToggle(invalid), String(invalid)).toBe(false);
+      expect(normalizePermissionToggle(invalid, true), String(invalid)).toBe(false);
+    }
+  });
+
   it("accepts Ollama model tags and trims surrounding whitespace", () => {
     expect(normalizeModelTag(" qwen2.5-coder:1.5b ")).toBe("qwen2.5-coder:1.5b");
     expect(normalizeModelTag("registry.ollama.ai/library/model:latest")).toBe("registry.ollama.ai/library/model:latest");
