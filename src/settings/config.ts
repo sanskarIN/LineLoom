@@ -1,7 +1,7 @@
 import * as vscode from "vscode";
 import {
   normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive,
-  normalizeExcludedPaths, normalizePermissionToggle
+  normalizeExcludedPaths, normalizePermissionToggle, normalizeNumericSetting
 } from "./normalize";
 import { normalizeLanguageModels, type LanguageModels } from "./language-models";
 import { normalizeEnabledLanguages, type SupportedLanguage } from "../languages/registry";
@@ -38,20 +38,20 @@ export function readConfig(): LineLoomConfig {
     autoTrigger: normalizePermissionToggle(c.get<unknown>("autoTrigger"), true),
     enabledLanguages: normalizeEnabledLanguages(c.get<unknown>("enabledLanguages")),
 
-    minAutoTriggerChars: clamp(c.get("minAutoTriggerChars", 2), 0, 32),
+    minAutoTriggerChars: normalizeNumericSetting(c.get<unknown>("minAutoTriggerChars"), 2, 0, 32, true),
     suppressMidTokenAuto: c.get<unknown>("suppressMidTokenAuto") !== false,
     model: normalizeModelTag(c.get<unknown>("model", "qwen2.5-coder:1.5b")),
     languageModels: normalizeLanguageModels(c.get<unknown>("languageModels")),
     endpoint: normalizeEndpointSetting(c.get<unknown>("endpoint", "http://127.0.0.1:11434")),
     allowRemoteEndpoints: normalizePermissionToggle(c.get<unknown>("allowRemoteEndpoints")),
-    debounceMs: clamp(c.get("debounceMs", 250), 0, 3000),
-    timeoutMs: clamp(c.get("timeoutMs", 12000), 1000, 120000),
-    maxContextChars: clamp(c.get("maxContextChars", 8000), 512, 30000),
-    maxOutputTokens: clamp(c.get("maxOutputTokens", 128), 16, 512),
-    multiLine: c.get("multiLine", true),
-    maxSuggestionLines: clamp(c.get("maxSuggestionLines", 8), 1, 20),
-    temperature: clamp(c.get("temperature", 0.1), 0, 1),
-    contextSize: clamp(c.get("contextSize", 4096), 512, 32768),
+    debounceMs: normalizeNumericSetting(c.get<unknown>("debounceMs"), 250, 0, 3000, true),
+    timeoutMs: normalizeNumericSetting(c.get<unknown>("timeoutMs"), 12000, 1000, 120000, true),
+    maxContextChars: normalizeNumericSetting(c.get<unknown>("maxContextChars"), 8000, 512, 30000, true),
+    maxOutputTokens: normalizeNumericSetting(c.get<unknown>("maxOutputTokens"), 128, 16, 512, true),
+    multiLine: c.get<unknown>("multiLine") !== false,
+    maxSuggestionLines: normalizeNumericSetting(c.get<unknown>("maxSuggestionLines"), 8, 1, 20, true),
+    temperature: normalizeNumericSetting(c.get<unknown>("temperature"), 0.1, 0, 1),
+    contextSize: normalizeNumericSetting(c.get<unknown>("contextSize"), 4096, 512, 32768, true),
     keepAlive: normalizeKeepAlive(c.get<unknown>("keepAlive", "5m")),
     excludedPaths: normalizeExcludedPaths(c.get<unknown>("excludedPaths", [])),
     crossFileContext: c.get<unknown>("crossFileContext", false) === true,
