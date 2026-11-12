@@ -20,6 +20,29 @@ test("retries transient VS Code transport failures, but launches no tests", asyn
   assert.deepEqual(pauses, [1000, 2000]);
 });
 
+test("retries only the exact test-electron download request timeout", async () => {
+  const deadline = Object.assign(
+    new Error("@vscode/test-electron request timeout out after 15000ms"),
+    { name: "TimeoutError" }
+  );
+  let calls = 0;
+  const executable = await downloadVSCodeWithTransientRetries(async () => {
+    if (++calls === 1) throw deadline;
+    return "/synthetic/vscode";
+  }, { pause: noWait });
+  assert.equal(executable, "/synthetic/vscode");
+  assert.equal(calls, 2);
+
+  for (const nonDownloadFailure of [
+    Object.assign(new Error("Test assertion timed out"), { name: "TimeoutError" }),
+    new Error("@vscode/test-electron request timeout out after 15000ms"),
+    Object.assign(new Error("@vscode/test-electron request timeout out after 0ms"), { name: "TimeoutError" }),
+    Object.assign(new Error("@vscode/test-electron request timeout out after 15000ms\\nSECRET"), { name: "TimeoutError" })
+  ]) {
+    assert.equal(isTransientVSCodeDownloadError(nonDownloadFailure), false);
+  }
+});
+
 test("handles AggregateError with nested transient connections", async () => {
   const nested = new AggregateError([
     network("ENETUNREACH"), network("ETIMEDOUT")
