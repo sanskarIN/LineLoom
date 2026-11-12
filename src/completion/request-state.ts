@@ -27,6 +27,7 @@ export function isRequestConfigurationCurrent(
     initial.temperature === latest.temperature &&
     initial.keepAlive === latest.keepAlive &&
     initial.timeoutMs === latest.timeoutMs &&
+    initial.debounceMs === latest.debounceMs &&
     JSON.stringify(initial.excludedPaths) === JSON.stringify(latest.excludedPaths) &&
     initial.suppressMidTokenAuto === latest.suppressMidTokenAuto &&
     initial.minAutoTriggerChars === latest.minAutoTriggerChars;
