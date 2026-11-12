@@ -11,6 +11,18 @@ const NETWORK_CODES = new Set([
   "ECONNREFUSED", "EAI_AGAIN", "EPIPE"
 ]);
 
+/**
+ * @vscode/test-electron can throw a library-specific TimeoutError without a
+ * Node network error code while resolving/downloading the VS Code archive.
+ * Match that known downloader failure exactly; arbitrary TimeoutError
+ * messages (including test assertions) are not retryable.
+ */
+function isVSCodeDownloadRequestTimeout(error) {
+  return error?.name === "TimeoutError" &&
+    typeof error.message === "string" &&
+    /^@vscode\/test-electron request timeout out after [1-9][0-9]{0,5}ms$/.test(error.message);
+}
+
 /** An AggregateError can include multiple connection attempts from Node. */
 export function isTransientVSCodeDownloadError(error) {
   const queue = [{ error, depth: 0 }];
@@ -19,7 +31,7 @@ export function isTransientVSCodeDownloadError(error) {
     const { error: item, depth } = queue.shift();
     if (!item || typeof item !== "object" || visited.has(item) || depth > 4) continue;
     visited.add(item);
-    if (NETWORK_CODES.has(item.code)) return true;
+    if (NETWORK_CODES.has(item.code) || isVSCodeDownloadRequestTimeout(item)) return true;
     if (item.cause) queue.push({ error: item.cause, depth: depth + 1 });
     if (Array.isArray(item.errors)) {
       for (const nested of item.errors.slice(0, 8)) {
