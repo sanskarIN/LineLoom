@@ -1,9 +1,26 @@
 import { constants } from "node:fs";
 import { lstat, open } from "node:fs/promises";
+import { LANGUAGES } from "../languages/registry";
 
 // Strict first-step limit: no repository walking, no background indexing.
 export const RELATED_FILE_LIMIT = 2;
 export const RELATED_FILE_MAX_BYTES = 2048;
+
+/**
+ * The selected-context picker should accept the same explicitly recognized
+ * source extensions as the inline-completion registry. This is only an
+ * allowlist for files the developer manually selects: no language becomes
+ * enabled by default, no extra file is discovered or read automatically.
+ * Existing same-workspace, trust, ignore, consent and byte-limit gates apply.
+ */
+const RELATED_SOURCE_EXTENSIONS = new Set(
+  LANGUAGES.flatMap(language => language.extensions.map(extension => extension.toLowerCase()))
+);
+
+export function isRelatedSourcePath(path: string): boolean {
+  const name = path.slice(path.lastIndexOf("/") + 1).toLowerCase();
+  return [...RELATED_SOURCE_EXTENSIONS].some(extension => name.endsWith(extension));
+}
 
 /** Deterministic, session-only explicit file selection. No automatic candidates. */
 export function planRelatedFiles(activeId: string, selectedIds: readonly string[]): string[] {
