@@ -2,9 +2,32 @@ import { describe, expect, it } from "vitest";
 import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { planRelatedFiles, readBoundedRelatedFile, validateRelatedSelection, hasBoundedRelatedMetadata } from "../../src/context/related";
+import {
+  isRelatedSourcePath, planRelatedFiles, readBoundedRelatedFile,
+  validateRelatedSelection, hasBoundedRelatedMetadata
+} from "../../src/context/related";
+import { LANGUAGES } from "../../src/languages/registry";
 
 describe("explicit bounded related-file context", () => {
+  it("accepts exactly the registered source suffixes, including opt-in languages", () => {
+    for (const { id, extensions } of LANGUAGES) {
+      for (const suffix of extensions) {
+        expect(isRelatedSourcePath("src/nested/sample" + suffix), id + " " + suffix).toBe(true);
+        expect(isRelatedSourcePath("src/nested/SAMPLE" + suffix.toUpperCase()), id + " uppercase " + suffix).toBe(true);
+      }
+    }
+    for (const file of [
+      "src/notes.md", ".env", "src/data.json", "src/book.ipynb",
+      "src/image.png", "src/main.ts.bak", "src/README", "src/config.toml"
+    ]) expect(isRelatedSourcePath(file), file).toBe(false);
+  });
+
+  it("does not treat a source-like substring as a supported extension", () => {
+    expect(isRelatedSourcePath("folder/python.py.txt")).toBe(false);
+    expect(isRelatedSourcePath("folder/typescript.ts.json")).toBe(false);
+    expect(isRelatedSourcePath("folder/rs")).toBe(false);
+  });
+
   it("deduplicates, ignores current file and never expands past two selections", () => {
     expect(planRelatedFiles("active", ["active", "a", "a", "b", "c"])).toEqual(["a", "b"]);
     expect(planRelatedFiles("active", [])).toEqual([]);
