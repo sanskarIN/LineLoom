@@ -10,6 +10,15 @@ export function normalizeModelTag(input: unknown): string {
   return tag.length <= 128 && /^[A-Za-z0-9][A-Za-z0-9._/:@-]*$/.test(tag) ? tag : "";
 }
 
+/**
+ * A malformed JSON value must not grant completion or outbound inference permission.
+ * Undefined means the setting was absent and may use its documented default;
+ * strings such as "true", numbers, null, arrays and objects never opt in.
+ */
+export function normalizePermissionToggle(input: unknown, defaultWhenUnset = false): boolean {
+  return input === true || (input === undefined && defaultWhenUnset);
+}
+
 /** Reject an invalid configured origin; never silently fall back to localhost. */
 export function normalizeEndpointSetting(input: unknown): string {
   return typeof input === "string" ? input.trim() : "";
