@@ -521,6 +521,14 @@ export async function run(): Promise<void> {
         assert.equal((await collectRelatedText(document, [permitted.uri], [], () => true))?.length, 1);
         assert.equal(isSupportedRelatedCandidate(document.uri, permitted.uri), true);
         assert.equal(isSupportedRelatedCandidate(document.uri, document.uri), false);
+        // The actual VS Code selected-file gate must recognize newly supported
+        // source extensions without enabling those languages or scanning files.
+        const zigRelated = vscode.Uri.joinPath(folder.uri, "src", "related-context.zig");
+        assert.equal(isSupportedRelatedCandidate(document.uri, zigRelated), true);
+        const zigReference = await collectRelatedText(document, [zigRelated], [], () => true);
+        assert.deepEqual(zigReference, ["const syntheticZig: u32 = 7;\n"]);
+        const jsonReference = vscode.Uri.joinPath(folder.uri, "src", "data.json");
+        assert.equal(isSupportedRelatedCandidate(document.uri, jsonReference), false);
         assert.equal(await collectRelatedText(document, [document.uri], [], () => true), undefined,
           "Active source must not be duplicated as an extra reference");
         assert.equal(await collectRelatedText(document, [permitted.uri, permitted.uri], [], () => true), undefined,
