@@ -19,6 +19,23 @@ export function normalizePermissionToggle(input: unknown, defaultWhenUnset = fal
   return input === true || (input === undefined && defaultWhenUnset);
 }
 
+/**
+ * Normalize a JSON numeric setting before it reaches timing, allocation or
+ * model-generation code. Invalid types and non-finite numbers restore the
+ * documented default, rather than silently selecting the minimum (e.g. a
+ * malformed debounce setting must not turn automatic throttling off).
+ *
+ * Finite out-of-range values are still clamped for backwards compatibility.
+ * Integer settings reject fractional and unsafe-integer values.
+ */
+export function normalizeNumericSetting(
+  input: unknown, fallback: number, lower: number, upper: number, integer = false
+): number {
+  if (typeof input !== "number" || !Number.isFinite(input) ||
+      (integer && !Number.isSafeInteger(input))) return fallback;
+  return Math.min(upper, Math.max(lower, input));
+}
+
 /** Reject an invalid configured origin; never silently fall back to localhost. */
 export function normalizeEndpointSetting(input: unknown): string {
   return typeof input === "string" ? input.trim() : "";
