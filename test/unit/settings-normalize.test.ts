@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   normalizeModelTag, normalizeEndpointSetting, normalizeKeepAlive, normalizeExcludedPaths,
-  normalizePermissionToggle
+  normalizePermissionToggle, normalizeNumericSetting
 } from "../../src/settings/normalize";
 
 describe("fail-closed settings normalization", () => {
@@ -15,6 +15,36 @@ describe("fail-closed settings normalization", () => {
       expect(normalizePermissionToggle(invalid), String(invalid)).toBe(false);
       expect(normalizePermissionToggle(invalid, true), String(invalid)).toBe(false);
     }
+  });
+
+  it("restores numeric settings defaults for malformed values instead of disabling throttling", () => {
+    const integerSettings = [
+      { fallback: 2, lower: 0, upper: 32 },       // minAutoTriggerChars
+      { fallback: 250, lower: 0, upper: 3000 },   // debounceMs
+      { fallback: 12000, lower: 1000, upper: 120000 }, // timeoutMs
+      { fallback: 8000, lower: 512, upper: 30000 },   // maxContextChars
+      { fallback: 128, lower: 16, upper: 512 },   // maxOutputTokens
+      { fallback: 8, lower: 1, upper: 20 },       // maxSuggestionLines
+      { fallback: 4096, lower: 512, upper: 32768 } // contextSize
+    ];
+    for (const { fallback, lower, upper } of integerSettings) {
+      for (const invalid of [undefined, null, true, false, "250", [], {}, NaN, Infinity, -Infinity, 1.5, Number.MAX_VALUE]) {
+        expect(normalizeNumericSetting(invalid, fallback, lower, upper, true)).toBe(fallback);
+      }
+      expect(normalizeNumericSetting(lower, fallback, lower, upper, true)).toBe(lower);
+      expect(normalizeNumericSetting(upper, fallback, lower, upper, true)).toBe(upper);
+      expect(normalizeNumericSetting(lower - 1, fallback, lower, upper, true)).toBe(lower);
+      expect(normalizeNumericSetting(upper + 1, fallback, lower, upper, true)).toBe(upper);
+    }
+  });
+
+  it("preserves finite decimal temperatures without coercing invalid JSON types", () => {
+    for (const invalid of [undefined, null, "0.7", true, {}, [], NaN, Infinity, -Infinity]) {
+      expect(normalizeNumericSetting(invalid, 0.1, 0, 1)).toBe(0.1);
+    }
+    expect(normalizeNumericSetting(0.7, 0.1, 0, 1)).toBe(0.7);
+    expect(normalizeNumericSetting(-0.5, 0.1, 0, 1)).toBe(0);
+    expect(normalizeNumericSetting(1.5, 0.1, 0, 1)).toBe(1);
   });
 
   it("accepts Ollama model tags and trims surrounding whitespace", () => {
