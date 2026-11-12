@@ -28,9 +28,6 @@ export interface LineLoomConfig {
   crossFileContext: boolean;
   performanceDiagnostics: boolean;
 }
-export function clamp(value: number, lower: number, upper: number): number {
-  return Number.isFinite(value) ? Math.min(upper, Math.max(lower, value)) : lower;
-}
 export function readConfig(): LineLoomConfig {
   const c = vscode.workspace.getConfiguration("lineloom");
   return {
