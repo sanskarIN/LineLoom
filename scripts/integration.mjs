@@ -21,6 +21,10 @@ try {
   await writeFile(path.join(fixture, "src", "blocked.ts"), "const hidden = 1;\n", "utf8");
   await writeFile(path.join(fixture, "src", "blocked-by-git.ts"), "const hidden = 2;\n", "utf8");
   await writeFile(path.join(fixture, "src", "allowed.ts"), "const visible = 3;\n", "utf8");
+  // A registered opt-in language can supply explicitly selected context,
+  // even when its editor language mode is not enabled for inline inference.
+  await writeFile(path.join(fixture, "src", "related-context.zig"),
+    "const syntheticZig: u32 = 7;\n", "utf8");
   // A safe disposable directory for testing real VS Code ignore-file watcher
   // create/change/delete events (rather than calling clearIgnoreCache()).
   await mkdir(path.join(fixture, "src", "watch-probe"));
