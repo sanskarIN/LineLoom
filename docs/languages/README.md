@@ -58,11 +58,13 @@ when no related file is selected.
 
 The original nine enabled languages, trust/privacy checks, opt-in related
 context and separately approved remote endpoint policy are unchanged.
-Selected `.zig` files are **not** added to the optional related-file
-context allowlist in this change. First-party LineLoom Code training
-remains scoped to Rust, C, C++, Python and TypeScript. **Actual Zig
-inference quality, compilation and physical-editor accessibility QA are
-not yet verified.**
+Explicitly selected `.zig` files are permitted by the optional related-file
+context source allowlist, subject to its separate two-file, 2 KiB-per-file,
+workspace-trust, ignore-rule and consent checks. Zig inline completion
+remains disabled by default; selecting a context file does not enable it.
+First-party LineLoom Code training remains scoped to Rust, C, C++,
+Python and TypeScript. **Actual Zig inference quality, compilation and
+physical-editor accessibility QA are not yet verified.**
 
 ## Swift, Dart, Ruby and PHP completion (issue #138; source-only opt-in)
 
@@ -157,9 +159,9 @@ This is a **source-level language support milestone**, not evidence of a
 real model's CUDA accuracy, CUDA compile correctness, GPU behavior or
 physical editor acceptance. No CUDA compiler, CUDA runtime, SDK, GPU
 drivers or model weights are bundled, and CUDA generated code is not
-compiled or executed by LineLoom. Explicitly selected related-file
-context still follows its separate narrow source-file allowlist and
-privacy gates; this change does not expand that allowlist. Standard
+compiled or executed by LineLoom. Explicitly selected related-file context follows the registered
+source-extension allowlist and its separate two-file limit, opt-in and
+privacy gates. No extra source is scanned automatically. Standard
 workspace trust, ignore-file, remote endpoint consent, cancellation and
 file policy rules remain in effect.
 

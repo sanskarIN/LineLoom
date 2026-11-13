@@ -1,15 +1,14 @@
 import * as vscode from "vscode";
 import { mayReadRelatedFile } from "../privacy/exclusions";
-import { planRelatedFiles, readBoundedRelatedFile, validateRelatedSelection } from "./related";
-
-// Deliberately limited to source-like files: never read arbitrary local documents.
-const SUPPORTED_SOURCE = /\.(?:py|js|jsx|ts|tsx|rs|kt|go|java|c|h|cpp|cc|hpp|hh)$/i;
+import {
+  isRelatedSourcePath, planRelatedFiles, readBoundedRelatedFile, validateRelatedSelection
+} from "./related";
 
 /** File-scheme, language and exact workspace-folder checks before any extra read. */
 export function isSupportedRelatedCandidate(active: vscode.Uri, uri: vscode.Uri): boolean {
   const root = vscode.workspace.getWorkspaceFolder(active);
   return active.scheme === "file" && uri.scheme === "file" &&
-    active.toString() !== uri.toString() && SUPPORTED_SOURCE.test(uri.path) &&
+    active.toString() !== uri.toString() && isRelatedSourcePath(uri.path) &&
     root !== undefined && vscode.workspace.getWorkspaceFolder(uri)?.uri.toString() === root.uri.toString();
 }
 
