@@ -52,6 +52,13 @@ describe("post-inference configuration revalidation", () => {
     expect(isRequestConfigurationCurrent(base, { ...base, multiLine: false }, language, false)).toBe(false);
     expect(isRequestConfigurationCurrent(base, { ...base, suppressMidTokenAuto: false }, language, false)).toBe(false);
   });
+  it("rejects a superseded debounce delay before using a pending completion", () => {
+    // Config change notifications may arrive after an async privacy check or
+    // model response; last-moment validation must not trust their timing.
+    expect(isRequestConfigurationCurrent(base, { ...base, debounceMs: 750 }, language, false)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, { ...base, debounceMs: 0 }, language, true)).toBe(false);
+    expect(isRequestConfigurationCurrent(base, { ...base, debounceMs: 250 }, language, false)).toBe(true);
+  });
   it("rejects privacy exclusions and timeout changes before network dispatch", () => {
     expect(isRequestConfigurationCurrent(base, {
       ...base, excludedPaths: ["**/secrets.ts"]
