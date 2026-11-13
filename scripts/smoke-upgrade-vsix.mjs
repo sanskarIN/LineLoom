@@ -19,6 +19,7 @@ import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync }
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "@vscode/test-electron";
+import { downloadVSCodeWithTransientRetries } from "./vscode-download-retry.mjs";
 
 function inspectVsix(archive, expectsPreview) {
   assert.ok(statSync(archive).isFile(), "Expected a VSIX file");
@@ -88,7 +89,7 @@ async function main() {
     }, null, 2) + "\n";
     writeFileSync(settingsFile, fixture, { encoding: "utf8", flag: "wx" });
 
-    const exe = await downloadAndUnzipVSCode({ version: "stable" });
+    const exe = await downloadVSCodeWithTransientRetries(downloadAndUnzipVSCode);
     const cli = resolveCliPathFromVSCodeExecutablePath(exe);
     const run = (...commandArgs) => execFileSync(cli, [
       ...commandArgs, "--extensions-dir", extensionsDir, "--user-data-dir", userDataDir,
