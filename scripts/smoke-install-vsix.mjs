@@ -11,6 +11,7 @@ import { mkdtempSync, mkdirSync, rmSync, statSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "@vscode/test-electron";
+import { downloadVSCodeWithTransientRetries } from "./vscode-download-retry.mjs";
 
 const candidate = process.argv[2];
 if (!candidate || !candidate.toLowerCase().endsWith(".vsix")) {
@@ -32,7 +33,7 @@ if (!candidate || !candidate.toLowerCase().endsWith(".vsix")) {
     const userDataDir = join(directory, "user-data");
     mkdirSync(extensionsDir);
     mkdirSync(userDataDir);
-    const exe = await downloadAndUnzipVSCode({ version: "stable" });
+    const exe = await downloadVSCodeWithTransientRetries(downloadAndUnzipVSCode);
     const cli = resolveCliPathFromVSCodeExecutablePath(exe);
     const run = (...args) => execFileSync(cli, [
       ...args, "--extensions-dir", extensionsDir, "--user-data-dir", userDataDir,
