@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   isRelatedSourcePath, planRelatedFiles, readBoundedRelatedFile,
-  validateRelatedSelection, hasBoundedRelatedMetadata
+  validateRelatedSelection, hasBoundedRelatedMetadata, isUnchangedRelatedFileSnapshot
 } from "../../src/context/related";
 import { LANGUAGES } from "../../src/languages/registry";
 
@@ -39,6 +39,23 @@ describe("explicit bounded related-file context", () => {
       expect(validateRelatedSelection("active", chosen)).toBe(false);
     }
   });
+  it("fails closed on selected-file metadata changes, including restored mtime", () => {
+    const original = { dev: 1, ino: 2, size: 128, mtimeMs: 100, ctimeMs: 101 };
+    expect(isUnchangedRelatedFileSnapshot(original, { ...original })).toBe(true);
+    // An in-place rewrite can keep the same byte length and restore mtime.
+    // ctime still changes on filesystems that expose change-time metadata.
+    for (const change of [
+      { ctimeMs: 102 },
+      { mtimeMs: 99 },
+      { size: 129 },
+      { ino: 3 },
+      { dev: 4 }
+    ]) {
+      expect(isUnchangedRelatedFileSnapshot(original, { ...original, ...change }), JSON.stringify(change))
+        .toBe(false);
+    }
+  });
+
   it("reads small UTF-8 text while denying symlinks, binary, oversized and malformed files", async () => {
     const folder = await mkdtemp(join(tmpdir(), "lineloom-context-"));
     try {
