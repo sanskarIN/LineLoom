@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFileSync } from "node:fs";
 import {
   isTransientVSCodeDownloadError, downloadVSCodeWithTransientRetries
 } from "./vscode-download-retry.mjs";
@@ -105,4 +106,15 @@ test("rejects invalid controls and cyclic untrusted error shapes", async () => {
   cyclical.cause = cyclical;
   assert.equal(isTransientVSCodeDownloadError(cyclical), false);
   assert.equal(isTransientVSCodeDownloadError("ETIMEDOUT"), false);
+});
+
+test("all VS Code CLI smoke download entrypoints use bounded retries", () => {
+  for (const file of [
+    "integration.mjs", "smoke-install-vsix.mjs",
+    "smoke-upgrade-vsix.mjs", "smoke-publisher-migration.mjs"
+  ]) {
+    const source = readFileSync(new URL(file, import.meta.url), "utf8");
+    assert.match(source, /await downloadVSCodeWithTransientRetries\(downloadAndUnzipVSCode\)/, file);
+    assert.doesNotMatch(source, /await downloadAndUnzipVSCode\s*\(/, file);
+  }
 });

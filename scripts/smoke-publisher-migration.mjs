@@ -12,6 +12,7 @@ import { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "nod
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { downloadAndUnzipVSCode, resolveCliPathFromVSCodeExecutablePath } from "@vscode/test-electron";
+import { downloadVSCodeWithTransientRetries } from "./vscode-download-retry.mjs";
 
 const [legacyInput, nextInput] = process.argv.slice(2);
 assert.ok(legacyInput?.endsWith(".vsix") && nextInput?.endsWith(".vsix"),
@@ -40,7 +41,7 @@ try {
     "lineloom.excludedPaths": ["**/synthetic-private/**"]
   }, null, 2) + "\n";
   writeFileSync(settings, fixture, { flag: "wx" });
-  const executable = await downloadAndUnzipVSCode({ version: "stable" });
+  const executable = await downloadVSCodeWithTransientRetries(downloadAndUnzipVSCode);
   const cli = resolveCliPathFromVSCodeExecutablePath(executable);
   const run = (...args) => execFileSync(cli, [
     ...args, "--extensions-dir", extensionsDir, "--user-data-dir", userDataDir,
