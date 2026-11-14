@@ -1,4 +1,4 @@
-import { constants } from "node:fs";
+import { constants, type Stats } from "node:fs";
 import { lstat, open } from "node:fs/promises";
 import { LANGUAGES } from "../languages/registry";
 
@@ -46,6 +46,21 @@ export function validateRelatedSelection(activeId: string, ids: readonly string[
   return true;
 }
 
+/**
+ * Compare file identity and modification metadata at every read boundary.
+ * Checking ctime as well as mtime detects normal in-place rewrites whose
+ * original timestamp and byte length were restored before validation.
+ * These are conservative race checks, not an atomic filesystem snapshot.
+ */
+export function isUnchangedRelatedFileSnapshot(
+  before: Pick<Stats, "dev" | "ino" | "size" | "mtimeMs" | "ctimeMs">,
+  after: Pick<Stats, "dev" | "ino" | "size" | "mtimeMs" | "ctimeMs">
+): boolean {
+  return before.dev === after.dev && before.ino === after.ino &&
+    before.size === after.size && before.mtimeMs === after.mtimeMs &&
+    before.ctimeMs === after.ctimeMs;
+}
+
 /** No source read: check metadata after consent so the UI can reject invalid files early. */
 export async function hasBoundedRelatedMetadata(path: string): Promise<boolean> {
   try {
@@ -65,8 +80,8 @@ export async function readBoundedRelatedFile(path: string): Promise<string> {
   const file = await open(path, constants.O_RDONLY | (constants.O_NOFOLLOW ?? 0));
   try {
     const before = await file.stat();
-    if (!before.isFile() || before.dev !== initial.dev || before.ino !== initial.ino ||
-        before.size !== initial.size || before.size > RELATED_FILE_MAX_BYTES) {
+    if (!before.isFile() || !isUnchangedRelatedFileSnapshot(initial, before) ||
+        before.size > RELATED_FILE_MAX_BYTES) {
       throw new Error("Selected context changed before read");
     }
     const bytes = Buffer.alloc(before.size);
@@ -77,8 +92,7 @@ export async function readBoundedRelatedFile(path: string): Promise<string> {
       offset += bytesRead;
     }
     const after = await file.stat();
-    if (after.size !== before.size || after.mtimeMs !== before.mtimeMs ||
-        after.ino !== before.ino || after.dev !== before.dev) {
+    if (!after.isFile() || !isUnchangedRelatedFileSnapshot(before, after)) {
       throw new Error("Selected context changed while reading");
     }
     if (bytes.includes(0)) throw new Error("Binary selected context not allowed");
