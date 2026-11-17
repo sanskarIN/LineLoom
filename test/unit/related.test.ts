@@ -56,6 +56,24 @@ describe("explicit bounded related-file context", () => {
     }
   });
 
+  it("detects a selected pathname replaced by a same-size different file", async () => {
+    const folder = await mkdtemp(join(tmpdir(), "lineloom-context-identity-"));
+    try {
+      const selected = join(folder, "selected.rs");
+      const moved = join(folder, "original.rs");
+      await writeFile(selected, "fn main() {}");
+      const before = await lstat(selected);
+      await rename(selected, moved);
+      await writeFile(selected, "fn main() {}");
+      const replaced = await lstat(selected);
+      expect(replaced.size).toBe(before.size);
+      expect(isUnchangedRelatedFileSnapshot(before, replaced)).toBe(false);
+      expect(await readBoundedRelatedFile(selected)).toBe("fn main() {}");
+      // The source itself is valid; the identity guard, not the UTF-8/size
+      // gate, must reject a replacement detected during an active read.
+    } finally { await rm(folder, { recursive: true, force: true }); }
+  });
+
   it("reads small UTF-8 text while denying symlinks, binary, oversized and malformed files", async () => {
     const folder = await mkdtemp(join(tmpdir(), "lineloom-context-"));
     try {
