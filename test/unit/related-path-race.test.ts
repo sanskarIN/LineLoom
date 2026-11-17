@@ -18,7 +18,7 @@ vi.mock("node:fs/promises", async (importOriginal) => {
       if (args[0] !== race.selected || ++race.stats !== 2) return info;
       return new Proxy(info, {
         get(target, key, receiver) {
-          if (key === "ino") return target.ino + 1;
+          if (key === "ino") return Number(target.ino) + 1;
           return Reflect.get(target, key, receiver);
         }
       });
