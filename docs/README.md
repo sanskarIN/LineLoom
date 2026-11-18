@@ -30,7 +30,8 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | [Ignore rules](privacy/ignore-rules.md) | Scoped path exclusions, safe file eligibility |
 | [Selected related-file context](privacy/selected-context.md) | Explicit selection, 2 KiB/file bounds, revocation and limitations |
 | [Security reporting](../SECURITY.md) | How to report vulnerabilities without exposing details |
-| [VSIX packager mitigation](security/vsce-advisory-mitigation.md) | Historical high-severity mitigation, remaining moderate development dependencies |
+| [VSIX packager mitigation](security/vsce-advisory-mitigation.md) | Historical reviewed packager baseline and compatibility limits |
+| [18 November 2026 dependency audit triage](security/dependency-audit-2026-11-18.md) | Current high-severity development-tool audit blocker, exact lockfile exposure and required remediation gates |
 
 ## Contribute and validate
 
