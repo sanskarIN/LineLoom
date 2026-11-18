@@ -149,4 +149,44 @@ describe("postresponse async privacy revalidation", () => {
     expect(result).toBe(false);
     expect(checks).toBe(0);
   });
+
+  it("fails closed if the final filesystem policy check throws", async () => {
+    let checks = 0;
+    const allowed = await isResponseStillEligible(
+      base, language, true, () => base, () => true,
+      async () => {
+        checks++;
+        throw new Error("Sensitive local filesystem path unavailable");
+      }
+    );
+    expect(allowed).toBe(false);
+    expect(checks).toBe(1);
+  });
+
+  it("fails closed if the workspace guard throws after asynchronous policy I/O", async () => {
+    let checks = 0;
+    let environmentChecks = 0;
+    const allowed = await isResponseStillEligible(
+      base, language, true, () => base, () => {
+        environmentChecks++;
+        if (environmentChecks === 2) throw new Error("Workspace state unavailable");
+        return true;
+      },
+      async () => { checks++; return true; }
+    );
+    expect(allowed).toBe(false);
+    expect(checks).toBe(1);
+    expect(environmentChecks).toBe(2);
+  });
+
+  it("fails closed before any filesystem I/O if reading the current settings throws", async () => {
+    let checks = 0;
+    const allowed = await isResponseStillEligible(
+      base, language, true, () => { throw new Error("Settings no longer available"); },
+      () => true,
+      async () => { checks++; return true; }
+    );
+    expect(allowed).toBe(false);
+    expect(checks).toBe(0);
+  });
 });
