@@ -41,4 +41,4 @@ Until a compatible supported fix is verified:
 - The conditional **v1.5.0 Stable** remains blocked by Microsoft publisher confirmation and completion, as well as current security, QA and owner approval. The Open VSX migration requires separate authorization and verification.
 - No Marketplace, Open VSX, npm CLI or GitHub publication was performed during this audit triage.
 
-Related: [packager compatibility history](vsce-advisory-mitigation.md), [publishing requirements](../qa/release-evidence.md), [migration plan](../releases/v1.4.5-plan.md), and [v1.5.0 Stable gate](../releases/v1.5.0-plan.md).
+Related: [packager compatibility history](vsce-advisory-mitigation.md), [publishing requirements](../qa/release-evidence.md), [planned v1.4.5 and v1.5.0 migration documentation](https://github.com/sanskarIN/LineLoom/pull/296) (pending review).
