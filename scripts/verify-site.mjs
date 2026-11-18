@@ -31,6 +31,45 @@ test("publisher migration guide keeps future listings distinct from verified exi
   }
 });
 
+test("planned migration versions remain unpublished, conditional and registry-specific", () => {
+  const roadmap = readFileSync(resolve(root, "docs/roadmap.md"), "utf8");
+  const preview = readFileSync(resolve(root, "docs/releases/v1.4.5-plan.md"), "utf8");
+  const stable = readFileSync(resolve(root, "docs/releases/v1.5.0-plan.md"), "utf8");
+  const openVsx = readFileSync(resolve(root, "docs/open-vsx-migration.md"), "utf8");
+  const guide = readFileSync(resolve(root, "docs/publisher-migration.md"), "utf8");
+  const migrationPage = readFileSync(resolve(dir, "publisher-migration.html"), "utf8");
+  const readme = readFileSync(resolve(root, "README.md"), "utf8");
+
+  // A plan must never be mistaken for a released installable package.
+  for (const document of [roadmap, preview, stable, guide, migrationPage, readme]) {
+    assert.ok(document.includes("v1.4.5"), "Migration preview plan must be discoverable");
+    assert.ok(document.includes("v1.5.0"), "Conditional stable plan must be discoverable");
+  }
+  assert.match(preview, /NOT PUBLISHED/);
+  assert.match(preview, /pre-release/);
+  assert.match(stable, /BLOCKED/);
+  assert.match(stable, /Microsoft/);
+  assert.match(stable, /completed and (?:independently )?verified/);
+  assert.match(openVsx, /namespace owner/i);
+  assert.match(openVsx, /separate/i);
+  assert.match(guide, /do not delete|do not remove/i);
+  assert.match(migrationPage, /no accepted or completed transfer has been verified/i);
+  assert.match(migrationPage, /Open VSX/i);
+
+  // A GitHub-only plan must not turn the preferred publisher into an
+  // unverified public Marketplace/Open VSX listing or stable download.
+  for (const document of [page, readme, migrationPage, roadmap]) {
+    assert.doesNotMatch(document,
+      /https:\/\/(?:marketplace\.visualstudio\.com\/items\?itemName=Sanskar\.lineloom|open-vsx\.org\/extension\/Sanskar\/lineloom)/i,
+      "Do not direct users to an unverified new registry listing");
+    assert.doesNotMatch(document,
+      /https:\/\/github\.com\/sanskarIN\/LineLoom\/releases\/download\/v1\.(?:4\.5|5\.0)\//i,
+      "Do not publish future release download links as if they exist");
+  }
+  assert.equal(pkg.publisher, "SanskarCodes",
+    "Primary source publisher must not silently migrate before support approval");
+});
+
 test("static site identity follows the release manifest", () => {
   assert.equal(pkg.publisher, "SanskarCodes");
   assert.match(pkg.version, /^\d+\.\d+\.\d+$/);
