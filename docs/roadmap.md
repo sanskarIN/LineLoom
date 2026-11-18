@@ -12,6 +12,14 @@
 - **First-party model research tooling (not trained weights):** [#166](https://github.com/sanskarIN/LineLoom/pull/166) adds reserved-token and tokenizer-boundary checks, [#167](https://github.com/sanskarIN/LineLoom/pull/167) adds paired before/after local LoRA validation losses, and [#168](https://github.com/sanskarIN/LineLoom/pull/168) adds per-target-token weighting alongside per-example and five-language macro losses. These pass source/CI checks; **no checkpoint, training corpus, actual GPU run, trained weights, human code-quality evidence or model release exists**. The metrics only apply if a future authorized local experiment is performed.
 - **Outstanding quality and security evidence:** real Ollama completion quality, physical Windows/macOS/Linux editor UX, accessibility, selected-context consent and real publisher-authentication workflows remain unverified by automated releases. The 2026-11-18 full development-dependency audit newly fails on high-severity upstream advisories, tracked in [#297](https://github.com/sanskarIN/LineLoom/issues/297); the production-only audit reported zero vulnerabilities in that run. See [#66](https://github.com/sanskarIN/LineLoom/issues/66), [#60](https://github.com/sanskarIN/LineLoom/issues/60) and [manual acceptance](qa/v1.3.0-manual-acceptance.md).
 
+## Approved planning sequence (not release authorization)
+
+1. **v1.4.5 — planned GitHub pre-release:** migration documentation, safe test packages, source/privacy/security gates and a rollback guide. The Microsoft support inquiry was sent 2026-11-18; **no completed Marketplace publisher transfer has been verified**. [v1.4.5 plan](releases/v1.4.5-plan.md).
+2. **v1.5.0 — planned Stable, blocked:** only after Microsoft confirms a supported transfer/approved alternative, the transition is completed and independently verified, full release QA/security passes, and the owner separately authorizes the exact release and each destination. [v1.5.0 stable plan](releases/v1.5.0-plan.md).
+3. **Open VSX `Sanskar` namespace — separate subsequent plan:** verify Eclipse namespace permissions, publisher agreement, independent packaging and operator transfer guidance. Microsoft ownership does not confer Open VSX ownership; registry publishing requires its own approval and public verification. [Open VSX plan](open-vsx-migration.md).
+
+Preserve `SanskarCodes.lineloom` in both registries until there is a supported, verified transition and tested rollback. Do not delete the old Marketplace listing to resolve an extension-name conflict.
+
 ## v1.4.4 GitHub-only completion-reliability preview — published
 
 The [v1.4.4 GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) ships separately packaged and checksummed `SanskarCodes.lineloom` and `Sanskar.lineloom` preview VSIX files. Its [release notes](releases/v1.4.4.md) describe the opt-in language additions, safe output handling, timeout/cancellation improvements and packaging gates. It does **not** publish to Marketplace/Open VSX or npmjs, reassign the existing extension publisher, migrate extension-private state, or constitute manual physical-editor/model QA.
@@ -57,6 +65,9 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 | **v1.3.1 — reliability preview** | **GitHub pre-release published** | Unicode completion safety, native sidebar next-action guidance, manually checked default and effective editor models, local file privacy | [Public preview and notes](releases/v1.3.1.md), [manual QA still outstanding](qa/v1.3.1-preview-acceptance.md); not a stable or registry release |
 | **CLI v0.3.0** | Merged source; **not published** | Already-downloaded pinned VSIX verification and offline staged-copy installation | [Merged PR #92](https://github.com/sanskarIN/LineLoom/pull/92); [manual acceptance NOT RUN](qa/cli-v0.3.0-manual-acceptance.md); separate package version/pinset/security/authorization gates |
 | **v1.4.0 — usability & quality** | **GitHub pre-release published 2026-10-26; not stable** | 30-fixture, five-language synthetic evaluator and repeatability aggregates; native status clarity, accepted-item metrics, bounded p50/p95, automatic transient retry pause and explicit session reset | [Candidate notes](releases/v1.4.0.md), [manual QA NOT RUN](qa/v1.4.0-preview-acceptance.md), locked audit/VSIX/upgrade and separate GitHub-only publication |
+| **v1.4.5 — migration preparation** | **Planned GitHub pre-release; not published** | Document/test the `SanskarCodes` → `Sanskar` migration and user rollback without changing registries | [Plan](releases/v1.4.5-plan.md); security #297, packaging/QA and separate owner authorization |
+| **v1.5.0 — publisher-confirmed Stable** | **Blocked; not published** | Stable release after confirmed and executed Microsoft migration | [Stable gate](releases/v1.5.0-plan.md); verified listing identity, QA, security and owner approval |
+| **Open VSX `Sanskar` rollout** | **Planning only; not published** | Separate Eclipse namespace and identity transition after supported migration | [Registry plan](open-vsx-migration.md); namespace permission, public listing and separate owner authorization |
 | **v1.4.x+ — optional-language quality** | Measurement pending | Evaluate already implemented opt-in C#, Dart, Swift, Zig and other non-default language modes before claiming compatibility or improving their prompts | Reproducible local-model completions, bounded fixtures, human review and physical editor QA |
 | **v1.5.x+ — limited symbol intelligence** | RFC only | Explore optional developer-selected symbol/import hints with bounded parser effort | New opt-in privacy RFC, no automatic workspace scan or persistent indexing by default, independent I/O and security evaluation |
 | **v2.0.0 — additional local providers** | Research, not scheduled | Abstract backend transport without losing Ollama defaults | Explicit endpoint permissions, no cloud inference by default, strict stream decoding, cancel and budget equivalence |
@@ -72,7 +83,7 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 5. Measure suggestions offered separately from the session-only VS Code accepted-item callbacks in development; do not infer usefulness or human model quality. Manual acceptance and accessibility on physical OS devices remain **NOT RUN**. See [sidebar notes](sidebar.md).
 6. Maintain the **opt-in, bounded 64-request inference latency window** with source-free p50/p95 readings and user-initiated timing reset. This is a developer feature only: no real Ollama machine benchmark has yet been recorded.
 7. Use the [dedicated-model synthetic evaluation harness](../model/README.md) and [reproducible local baseline protocol](../model/EVALUATION_PROTOCOL.md) to collect genuine opt-in local Ollama evidence. Distinguish deterministic fixture checks and CI passes from real model performance. Review [training and licensing gates](../model/TRAINING_PLAN.md) before any fine-tuning. No real-model benchmark outcomes or trained LineLoom Code weights are claimed.
-8. Use [v1.4.4 preview changes](releases/v1.4.4.md) and unresolved manual acceptance to plan the next **pre-release** separately. Do not promote a new stable version until manual acceptance, real-model evidence and independent distribution checks are documented.
+8. Prepare [v1.4.5 migration pre-release](releases/v1.4.5-plan.md) documentation and QA independently from the blocked [v1.5.0 Stable gate](releases/v1.5.0-plan.md). After Microsoft migration is verified, separately prepare the [Open VSX namespace rollout](open-vsx-migration.md); do not promote stable or publish a registry package from a planning document.
 
 ## Permanent non-goals for current releases
 
@@ -80,6 +91,7 @@ No account or subscription requirement, passive model downloads, telemetry, arbi
 
 ## Technical plans and historical release notes
 
+- [v1.4.5 migration preview plan](releases/v1.4.5-plan.md) · [v1.5.0 Stable release gate](releases/v1.5.0-plan.md) · [Open VSX migration](open-vsx-migration.md)
 - [Upcoming feature candidates and decision criteria](feature-proposals.md)
 - [v1.3.1 maintenance scope and exit criteria](releases/v1.3.1-plan.md)
 - [Release evidence rules](qa/release-evidence.md) · [v1.3.0 acceptance checklist](qa/v1.3.0-manual-acceptance.md)
@@ -176,4 +188,4 @@ No source, file URI or prompt text is stored by the gate. Only the verified
 existing request path can reach Ollama after a delay. Unit and mocked
 VS Code editor-host tests protect timer cleanup and burst behavior;
 actual real-model latency measurements and physical editor QA remain pending.
-Publisher migration and new releases remain paused.
+Publisher cutover and v1.5.0 Stable publication remain paused pending official confirmation, security/QA and separate owner approval; v1.4.5 is a preparation milestone, not a released artifact.
