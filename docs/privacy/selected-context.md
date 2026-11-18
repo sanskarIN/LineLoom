@@ -16,7 +16,7 @@ Related files may contain source, private paths, credentials in comments, or ins
 ## Privacy and resource boundaries
 
 - The existing `mayComplete` privacy engine is reused for each extra file: trusted workspace, file scheme, named and canonical workspace-relative paths, sensitive path exclusions, user patterns and nested .gitignore/.lineloomignore. Any unresolved path, symlink escape, changed policy, unreadable/invalid rule or I/O error aborts the entire related-file prompt.
-- Files must be regular, nonempty, UTF-8 text; the final component may not be a symlink. Invalid UTF-8, NUL/binary data, oversized and truncated files are refused.
+- Files must be regular, nonempty, UTF-8 text; the final component may not be a symlink. Invalid UTF-8, NUL/binary data, oversized and truncated files are refused. Both the opened file descriptor and the originally selected pathname are checked after reading; same-size rename/replacement or a path changed to a symlink aborts the request. These conservative checks are not an atomic filesystem snapshot.
 - Eligibility is checked before opening the bounded file, after reading, and again following the Ollama response. Selected text is re-read before suggestions are displayed; content changes discard the response. Requests are invalidated by selection, settings, editor and ignore-policy changes.
 - Up to 4 KiB of **extra source text total**, no persistent code cache apart from existing short-lived memory-only completion hashes. Reference labels are anonymous; file paths are not included in model prompts or diagnostics.
 - Completion cache keys and continuation snapshots include a hash of selected reference text and selection revision. Disabled mode sends **zero additional context**.

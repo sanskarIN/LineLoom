@@ -95,6 +95,14 @@ export async function readBoundedRelatedFile(path: string): Promise<string> {
     if (!after.isFile() || !isUnchangedRelatedFileSnapshot(before, after)) {
       throw new Error("Selected context changed while reading");
     }
+    // A stable open handle alone cannot prove that the selected pathname
+    // still denotes that file: another process can rename it and replace the
+    // path while this read is in progress. Refuse any final symlink or changed
+    // path identity, including same-length replacements.
+    const namedAfter = await lstat(path);
+    if (!namedAfter.isFile() || !isUnchangedRelatedFileSnapshot(initial, namedAfter)) {
+      throw new Error("Selected context path changed while reading");
+    }
     if (bytes.includes(0)) throw new Error("Binary selected context not allowed");
     const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
     if (!text.trim()) throw new Error("Blank selected context not allowed");
