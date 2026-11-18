@@ -49,7 +49,7 @@ test("planned migration versions remain unpublished, conditional and registry-sp
   assert.match(preview, /pre-release/);
   assert.match(stable, /BLOCKED/);
   assert.match(stable, /Microsoft/);
-  assert.match(stable, /completed and (?:independently )?verified/);
+  assert.match(stable, /Migration performed and verified/);
   assert.match(openVsx, /namespace owner/i);
   assert.match(openVsx, /separate/i);
   assert.match(guide, /do not delete|do not remove/i);
