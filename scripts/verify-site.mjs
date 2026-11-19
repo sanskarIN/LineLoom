@@ -53,7 +53,10 @@ test("planned migration versions remain unpublished, conditional and registry-sp
   assert.match(openVsx, /namespace owner/i);
   assert.match(openVsx, /separate/i);
   assert.match(guide, /do not delete|do not remove/i);
-  assert.match(migrationPage, /no accepted or completed transfer has been verified/i);
+  assert.match(migrationPage, /does not support transferring an extension from one publisher ID to another/i);
+  assert.match(stable, /unsupported/i);
+  assert.match(preview, /2026-11-19/);
+  assert.match(readme, /transferring extensions between publisher IDs is not supported/i);
   assert.match(migrationPage, /Open VSX/i);
 
   // A GitHub-only plan must not turn the preferred publisher into an
@@ -67,7 +70,7 @@ test("planned migration versions remain unpublished, conditional and registry-sp
       "Do not publish future release download links as if they exist");
   }
   assert.equal(pkg.publisher, "SanskarCodes",
-    "Primary source publisher must not silently migrate before support approval");
+    "Primary source publisher must not silently change before owner-approved alternative and verified release");
 });
 
 test("static site identity follows the release manifest", () => {
