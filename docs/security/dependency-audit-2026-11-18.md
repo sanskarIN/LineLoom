@@ -11,8 +11,8 @@
 
 | Locked package path | Version | Graph classification | Relevant audit finding or role |
 | --- | --- | --- | --- |
-| `node_modules/picomatch` | `4.0.7` | Development only | [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), high-severity repeated-extglob ReDoS |
-| `node_modules/micromatch/node_modules/picomatch` | `2.3.2` | Development only | Same advisory range; nested copy |
+| `node_modules/picomatch` | `4.0.7` | Development only | [GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf), present in the **historical failed audit**; GitHub marked this advisory withdrawn on 18 Nov 2026 |
+| `node_modules/micromatch/node_modules/picomatch` | `2.3.2` | Development only | Nested copy included in the **historical** picomatch advisory findings; current advisory is withdrawn |
 | `node_modules/glob` | `13.0.6` | Development only | [GHSA-3g3m-2fjr-6pw4](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4), cancellation/traversal advisory |
 | `node_modules/minimatch` | `10.2.6` | Development only | [GHSA-g3hv-75wg-m249](https://github.com/advisories/GHSA-g3hv-75wg-m249), globparts amplification |
 | `node_modules/uuid` | `8.3.2` | Development only | [GHSA-w5hq-g745-h8pq](https://github.com/advisories/GHSA-w5hq-g745-h8pq), buffer bound check when supplying a buffer |
@@ -20,7 +20,13 @@
 | `node_modules/@azure/identity` | `4.2.1` | Development only | Intentionally reviewed compatibility override |
 | `node_modules/@azure/msal-node` | `2.16.3` | Development only | Compatible with the reviewed Azure Identity baseline |
 
-The table is based on the committed lockfile at `main` commit `484fa5c544c08e062f9ce48a366cba615aa55873`. **It is not a fresh npm-registry patch-availability guarantee.** The picomatch high-severity advisory covers affected versions through 4.0.7 and did not provide a clearly established compatible fixed version at the time of this audit. Do not claim that an unknown upgrade resolves it.
+The table is based on the committed lockfile at `main` commit `484fa5c544c08e062f9ce48a366cba615aa55873`. **It is not a fresh npm-registry patch-availability guarantee.** The picomatch advisory originally described affected versions through 4.0.7 and had no identified patched version at the time of the failing audit. GitHub subsequently withdrew that advisory; this is not proof that the underlying concern is fixed or that any other finding is cleared. Do not claim an unknown upgrade resolves it.
+
+## Advisory status changed after the failed audit — 19 November 2026
+
+GitHub's [canonical advisory page for GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) now states **withdrawn on 18 November 2026**. This update **postdates the cited audit failures**; the 23 / 12 moderate / 11 high counts above accurately describe those historical runs, not a fresh 19 November audit. No upstream package patch or independent assessment of the underlying pattern is established by the withdrawal itself.
+
+**Required next action:** on the current candidate commit, run clean `npm ci`, `npm run test:packager-security`, `npm audit --omit=dev --audit-level=moderate` and `npm audit --audit-level=high` **without exemptions**. Record the new CI job URL and *remaining* findings, including whether withdrawal has propagated into npm's advisory feed. Keep the security gate red and the release blocked until the latest full audit genuinely passes, or a separate explicit, dated owner decision documents a narrowly scoped exception. All unrelated advisories still need independent evaluation.
 
 ## Exposure and temporary containment
 
