@@ -1,6 +1,6 @@
 # LineLoom roadmap
 
-**Updated 2026-11-18 · Planned milestones are not implementation or release commitments.**
+**Updated 2026-11-19 · Planned milestones are not implementation or release commitments.**
 
 ## Current state (verified repository and GitHub release)
 
@@ -14,8 +14,8 @@
 
 ## Approved planning sequence (not release authorization)
 
-1. **v1.4.5 — planned GitHub pre-release:** migration documentation, safe test packages, source/privacy/security gates and a rollback guide. The Microsoft support inquiry was sent 2026-11-18; **no completed Marketplace publisher transfer has been verified**. [v1.4.5 plan](releases/v1.4.5-plan.md).
-2. **v1.5.0 — planned Stable, blocked:** only after Microsoft confirms a supported transfer/approved alternative, the transition is completed and independently verified, full release QA/security passes, and the owner separately authorizes the exact release and each destination. [v1.5.0 stable plan](releases/v1.5.0-plan.md).
+1. **v1.4.5 — planned GitHub pre-release:** migration documentation, safe test packages, source/privacy/security gates and a rollback guide. Microsoft Support responded 2026-11-19: **extension transfers between Marketplace publisher IDs are currently unsupported**. [v1.4.5 plan](releases/v1.4.5-plan.md).
+2. **v1.5.0 — planned Stable, blocked:** only after the owner approves an alternative to the **unsupported Marketplace publisher transfer** (a distinct compliant new listing with manual migration, or a stable update on the legacy ID), the chosen installation route is verified, full QA/security passes, and each destination is separately authorized. [v1.5.0 stable plan](releases/v1.5.0-plan.md).
 3. **Open VSX `Sanskar` namespace — separate subsequent plan:** verify Eclipse namespace permissions, publisher agreement, independent packaging and operator transfer guidance. Microsoft ownership does not confer Open VSX ownership; registry publishing requires its own approval and public verification. [Open VSX plan](open-vsx-migration.md).
 
 Preserve `SanskarCodes.lineloom` in both registries until there is a supported, verified transition and tested rollback. Do not delete the old Marketplace listing to resolve an extension-name conflict.
@@ -66,7 +66,7 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 | **CLI v0.3.0** | Merged source; **not published** | Already-downloaded pinned VSIX verification and offline staged-copy installation | [Merged PR #92](https://github.com/sanskarIN/LineLoom/pull/92); [manual acceptance NOT RUN](qa/cli-v0.3.0-manual-acceptance.md); separate package version/pinset/security/authorization gates |
 | **v1.4.0 — usability & quality** | **GitHub pre-release published 2026-10-26; not stable** | 30-fixture, five-language synthetic evaluator and repeatability aggregates; native status clarity, accepted-item metrics, bounded p50/p95, automatic transient retry pause and explicit session reset | [Candidate notes](releases/v1.4.0.md), [manual QA NOT RUN](qa/v1.4.0-preview-acceptance.md), locked audit/VSIX/upgrade and separate GitHub-only publication |
 | **v1.4.5 — migration preparation** | **Planned GitHub pre-release; not published** | Document/test the `SanskarCodes` → `Sanskar` migration and user rollback without changing registries | [Plan](releases/v1.4.5-plan.md); security #297, packaging/QA and separate owner authorization |
-| **v1.5.0 — publisher-confirmed Stable** | **Blocked; not published** | Stable release after confirmed and executed Microsoft migration | [Stable gate](releases/v1.5.0-plan.md); verified listing identity, QA, security and owner approval |
+| **v1.5.0 — alternative-identity-gated Stable** | **Blocked; not published** | Stable release only after owner-approved compliant identity and verified install/migration route | [Stable gate](releases/v1.5.0-plan.md); verified listing identity, QA, security and owner approval |
 | **Open VSX `Sanskar` rollout** | **Planning only; not published** | Separate Eclipse namespace and identity transition after supported migration | [Registry plan](open-vsx-migration.md); namespace permission, public listing and separate owner authorization |
 | **v1.4.x+ — optional-language quality** | Measurement pending | Evaluate already implemented opt-in C#, Dart, Swift, Zig and other non-default language modes before claiming compatibility or improving their prompts | Reproducible local-model completions, bounded fixtures, human review and physical editor QA |
 | **v1.5.x+ — limited symbol intelligence** | RFC only | Explore optional developer-selected symbol/import hints with bounded parser effort | New opt-in privacy RFC, no automatic workspace scan or persistent indexing by default, independent I/O and security evaluation |
@@ -83,7 +83,7 @@ The [verified GitHub pre-release](https://github.com/sanskarIN/LineLoom/releases
 5. Measure suggestions offered separately from the session-only VS Code accepted-item callbacks in development; do not infer usefulness or human model quality. Manual acceptance and accessibility on physical OS devices remain **NOT RUN**. See [sidebar notes](sidebar.md).
 6. Maintain the **opt-in, bounded 64-request inference latency window** with source-free p50/p95 readings and user-initiated timing reset. This is a developer feature only: no real Ollama machine benchmark has yet been recorded.
 7. Use the [dedicated-model synthetic evaluation harness](../model/README.md) and [reproducible local baseline protocol](../model/EVALUATION_PROTOCOL.md) to collect genuine opt-in local Ollama evidence. Distinguish deterministic fixture checks and CI passes from real model performance. Review [training and licensing gates](../model/TRAINING_PLAN.md) before any fine-tuning. No real-model benchmark outcomes or trained LineLoom Code weights are claimed.
-8. Prepare [v1.4.5 migration pre-release](releases/v1.4.5-plan.md) documentation and QA independently from the blocked [v1.5.0 Stable gate](releases/v1.5.0-plan.md). After Microsoft migration is verified, separately prepare the [Open VSX namespace rollout](open-vsx-migration.md); do not promote stable or publish a registry package from a planning document.
+8. Prepare [v1.4.5 migration pre-release](releases/v1.4.5-plan.md) documentation and QA independently from the blocked [v1.5.0 Stable gate](releases/v1.5.0-plan.md). After the owner-approved stable identity strategy is verified, separately prepare the [Open VSX namespace rollout](open-vsx-migration.md); do not promote stable or publish a registry package from a planning document.
 
 ## Permanent non-goals for current releases
 
@@ -188,4 +188,4 @@ No source, file URI or prompt text is stored by the gate. Only the verified
 existing request path can reach Ollama after a delay. Unit and mocked
 VS Code editor-host tests protect timer cleanup and burst behavior;
 actual real-model latency measurements and physical editor QA remain pending.
-Publisher cutover and v1.5.0 Stable publication remain paused pending official confirmation, security/QA and separate owner approval; v1.4.5 is a preparation milestone, not a released artifact.
+Publisher cutover and v1.5.0 Stable publication remain paused because Microsoft does not support publisher-to-publisher transfer; a compliant alternative, security/QA and separate owner approval are required; v1.4.5 is a preparation milestone, not a released artifact.
