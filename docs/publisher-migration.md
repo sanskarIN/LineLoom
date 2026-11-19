@@ -1,6 +1,6 @@
 # LineLoom publisher migration: SanskarCodes → Sanskar
 
-**Status (November 18, 2026): the maintainer confirmed Owner access to the existing `Sanskar` Microsoft Visual Studio Marketplace publisher on November 8. A publisher-transfer support email was sent on November 18, but no approved transfer decision or completed migration has been verified. No `Sanskar.lineloom` Marketplace listing is verified. Open VSX namespace ownership/publication are independent and unverified. GitHub v1.4.4 was published as a dual-publisher pre-release on November 8; no external registry upload is implied.**
+**Status (November 19, 2026): Marketplace Support replied to the November 18 inquiry that transferring an extension between publisher IDs is currently **not supported**. This rules out an in-place `SanskarCodes.lineloom` → `Sanskar.lineloom` Marketplace transfer. The maintainer previously confirmed Owner access to the `Sanskar` publisher, but no `Sanskar.lineloom` Marketplace listing, alternative name or Open VSX namespace is independently verified. GitHub v1.4.4 dual-publisher preview assets remain available; they do not migrate external registries.**
 The original extension identity is `SanskarCodes.lineloom`. The proposed
 new identity is `Sanskar.lineloom`. Publisher ownership and publication
 must be completed separately on **each** registry; an unverified new
@@ -9,11 +9,11 @@ Marketplace/Open VSX URL is not evidence of a live downloadable listing.
 ## Release decisions: v1.4.5 preview, v1.5.0 Stable, then Open VSX
 
 - **v1.4.5 is a planned GitHub pre-release migration-preparation milestone**, not a published version. Document user settings/installation/rollback and perform independently reviewed two-publisher packaging tests. It does **not** authorize a Microsoft Marketplace or Open VSX publication, nor imply that Microsoft has approved a transfer. [v1.4.5 release plan](releases/v1.4.5-plan.md).
-- **v1.5.0 Stable is blocked** until Microsoft supplies a supported publisher reassignment decision, the accepted migration is completed and its public listing/installation behavior verified, and security, QA and owner release approval pass. A support response without completion is not enough. [v1.5.0 stable gate](releases/v1.5.0-plan.md).
+- **v1.5.0 Stable is blocked** because Microsoft has confirmed publisher reassignment is unsupported. The owner must first approve a distinct, registry-compliant *new listing and manual migration* **or** explicitly choose a stable release under the current legacy publisher. Verify the exact listing/installation behavior, security, QA and separately approved release before publication. [v1.5.0 stable gate](releases/v1.5.0-plan.md).
 - **Open VSX is a separate later workstream**, with its own `Sanskar` namespace ownership, registry instructions, publishing permission, independent evidence and separate approval. Microsoft's decision does not transfer Eclipse permissions. [Open VSX migration plan](open-vsx-migration.md).
 - **Do not delete, unpublish or supersede the existing public identity** while the migration route or update/rollback implications are unknown. Never infer that an old extension installation receives a new publisher ID automatically.
 
-**Support record:** request sent 2026-11-18 asking about official transfer, name collision, install/review continuity and preservation of the existing listing. The request is **not** evidence of an accepted transfer. Keep any future reply/case identifier privately; summarize only the approved technical outcome publicly.
+**Support record:** request sent 2026-11-18; reply received 2026-11-19: Microsoft currently **does not support transferring extensions between publisher IDs**. This is not permission to reuse the same name, create a duplicate listing, move installs/reviews or remove the existing publisher. Keep message identifiers and account details privately in Outlook.
 
 ## Marketplace name-collision gate (do not delete the old extension)
 
@@ -24,14 +24,7 @@ Even though the maintainer now owns publisher `Sanskar`, attempting to create
 name collision. **Do not remove the old listing to free its name:** Microsoft's
 guide also says removing an extension permanently reserves the name.
 
-Before any `Sanskar` Marketplace upload, obtain Microsoft's response to the
-**Contact Microsoft** transfer request sent 2026-11-18. Ask for the exact
-supported publisher reassignment procedure and whether installs/reviews can be
-preserved. Do not assume such a transfer is supported or completed. If Microsoft
-cannot transfer the exact ID, obtain explicit owner approval for a *distinct*
-new extension name/display name before creating a new listing; this also
-requires a deliberate user migration. GitHub VSIX previews remain installable
-without a Marketplace upload.
+**Microsoft replied on 2026-11-19 that publisher-to-publisher transfers are not supported.** Before any `Sanskar` Marketplace upload, obtain explicit owner approval for a *separate* listing with a distinct compliant extension **name and display name**. Verify registry requirements before trying a new extension ID; this also requires deliberate user uninstall/reinstall, settings/privacy review and rollback. Alternatively, a stable update could remain under `SanskarCodes.lineloom` if the owner explicitly approves that change in strategy. **Do not delete the existing listing**, claim an automatic transfer, or treat GitHub preview VSIX files as proof of a Marketplace listing.
 
 ## Why this is a reinstall, not an automatic update
 
