@@ -2,13 +2,13 @@
 
 **Status: PLAN ONLY / NOT AUTHORIZED TO PUBLISH (2026-11-18).** The existing [`SanskarCodes.lineloom` listing](https://open-vsx.org/extension/SanskarCodes/lineloom) was independently verified at v1.3.0 Stable on 2026-10-25. Its current version must be rechecked before making a fresh claim. **No `Sanskar.lineloom` Open VSX listing or ownership is verified by this document.** Microsoft Marketplace publisher rights do not grant Eclipse Open VSX namespace access.
 
-This is the **next registry workstream** after planning the v1.4.5 GitHub preview and the Microsoft-gated v1.5.0 Stable release. Work on namespace discovery/ownership can be prepared in parallel, but no public cutover occurs without separate Open VSX authorization.
+This is a **separate registry workstream** following GitHub preview preparation and a viable, owner-approved v1.5.0 Stable identity. Microsoft's 2026-11-19 reply ruled out **Marketplace** publisher-to-publisher transfers; it says nothing about the independently governed **Open VSX** namespace or transfer rules. Work on namespace discovery/ownership can be prepared in parallel, but no public cutover occurs without separate Open VSX authorization.
 
 ## Identity and ownership prerequisites
 
 1. Sign in to [Open VSX](https://open-vsx.org/) through the intended permanent Eclipse account, review its Publisher Agreement, and identify the namespace administration state.
 2. Search for the exact `Sanskar` namespace. **Do not assume it is unclaimed, verified, transferable or available.** If eligible, create or claim it using the supported Open VSX procedure and verify actual member/owner permissions; a namespace may exist without being verified.
-3. Confirm the extension's supported name and the old/new namespace policy with Open VSX administrators if there is an ownership or collision conflict. An Open VSX migration is **not** the same action as Microsoft's publisher transfer.
+3. Confirm the extension's supported name and the old/new namespace policy with Open VSX administrators if there is an ownership or collision conflict. Microsoft says Marketplace publisher transfer is currently unsupported; **do not project that response onto Open VSX**, which has separate operator rules.
 4. Keep any Open VSX access token or trusted-publishing credentials restricted to the correct account and CI secret store. Never write a token to a repository, chat, issue body, log, screenshot, test fixture or VSIX artifact.
 5. Preserve the current `SanskarCodes.lineloom` registry listing while assessing transfer and migration; no deletion or deactivation should be used as a shortcut.
 
