@@ -1,6 +1,6 @@
 # LineLoom documentation
 
-**Publisher migration:** [SanskarCodes → Sanskar installation and maintainer checklist](publisher-migration.md) (new registry listings not yet verified). Planned sequence: [v1.4.5 GitHub-only preparation](releases/v1.4.5-plan.md) → [Microsoft-confirmed v1.5.0 Stable](releases/v1.5.0-plan.md) → [separately authorized Open VSX rollout](open-vsx-migration.md). **All three are plans, not published versions or verified transfers.**
+**Publisher migration:** [SanskarCodes → Sanskar installation and maintainer checklist](publisher-migration.md) (new registry listings not yet verified). Planned sequence: [v1.4.5 GitHub-only preparation](releases/v1.4.5-plan.md) → [alternative-identity-gated v1.5.0 Stable](releases/v1.5.0-plan.md) → [separately authorized Open VSX rollout](open-vsx-migration.md). **All three are plans, not published versions or verified transfers. Microsoft Support replied on 2026-11-19 that an extension cannot currently transfer between Marketplace publisher IDs.**
 
 **Current verified GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) (2026-10-25). **Latest verified GitHub pre-release:** [v1.4.4](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) (2026-11-08), with separately checksummed preview VSIX identities `SanskarCodes.lineloom` and `Sanskar.lineloom`. This does **not** migrate existing registry listings or user installations. The latest independently verified Open VSX stable was v1.3.0 on 2026-10-25; the maintainer separately published Marketplace v1.3.0. Verify each registry again before claiming its current public version. npm CLI source and package publication are separate. No first-party LineLoom Code model weights have been released.
 
@@ -50,7 +50,7 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 
 - [Roadmap](roadmap.md): current state, proposed milestone sequencing and prioritization.
 - [v1.4.5 migration preparation](releases/v1.4.5-plan.md): unshipped preview candidate scope, support decision log, QA and safety gates.
-- [v1.5.0 Stable release plan](releases/v1.5.0-plan.md): blocked on official Microsoft publisher migration and independent release validation.
+- [v1.5.0 Stable release plan](releases/v1.5.0-plan.md): blocked on owner-approved alternative to unsupported Microsoft publisher transfer and independent release validation.
 - [Open VSX registry migration](open-vsx-migration.md): separate namespace, credentials, approval and public listing verification.
 - [v1.3.1 maintenance plan](releases/v1.3.1-plan.md): historical preview scope, automated gates and **uncompleted manual/stable QA**. The GitHub preview has shipped, but a stable/registry release has not.
 - [Upcoming feature proposals](feature-proposals.md): optional model readiness, sidebar polish, performance benchmarks, C#/Dart investigations and longer-term research. **Not shipped.**
