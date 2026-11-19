@@ -32,6 +32,7 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | [Selected related-file context](privacy/selected-context.md) | Explicit selection, 2 KiB/file bounds, revocation and limitations |
 | [Security reporting](../SECURITY.md) | How to report vulnerabilities without exposing details |
 | [VSIX packager mitigation](security/vsce-advisory-mitigation.md) | Historical high-severity mitigation, remaining moderate development dependencies |
+| [18 November 2026 dependency audit triage](security/dependency-audit-2026-11-18.md) | Historical development-tool audit failure, withdrawn advisory status and required re-verification gates |
 
 ## Contribute and validate
 
