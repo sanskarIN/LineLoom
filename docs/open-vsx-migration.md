@@ -20,7 +20,7 @@ Official reference material: [Open VSX publishing guide](https://github.com/ecli
 - [ ] Use the exact authorized, tested release commit; verify `publisher: "Sanskar"`, extension name, version, stable/pre-release channel, SHA-256 and every shipped file. A `SanskarCodes` archive must never be uploaded under `Sanskar`.
 - [ ] Compare the separate candidate VSIX publisher builds with the existing independent byte-parity script; permit only documented identity differences.
 - [ ] Repeat clean editor installation and explicit legacy-to-new migration in a synthetic profile, with backed-up settings, reset extension-private state and fresh remote-endpoint consent. Do not leave two enabled copies sharing `lineloom.*` commands/settings.
-- [ ] Require green security, source/packager checks, extension-host tests, relevant platform checks and owner-approved manual acceptance. The active [audit blocker #297](https://github.com/sanskarIN/LineLoom/issues/297) cannot be ignored as a release pass.
+- [ ] Require green security, source/packager checks, extension-host tests, relevant platform checks and owner-approved manual acceptance. Recheck [security tracking #297](https://github.com/sanskarIN/LineLoom/issues/297) against the exact candidate: 19 November audits passed after an advisory withdrawal, but neither that history nor an unreviewed warning is release authorization.
 - [ ] Confirm the destination uses the right publisher permission. Treat a GitHub release as evidence of source assets only, not proof of registry publication.
 - [ ] Obtain explicit owner approval for **Open VSX** version, release channel and exact package, separately from Microsoft and GitHub authorizations.
 
