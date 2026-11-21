@@ -395,6 +395,12 @@ export class CompletionEngine implements vscode.InlineCompletionItemProvider, vs
         if (this.controller === controller) this.controller = undefined;
       }
     } catch {
+      // A superseded request can reject during an asynchronous privacy or
+      // settings check after a newer completion has already started. Never
+      // replace the newer request's UI state with a stale error, or count it
+      // as a current failure.
+      if (requestId !== this.generation || token.isCancellationRequested ||
+          !isTargetCurrent()) return;
       if (activityEpoch === this.activityEpoch) this.metrics.failed++;
       this.onState("error");
       return;

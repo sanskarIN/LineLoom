@@ -47,10 +47,17 @@ export async function isResponseStillEligible(
   environmentCurrent: () => boolean,
   checkFile: (patterns: readonly string[], collectTiming: boolean) => Promise<boolean>
 ): Promise<boolean> {
-  const before = readLatest();
-  if (!isRequestConfigurationCurrent(initial, before, language, manual) ||
-      !environmentCurrent()) return false;
-  if (!await checkFile(before.excludedPaths, before.performanceDiagnostics)) return false;
-  return environmentCurrent() &&
-    isRequestConfigurationCurrent(initial, readLatest(), language, manual);
+  try {
+    const before = readLatest();
+    if (!isRequestConfigurationCurrent(initial, before, language, manual) ||
+        !environmentCurrent()) return false;
+    if (!await checkFile(before.excludedPaths, before.performanceDiagnostics)) return false;
+    return environmentCurrent() &&
+      isRequestConfigurationCurrent(initial, readLatest(), language, manual);
+  } catch {
+    // A filesystem, workspace or settings inspection can fail while the
+    // request is pending. Treat it as a denial, never as eligible ghost text.
+    // Do not surface exception text: it may contain private filenames.
+    return false;
+  }
 }
