@@ -2,6 +2,13 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — publisher migration release planning (documentation only)
+
+- Record planned **v1.4.5 GitHub pre-release** as migration-preparation/testing, **v1.5.0 Stable** as blocked until the owner selects an independently verified alternative to unsupported Marketplace publisher transfer, and a later separately approved **Open VSX** namespace migration.
+- Record the **2026-11-19 Microsoft Marketplace Support response** to the 2026-11-18 inquiry: publisher-to-publisher extension transfers are currently **not supported**. Preserve the original `SanskarCodes.lineloom` listing, prepare a distinct compliant listing/manual reinstall only after owner approval, and maintain rollback guidance.
+- Link full [v1.4.5 plan](docs/releases/v1.4.5-plan.md), [v1.5.0 Stable gate](docs/releases/v1.5.0-plan.md), [Open VSX plan](docs/open-vsx-migration.md) and [migration guide](docs/publisher-migration.md).
+- This documentation change does **not** bump the manifest, publish a GitHub tag or VSIX, migrate registry users, authorize release/publishing credentials, or release trained model weights.
+
 ## Unreleased — experimental Zig completion mode
 
 - Recognize VS Code's `zig` editor language ID with an explicit opt-in, fixed instruction-mode language guidance and optional installed-model override. Preserve the existing nine default-enabled languages.

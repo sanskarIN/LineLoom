@@ -9,7 +9,7 @@
 
 LineLoom is a free MIT-licensed VS Code extension for context-aware inline autocomplete with your own Ollama model. It uses native editor ghost text, and does not require a LineLoom account, cloud inference provider, or telemetry.
 
-**In development (not in the published v1.4.3 VSIX):** session-only Pause/Resume Suggestions for This File, exposed through Quick Actions, Control Center and the Command Palette. It blocks both manual and automatic completion for a single local file without changing other files or persisting file identities.
+**In development (not in the published v1.4.4 VSIX):** session-only Pause/Resume Suggestions for This File, exposed through Quick Actions, Control Center and the Command Palette. It blocks both manual and automatic completion for a single local file without changing other files or persisting file identities.
 
 **Open issue #138 — experimental CUDA C++ support (unreleased):** `.cu`/`.cuh` editor mode `cuda-cpp` (and the optional `cuda` alias) can now use LineLoom after explicit language opt-in. The nine defaults, all privacy gates, native FIM bytes and installed model settings are preserved. No CUDA compiler, GPU tooling or model weights are added; physical CUDA code quality and editor QA are still unverified. See [CUDA language setup](docs/languages/README.md#cuda-c-completion-issue-138-unreleased-opt-in).
 
@@ -26,6 +26,8 @@ LineLoom is a free MIT-licensed VS Code extension for context-aware inline autoc
 **Unreleased Python autocomplete context improvement:** generic local instruction-mode models can now receive fixed Python guidance from executable replacement expressions in bounded f-strings, without misreading literal text, doubled braces or format specifications as code. Nested strings and brace depth are tracked conservatively; this is not a Python parser or proof of improved real-model quality. Native FIM prefix/suffix bytes and existing privacy controls remain unchanged.
 
 > **Publisher transition planned:** `SanskarCodes.lineloom` remains the verified published extension identity. The [GitHub **v1.4.4 pre-release**](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) is now published with a separate [**Sanskar.lineloom** VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.4/LineLoom-1.4.4-Sanskar.vsix) and [legacy SanskarCodes VSIX](https://github.com/sanskarIN/LineLoom/releases/download/v1.4.4/LineLoom-1.4.4-SanskarCodes.vsix). This is a **manual reinstall**, not an automatic update, and neither new registry listing is claimed live. Back up settings and uninstall the legacy ID before enabling the new one. See [publisher migration instructions](docs/publisher-migration.md) and the [website walkthrough](https://sanskarin.github.io/LineLoom/publisher-migration.html).
+>
+> **Planned release sequence (no new publication yet):** [v1.4.5](docs/releases/v1.4.5-plan.md) is reserved for GitHub pre-release migration preparation and testing. [v1.5.0 Stable](docs/releases/v1.5.0-plan.md) is **blocked after Microsoft Support confirmed on 2026-11-19 that transferring extensions between publisher IDs is not supported**. A separate compliant listing with manual migration, or continued use of the legacy publisher, needs an explicit owner decision, security/manual QA and release approval. [Open VSX `Sanskar` migration](docs/open-vsx-migration.md) requires a **separate** Eclipse namespace and publication decision. The original Marketplace/Open VSX listings remain in place.
 
 > **Latest GitHub stable release: v1.3.0 (published 2026-10-25).** The verified stable-channel VSIX and SHA-256 checksum are available on GitHub. Automated CI and isolated installations passed; real Ollama, physical OS and accessibility/manual QA remain unverified. Marketplace and Open VSX have separate release processes.
 
@@ -278,7 +280,7 @@ Website content is excluded from the extension VSIX package. This does not add h
 
 **Documentation index:** [Browse all guides](docs/README.md).
 
-**Development and upcoming features:** [forward-looking roadmap](docs/roadmap.md) · [v1.3.1 maintenance plan](docs/releases/v1.3.1-plan.md) · [proposed future features](docs/feature-proposals.md) · [native sidebar guide](docs/sidebar.md) · [package-manager distribution](docs/packages.md) · [sanitized release evidence](docs/qa/release-evidence.md). These plans describe **unreleased ideas**, not features already in the installed extension.
+**Development and upcoming features:** [forward-looking roadmap](docs/roadmap.md) · [v1.4.5 migration preview plan](docs/releases/v1.4.5-plan.md) · [v1.5.0 stable gate](docs/releases/v1.5.0-plan.md) · [Open VSX migration plan](docs/open-vsx-migration.md) · [v1.3.1 maintenance plan](docs/releases/v1.3.1-plan.md) · [proposed future features](docs/feature-proposals.md) · [native sidebar guide](docs/sidebar.md) · [package-manager distribution](docs/packages.md) · [sanitized release evidence](docs/qa/release-evidence.md). These plans describe **unreleased ideas**, not features already in the installed extension.
 
 ## Release verification status
 

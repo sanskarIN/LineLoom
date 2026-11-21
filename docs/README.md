@@ -1,8 +1,8 @@
 # LineLoom documentation
 
-**Publisher migration:** [SanskarCodes → Sanskar installation and maintainer checklist](publisher-migration.md) (new registry listings not yet verified).
+**Publisher migration:** [SanskarCodes → Sanskar installation and maintainer checklist](publisher-migration.md) (new registry listings not yet verified). Planned sequence: [v1.4.5 GitHub-only preparation](releases/v1.4.5-plan.md) → [alternative-identity-gated v1.5.0 Stable](releases/v1.5.0-plan.md) → [separately authorized Open VSX rollout](open-vsx-migration.md). **All three are plans, not published versions or verified transfers. Microsoft Support replied on 2026-11-19 that an extension cannot currently transfer between Marketplace publisher IDs.**
 
-**Current GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0), published 2026-10-25. **Latest GitHub pre-release:** [v1.4.3](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.3), published 2026-11-01 with **two separate preview VSIX identities**: `SanskarCodes.lineloom` and `Sanskar.lineloom`. This is **not** a stable release, automatic publisher migration or independent registry update. Open VSX v1.3.0 Stable was verified on 2026-10-25 and Marketplace was separately updated to v1.3.0 by the maintainer; verify each live registry before quoting its current version. GitHub previews, registries, and the npm CLI are independent. No first-party LineLoom Code model weights have been released.
+**Current verified GitHub stable:** [v1.3.0](https://github.com/sanskarIN/LineLoom/releases/tag/v1.3.0) (2026-10-25). **Latest verified GitHub pre-release:** [v1.4.4](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) (2026-11-08), with separately checksummed preview VSIX identities `SanskarCodes.lineloom` and `Sanskar.lineloom`. This does **not** migrate existing registry listings or user installations. The latest independently verified Open VSX stable was v1.3.0 on 2026-10-25; the maintainer separately published Marketplace v1.3.0. Verify each registry again before claiming its current public version. npm CLI source and package publication are separate. No first-party LineLoom Code model weights have been released.
 
 This is a documentation index for users, maintainers and contributors. Proposed plans are labeled separately from implemented features.
 
@@ -12,6 +12,7 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | --- | --- |
 | [Main README](../README.md) | What LineLoom is, install methods, settings, supported languages and general setup |
 | [GitHub v1.3.0 stable release](releases/v1.3.0.md) | Downloadable stable VSIX, checksum and shipped features |
+| [GitHub v1.4.4 pre-release](releases/v1.4.4.md) | Latest publicly verified dual-publisher GitHub preview with independent SHA-256 assets; not a registry migration |
 | [GitHub v1.4.3 pre-release](releases/v1.4.3.md) | Dual-publisher GitHub-only preview VSIX files, separate SHA-256 checksums and manual migration limits |
 | [GitHub v1.4.2 pre-release](releases/v1.4.2.md) | Opt-in HTML/CSS/Lua, native FIM routing and model-research tooling (no trained weights) |
 | [GitHub v1.3.1 pre-release](releases/v1.3.1.md) | Earlier preview VSIX, sidebar refinements and outstanding manual QA |
@@ -30,8 +31,8 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 | [Ignore rules](privacy/ignore-rules.md) | Scoped path exclusions, safe file eligibility |
 | [Selected related-file context](privacy/selected-context.md) | Explicit selection, 2 KiB/file bounds, revocation and limitations |
 | [Security reporting](../SECURITY.md) | How to report vulnerabilities without exposing details |
-| [VSIX packager mitigation](security/vsce-advisory-mitigation.md) | Historical reviewed packager baseline and compatibility limits |
-| [18 November 2026 dependency audit triage](security/dependency-audit-2026-11-18.md) | Current high-severity development-tool audit blocker, exact lockfile exposure and required remediation gates |
+| [VSIX packager mitigation](security/vsce-advisory-mitigation.md) | Historical high-severity mitigation, remaining moderate development dependencies |
+| [18 November 2026 dependency audit triage](security/dependency-audit-2026-11-18.md) | Historical development-tool audit failure, withdrawn advisory status and required re-verification gates |
 
 ## Contribute and validate
 
@@ -49,6 +50,9 @@ This is a documentation index for users, maintainers and contributors. Proposed 
 ## Planning and history
 
 - [Roadmap](roadmap.md): current state, proposed milestone sequencing and prioritization.
+- [v1.4.5 migration preparation](releases/v1.4.5-plan.md): unshipped preview candidate scope, support decision log, QA and safety gates.
+- [v1.5.0 Stable release plan](releases/v1.5.0-plan.md): blocked on owner-approved alternative to unsupported Microsoft publisher transfer and independent release validation.
+- [Open VSX registry migration](open-vsx-migration.md): separate namespace, credentials, approval and public listing verification.
 - [v1.3.1 maintenance plan](releases/v1.3.1-plan.md): historical preview scope, automated gates and **uncompleted manual/stable QA**. The GitHub preview has shipped, but a stable/registry release has not.
 - [Upcoming feature proposals](feature-proposals.md): optional model readiness, sidebar polish, performance benchmarks, C#/Dart investigations and longer-term research. **Not shipped.**
 - [v1.3.0 release plan/history](releases/v1.3.0-plan.md): completed publishing vs deferred hands-on checks.
