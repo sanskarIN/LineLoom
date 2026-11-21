@@ -1,6 +1,6 @@
 # Dependency security audit triage — 18 November 2026
 
-**Status: BLOCKING / NO RELEASE APPROVAL.** This is a snapshot of a failing, independent GitHub Actions dependency audit, **not** a mitigation or waiver. Follow the live [security tracking issue #297](https://github.com/sanskarIN/LineLoom/issues/297) and current CI before making a publishing decision.
+**Status: HISTORICAL FAILURE ON 18 NOV / AUDIT RECOVERY VERIFIED ON 19 NOV / NO RELEASE APPROVAL (updated 21 November 2026).** The 18 November audit failures below are historical evidence, not a current assertion that the full audit remains red. GitHub withdrew the cited picomatch advisory, and unchanged full-audit checks subsequently passed. Neither the withdrawal nor a passing CI job is a dependency patch, risk waiver, or permission to publish. Follow [security tracking #297](https://github.com/sanskarIN/LineLoom/issues/297) and the exact candidate's current CI.
 
 ## Evidence and precise scope
 
@@ -26,7 +26,9 @@ The table is based on the committed lockfile at `main` commit `484fa5c544c08e062
 
 GitHub's [canonical advisory page for GHSA-fc5q-39xc-vjpf](https://github.com/advisories/GHSA-fc5q-39xc-vjpf) now states **withdrawn on 18 November 2026**. This update **postdates the cited audit failures**; the 23 / 12 moderate / 11 high counts above accurately describe those historical runs, not a fresh 19 November audit. No upstream package patch or independent assessment of the underlying pattern is established by the withdrawal itself.
 
-**Required next action:** on the current candidate commit, run clean `npm ci`, `npm run test:packager-security`, `npm audit --omit=dev --audit-level=moderate` and `npm audit --audit-level=high` **without exemptions**. Record the new CI job URL and *remaining* findings, including whether withdrawal has propagated into npm's advisory feed. Keep the security gate red and the release blocked until the latest full audit genuinely passes, or a separate explicit, dated owner decision documents a narrowly scoped exception. All unrelated advisories still need independent evaluation.
+**Recovery evidence (19 November 2026):** [PR #295 full dependency-security workflow](https://github.com/sanskarIN/LineLoom/actions/runs/44564138409), [PR #296 full dependency-security workflow](https://github.com/sanskarIN/LineLoom/actions/runs/44563677657), and [the post-#298 `main` dependency-security workflow](https://github.com/sanskarIN/LineLoom/actions/runs/44563245641) all completed successfully, including the **unaltered** runtime `npm audit --omit=dev --audit-level=moderate` and full `npm audit --audit-level=high` steps. This is a passing audit observation for those commits, **not** proof that any package was patched or that every moderate-only development-tree finding was resolved. Both PRs were merged on 21 November; fresh post-merge `main` checks must be assessed separately before release.
+
+**Required next action:** for each subsequent release candidate, run clean `npm ci`, `npm run test:packager-security`, `npm audit --omit=dev --audit-level=moderate` and `npm audit --audit-level=high` **without exemptions**. Record candidate SHA, successful workflow URL and remaining moderate-only development findings. A newly failing security audit remains a release blocker; investigate remaining advisory paths and supported upstream fixes instead of applying forced upgrades. Keep human QA and publisher authorization independent of CI.
 
 ## Exposure and temporary containment
 
@@ -38,13 +40,13 @@ Until a compatible supported fix is verified:
 2. Avoid passing unreviewed external glob patterns, arbitrary user-supplied inputs or untrusted project archives into build/publisher tooling. Keep CI token permissions minimal and avoid running sensitive publishing credentials on untrusted pull-request code.
 3. Do **not** use `npm audit fix --force` to switch Vitest or the VSIX publisher to an untested major version. Do not force an incompatible MSAL major under the intentionally pinned Azure Identity dependency.
 4. When upstream provides usable fixes, regenerate the lockfile using npm in a clean checkout; validate the exact package graph with `npm ci`, reviewed VSIX packager compatibility, all cross-platform checks, mocked host tests, VSIX manifest/file-parity/checksum and clean install/upgrade.
-5. Keep [#297](https://github.com/sanskarIN/LineLoom/issues/297) open until a reviewed remediation is proven. If upstream remains unpatched, require an **explicit, dated owner security decision** before any release exception; no such exception is granted by this document.
+5. Keep [#297](https://github.com/sanskarIN/LineLoom/issues/297) open for the remaining moderate-only development-tree assessment and future advisory changes. A withdrawn advisory is not remediation. If a new high/critical blocker appears and upstream remains unpatched, require an **explicit, dated owner security decision** before any release exception; no such exception is granted by this document.
 
 ## Release-channel consequences
 
 - The already published [GitHub v1.4.4 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4) is a historical artifact; its previous passing audit does not override **current** findings.
 - The planned **v1.4.5 GitHub pre-release** must meet current release security gates or receive a separately documented owner-approved security decision; writing a release plan is not authorization.
-- The conditional **v1.5.0 Stable** remains blocked by Microsoft publisher confirmation and completion, as well as current security, QA and owner approval. The Open VSX migration requires separate authorization and verification.
+- The conditional **v1.5.0 Stable** remains blocked by the unchosen/unfinished alternative to Microsoft's unsupported publisher transfer, as well as current security, QA and owner approval. The Open VSX migration requires separate authorization and verification.
 - No Marketplace, Open VSX, npm CLI or GitHub publication was performed during this audit triage.
 
-Related: [packager compatibility history](vsce-advisory-mitigation.md), [publishing requirements](../qa/release-evidence.md), [planned v1.4.5 and v1.5.0 migration documentation](https://github.com/sanskarIN/LineLoom/pull/296) (pending review).
+Related: [packager compatibility history](vsce-advisory-mitigation.md), [publishing requirements](../qa/release-evidence.md), [merged v1.4.5 and v1.5.0 migration documentation](https://github.com/sanskarIN/LineLoom/pull/296).
