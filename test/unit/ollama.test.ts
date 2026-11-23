@@ -15,6 +15,17 @@ describe("Ollama streaming NDJSON", () => {
   it("rejects malformed JSON", async () => {
     await expect(parseNdjson(stream(["not-json\n"]))).rejects.toThrow();
   });
+  it("never exposes malformed NDJSON source fragments in parser errors", async () => {
+    const secret = "private-token-never-expose-in-errors";
+    try {
+      await parseNdjson(stream([secret + "\n"]));
+      expect.fail("Malformed NDJSON must fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Invalid Ollama JSON event.");
+      expect((error as Error).message).not.toContain(secret);
+    }
+  });
   it("rejects truncated streams", async () => {
     await expect(parseNdjson(stream(['{"response":"hi"}\n']))).rejects.toThrow(/Incomplete/);
   });
@@ -150,7 +161,7 @@ describe("Ollama streaming NDJSON", () => {
       const timeout = new Promise<never>((_resolve, reject) => {
         timer = setTimeout(() => reject(new Error("stream-cancel-stalled")), 500);
       });
-      await expect(Promise.race([parseNdjson(body), timeout])).rejects.toThrow(SyntaxError);
+      await expect(Promise.race([parseNdjson(body), timeout])).rejects.toThrow("Invalid Ollama JSON event.");
     } finally {
       if (timer) clearTimeout(timer);
     }
