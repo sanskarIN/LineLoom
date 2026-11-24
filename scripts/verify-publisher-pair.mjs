@@ -7,6 +7,7 @@
  * CI uses unzip on Linux. Pure contract tests run on every OS without unzip.
  */
 import assert from "node:assert/strict";
+import { validateVsixEntries } from "./vsix-archive-safety.mjs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
@@ -40,6 +41,8 @@ function assertEntries(entries, label) {
 export function verifyPublisherPair(legacy, next) {
   assertEntries(legacy.entries, "Legacy archive");
   assertEntries(next.entries, "Sanskar archive");
+  validateVsixEntries(legacy.entries);
+  validateVsixEntries(next.entries);
   const oldFiles = new Set(legacy.entries);
   const newFiles = new Set(next.entries);
   for (const path of ["extension/package.json", "extension.vsixmanifest", ...required]) {
