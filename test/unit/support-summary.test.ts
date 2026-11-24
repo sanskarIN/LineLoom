@@ -19,7 +19,7 @@ const summary: SupportSummarySnapshot = {
 
 describe("explicitly copied source-free support summary", () => {
   it("includes bounded counters and manually checked states, but not diagnostics without opt-in", () => {
-    const text = formatSupportSummary(summary);
+    const text = formatSupportSummary(summary, "SanskarCodes.lineloom");
     expect(text).toContain("Requests (count): 12");
     expect(text).toContain("Deferred automatic retries (count): 5");
     expect(text).toContain("Active editor model last check: missing");
@@ -30,7 +30,7 @@ describe("explicitly copied source-free support summary", () => {
     expect(text.length).toBeLessThan(2400);
   });
   it("includes only aggregate latency when diagnostics opted in", () => {
-    const text = formatSupportSummary({ ...summary, diagnosticsEnabled: true, relatedContextEnabled: true });
+    const text = formatSupportSummary({ ...summary, diagnosticsEnabled: true, relatedContextEnabled: true }, "SanskarCodes.lineloom");
     expect(text).toContain("Recent inference p50: 55 ms");
     expect(text).toContain("Recent inference p95: 90 ms");
     expect(text).toContain("Explicit selected related files (count): 2");
@@ -46,7 +46,7 @@ describe("explicitly copied source-free support summary", () => {
       stats: { ...summary.stats!, requests: Number.NaN, completions: -100,
         recentLatencyP50Ms: Infinity, recentLatencyP95Ms: -5 }
     } as unknown as SupportSummarySnapshot;
-    const text = formatSupportSummary({ ...input, diagnosticsEnabled: true });
+    const text = formatSupportSummary({ ...input, diagnosticsEnabled: true }, "SanskarCodes.lineloom");
     expect(text).not.toContain("SECRET_MARKER");
     expect(text).not.toContain("invalid.example");
     expect(text).not.toContain("private.ts");
@@ -54,8 +54,25 @@ describe("explicitly copied source-free support summary", () => {
     expect(text).toContain("Recent inference p50: not measured");
     expect(text).toContain("Recent inference p95: not measured");
   });
+  it("reports the installed publisher preview identity rather than a hardcoded legacy ID", () => {
+    expect(formatSupportSummary(summary, "SanskarCodes.lineloom"))
+      .toContain("Extension ID: SanskarCodes.lineloom");
+    expect(formatSupportSummary(summary, "Sanskar.lineloom"))
+      .toContain("Extension ID: Sanskar.lineloom");
+    expect(formatSupportSummary(summary, "Sanskar.lineloom"))
+      .not.toContain("Extension ID: SanskarCodes.lineloom");
+  });
+  it("never interpolates an unrecognized extension identity into clipboard diagnostics", () => {
+    const maliciousId = "Sanskar.lineloom\\nSECRET_MARKER https://invalid.example/private.ts";
+    const copied = formatSupportSummary(summary, maliciousId);
+    expect(copied).toContain("Extension ID: unrecognized");
+    expect(copied).not.toContain("SECRET_MARKER");
+    expect(copied).not.toContain("invalid.example");
+    expect(copied).not.toContain("private.ts");
+    expect(formatSupportSummary(summary, null)).toContain("Extension ID: unrecognized");
+  });
   it("handles no statistics without attempting model discovery or file reads", () => {
-    const text = formatSupportSummary({ ...summary, stats: undefined });
+    const text = formatSupportSummary({ ...summary, stats: undefined }, "SanskarCodes.lineloom");
     expect(text).toContain("Requests (count): 0");
     expect(text).not.toMatch(/\/api\/tags|\/api\/generate/);
   });
