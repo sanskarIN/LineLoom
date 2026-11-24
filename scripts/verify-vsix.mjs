@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import { openSync, readSync, statSync, closeSync, readFileSync } from "node:fs";
 import assert from "node:assert/strict";
 import { validateVsixEntries } from "./vsix-archive-safety.mjs";
+import { assertVsixIdentityMatches, hasVsixPreReleaseProperty } from "./vsix-manifest-identity.mjs";
 import { resolve } from "node:path";
 
 const vsixArg = process.argv[2];
@@ -60,7 +61,8 @@ try {
   assert.ok(!(process.env.LINELOOM_EXPECT_PRE_RELEASE === "1" &&
     process.env.LINELOOM_EXPECT_STABLE === "1"), "Conflicting packaging expectations");
   const manifest = execFileSync("unzip", ["-p", path, "extension.vsixmanifest"], { encoding: "utf8" });
-  const preRelease = manifest.includes("Microsoft.VisualStudio.Code.PreRelease");
+  assertVsixIdentityMatches(manifest, packaged);
+  const preRelease = hasVsixPreReleaseProperty(manifest);
   if (process.env.LINELOOM_EXPECT_PRE_RELEASE === "1") {
     assert.ok(preRelease, "VSIX missing the actual VS Code pre-release marker");
   }
