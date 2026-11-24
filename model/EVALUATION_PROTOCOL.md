@@ -53,8 +53,10 @@ The source benchmark v10 recognizes `lineloom-code` and
 extension routing. This name only selects a request format; it is not
 evidence that any checkpoint is installed or supports FIM. Use
 `--mode instruction` to force a generic comparison if needed.
-The current Ollama report protocol is `lineloom-synthetic-v11`, which does not
-compare with earlier v1–v10 reports; regenerate both reports locally.
+The current Ollama report protocol is `lineloom-synthetic-v12`, which does not
+compare with earlier v1–v11 reports; regenerate both reports locally.
+The v12 scoring change adds a reasoning-envelope format signal; it does not
+prove a first-party model is trained or improve actual completion quality.
 Use separate notes for cold and warmed conditions. The benchmark is
 sequential and capped at five runs per fixture; do not assume independence
 from repeated runs or infer human usefulness from strict string equality.
@@ -88,6 +90,24 @@ This change is **protocol and test implementation only**, not a model run,
 human-editor evaluation, trained model, automatic Ollama installation or a
 published release. Produce new baseline/candidate reports on the same commit
 and hardware before making any measured comparisons.
+
+## 3a2. Instruction-prompt source presentation and benchmark scope
+
+Production instruction-mode completions now render invisible Unicode format and
+direction controls, supplementary tag characters and lone surrogates as visible
+escape spellings inside the `| `-prefixed source data lane. Normal Unicode
+letters, marks, emoji, indentation tabs and ZWNJ/ZWJ are preserved. Native FIM
+still uses the original unmodified source prefix and suffix.
+
+The synthetic evaluator's checked-in 40 fixtures contain no such hidden
+characters, so **their v12 generated request bytes and request hashes do not
+change** due to this extension-only safeguard. This does **not** mean the
+evaluator implements or measures the new hostile-Unicode framing behavior:
+the evaluator's older `frameSyntheticSource` helper still covers only CR/LF,
+VT, FF, NEL and Unicode line/paragraph separators. Do not assert universal
+CLI/extension prompt parity or model-quality improvements for invisible control
+characters on the basis of these 40 fixtures. Any future change to evaluated
+request bytes or scoring requires a protocol bump and regenerated baselines.
 
 ## 3a1. Invisible supplementary Unicode safety scoring (Ollama v11)
 
