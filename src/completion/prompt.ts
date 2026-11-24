@@ -1,25 +1,11 @@
 import type { DocumentContext } from "../context/extract";
+import { frameUntrustedSource } from "./source-framing";
 import type { LanguageSpec } from "../languages/registry";
 import { rustContextHints } from "../languages/rust-context";
 import { nativeContextHints } from "../languages/native-context";
 import { scriptContextHints } from "../languages/script-context";
 export interface PromptData { prompt: string; suffix?: string }
 
-/**
- * Put each untrusted source line in a visibly quoted data lane. A source
- * comment containing fake </reference>, </before> or "Completion:" markers
- * must not be able to masquerade as a top-level prompt instruction.
- * This is presentation isolation, NOT a guarantee against prompt injection.
- * Native FIM inputs bypass this function and stay byte-exact.
- */
-function frameUntrustedSource(source: string): string {
-  const separators = new Set([0x0b, 0x0c, 0x85, 0x2028, 0x2029]);
-  const escaped = [...source.replace(/\r\n?/g, "\n")].map(char => {
-    const code = char.charCodeAt(0);
-    return separators.has(code) ? "\\u" + code.toString(16).padStart(4, "0") : char;
-  }).join("");
-  return escaped.split("\n").map(line => "| " + line).join("\n");
-}
 /**
  * Only explicitly recognized suffix-aware families receive native Ollama FIM.
  * The opt-in lineloom-code local tag is reserved for a future independently
