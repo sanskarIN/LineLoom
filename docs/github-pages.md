@@ -10,7 +10,7 @@ https://sanskarin.github.io/LineLoom/
 
 The public site at https://sanskarin.github.io/LineLoom/ is accessible,
 and the GitHub Actions workflow **Deploy LineLoom GitHub Pages** has
-previously completed 31 runs; a subsequent verified deployment succeeded on November 1, 2026.
+previously completed 31 runs; a subsequent verified deployment succeeded on November 21, 2026 ([run 44891482278](https://github.com/sanskarIN/LineLoom/actions/runs/44891482278)), immediately before a later Pages-API failure.
 That confirms Pages is already activated for the repository. No settings
 toggle is required to permit ordinary `site/**` updates. The updated workflow triggers on **each main-branch push** (including documentation
 and non-site changes), allowing normal GitHub Pages deployment history without
@@ -24,7 +24,7 @@ assuming an earlier successful deployment proves the current version is live.
 
 ## November 21, 2026: Pages API failure and guarded retry
 
-[Workflow run 44891536340](https://github.com/sanskarIN/LineLoom/actions/runs/44891536340) failed **after** the static site tests passed. The `actions/configure-pages@v6` step returned `Get Pages site failed ... Server Error` (an HTTP 5xx response); the upload was skipped and the deploy job did not run. This evidence does **not** show a source-test, HTML, styling or asset failure, and the error alone does not prove Pages was disabled.
+[Workflow run 44891536340](https://github.com/sanskarIN/LineLoom/actions/runs/44891536340) failed **after** the static site tests passed. The `actions/configure-pages@v6` step returned `Get Pages site failed ... Server Error` (an HTTP 5xx response); the upload was skipped and the deploy job did not run. This evidence does **not** show a source-test, HTML, styling or asset failure, and the error alone does not prove Pages was disabled. The preceding [successful deployment run 44891482278](https://github.com/sanskarIN/LineLoom/actions/runs/44891482278) further distinguishes the failure from a permanently disabled Pages site.
 
 The workflow now makes **one conditional retry** of `actions/configure-pages@v6` if the first attempt fails. It does not ignore the second failure: the site is uploaded only after configuration succeeds and deployment still depends on the successful build. This improves resilience to a transient GitHub API error; it does **not** guarantee that a persistent GitHub-side failure or incorrect Pages settings are repaired.
 
