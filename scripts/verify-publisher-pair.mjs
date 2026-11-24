@@ -8,6 +8,7 @@
  */
 import assert from "node:assert/strict";
 import { validateVsixEntries } from "./vsix-archive-safety.mjs";
+import { assertVsixIdentityMatches, hasVsixPreReleaseProperty } from "./vsix-manifest-identity.mjs";
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
@@ -65,14 +66,11 @@ export function verifyPublisherPair(legacy, next) {
   assert.equal(JSON.stringify(oldContract), JSON.stringify(nextContract),
     "Publisher packages differ in package.json beyond the publisher ID");
 
-  // The VSIX identity must match the package identity. Checking package.json
-  // alone could miss a stale VSIX metadata file from another publisher.
-  for (const [archive, publisher] of [[legacy, "SanskarCodes"], [next, "Sanskar"]]) {
-    const xml = archive.read("extension.vsixmanifest").toString("utf8");
-    assert.ok(new RegExp('(?:^|\\s)Publisher="' + publisher + '"').test(xml),
-      "VSIX identity does not match the intended publisher");
-    assert.ok(new RegExp('(?:^|\\s)Id="lineloom"').test(xml),
-      "VSIX identity does not match the extension name");
+  // The VSIX identity must agree with the corresponding package manifest.
+  // A stale or forged extension.vsixmanifest cannot silently change the ID
+  // or version seen by a registry even when package.json looks correct.
+  for (const [archive, manifest] of [[legacy, oldManifest], [next, nextManifest]]) {
+    assertVsixIdentityMatches(archive.read("extension.vsixmanifest").toString("utf8"), manifest);
   }
 
   // Every published payload file must exist under both identities. Comparing
@@ -91,10 +89,8 @@ export function verifyPublisherPair(legacy, next) {
     assert.equal(fingerprint(legacy.read(path)), fingerprint(next.read(path)),
       "Publisher VSIX file content differs: " + path);
   }
-  const oldPreview = legacy.read("extension.vsixmanifest").toString("utf8")
-    .includes("Microsoft.VisualStudio.Code.PreRelease");
-  const newPreview = next.read("extension.vsixmanifest").toString("utf8")
-    .includes("Microsoft.VisualStudio.Code.PreRelease");
+  const oldPreview = hasVsixPreReleaseProperty(legacy.read("extension.vsixmanifest").toString("utf8"));
+  const newPreview = hasVsixPreReleaseProperty(next.read("extension.vsixmanifest").toString("utf8"));
   assert.equal(oldPreview, newPreview, "Publisher package release channels differ");
   console.log("PASS: publisher identity is the only manifest-contract difference; " +
     "all other shipped files are byte-identical; release channels match.");
