@@ -105,6 +105,14 @@ test("malformed oversized and nonstring XML fail closed", () => {
   }
 });
 
+test("truncated or unmatched XML comments cannot smuggle identity or channel markers", () => {
+  const malformed = '<!-- <Identity Id="lineloom" Version="1.4.4" Publisher="Sanskar" />';
+  assert.throws(() => inspectVsixIdentity(malformed), /malformed comments/);
+  assert.throws(() => hasVsixPreReleaseProperty(
+    '<!-- <Property Id="Microsoft.VisualStudio.Code.PreRelease" />'), /malformed comments/);
+  assert.throws(() => inspectVsixIdentity(stableXml + '-->'), /malformed comments/);
+});
+
 test("explicitly reject CDATA identity spoofing", () => {
   const xml = stableXml + '<![CDATA[<Identity Id="lineloom" Version="1.4.4" Publisher="Sanskar" />]]>';
   assert.throws(() => inspectVsixIdentity(xml), /unsupported CDATA/);
