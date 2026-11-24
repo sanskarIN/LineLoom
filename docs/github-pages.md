@@ -10,7 +10,7 @@ https://sanskarin.github.io/LineLoom/
 
 The public site at https://sanskarin.github.io/LineLoom/ is accessible,
 and the GitHub Actions workflow **Deploy LineLoom GitHub Pages** has
-previously completed 31 runs; its latest listed success was October 27, 2026.
+previously completed 31 runs; a subsequent verified deployment succeeded on November 1, 2026.
 That confirms Pages is already activated for the repository. No settings
 toggle is required to permit ordinary `site/**` updates. The updated workflow triggers on **each main-branch push** (including documentation
 and non-site changes), allowing normal GitHub Pages deployment history without
@@ -21,6 +21,21 @@ verify completed deployments independently rather than assuming every
 commit results in a distinct finished deployment. For new site changes, verify the
 **new** Pages workflow run and the live URL independently rather than
 assuming an earlier successful deployment proves the current version is live.
+
+## November 21, 2026: Pages API failure and guarded retry
+
+[Workflow run 44891536340](https://github.com/sanskarIN/LineLoom/actions/runs/44891536340) failed **after** the static site tests passed. The `actions/configure-pages@v6` step returned `Get Pages site failed ... Server Error` (an HTTP 5xx response); the upload was skipped and the deploy job did not run. This evidence does **not** show a source-test, HTML, styling or asset failure, and the error alone does not prove Pages was disabled.
+
+The workflow now makes **one conditional retry** of `actions/configure-pages@v6` if the first attempt fails. It does not ignore the second failure: the site is uploaded only after configuration succeeds and deployment still depends on the successful build. This improves resilience to a transient GitHub API error; it does **not** guarantee that a persistent GitHub-side failure or incorrect Pages settings are repaired.
+
+Owner triage if the next run is still red:
+
+1. Open [Settings → Pages](https://github.com/sanskarIN/LineLoom/settings/pages) and verify **Build and deployment → Source: GitHub Actions**. Do not disable a previously working site just to clear a transient error.
+2. Inspect [the Pages workflow](https://github.com/sanskarIN/LineLoom/actions/workflows/pages.yml) on the exact `main` commit. Confirm that the static tests, initial configure attempt, and conditional retry results are recorded.
+3. If the error is still an HTTP 5xx, retry the failed workflow after checking [GitHub Status](https://www.githubstatus.com/); keep the failure visible and contact GitHub Support if persistent. Do not report a new deployment unless `Deploy GitHub Pages` succeeds and the live URL has been inspected.
+4. If the failure instead states that Pages is not enabled or uses the wrong source, correct the repository setting above before rerunning. Avoid bypassing `configure-pages` or `upload-pages-artifact` with an unconditional success step.
+
+This is a CI hardening change only: it does not publish a VSIX, change `publisher` or alter either extension registry.
 
 ## First-time GitHub Pages activation (if disabled later)
 
