@@ -154,11 +154,14 @@ export function describePublicOpenVsx(record) {
   if (record.exists === false) {
     return "NOT FOUND: " + namespace + ".lineloom (not evidence of namespace availability)";
   }
+  const version = typeof record.version === "string" &&
+    /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(record.version)
+    ? record.version : "invalid-version";
   const flags = (record.preRelease === null ? "channel unknown" :
-    record.preRelease ? "preview" : "stable") + "; " +
+    record.preRelease === true ? "preview" : record.preRelease === false ? "stable" : "channel unknown") + "; " +
     (record.downloadable === true ? "downloadable" :
       record.downloadable === false ? "not downloadable" : "downloadability unknown");
-  return "PUBLIC METADATA: " + namespace + ".lineloom@" + record.version +
+  return "PUBLIC METADATA: " + namespace + ".lineloom@" + version +
     " (" + flags + "). Ownership and installation NOT verified.";
 }
 
