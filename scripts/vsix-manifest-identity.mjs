@@ -24,6 +24,8 @@ export function inspectVsixIdentity(xml) {
   // XML comments and CDATA cannot be treated as authoritative Identity tags.
   // In particular, a commented-out identity must not satisfy this gate.
   const withoutComments = xml.replace(/<!--[^]*?-->/g, "");
+  assert.ok(!withoutComments.includes("<!--") && !withoutComments.includes("-->"),
+    "VSIX manifest contains malformed comments.");
   assert.ok(!withoutComments.includes("<![CDATA["),
     "VSIX manifest contains unsupported CDATA.");
   const tags = [...withoutComments.matchAll(/<Identity\b([^<>]*?)\s*\/?\s*>/g)];
@@ -48,6 +50,8 @@ export function hasVsixPreReleaseProperty(xml) {
   assert.ok(typeof xml === "string" && xml.length <= MAX_MANIFEST_CHARS,
     "Invalid VSIX manifest.");
   const withoutComments = xml.replace(/<!--[^]*?-->/g, "");
+  assert.ok(!withoutComments.includes("<!--") && !withoutComments.includes("-->"),
+    "VSIX manifest contains malformed comments.");
   const properties = [...withoutComments.matchAll(/<Property\b([^<>]*?)\s*\/?\s*>/g)];
   return properties.some((match) =>
     /(?:^|\s)Id="Microsoft\.VisualStudio\.Code\.PreRelease"/.test(match[1]));
