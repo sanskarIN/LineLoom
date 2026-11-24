@@ -23,7 +23,7 @@ export function checkNamespace(namespace) {
 export function publicApiUrl(namespace, version) {
   checkNamespace(namespace);
   if (version !== undefined) {
-    assert.match(version, /^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/, "Invalid expected version");
+    assert.match(version, /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/, "Invalid expected version");
   }
   // Inputs cannot replace the origin or inject query strings / credentials.
   return PUBLIC_REGISTRY + "/api/" + namespace + "/lineloom" + (version ? "/" + version : "");
@@ -38,7 +38,7 @@ export function parsePublicRecord(value, namespace, expectedVersion) {
     throw new Error("Open VSX listing identity did not match the query.");
   }
   if (typeof value.version !== "string" ||
-      !/^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.version)) {
+      !/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(value.version)) {
     throw new Error("Open VSX returned an invalid version.");
   }
   if (expectedVersion !== undefined && value.version !== expectedVersion) {
