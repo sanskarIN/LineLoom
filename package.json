@@ -379,7 +379,7 @@
     "format:check": "prettier --check src test scripts package.json",
     "test": "vitest run test/unit",
     "test:watch": "vitest",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run test:publisher-packaging && npm run build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run test:qa && npm run test:model-eval && npm run test:model-data-audit && npm run test:model-training && npm run test:source-tree && npm run test:packager-security && npm run test:site && npm run test:publisher-packaging && npm run test:openvsx-public && npm run build",
     "package": "npm run check && vsce package --no-dependencies",
     "package:list": "vsce ls --no-dependencies",
     "test:integration": "node scripts/integration.mjs",
@@ -407,7 +407,10 @@
     "model:reference:syntax": "python model/train/audit_reference_syntax.py",
     "test:model-training": "python -m unittest discover -s model/train -p test_*.py",
     "package:publisher-preview": "node scripts/package-publisher.mjs",
-    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs scripts/verify-publisher-pair.test.mjs scripts/vsix-archive-safety.test.mjs scripts/vsix-manifest-identity.test.mjs"
+    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs scripts/verify-publisher-pair.test.mjs scripts/vsix-archive-safety.test.mjs scripts/vsix-manifest-identity.test.mjs",
+    "test:openvsx-public": "node --test scripts/open-vsx-public.test.mjs",
+    "openvsx:check:legacy": "node scripts/open-vsx-public.mjs SanskarCodes",
+    "openvsx:check:planned": "node scripts/open-vsx-public.mjs Sanskar"
   },
   "dependencies": {
     "ignore": "^7.0.14"
