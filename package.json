@@ -413,7 +413,7 @@
     "openvsx:check:planned": "node scripts/open-vsx-public.mjs Sanskar"
   },
   "dependencies": {
-    "ignore": "^7.0.14"
+    "ignore": "^7.0.16"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
