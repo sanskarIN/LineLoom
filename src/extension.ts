@@ -596,7 +596,7 @@ export function activate(context: vscode.ExtensionContext): void {
       enabledLanguageCount: config.enabledLanguages.length,
       languageOverrideCount: Object.keys(config.languageModels).length,
       stats: engine?.getStats()
-    });
+    }, context.extension.id);
     try {
       await vscode.env.clipboard.writeText(report);
       void vscode.window.showInformationMessage(
