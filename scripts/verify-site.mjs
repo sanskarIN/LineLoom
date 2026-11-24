@@ -19,14 +19,14 @@ test("Pages configuration retry preserves deployment failure semantics", () => {
   assert.ok(first > 0 && retry > first && upload > retry, "Retry must happen before uploading the site");
   const firstStep = workflow.slice(first, retry);
   const retryStep = workflow.slice(retry, upload);
-  assert.match(firstStep, /id: configure_pages/);
-  assert.match(firstStep, /continue-on-error: true/);
-  assert.match(firstStep, /uses: actions\\/configure-pages@v6/);
-  assert.match(retryStep, /if: steps\\.configure_pages\\.outcome == 'failure'/);
-  assert.match(retryStep, /uses: actions\\/configure-pages@v6/);
-  assert.doesNotMatch(retryStep, /continue-on-error/, "Second failure must fail the build");
-  assert.equal((workflow.match(/uses: actions\\/configure-pages@v6/g) || []).length, 2);
-  assert.match(workflow, /needs: build/, "Deployment must wait for the verified build");
+  assert.ok(firstStep.includes("id: configure_pages"));
+  assert.ok(firstStep.includes("continue-on-error: true"));
+  assert.ok(firstStep.includes("uses: actions/configure-pages@v6"));
+  assert.ok(retryStep.includes("if: steps.configure_pages.outcome == 'failure'"));
+  assert.ok(retryStep.includes("uses: actions/configure-pages@v6"));
+  assert.ok(!retryStep.includes("continue-on-error"), "Second failure must fail the build");
+  assert.equal(workflow.split("uses: actions/configure-pages@v6").length - 1, 2);
+  assert.ok(workflow.includes("needs: build"), "Deployment must wait for the verified build");
 });
 
 test("publisher migration guide keeps future listings distinct from verified existing ones", () => {
