@@ -15,6 +15,8 @@ Marketplace/Open VSX URL is not evidence of a live downloadable listing.
 
 **Support record:** request sent 2026-11-18; reply received 2026-11-19: Microsoft currently **does not support transferring extensions between publisher IDs**. This is not permission to reuse the same name, create a duplicate listing, move installs/reviews or remove the existing publisher. Keep message identifiers and account details privately in Outlook.
 
+**Follow-up status (November 24, 2026):** The maintainer sent a further message to Microsoft Marketplace Support on **November 23** from the intended permanent account, asking for guidance on a compliant **distinct new listing** and what can safely be done with the legacy listing. The linked Outlook mailboxes contain that sent follow-up but **no newer substantive support reply** as of this check. Do not infer Microsoft has approved a duplicate name, an in-place transfer, deletion, redirection or automatic migration. Record the support response privately before selecting a different Marketplace extension ID.
+
 ## Marketplace name-collision gate (do not delete the old extension)
 
 Microsoft's [official VS Code publishing guide](https://code.visualstudio.com/api/working-with-extensions/publishing-extension)
