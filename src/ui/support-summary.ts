@@ -47,12 +47,21 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback
   return typeof value === "string" && allowed.includes(value as T) ? value as T : fallback;
 }
 
+/** Extension identity is read from VS Code at runtime, not inferred from a
+ * preview VSIX filename. Never copy an unexpected ID into a support report. */
+function safeExtensionId(extensionId: unknown): string {
+  if (extensionId === "SanskarCodes.lineloom" || extensionId === "Sanskar.lineloom") {
+    return extensionId;
+  }
+  return "unrecognized";
+}
+
 /** No timestamp, hostname, model name or mutable editor identity enters this report. */
-export function formatSupportSummary(snapshot: SupportSummarySnapshot): string {
+export function formatSupportSummary(snapshot: SupportSummarySnapshot, extensionId: unknown): string {
   const stats = snapshot.stats;
   const lines = [
     "LineLoom sanitized support summary",
-    "Extension ID: SanskarCodes.lineloom",
+    "Extension ID: " + safeExtensionId(extensionId),
     "Scope: session counters and manually checked states only",
     "Autocomplete enabled: " + String(snapshot.enabled === true),
     "Automatic suggestions enabled: " + String(snapshot.autoTrigger === true),
