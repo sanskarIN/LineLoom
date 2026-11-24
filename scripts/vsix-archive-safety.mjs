@@ -13,8 +13,8 @@ import assert from "node:assert/strict";
 const MAX_ENTRIES = 12_000;
 const MAX_NAME_LENGTH = 1_024;
 const MAX_LISTING_CHARACTERS = 1_000_000;
-const WINDOWS_RESERVED = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\\.|$)/i;
-const CONTROL = /[\\u0000-\\u001f\\u007f]/;
+const WINDOWS_RESERVED = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i;
+const CONTROL = /[\u0000-\u001f\u007f]/;
 
 export function validateVsixEntries(entries) {
   assert.ok(Array.isArray(entries) && entries.length > 0 && entries.length <= MAX_ENTRIES,
@@ -30,11 +30,11 @@ export function validateVsixEntries(entries) {
     totalNameBytes += name.length;
     assert.ok(totalNameBytes <= MAX_LISTING_CHARACTERS,
       "VSIX entry name listing exceeds safety limit.");
-    assert.ok(!CONTROL.test(name) && !name.includes("\\\\") &&
+    assert.ok(!CONTROL.test(name) && !name.includes("\\") &&
       !name.startsWith("/") && !name.startsWith("//") &&
       !/^[A-Za-z]:/.test(name),
       "VSIX contains a non-portable ZIP entry name.");
-    assert.ok(!name.includes("//") && !name.includes("\\:"),
+    assert.ok(!name.includes("//") && !name.includes(":"),
       "VSIX contains an invalid ZIP entry separator.");
     const isDirectory = name.endsWith("/");
     const parts = name.split("/");
