@@ -50,10 +50,14 @@ function oneOf<T extends string>(value: unknown, allowed: readonly T[], fallback
 /** Extension identity is read from VS Code at runtime, not inferred from a
  * preview VSIX filename. Never copy an unexpected ID into a support report. */
 function safeExtensionId(extensionId: unknown): string {
-  if (extensionId === "SanskarCodes.lineloom" || extensionId === "Sanskar.lineloom") {
-    return extensionId;
+  // VS Code and registry callers may normalize extension IDs to lowercase.
+  // Normalize only the two known IDs, never arbitrary runtime text.
+  if (typeof extensionId !== "string") return "unrecognized";
+  switch (extensionId.toLowerCase()) {
+    case "sanskarcodes.lineloom": return "SanskarCodes.lineloom";
+    case "sanskar.lineloom": return "Sanskar.lineloom";
+    default: return "unrecognized";
   }
-  return "unrecognized";
 }
 
 /** No timestamp, hostname, model name or mutable editor identity enters this report. */
