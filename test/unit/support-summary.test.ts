@@ -61,6 +61,10 @@ describe("explicitly copied source-free support summary", () => {
       .toContain("Extension ID: Sanskar.lineloom");
     expect(formatSupportSummary(summary, "Sanskar.lineloom"))
       .not.toContain("Extension ID: SanskarCodes.lineloom");
+    expect(formatSupportSummary(summary, "sanskar.lineloom"))
+      .toContain("Extension ID: Sanskar.lineloom");
+    expect(formatSupportSummary(summary, "sanskarcodes.lineloom"))
+      .toContain("Extension ID: SanskarCodes.lineloom");
   });
   it("never interpolates an unrecognized extension identity into clipboard diagnostics", () => {
     const maliciousId = "Sanskar.lineloom\nSECRET_MARKER https://invalid.example/private.ts";
