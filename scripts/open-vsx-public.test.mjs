@@ -59,7 +59,7 @@ test("untrusted identity, invalid version and wrong requested versions fail clos
   assert.throws(() => parsePublicRecord({ ...stable, name: "other" }, "SanskarCodes"), /identity/);
   assert.throws(() => parsePublicRecord({ ...stable, namespace: "Sanskar" }, "SanskarCodes"), /identity/);
   assert.throws(() => parsePublicRecord({ ...stable, version: "../1.3.0" }, "SanskarCodes"), /invalid version/);
-  assert.throws(() => parsePublicRecord({ ...stable, version: "1.3.0\\nSECRET" }, "SanskarCodes"), /invalid version/);
+  assert.throws(() => parsePublicRecord({ ...stable, version: "1.3.0\nSECRET" }, "SanskarCodes"), /invalid version/);
   assert.throws(() => parsePublicRecord(stable, "SanskarCodes", "1.4.4"), /different version/);
 });
 
@@ -96,7 +96,7 @@ test("404 does not imply the namespace is claimable", async () => {
 test("public stable metadata explicitly warns that ownership and installation remain unchecked", () => {
   const record = { ...parsePublicRecord(stable, "SanskarCodes"), exists: true };
   const message = describePublicOpenVsx(record);
-  assert.match(message, /SanskarCodes\\.lineloom@1\\.3\\.0/);
+  assert.match(message, /SanskarCodes\.lineloom@1\.3\.0/);
   assert.match(message, /stable; downloadable/);
   assert.match(message, /Ownership and installation NOT verified/);
 });
