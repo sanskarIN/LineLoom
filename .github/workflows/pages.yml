@@ -20,7 +20,15 @@ jobs:
           node-version: '22'
       - name: Test static website
         run: npm run test:site
+      # GitHub's Pages API can temporarily return a 5xx while the site is
+      # already enabled. Retry this read/configuration step once without
+      # treating persistent failure as a successful deployment.
       - name: Configure Pages
+        id: configure_pages
+        continue-on-error: true
+        uses: actions/configure-pages@v6
+      - name: Retry Pages configuration after a failed first attempt
+        if: steps.configure_pages.outcome == 'failure'
         uses: actions/configure-pages@v6
       - name: Upload site
         uses: actions/upload-pages-artifact@v5

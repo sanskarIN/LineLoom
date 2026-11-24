@@ -11,6 +11,24 @@ const css = readFileSync(resolve(dir, "styles.css"), "utf8");
 const js = readFileSync(resolve(dir, "site.js"), "utf8");
 const pkg = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8"));
 
+test("Pages configuration retry preserves deployment failure semantics", () => {
+  const workflow = readFileSync(resolve(root, ".github/workflows/pages.yml"), "utf8");
+  const first = workflow.indexOf("      - name: Configure Pages");
+  const retry = workflow.indexOf("      - name: Retry Pages configuration after a failed first attempt");
+  const upload = workflow.indexOf("      - name: Upload site");
+  assert.ok(first > 0 && retry > first && upload > retry, "Retry must happen before uploading the site");
+  const firstStep = workflow.slice(first, retry);
+  const retryStep = workflow.slice(retry, upload);
+  assert.ok(firstStep.includes("id: configure_pages"));
+  assert.ok(firstStep.includes("continue-on-error: true"));
+  assert.ok(firstStep.includes("uses: actions/configure-pages@v6"));
+  assert.ok(retryStep.includes("if: steps.configure_pages.outcome == 'failure'"));
+  assert.ok(retryStep.includes("uses: actions/configure-pages@v6"));
+  assert.ok(!retryStep.includes("continue-on-error"), "Second failure must fail the build");
+  assert.equal(workflow.split("uses: actions/configure-pages@v6").length - 1, 2);
+  assert.ok(workflow.includes("needs: build"), "Deployment must wait for the verified build");
+});
+
 test("publisher migration guide keeps future listings distinct from verified existing ones", () => {
   const migration = readFileSync(resolve(dir, "publisher-migration.html"), "utf8");
   const guide = readFileSync(resolve(dir, "install.html"), "utf8");
