@@ -63,7 +63,7 @@ describe("explicitly copied source-free support summary", () => {
       .not.toContain("Extension ID: SanskarCodes.lineloom");
   });
   it("never interpolates an unrecognized extension identity into clipboard diagnostics", () => {
-    const maliciousId = "Sanskar.lineloom\\nSECRET_MARKER https://invalid.example/private.ts";
+    const maliciousId = "Sanskar.lineloom\nSECRET_MARKER https://invalid.example/private.ts";
     const copied = formatSupportSummary(summary, maliciousId);
     expect(copied).toContain("Extension ID: unrecognized");
     expect(copied).not.toContain("SECRET_MARKER");
