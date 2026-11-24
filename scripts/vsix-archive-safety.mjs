@@ -23,6 +23,8 @@ export function validateVsixEntries(entries) {
   const seenPortable = new Set();
   const files = new Set();
   const directories = new Set();
+  const portableFiles = new Set();
+  const portableDirectories = new Set();
   let totalNameBytes = 0;
   for (const name of entries) {
     assert.ok(typeof name === "string" && name.length > 0 && name.length <= MAX_NAME_LENGTH,
@@ -54,16 +56,19 @@ export function validateVsixEntries(entries) {
     seenExact.add(name);
     seenPortable.add(portable);
     (isDirectory ? directories : files).add(name);
+    (isDirectory ? portableDirectories : portableFiles).add(portable);
   }
   // A file cannot safely also be an ancestor directory in an archive. This
   // is ambiguous on file systems with different separator/case semantics.
   for (const path of files) {
-    assert.ok(!directories.has(path + "/"), "VSIX contains a file/directory collision.");
+    assert.ok(!portableDirectories.has((path + "/").normalize("NFC").toLowerCase()),
+      "VSIX contains a file/directory collision.");
     const prefixes = path.split("/");
     let prefix = "";
     for (let i = 0; i < prefixes.length - 1; i++) {
       prefix += (i ? "/" : "") + prefixes[i];
-      assert.ok(!files.has(prefix), "VSIX contains a file ancestor collision.");
+      assert.ok(!portableFiles.has(prefix.normalize("NFC").toLowerCase()),
+        "VSIX contains a file ancestor collision.");
     }
   }
   return Object.freeze({ entryCount: entries.length, fileCount: files.size, directoryCount: directories.size });
