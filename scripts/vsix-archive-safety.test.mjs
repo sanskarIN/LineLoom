@@ -185,3 +185,34 @@ test("allows ordinary explicitly listed parent and child directories", () => {
   assert.equal(result.directoryCount, 3);
   assert.equal(result.fileCount, 1);
 });
+
+test("portable file and directory conflicts are rejected in both archive orders", () => {
+  for (const pair of [
+    ["extension/Café", "extension/cafe\u0301/"],
+    ["extension/Café", "extension/cafe\u0301/child/"],
+    ["extension/file", "EXTENSION/FILE/child.txt"],
+    ["extension/file", "EXTENSION/FILE/child/"]
+  ]) {
+    for (const entries of [pair, [...pair].reverse()]) {
+      assert.throws(() => validateVsixEntries(entries), /collision/);
+    }
+  }
+});
+
+test("combined name budget is enforced even when each individual name is short enough", () => {
+  const prefix = "extension/" + ("a".repeat(180) + "/").repeat(5);
+  const entries = Array.from({ length: 1100 }, (_, index) =>
+    prefix + String(index).padStart(4, "0") + ".txt");
+  assert.ok(entries.every(name => name.length <= 1024));
+  assert.ok(entries.reduce((total, name) => total + name.length, 0) > 1_000_000);
+  assert.throws(() => validateVsixEntries(entries), /listing exceeds safety limit/);
+});
+
+test("the validator leaves its input unchanged and accepts frozen arrays", () => {
+  const entries = Object.freeze([...baseline].reverse());
+  const before = [...entries];
+  assert.deepEqual(validateVsixEntries(entries), {
+    entryCount: 8, fileCount: 6, directoryCount: 2
+  });
+  assert.deepEqual(entries, before);
+});
