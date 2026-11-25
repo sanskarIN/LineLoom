@@ -423,7 +423,7 @@
     "@vscode/vsce": "3.9.2",
     "esbuild": "^0.28.0",
     "eslint": "^10.14.0",
-    "prettier": "^3.10.0",
+    "prettier": "^3.10.1",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.72.2",
     "vitest": "^5.1.0"
