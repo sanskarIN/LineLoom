@@ -8,6 +8,8 @@
 import { execFileSync } from "node:child_process";
 import { openSync, readSync, statSync, closeSync, readFileSync } from "node:fs";
 import assert from "node:assert/strict";
+import { validateVsixEntries } from "./vsix-archive-safety.mjs";
+import { assertVsixIdentityMatches, hasVsixPreReleaseProperty } from "./vsix-manifest-identity.mjs";
 import { resolve } from "node:path";
 
 const vsixArg = process.argv[2];
@@ -27,6 +29,7 @@ try {
   // unzip is provided on the Linux CI runner; this is only a release quality gate.
   execFileSync("unzip", ["-t", path], { stdio: "pipe" });
   const entries = execFileSync("unzip", ["-Z", "-1", path], { encoding: "utf8" }).trim().split(/\r?\n/);
+  validateVsixEntries(entries);
   const mustContain = ["extension.vsixmanifest", "extension/package.json", "extension/dist/extension.js"];
   for (const item of mustContain) assert.ok(entries.includes(item), "VSIX missing: " + item);
   assert.ok(!entries.some(x => /(^|\/)node_modules\//.test(x)), "VSIX must exclude node_modules");
@@ -58,7 +61,8 @@ try {
   assert.ok(!(process.env.LINELOOM_EXPECT_PRE_RELEASE === "1" &&
     process.env.LINELOOM_EXPECT_STABLE === "1"), "Conflicting packaging expectations");
   const manifest = execFileSync("unzip", ["-p", path, "extension.vsixmanifest"], { encoding: "utf8" });
-  const preRelease = manifest.includes("Microsoft.VisualStudio.Code.PreRelease");
+  assertVsixIdentityMatches(manifest, packaged);
+  const preRelease = hasVsixPreReleaseProperty(manifest);
   if (process.env.LINELOOM_EXPECT_PRE_RELEASE === "1") {
     assert.ok(preRelease, "VSIX missing the actual VS Code pre-release marker");
   }

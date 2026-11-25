@@ -407,7 +407,7 @@
     "model:reference:syntax": "python model/train/audit_reference_syntax.py",
     "test:model-training": "python -m unittest discover -s model/train -p test_*.py",
     "package:publisher-preview": "node scripts/package-publisher.mjs",
-    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs scripts/verify-publisher-pair.test.mjs",
+    "test:publisher-packaging": "node --test scripts/package-publisher.test.mjs scripts/verify-publisher-pair.test.mjs scripts/vsix-archive-safety.test.mjs scripts/vsix-manifest-identity.test.mjs",
     "test:openvsx-public": "node --test scripts/open-vsx-public.test.mjs",
     "openvsx:check:legacy": "node scripts/open-vsx-public.mjs SanskarCodes",
     "openvsx:check:planned": "node scripts/open-vsx-public.mjs Sanskar"

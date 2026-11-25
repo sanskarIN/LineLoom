@@ -108,9 +108,9 @@ test("rejects unexpected non-runtime files and modifications anywhere in the arc
 test("rejects spoofed VSIX identity and channel drift", () => {
   const legacy = archive("SanskarCodes");
   assert.throws(() => verifyPublisherPair(legacy, archive("Sanskar", {
-    files: { "extension.vsixmanifest": '<Identity Id="lineloom" Publisher="Other" />' }
-  })), /VSIX identity/);
+    files: { "extension.vsixmanifest": '<Identity Id="lineloom" Publisher="Other" Version="1.4.3" />' }
+  })), /unapproved publisher/);
   assert.throws(() => verifyPublisherPair(legacy, archive("Sanskar", {
-    files: { "extension.vsixmanifest": '<Identity Id="lineloom" Publisher="Sanskar" />' }
+    files: { "extension.vsixmanifest": '<Identity Id="lineloom" Publisher="Sanskar" Version="1.4.3" />' }
   })), /release channels differ/);
 });
