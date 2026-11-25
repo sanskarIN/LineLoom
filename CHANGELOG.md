@@ -2,6 +2,13 @@
 
 All notable changes follow Semantic Versioning.
 
+## Unreleased — prompt and package security hardening
+
+- Render hidden Unicode direction and control characters visibly in quoted instruction-mode source context, including explicitly selected related files. Preserve native fill-in-the-middle input, legitimate Unicode joiners, letters and emoji. This is presentation hardening, not a guarantee against prompt injection. See [#312](https://github.com/sanskarIN/LineLoom/pull/312).
+- Validate VSIX archive member names and extension manifest identity before accepting publisher packages, including traversal, case/normalization collisions, Windows-forbidden names and file/directory ancestor conflicts. See [#311](https://github.com/sanskarIN/LineLoom/pull/311).
+- Extend offline regression coverage for archive ordering, aggregate listing bounds and immutable input arrays.
+- These are unreleased source changes; no registry cutover, model-quality measurement, stable release or physical-editor acceptance is implied.
+
 ## Unreleased — publisher migration release planning (documentation only)
 
 - Record planned **v1.4.5 GitHub pre-release** as migration-preparation/testing, **v1.5.0 Stable** as blocked until the owner selects an independently verified alternative to unsupported Marketplace publisher transfer, and a later separately approved **Open VSX** namespace migration.
