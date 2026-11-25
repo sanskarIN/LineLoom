@@ -37,6 +37,83 @@ describe("Ollama endpoint requests", () => {
     }
   });
 
+  it("does not send a generation prompt when cancellation already happened", async () => {
+    const controller = new AbortController();
+    controller.abort("private-cancellation-reason");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(generateCompletion("http://127.0.0.1:11434", {
+      model: "local", prompt: "private-prompt", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, controller.signal)).rejects.toMatchObject({
+      name: "AbortError", message: "Generation cancelled."
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("settles direct generation when the endpoint ignores fetch abort", async () => {
+    const controller = new AbortController();
+    const fetchMock = vi.fn(() => new Promise<Response>(() => {}));
+    vi.stubGlobal("fetch", fetchMock);
+    const pending = generateCompletion("http://127.0.0.1:11434", {
+      model: "local", prompt: "private-prompt", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, controller.signal);
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    controller.abort("private-cancellation-reason");
+    await expect(withDeadline(pending)).rejects.toMatchObject({
+      name: "AbortError", message: "Generation cancelled."
+    });
+  });
+
+  it("settles direct generation when stream cancellation never resolves", async () => {
+    let cancelStarted = false;
+    const body = new ReadableStream<Uint8Array>({
+      start() { /* A non-cooperative endpoint never produces an event. */ },
+      cancel() {
+        cancelStarted = true;
+        return new Promise<void>(() => {});
+      }
+    });
+    const getReader = vi.spyOn(body, "getReader");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(body)));
+    const controller = new AbortController();
+    const pending = generateCompletion("http://127.0.0.1:11434", {
+      model: "local", prompt: "private-prompt", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, controller.signal);
+    await vi.waitFor(() => expect(getReader).toHaveBeenCalledTimes(1));
+    controller.abort();
+    await expect(withDeadline(pending)).rejects.toMatchObject({
+      name: "AbortError", message: "Generation cancelled."
+    });
+    expect(cancelStarted).toBe(true);
+  });
+
+  it("cancels a late generation response without reading its body", async () => {
+    const controller = new AbortController();
+    const cancel = vi.fn();
+    const body = new ReadableStream<Uint8Array>({ cancel });
+    const getReader = vi.spyOn(body, "getReader");
+    let respond!: (response: Response) => void;
+    const fetchMock = vi.fn(() => new Promise<Response>(resolve => { respond = resolve; }));
+    vi.stubGlobal("fetch", fetchMock);
+    const pending = generateCompletion("http://127.0.0.1:11434", {
+      model: "local", prompt: "synthetic code", numPredict: 16,
+      contextSize: 1024, temperature: 0, keepAlive: "1m"
+    }, controller.signal);
+    await Promise.resolve();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    controller.abort("synthetic private reason");
+    await expect(withDeadline(pending)).rejects.toMatchObject({
+      name: "AbortError", message: "Generation cancelled."
+    });
+    respond(new Response(body));
+    await vi.waitFor(() => expect(cancel).toHaveBeenCalledTimes(1));
+    expect(getReader).not.toHaveBeenCalled();
+  });
+
   it("does not start aborted model discovery or lookup", async () => {
     const controller = new AbortController();
     controller.abort();
@@ -191,6 +268,19 @@ describe("Ollama endpoint requests", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ models: {} }))));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow(/Unexpected/);
   });
+  it("never exposes malformed model-catalog JSON in parser errors", async () => {
+    const secret = "private-model-list-token";
+    vi.stubGlobal("fetch", vi.fn(async () => new Response('{"models":' + secret)));
+    try {
+      await listModels("http://127.0.0.1:11434");
+      expect.fail("Invalid model-list JSON must fail");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toBe("Invalid Ollama model list JSON.");
+      expect((error as Error).message).not.toContain(secret);
+    }
+  });
+
   it("never reads or incorporates an untrusted error body", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("secret output must not appear", { status: 503 })));
     await expect(listModels("http://127.0.0.1:11434")).rejects.toThrow("HTTP 503");

@@ -83,6 +83,15 @@ function decodeResponseChunk(decoder: TextDecoder, bytes?: Uint8Array): string {
   }
 }
 
+/** Parse untrusted JSON without leaking Node's raw parser error excerpts. */
+function parseUntrustedJson(text: string, failure: string): unknown {
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(failure);
+  }
+}
+
 /**
  * Cancellation is a best-effort transport cleanup, not part of a successful
  * response's semantics. In particular a custom stream's cancel callback can
@@ -108,7 +117,7 @@ async function readBoundedJson(response: Response, signal: AbortSignal): Promise
       if (bytes > 256_000) throw new Error("Ollama model list exceeded safety limit.");
       json += decodeResponseChunk(decoder, value);
     }
-    return JSON.parse(json + decodeResponseChunk(decoder)) as unknown;
+    return parseUntrustedJson(json + decodeResponseChunk(decoder), "Invalid Ollama model list JSON.");
   } finally {
     signal.removeEventListener("abort", onAbort);
     // Do not wait for a server-controlled stream's cancel() promise.
@@ -134,7 +143,7 @@ export async function parseNdjson(
   function handle(line: string): void {
     if (!line.trim()) return;
     if (++eventCount > MAX_EVENTS) throw new Error("Ollama event count exceeded safety limit.");
-    const data: unknown = JSON.parse(line);
+    const data = parseUntrustedJson(line, "Invalid Ollama JSON event.");
     if (!data || typeof data !== "object" || Array.isArray(data)) {
       throw new Error("Invalid Ollama JSON event.");
     }
@@ -202,10 +211,19 @@ export async function generateCompletion(
     stream: true, keep_alive: input.keepAlive,
     options: { num_predict: input.numPredict, num_ctx: input.contextSize, temperature: input.temperature }
   };
-  const response = await readableResponse(await fetch(endpointUrl(origin, "/api/generate"), {
-    method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request), signal, redirect: "error"
-  }));
-  if (!response.body) throw new Error("Ollama did not provide a response stream.");
-  return parseNdjson(response.body, signal);
+  return settleOnAbort(signal, async () => {
+    const response = await fetch(endpointUrl(origin, "/api/generate"), {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request), signal, redirect: "error"
+    });
+    // A late response from a non-cooperative transport must never enter
+    // the parser or delay the caller's already-settled cancellation.
+    if (signal.aborted) {
+      void response.body?.cancel().catch(() => undefined);
+      throw new DOMException("Generation cancelled.", "AbortError");
+    }
+    await readableResponse(response);
+    if (!response.body) throw new Error("Ollama did not provide a response stream.");
+    return parseNdjson(response.body, signal);
+  });
 }
