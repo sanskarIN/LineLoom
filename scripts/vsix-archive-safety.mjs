@@ -13,7 +13,7 @@ import assert from "node:assert/strict";
 const MAX_ENTRIES = 12_000;
 const MAX_NAME_LENGTH = 1_024;
 const MAX_LISTING_CHARACTERS = 1_000_000;
-const WINDOWS_RESERVED = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(?:\.|$)/i;
+const WINDOWS_RESERVED = /^(?:CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])(?:\.|$)/i;
 const CONTROL = /[\u0000-\u001f\u007f]/;
 
 export function validateVsixEntries(entries) {
@@ -47,7 +47,7 @@ export function validateVsixEntries(entries) {
       assert.ok(part.length > 0 && part !== "." && part !== "..",
         "VSIX contains a traversal or empty path segment.");
       assert.ok(part === part.trim() && !part.endsWith(".") &&
-        !WINDOWS_RESERVED.test(part),
+        !WINDOWS_RESERVED.test(part) && !/[<>"|?*]/.test(part),
         "VSIX contains a non-portable path segment.");
     }
     const portable = name.normalize("NFC").toLowerCase();
@@ -63,7 +63,9 @@ export function validateVsixEntries(entries) {
   for (const path of files) {
     assert.ok(!portableDirectories.has((path + "/").normalize("NFC").toLowerCase()),
       "VSIX contains a file/directory collision.");
-    const prefixes = path.split("/");
+  }
+  for (const path of [...files, ...directories]) {
+    const prefixes = (path.endsWith("/") ? path.slice(0, -1) : path).split("/");
     let prefix = "";
     for (let i = 0; i < prefixes.length - 1; i++) {
       prefix += (i ? "/" : "") + prefixes[i];
