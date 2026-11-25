@@ -2,6 +2,12 @@
 
 **Status: shipped in GitHub stable v1.3.0 (2026-10-25), off by default.** The design originated in [PR #93](https://github.com/sanskarIN/LineLoom/pull/93) and [issue #66](https://github.com/sanskarIN/LineLoom/issues/66). Manual real-model quality, physical OS/privacy and accessibility acceptance remain NOT RUN; automated integration validation does not establish those results.
 
+## Source-lane Unicode rendering
+
+Instruction-style local Ollama prompts show source excerpts as **quoted data lines**, prefixed with `| `. To reduce visual boundary spoofing, the source-framing helper renders invisible control and direction-format characters as printable Unicode escape spellings. This covers C0/C1 controls (excluding actual quoted line breaks and indentation tabs), direction overrides/isolates, zero-width controls and the supplementary Unicode tag block. Valid text in Hindi and other scripts, visible emoji, combining marks, ZWNJ and ZWJ are preserved. User-selected related files receive the same treatment as the active editor's source prefix/suffix.
+
+This is a **prompt-presentation precaution**, not secret redaction or a guarantee that a model will disregard malicious instructions in comments. It does not edit or rewrite the user's files. The extension's native fill-in-the-middle prompt remains **byte-exact** for approved model families when no related files are selected; supplying related files deliberately uses the quoted instruction mode instead. The normal remote-endpoint consent and privacy exclusions continue to apply.
+
 ## Threat model and exact opt-in
 
 Related files may contain source, private paths, credentials in comments, or instructions attempting to influence the model. Treat their contents as **untrusted code context**, not commands. Additional source may be sent to an explicitly approved **remote HTTPS Ollama host**; a local Ollama host may itself be configured to log prompts. No implementation can retract content after a prompt was already dispatched.
