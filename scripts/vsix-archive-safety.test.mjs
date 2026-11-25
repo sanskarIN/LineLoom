@@ -152,3 +152,36 @@ test("large but safe deterministic archive index remains bounded and unique", ()
   assert.equal(result.fileCount, 518);
   assert.equal(result.directoryCount, 2);
 });
+
+test("rejects Windows-forbidden characters in any path segment", () => {
+  for (const character of ['<', '>', '"', '|', '?', '*']) {
+    rejectsEntry("extension/a" + character + "b.js", /non-portable path segment/);
+    rejectsEntry("extension/a" + character + "b/child.js", /non-portable path segment/);
+  }
+});
+
+test("rejects Windows reserved superscript-digit device names", () => {
+  for (const part of ["COM¹", "com².log", "COM³.txt", "LPT¹", "lpt².txt", "LPT³"]) {
+    rejectsEntry("extension/" + part, /non-portable path segment/);
+  }
+});
+
+test("rejects a file ancestor even if the descendant is an empty directory", () => {
+  for (const name of [
+    "extension/package.json/subdir/",
+    "extension/PACKAGE.JSON/subdir/deeper/",
+    "extension/assets/icons/lineloom.png/empty/"
+  ]) rejectsEntry(name, /ancestor/);
+  assert.throws(() => validateVsixEntries([
+    "extension/a/b/", "extension/a"
+  ]), /ancestor/);
+});
+
+test("allows ordinary explicitly listed parent and child directories", () => {
+  const result = validateVsixEntries([
+    "extension/", "extension/dist/", "extension/dist/empty/",
+    "extension/dist/extension.js"
+  ]);
+  assert.equal(result.directoryCount, 3);
+  assert.equal(result.fileCount, 1);
+});
