@@ -1,10 +1,15 @@
 # LineLoom publisher migration: SanskarCodes → Sanskar
 
-**Status (November 19, 2026): Marketplace Support replied to the November 18 inquiry that transferring an extension between publisher IDs is currently **not supported**. This rules out an in-place `SanskarCodes.lineloom` → `Sanskar.lineloom` Marketplace transfer. The maintainer previously confirmed Owner access to the `Sanskar` publisher, but no `Sanskar.lineloom` Marketplace listing, alternative name or Open VSX namespace is independently verified. GitHub v1.4.4 dual-publisher preview assets remain available; they do not migrate external registries.**
-The original extension identity is `SanskarCodes.lineloom`. The proposed
-new identity is `Sanskar.lineloom`. Publisher ownership and publication
-must be completed separately on **each** registry; an unverified new
-Marketplace/Open VSX URL is not evidence of a live downloadable listing.
+**Status (November 26, 2026):** Microsoft Marketplace Support confirmed that direct publisher transfers are unsupported and indicated that a separate `Sanskar.lineloom-sanskar` listing with display name **LineLoom by Sanskar** may proceed in principle, subject to uniqueness, icon/URL restrictions and further explanation of the purpose of the publisher change. This is not final clearance or proof of publication. The old listing should remain published; deprecation is recommended after a verified successor exists. No data transfers automatically.
+
+| Distribution lane | Exact identity | State |
+| --- | --- | --- |
+| Existing Marketplace / Open VSX | `SanskarCodes.lineloom` | Retain; no deletion/unpublishing |
+| GitHub v1.4.4 alternate preview VSIX | `Sanskar.lineloom` | Historical preview identity, not the Marketplace successor |
+| Proposed Marketplace successor | `Sanskar.lineloom-sanskar` / LineLoom by Sanskar | Support guidance in principle; remaining policy, owner, packaging and release gates |
+| Proposed Open VSX target | `Sanskar.lineloom` | Separate, unverified registry decision; consider cross-registry identity alignment before choosing |
+
+Do not treat either proposed destination as live. The current tracked manifest and historical GitHub preview artifacts are unchanged.
 
 ## Release decisions: v1.4.5 preview, v1.5.0 Stable, then Open VSX
 
@@ -15,7 +20,9 @@ Marketplace/Open VSX URL is not evidence of a live downloadable listing.
 
 **Support record:** request sent 2026-11-18; reply received 2026-11-19: Microsoft currently **does not support transferring extensions between publisher IDs**. This is not permission to reuse the same name, create a duplicate listing, move installs/reviews or remove the existing publisher. Keep message identifiers and account details privately in Outlook.
 
-**Follow-up status (November 24, 2026):** The maintainer sent a further message to Microsoft Marketplace Support on **November 23** from the intended permanent account, asking for guidance on a compliant **distinct new listing** and what can safely be done with the legacy listing. The linked Outlook mailboxes contain that sent follow-up but **no newer substantive support reply** as of this check. Do not infer Microsoft has approved a duplicate name, an in-place transfer, deletion, redirection or automatic migration. Record the support response privately before selecting a different Marketplace extension ID.
+**Follow-up status (November 26, 2026):** After the November 23 follow-up and November 24 acknowledgement, substantive guidance arrived on November 26. The maintainer must explain the intended long-term publisher/account consolidation and same-project continuity, ask how the icon and URL restrictions apply to the proposed successor, and complete ownership verification if required. Keep correspondence and account identifiers private. Do not upload until the remaining policy questions and explicit owner approval are resolved.
+
+Microsoft recommends [requesting deprecation](https://github.com/microsoft/vscode-discussions/discussions/1) of the old listing in favor of the verified successor; see the [deprecation guidance](https://code.visualstudio.com/api/working-with-extensions/publishing-extension#deprecating-extensions). Deprecation is not deletion. Existing installations remain separate.
 
 ## Marketplace name-collision gate (do not delete the old extension)
 
@@ -26,7 +33,7 @@ Even though the maintainer now owns publisher `Sanskar`, attempting to create
 name collision. **Do not remove the old listing to free its name:** Microsoft's
 guide also says removing an extension permanently reserves the name.
 
-**Microsoft replied on 2026-11-19 that publisher-to-publisher transfers are not supported.** Before any `Sanskar` Marketplace upload, obtain explicit owner approval for a *separate* listing with a distinct compliant extension **name and display name**. Verify registry requirements before trying a new extension ID; this also requires deliberate user uninstall/reinstall, settings/privacy review and rollback. Alternatively, a stable update could remain under `SanskarCodes.lineloom` if the owner explicitly approves that change in strategy. **Do not delete the existing listing**, claim an automatic transfer, or treat GitHub preview VSIX files as proof of a Marketplace listing.
+**Microsoft replied on 2026-11-19 that publisher-to-publisher transfers are not supported.** Before any `Sanskar` Marketplace upload, obtain explicit owner approval for a *separate* listing with a distinct compliant extension **name and display name**. Support indicated `Sanskar.lineloom-sanskar` / `LineLoom by Sanskar` is acceptable in principle on November 26; resolve the remaining uniqueness, icon/URL and justification requirements before any upload; this also requires deliberate user uninstall/reinstall, settings/privacy review and rollback. Alternatively, a stable update could remain under `SanskarCodes.lineloom` if the owner explicitly approves that change in strategy. **Do not delete the existing listing**, claim an automatic transfer, or treat GitHub preview VSIX files as proof of a Marketplace listing.
 
 ## Why this is a reinstall, not an automatic update
 
@@ -34,8 +41,7 @@ A VS Code extension is identified by `publisher.name`. Therefore the two
 identifiers are **different extensions** and can temporarily coexist, even
 when their code and version match. VS Code does not automatically transfer
 existing installs, reviews, download counts, sync state or extension-private
-storage to the new publisher. Publishing `Sanskar.lineloom` does not
-replace `SanskarCodes.lineloom` in either registry.
+storage to the new publisher. Neither the GitHub preview ID `Sanskar.lineloom` nor the proposed Marketplace successor `Sanskar.lineloom-sanskar` automatically replaces `SanskarCodes.lineloom`.
 
 ## Before switching
 
@@ -76,11 +82,11 @@ The CLI now checks the selected editor's installed extension IDs with a bounded 
 
 The default `lineloom install --preview` continues to target the separate `SanskarCodes` GitHub preview. No `Sanskar` stable VSIX is pinned, so selecting that publisher without `--preview` is rejected. These development-source commands are **not yet available in the publicly published GitHub Packages CLI 0.1.0** and do not imply npmjs publication.
 
-For CLI users **after the new listing exists**:
+For CLI users **only after the proposed Marketplace successor is approved, published and independently verified** (not executable migration instructions today):
 
 ```sh
 code --uninstall-extension SanskarCodes.lineloom
-code --install-extension Sanskar.lineloom
+code --install-extension Sanskar.lineloom-sanskar
 ```
 
 For a manually downloaded and checksum-verified GitHub VSIX:
@@ -102,7 +108,7 @@ GitHub extension remains
    **Open VSX:** independently confirm the **Sanskar** namespace is claimed by the correct account before attempting any registry upload; Microsoft ownership does not grant Open VSX rights.
 2. Use the signed-in publisher's proper publish credentials, stored privately.
    Do not put publishing tokens in GitHub commits, public logs or release assets.
-3. Obtain both `LineLoom-1.4.4-*.vsix` archives and corresponding SHA-256 files
+3. For historical GitHub preview QA only, obtain both `LineLoom-1.4.4-*.vsix` archives and corresponding SHA-256 files
    from the [published GitHub v1.4.4 pre-release](https://github.com/sanskarIN/LineLoom/releases/tag/v1.4.4). Confirm the new VSIX
    contains `publisher: "Sanskar"`, `name: "lineloom"` and the real
    preview-channel marker; the old VSIX must contain `SanskarCodes`.
@@ -114,7 +120,7 @@ GitHub extension remains
    the independently verified publisher-specific package and VSIX identity
    metadata to differ. Unexpected extra files fail the gate. Passing it **does not**
    authorize registry publication or replace human QA.
-5. **Only after the corresponding registry owner authorization and verified migration path**, publish the correctly identified package to that registry. Microsoft and Open VSX require **separate** approvals and may have different transfer procedures. If independently publishing under **SanskarCodes**, use its separate legacy VSIX; never upload one identity under both publishers.
+5. **Only after the corresponding registry owner authorization and verified migration path**, build and publish the correctly identified package to that registry. The existing alternate preview packager changes only the publisher; it cannot produce the proposed distinct Marketplace name/display name today. Add and test explicit target identity, manifest verification, artifact parity exceptions limited to approved metadata, and clean-install/rollback before any Marketplace upload. Microsoft and Open VSX require **separate** approvals and may have different transfer procedures. If independently publishing under **SanskarCodes**, use its separate legacy VSIX; never upload one identity under both publishers.
 6. Verify both newly published listings, versions, downloadability and
    publisher namespaces independently before changing homepage primary
    buttons from the current verified `SanskarCodes` listings.
